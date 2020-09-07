@@ -11,17 +11,54 @@ object Dependencies {
   private final val scalaTestVersion = "3.2.2"
   private final val scalaTestPlusScalaCheckVersion = "3.2.2.0"
 
-  val catsCore = "org.typelevel" %% "cats-core" % catsVersion
-  val catsFree = "org.typelevel" %% "cats-free" % catsVersion
-  val circeCore = "io.circe" %% "circe-core" % circeVersion
-  val circeParser = "io.circe" %% "circe-parser" % circeVersion
-  val circeLiteral = "io.circe" %% "circe-literal" % circeVersion
-  val scalaCheck = "org.scalacheck" %% "scalacheck" % scalaCheckVersion
-  val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion
-  val scalaTestPlusScalaCheck = "org.scalatestplus" %% "scalacheck-1-14" % scalaTestPlusScalaCheckVersion
-  def scalaReflect(scalacVersion: String): ModuleID = "org.scala-lang" % "scala-reflect" % scalacVersion
+  private val catsCore = "org.typelevel" %% "cats-core" % catsVersion
+  private val catsFree = "org.typelevel" %% "cats-free" % catsVersion
+  private val circeCore = "io.circe" %% "circe-core" % circeVersion
+  private val circeParser = "io.circe" %% "circe-parser" % circeVersion
+  private val circeLiteral = "io.circe" %% "circe-literal" % circeVersion
+  private val scalaCheck = "org.scalacheck" %% "scalacheck" % scalaCheckVersion
+  private val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion
+  private def scalaReflect(scalacVersion: String): ModuleID = "org.scala-lang" % "scala-reflect" % scalacVersion
 
-  object Plugins {
-    val kindProjector = "org.typelevel" %% "kind-projector" % kindProjectorVersion
+  final object Plugins {
+
+    val kindProjector = {
+      compilerPlugin("org.typelevel" %% "kind-projector" % kindProjectorVersion).cross(CrossVersion.full)
+    }
   }
+
+  final object Resolvers {
+
+    val danslapman: Resolver = Resolver.bintrayRepo("danslapman", "maven")
+  }
+
+  final object CoreProject {
+
+    def all(scalaVersion: String): Seq[ModuleID] =
+      Seq(
+        Plugins.kindProjector,
+        catsCore,
+        catsFree,
+        scalaReflect(scalaVersion),
+      ) ++ Seq(
+        // Test-only dependencies
+        scalaCheck,
+        scalaTest,
+      ).map(_ % Test)
+  }
+
+  final object CirceProject {
+
+    val all: Seq[ModuleID] = Seq(
+      Plugins.kindProjector,
+      circeCore,
+    ) ++ Seq(
+      // Test-only dependencies
+      circeLiteral,
+      circeParser,
+      scalaCheck,
+      scalaTest,
+    ).map(_ % Test)
+  }
+
 }
