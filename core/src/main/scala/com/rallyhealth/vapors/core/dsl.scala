@@ -2,14 +2,15 @@ package com.rallyhealth.vapors.core
 
 import cats.data.NonEmptyList
 import cats.free.FreeApplicative
-import com.rallyhealth.vapors.core.data._
 
 import scala.collection.immutable.NumericRange
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.{TypeTag, typeOf}
+import scala.reflect.runtime.universe.{typeOf, TypeTag}
 
 object dsl {
+  final val __ = this
   import algebra._
+  import data._
 
   implicit def window(range: Range): Window[Int] = Window.fromRange(range)
   implicit def window[T : Ordering](range: NumericRange[T]): Window[T] = Window.fromRange(range)
@@ -20,6 +21,7 @@ object dsl {
   type AnyFactExp[A] = FactExp[Any, A]
   type Facts[T] = NonEmptyList[Fact[T]]
   type FactExp[T, A] = AnyExp[Facts[T], A]
+  type FactLens[T, U] = NamedLens[Fact[T], U]
 
   /**
     * An expression whose free type parameter is a [[ResultSet]] that can be evaluated by
@@ -75,16 +77,17 @@ object dsl {
         liftFactExp(
           ExpCollect[Facts[Any], Facts[U], ExpRes[Any]](
             uType.toString,
-            facts => {
-              NonEmptyList.fromList(facts.collect(Function.unlift {
-                case f @ Fact(typeInfo, _: U) if typeInfo.tt.tpe <:< typeOf[U] => Some(f.asInstanceOf[Fact[U]])
-                case _ => None
-              }))
-            },
+            facts =>
+              NonEmptyList.fromList(
+                facts.collect(Function.unlift {
+                  case f @ Fact(typeInfo, _: U) if typeInfo.tt.tpe <:< typeOf[U] => Some(f.asInstanceOf[Fact[U]])
+                  case _ => None
+                }),
+              ),
             exp.map(res => res: ExpRes[Any]),
-            _ => NoFactsMatch()
-          )
-        )
+            _ => NoFactsMatch(),
+          ),
+        ),
       )
     }
   }
@@ -99,22 +102,20 @@ object dsl {
     ExpFunctor[Facts[T], ExpRes[T]](facts => ResultSet.fromList(facts.filter(predicate)))
   }
 
-  def anyFact[T](exp: AnyExp[Fact[T], Boolean]): TerminalFactExp[T] = liftTerminal {
+  def whereAnyFactHas[T](exp: AnyExp[Fact[T], Boolean]): TerminalFactExp[T] = liftTerminal {
     ExpExists[Facts[T], Fact[T], ExpRes[T]](_.toList, exp, Matched, Empty)
   }
 
-  def allFacts[T](exp: AnyExp[Fact[T], Boolean]): TerminalFactExp[T] = liftTerminal {
+  def whereAllFactsHave[T](exp: AnyExp[Fact[T], Boolean]): TerminalFactExp[T] = liftTerminal {
     ExpForAll[Facts[T], Fact[T], ExpRes[T]](_.toList, exp, Matched, Empty)
   }
 
-  // TODO: Use lens here
-  def withFieldValue[T, U](
-    getter: Fact[T] => U,
-    fieldName: String
-  )(
-    exp: AnyExp[U, Boolean]
-  ): AnyExp[Fact[T], Boolean] = liftAnyExp {
-    ExpSelectField[Fact[T], U, Boolean](fieldName, getter, exp)
+  def fieldValueAt[T, U](lens: NamedLens[Fact[T], U])(exp: AnyExp[U, Boolean]): AnyExp[Fact[T], Boolean] = liftAnyExp {
+    ExpSelectField[Fact[T], U, Boolean](lens, exp)
+  }
+
+  def fieldValue[T](exp: AnyExp[T, Boolean]): AnyExp[Fact[T], Boolean] = liftAnyExp {
+    ExpSelectField[Fact[T], T, Boolean](Fact.value, exp)
   }
 
   // TODO: Use some cats typeclass instead of iterable?
@@ -128,7 +129,7 @@ object dsl {
   }
 
   def greaterThan[T : Ordering](lowerBound: T): AnyExp[T, Boolean] = liftPredExp {
-    ExpWithin[T, Boolean](Window.after(lowerBound), True, False)
+    ExpWithin[T, Boolean](Window.greaterThan(lowerBound), True, False)
   }
 
   def when[T, A](exp: AnyExp[T, Boolean])(thenExp: AnyExp[T, A])(elseExp: AnyExp[T, A]): AnyExp[T, A] = liftAnyExp {
@@ -137,17 +138,17 @@ object dsl {
   // TODO: See above
 
   def withFactType[T >: U, U : ClassTag : TypeTag](
-    factType: FactType[U]
+    factType: FactType[U],
   )(
-    exp: FactExp[U, ExpRes[T]]
+    exp: FactExp[U, ExpRes[T]],
   ): TerminalFactExp[Any] = {
     withFactTypes[T, U](FactTypeSet.of(factType))(exp)
   }
 
   def withFactTypes[T >: U, U : ClassTag : TypeTag](
-    factTypeSet: FactTypeSet[U]
+    factTypeSet: FactTypeSet[U],
   )(
-    exp: FactExp[U, ExpRes[T]]
+    exp: FactExp[U, ExpRes[T]],
   ): TerminalFactExp[Any] = liftFactExp {
     // TODO: Figure out if there any disadvantages to using Any here
     //       If there are, we need to figure out why we get compiler errors when using type T
@@ -155,7 +156,7 @@ object dsl {
       typeOf[U].toString,
       facts => NonEmptyList.fromList(facts.collect(factTypeSet.matchAsPartial[U])),
       exp.map(identity),
-      _ => NoFactsMatch()
+      _ => NoFactsMatch(),
     )
   }
 
@@ -166,7 +167,7 @@ object dsl {
         case (NoFactsMatch(), _) | (_, NoFactsMatch()) => NoFactsMatch() // skip the all expressions if the first failed
         case (acc: FactsMatch[T], nextResult: FactsMatch[T]) => acc ++ nextResult // combine all the required facts
       }),
-      expressions
+      expressions,
     )
   }
 
@@ -177,7 +178,7 @@ object dsl {
         case (NoFactsMatch(), b) => b // try the next expression if the first failed
         case (a @ FactsMatch(_), _) => a // take the first required set of facts
       }),
-      expressions
+      expressions,
     )
   }
 }

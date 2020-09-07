@@ -19,12 +19,12 @@ object evaluator {
 
     private def evalF[B](
       exp: ExpAlg[T, B],
-      data: T
+      data: T,
     ): B = exp match {
       case ExpFunctor(map) =>
         map(data)
-      case ExpSelectField(_, selector, expression) =>
-        evalLoop(expression)(selector(data))
+      case ExpSelectField(selector, expression) =>
+        evalLoop(expression)(selector.get(data))
       case ExpExists(toIterable, condition, whenTrue, whenFalse) =>
         // we don't need this intermediate list and can remove it for performance,
         // but for the time being this is a good place to put a debugger

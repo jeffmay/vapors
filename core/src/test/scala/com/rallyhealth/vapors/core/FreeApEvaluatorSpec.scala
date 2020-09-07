@@ -1,16 +1,15 @@
 package com.rallyhealth.vapors.core
 
 import cats.data.NonEmptyList
-import com.rallyhealth.vapors.core.data.{Fact, FactType, FactsMatch, NoFactsMatch}
+import com.rallyhealth.vapors.core.Example._
+import com.rallyhealth.vapors.core.data.{Fact, FactsMatch, NoFactsMatch}
 import org.scalatest.wordspec.AnyWordSpec
 
 // TODO: Split out logical tests from fact based tests
 final class FreeApEvaluatorSpec extends AnyWordSpec {
-  import FreeApEvaluatorSpec._
   import dsl._
   import evaluator._
 
-//  private val it = evaluator.getClass.getName.dropRight(1).split('.').takeRight(2).mkString(".")
   private val evaluatorName = evaluator.getClass.getName.dropRight(1).split('.').takeRight(2).mkString(".")
 
   private def True[T]: Fact[T] => Boolean = _ => true
@@ -20,29 +19,8 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
   // TODO: Why not put this in the DSL... it's gonna be ugly somewhere. Might as well tuck it into the API somehow.
   private def v[A](
     head: A,
-    tail: A*
+    tail: A*,
   ): NonEmptyList[A] = NonEmptyList.of(head, tail: _*)
-
-  private final object FactTypes {
-    val name = FactType[String]("name")
-    val age = FactType[Int]("age")
-    val weight = FactType[Int]("weight")
-    val probs = FactType[Probs]("probability_to_use")
-  }
-
-  private final object Facts {
-    val name = Fact(FactTypes.name, "Joe Schmoe")
-    val age = Fact(FactTypes.age, 32)
-    val weight = Fact(FactTypes.weight, 150)
-    val probs = Fact(FactTypes.probs, Probs(Map("weightloss" -> .8)))
-
-    val all = NonEmptyList.of(
-      name,
-      age,
-      weight,
-      probs
-    )
-  }
 
   "dsl.query" should {
 
@@ -50,8 +28,8 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
       val program = query {
         filter[Int](True)
       }
-      val result = evalQuery(Facts.all.toList)(program)
-      assert(result.contains(FactsMatch(v(Facts.age, Facts.weight))))
+      val result = evalQuery(JoeSchmoe.facts.toList)(program)
+      assert(result.contains(FactsMatch(v(JoeSchmoe.age, JoeSchmoe.weight))))
     }
   }
 
@@ -71,27 +49,26 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
             },
             withFactType(FactTypes.probs) {
               filter(_.value.scores.getOrElse("weightloss", 0.0) > .5)
-            }
-          )
+            },
+          ),
         )
       }
-      val result = evalQuery(Facts.all.toList)(exp)
-      assert(result.contains(FactsMatch(v(Facts.probs))))
+      val result = evalQuery(JoeSchmoe.facts.toList)(exp)
+      assert(result.contains(FactsMatch(v(JoeSchmoe.probs))))
     }
 
     "return matching facts if any fact has prob for weightloss > existing amount" in {
       val exp = query {
-        withFactType(FactTypes.probs) {
-          anyFact {
-            // TODO: Fix type inference here
-            withFieldValue[Probs, Option[Double]](_.value.scores.get("weightloss"), "prob_weightloss") {
-              exists(greaterThan(0.4))
-            }
+        whereAnyFactHas {
+          fieldValueAt(
+            Fact.value[Probs].select(_.scores).atKey("weightloss"),
+          ) {
+            exists(greaterThan(0.4))
           }
         }
       }
-      val result = evalQuery(Facts.all.toList)(exp)
-      assert(result.contains(FactsMatch(v(Facts.probs))))
+      val result = evalQuery(JoeSchmoe.facts.toList)(exp)
+      assert(result.contains(FactsMatch(v(JoeSchmoe.probs))))
     }
   }
 
@@ -104,8 +81,8 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
         val program = query {
           or(v(filter(True)))
         }
-        val result = evalQuery(Facts.all.toList)(program)
-        assert(result.contains(FactsMatch(Facts.all)))
+        val result = evalQuery(JoeSchmoe.facts.toList)(program)
+        assert(result.contains(FactsMatch(JoeSchmoe.facts)))
       }
     }
 
@@ -113,23 +90,23 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
       val program = query {
         or(v(filter(True), filter(False)))
       }
-      val result = evalQuery(Facts.all.toList)(program)
-      assert(result.contains(FactsMatch(Facts.all)))
+      val result = evalQuery(JoeSchmoe.facts.toList)(program)
+      assert(result.contains(FactsMatch(JoeSchmoe.facts)))
     }
 
     "return true for a complex or" in {
       val program = query {
         or(v(filter(False), filter(False), filter(True), filter(False)))
       }
-      val result = evalQuery(Facts.all.toList)(program)
-      assert(result.contains(FactsMatch(Facts.all)))
+      val result = evalQuery(JoeSchmoe.facts.toList)(program)
+      assert(result.contains(FactsMatch(JoeSchmoe.facts)))
     }
 
     "return false for a long or" in {
       val program = query {
         or(v(filter(False), filter(False), filter(False), filter(False)))
       }
-      val result = evalQuery(Facts.all.toList)(program)
+      val result = evalQuery(JoeSchmoe.facts.toList)(program)
       assert(result.contains(NoFactsMatch()))
     }
 
@@ -137,15 +114,15 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
       val program = query {
         and(v(filter(True)))
       }
-      val result = evalQuery(Facts.all.toList)(program)
-      assert(result.contains(FactsMatch(Facts.all)))
+      val result = evalQuery(JoeSchmoe.facts.toList)(program)
+      assert(result.contains(FactsMatch(JoeSchmoe.facts)))
     }
 
     "return false for a true and false in an and" in {
       val program = query {
         and(v(filter(True), filter(False)))
       }
-      val result = evalQuery(Facts.all.toList)(program)
+      val result = evalQuery(JoeSchmoe.facts.toList)(program)
       assert(result.contains(NoFactsMatch()))
     }
 
@@ -153,15 +130,15 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
       val program = query {
         and(v(filter(True), filter(True)))
       }
-      val result = evalQuery(Facts.all.toList)(program)
-      assert(result.contains(FactsMatch(Facts.all)))
+      val result = evalQuery(JoeSchmoe.facts.toList)(program)
+      assert(result.contains(FactsMatch(JoeSchmoe.facts)))
     }
 
     "return false for a complex and" in {
       val program = query {
         and(v(filter(True), filter(True), filter(False), filter(True)))
       }
-      val result = evalQuery(Facts.all.toList)(program)
+      val result = evalQuery(JoeSchmoe.facts.toList)(program)
       assert(result.contains(NoFactsMatch()))
     }
 
@@ -169,8 +146,8 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
       val program = query {
         and(v(filter(True), filter(True), filter(True), filter(True)))
       }
-      val result = evalQuery(Facts.all.toList)(program)
-      assert(result.contains(FactsMatch(Facts.all)))
+      val result = evalQuery(JoeSchmoe.facts.toList)(program)
+      assert(result.contains(FactsMatch(JoeSchmoe.facts)))
     }
 
     "return true for nested true 'or's in an and" in {
@@ -179,11 +156,11 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
           v(
             or(v(filter(True))),
             or(v(filter(True))),
-          )
+          ),
         )
       }
-      val result = evalQuery(Facts.all.toList)(program)
-      assert(result.contains(FactsMatch(Facts.all)))
+      val result = evalQuery(JoeSchmoe.facts.toList)(program)
+      assert(result.contains(FactsMatch(JoeSchmoe.facts)))
     }
 
     "return false for a nested false or in an and" in {
@@ -192,10 +169,10 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
           v(
             or(v(filter(True))),
             or(v(filter(False))),
-          )
+          ),
         )
       }
-      val result = evalQuery(Facts.all.toList)(program)
+      val result = evalQuery(JoeSchmoe.facts.toList)(program)
       assert(result.contains(NoFactsMatch()))
     }
 
@@ -207,10 +184,10 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
             or(v(filter(True))),
             or(v(filter(False))),
             or(v(filter(True))),
-          )
+          ),
         )
       }
-      val result = evalQuery(Facts.all.toList)(program)
+      val result = evalQuery(JoeSchmoe.facts.toList)(program)
       assert(result.contains(NoFactsMatch()))
     }
 
@@ -222,11 +199,11 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
             and(v(filter(False))),
             and(v(filter(True))),
             and(v(filter(False))),
-          )
+          ),
         )
       }
-      val result = evalQuery(Facts.all.toList)(program)
-      assert(result.contains(FactsMatch(Facts.all)))
+      val result = evalQuery(JoeSchmoe.facts.toList)(program)
+      assert(result.contains(FactsMatch(JoeSchmoe.facts)))
     }
 
     "return true for a complex structure" in {
@@ -241,17 +218,17 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
                 and(
                   v(
                     filter(True),
-                    filter(False)
-                  )
+                    filter(False),
+                  ),
                 ),
-                filter(True)
-              )
-            )
-          )
+                filter(True),
+              ),
+            ),
+          ),
         )
       }
-      val result = evalQuery(Facts.all.toList)(program)
-      assert(result.contains(FactsMatch(Facts.all)))
+      val result = evalQuery(JoeSchmoe.facts.toList)(program)
+      assert(result.contains(FactsMatch(JoeSchmoe.facts)))
     }
   }
 
@@ -264,10 +241,4 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
   //   result.matchingFacts
   // }
 //  }
-}
-
-object FreeApEvaluatorSpec {
-
-  private final case class Probs(scores: Map[String, Double])
-
 }

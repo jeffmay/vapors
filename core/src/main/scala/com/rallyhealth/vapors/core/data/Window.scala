@@ -1,162 +1,126 @@
 package com.rallyhealth.vapors.core.data
 
+import cats.data.Ior
+import cats.implicits.catsKernelStdMonoidForString
+import cats.{Contravariant, Invariant, Show}
+
 import scala.collection.immutable.NumericRange
 
-// TODO: Support a more Ordering-like interface
-// TODO: Add a reverse method
 sealed trait Window[A] {
-
   def contains(value: A): Boolean
 }
 
-sealed trait KnownWindow[A] extends Window[A] {
+trait UnknownWindow[A] extends Window[A]
 
-  def lowerBoundOpt: Option[A]
-
-  def upperBoundOpt: Option[A]
+trait BoundedWindow[A] extends Window[A] {
+  def bounds: Ior[Bounded.Above[A], Bounded.Below[A]]
 }
-
-sealed trait UpperBoundedWindow[A] extends KnownWindow[A] {
-
-  def upperBound: A
-
-  override final def upperBoundOpt: Option[A] = Some(upperBound)
-
-}
-
-sealed trait LowerBoundedWindow[A] extends KnownWindow[A] {
-
-  def lowerBound: A
-
-  override final def lowerBoundOpt: Option[A] = Some(lowerBound)
-
-}
-
-sealed trait BoundedWindow[A] extends LowerBoundedWindow[A] with UpperBoundedWindow[A]
 
 object Window {
+  import Bounded._
+  import cats.syntax.show._
+  import cats.syntax.functor._
+
   import Ordering.Implicits._
 
-  // This shouldn't be needed
-  def fromField[A, B](
-    fieldName: String,
-    getter: A => B
-  )(
-    window: Window[B]
-  ): Window[A] = FromSelectField(fieldName, getter, window)
+  implicit final object UnknownContravariant extends Contravariant[UnknownWindow] {
+    override def contramap[A, B](fa: UnknownWindow[A])(f: B => A): UnknownWindow[B] = { b =>
+      fa.contains(f(b))
+    }
+  }
+
+  implicit final object KnownInvariant extends Invariant[BoundedWindow] {
+    override def imap[A, B](fa: BoundedWindow[A])(f: A => B)(g: B => A): BoundedWindow[B] = {
+      KnownWindow(fa.bounds.bimap(a => a.map(f), b => b.map(f)))(Ordering.by(g.andThen(fa.contains)))
+    }
+  }
+
+  def showWindowWithTerm[A : Show](term: String): Show[BoundedWindow[A]] = Show.show { window =>
+    import cats.instances.tuple._
+    val (op1, op2) = window.bounds
+      .bimap(
+        b => (if (b.inclusiveLowerBound) ">=" else ">", ""),
+        b => ("", if (b.inclusiveUpperBound) "<=" else "<"),
+      )
+      .merge
+    window.bounds match {
+      case Ior.Left(lb) => s"$term $op1 ${lb.lowerBound.show}"
+      case Ior.Right(ub) => s"$term $op2 ${ub.upperBound.show}"
+      case Ior.Both(lb, ub) =>
+        s"$term $op1 ${lb.lowerBound.show} and $term $op2 ${ub.upperBound.show}"
+    }
+  }
+
+  implicit def showWindow[A : Show]: Show[BoundedWindow[A]] = showWindowWithTerm("x")
 
   def fromRange(range: Range): Window[Int] = {
-    Window.between(range.start, includeStart = true, range.end, includeEnd = range.isInclusive)
+    Window.between(range.start, includeMin = true, range.end, includeMax = range.isInclusive)
   }
 
   def fromRange[A : Ordering](range: NumericRange[A]): Window[A] = {
-    Window.between(range.start, includeStart = true, range.end, includeEnd = range.isInclusive)
+    Window.between(range.start, includeMin = true, range.end, includeMax = range.isInclusive)
   }
 
-  def lowerThan[A : Ordering](
-    end: A,
-    inclusive: Boolean
-  ): Window[A] = Before(end, inclusive)
+  def lessThan[A : Ordering](
+    max: A,
+    inclusive: Boolean,
+  ): Window[A] = KnownWindow(Ior.Right(Below(max, inclusive)))
 
-  def lowerThan[A : Ordering](end: A): Window[A] = Before(end, inclusive = false)
+  def lessThan[A : Ordering](max: A): Window[A] = KnownWindow(Ior.Right(Below(max, inclusiveUpperBound = false)))
 
-  def equalOrLowerThan[A : Ordering](end: A): Window[A] = Before(end, inclusive = true)
+  def lessThanOrEqual[A : Ordering](max: A): Window[A] = KnownWindow(Ior.Right(Below(max, inclusiveUpperBound = true)))
 
-  def after[A : Ordering](
-    start: A,
-    inclusive: Boolean
-  ): Window[A] = After(start, inclusive)
+  def greaterThan[A : Ordering](
+    min: A,
+    inclusive: Boolean,
+  ): Window[A] = KnownWindow(Ior.Left(Above(min, inclusiveLowerBound = inclusive)))
 
-  def after[A : Ordering](start: A): Window[A] = After(start, inclusive = false)
+  def greaterThan[A : Ordering](min: A): Window[A] = KnownWindow(Ior.Left(Above(min, inclusiveLowerBound = false)))
 
-  def onOrAfter[A : Ordering](start: A): Window[A] = After(start, inclusive = true)
-
-  def between[A : Ordering](
-    start: A,
-    includeStart: Boolean,
-    end: A,
-    includeEnd: Boolean
-  ): Window[A] =
-    Between(start, includeStart, end, includeEnd)
+  def greaterThanOrEqual[A : Ordering](min: A): Window[A] =
+    KnownWindow(Ior.Left(Above(min, inclusiveLowerBound = true)))
 
   def between[A : Ordering](
-    start: A,
-    end: A
+    min: A,
+    includeMin: Boolean,
+    max: A,
+    includeMax: Boolean,
   ): Window[A] =
-    Between(start, includeStart = true, end, includeEnd = false)
+    KnownWindow(Ior.Both(Above(min, includeMin), Below(max, includeMax)))
 
-  def betweenExclusive[A : Ordering](
-    start: A,
-    end: A
+  def between[A : Ordering](
+    min: A,
+    max: A,
   ): Window[A] =
-    Between(start, includeStart = false, end, includeEnd = false)
+    KnownWindow(Ior.Both(Above(min, inclusiveLowerBound = true), Below(max, inclusiveUpperBound = false)))
 
   def betweenInclusive[A : Ordering](
-    start: A,
-    end: A
+    min: A,
+    max: A,
   ): Window[A] =
-    Between(start, includeStart = true, end, includeEnd = true)
+    KnownWindow(Ior.Both(Above(min, inclusiveLowerBound = true), Below(max, inclusiveUpperBound = true)))
 
-  def afterUntil[A : Ordering](
-    start: A,
-    end: A
-  ): Window[A] =
-    Between(start, includeStart = false, end, includeEnd = true)
+  protected[Window] final case class KnownWindow[A : Ordering](bounds: Ior[Above[A], Below[A]])
+    extends BoundedWindow[A] {
 
-  private final case class Before[A : Ordering](
-    upperBound: A,
-    inclusive: Boolean
-  ) extends UpperBoundedWindow[A] {
+    private val checkBetween: A => Boolean = bounds match {
+      case Ior.Left(lb) if lb.inclusiveLowerBound => _ >= lb.lowerBound
+      case Ior.Left(lb) => _ > lb.lowerBound
 
-    override def lowerBoundOpt: Option[A] = None
+      case Ior.Right(ub) if ub.inclusiveUpperBound => _ >= ub.upperBound
+      case Ior.Right(ub) => _ > ub.upperBound
 
-    private val checkBeforeEnd: A => Boolean = {
-      if (inclusive) _ <= upperBound
-      else _ < upperBound
-    }
-
-    override def contains(value: A): Boolean = checkBeforeEnd(value)
-  }
-
-  private final case class After[A : Ordering](
-    lowerBound: A,
-    inclusive: Boolean
-  ) extends LowerBoundedWindow[A] {
-
-    override def upperBoundOpt: Option[A] = None
-
-    private val checkAfterStart: A => Boolean = {
-      if (inclusive) _ >= lowerBound
-      else _ > lowerBound
-    }
-
-    override def contains(value: A): Boolean = checkAfterStart(value)
-  }
-
-  protected[Window] final case class Between[A : Ordering](
-    lowerBound: A,
-    includeStart: Boolean,
-    upperBound: A,
-    includeEnd: Boolean
-  ) extends BoundedWindow[A] {
-
-    private val checkBetween: A => Boolean = (includeStart, includeEnd) match {
-      case (true, true) => a => a >= lowerBound && a <= upperBound
-      case (true, false) => a => a >= lowerBound && a < upperBound
-      case (false, true) => a => a > lowerBound && a <= upperBound
-      case (false, false) => a => a > lowerBound && a < upperBound
+      case Ior.Both(lb, ub) if lb.inclusiveLowerBound && ub.inclusiveUpperBound =>
+        a => a >= lb.lowerBound && a <= ub.upperBound
+      case Ior.Both(lb, ub) if ub.inclusiveUpperBound =>
+        a => a > lb.lowerBound && a <= ub.upperBound
+      case Ior.Both(lb, ub) if lb.inclusiveLowerBound =>
+        a => a >= lb.lowerBound && a < ub.upperBound
+      case Ior.Both(lb, ub) =>
+        a => a > lb.lowerBound && a < ub.upperBound
     }
 
     override def contains(value: A): Boolean = checkBetween(value)
   }
 
-  // TODO: Remove this and implement a simpler interface
-  private final case class FromSelectField[A, B](
-    fieldName: String,
-    getter: A => B,
-    window: Window[B],
-  ) extends Window[A] {
-
-    override def contains(value: A): Boolean = window.contains(getter(value))
-  }
 }
