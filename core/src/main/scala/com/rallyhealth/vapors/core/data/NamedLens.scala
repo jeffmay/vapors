@@ -7,9 +7,16 @@ case class NamedLens[A, B](
   get: A => B,
 ) {
 
-  def compose[C](lens: NamedLens[B, C]): NamedLens[A, C] = {
+  def compose[C](lens: NamedLens[C, A]): NamedLens[C, B] = {
     copy(
-      path = this.path ::: lens.path,
+      path = lens.path ::: this.path,
+      get = get.compose(lens.get),
+    )
+  }
+
+  def andThen[C](lens: NamedLens[B, C]): NamedLens[A, C] = {
+    copy(
+      path = lens.path ::: this.path, // TODO: Why is this broken?
       get = get.andThen(lens.get),
     )
   }
@@ -31,19 +38,21 @@ case class NamedLens[A, B](
   ): NamedLens[A, Option[V]] = {
     copy(
       path = path.atKey(key),
-      get = get.andThen(ev).andThen(_.get(key)),
+      get = get.andThen(b => ev(b).get(key)),
     )
   }
 
   def head[C[x] <: Iterable[x], V](implicit ev: B <:< C[V]): NamedLens[A, Option[V]] = {
     copy(
       path = path.atHead,
-      get = get.andThen(ev).andThen(_.headOption),
+      get = get.andThen(b => ev(b).headOption),
     )
   }
 }
 
 object NamedLens {
+
+  type Id[A] = NamedLens[A, A]
 
   def id[A]: NamedLens[A, A] = NamedLens(DataPath(Nil), identity[A])
 

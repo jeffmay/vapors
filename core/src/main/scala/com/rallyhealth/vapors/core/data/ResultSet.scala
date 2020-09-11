@@ -1,5 +1,6 @@
 package com.rallyhealth.vapors.core.data
 
+import cats.SemigroupK
 import cats.data.NonEmptyList
 
 sealed trait ResultSet[+A] {
@@ -21,6 +22,14 @@ object ResultSet {
   def fromList[I](facts: List[Fact[I]]): ResultSet[I] = NonEmptyList.fromList(facts) match {
     case Some(nonEmptyList) => FactsMatch(nonEmptyList)
     case None => NoFactsMatch()
+  }
+
+  // TODO: Should this be a MonoidK? It's feasible now, but maybe it isn't what we want
+  implicit object Instances extends SemigroupK[ResultSet] {
+    override def combineK[A](
+      x: ResultSet[A],
+      y: ResultSet[A],
+    ): ResultSet[A] = x ++ y
   }
 }
 
