@@ -1,9 +1,10 @@
 package com.rallyhealth.vapors.core.data
 
 import cats.Show
+import cats.data.NonEmptySet
 
 import scala.annotation.tailrec
-import scala.collection.BitSet
+import scala.collection.{immutable, BitSet}
 
 // TODO: Better data structure for appending?
 final case class DataPath(nodes: List[DataPath.Node]) extends AnyVal {
@@ -16,7 +17,7 @@ final case class DataPath(nodes: List[DataPath.Node]) extends AnyVal {
     endIdx: Int,
   ): DataPath = slice(startIdx, endIdx)
 
-  def indexes(at: BitSet): DataPath = DataPath(nodes ::: IdxSet(at) :: Nil)
+  def indexes(at: NonEmptySet[Int]): DataPath = DataPath(nodes ::: IdxSet(BitSet.fromSpecific(at.toSortedSet)) :: Nil)
 
   def slice(
     startIdx: Int,
@@ -63,7 +64,23 @@ object DataPath {
 
   final case class IdxRange(range: Range) extends Node
 
-  final case class IdxSet(indexSet: BitSet) extends Node
+  final case class IdxSet private (bitSet: BitSet) extends Node {
+
+    /**
+      * The [[IdxSet]] is designed to never be empty, so this is safe,
+      * however, using [[BitSet]] is more performant.
+      */
+    def nonEmptySet: NonEmptySet[Int] = NonEmptySet.fromSetUnsafe(immutable.SortedSet.from(bitSet))
+  }
+
+  final object IdxSet {
+    def apply(set: NonEmptySet[Int]): IdxSet = IdxSet(BitSet.fromSpecific(set.toSortedSet))
+
+    def of(
+      one: Int,
+      others: Int*,
+    ): IdxSet = IdxSet(BitSet(one) ++ others)
+  }
 
   @tailrec private def writeToBuilder(
     buffer: StringBuilder,
@@ -95,9 +112,8 @@ object DataPath {
             buffer.append(idx)
             buffer.append(',')
           }
-          if (idxSet.nonEmpty) {
-            buffer.setLength(buffer.length() - 1)
-          }
+          buffer.setLength(buffer.length() - 1)
+          buffer.append(']')
       }
       writeToBuilder(buffer, remaining)
   }
