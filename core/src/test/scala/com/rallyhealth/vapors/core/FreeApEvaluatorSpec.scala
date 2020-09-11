@@ -41,14 +41,20 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
       val exp = query {
         or(
           v(
-            withFactType(FactTypes.age) {
-              filter(_.value > 70)
+            // TODO: Clean up the redundancy of specifying age twice by using a more powerful CondExpBuilder
+            __.withFactsOfType(FactTypes.age) {
+              __.whereAnyFactHas(__.factTypeOf(FactTypes.age).whereValue(__ > 300))
             },
-            withFactType(FactTypes.weight) {
-              filter(_.value > 200)
+            __.withFactsOfType(FactTypes.weight) {
+              __.whereAnyFactHas(__.factTypeOf(FactTypes.weight).whereValue(__ > 300))
             },
-            withFactType(FactTypes.probs) {
-              filter(_.value.scores.getOrElse("weightloss", 0.0) > .5)
+            __.withFactsOfType(FactTypes.probs) {
+              __.whereAnyFactHas {
+                __.factTypeOf(FactTypes.probs)
+                  .whereValueAt(_.select(_.scores).atKey("weightloss")) {
+                    __.exists(__ > 0.5)
+                  }
+              }
             },
           ),
         )
@@ -59,12 +65,11 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
 
     "return matching facts if any fact has prob for weightloss > existing amount" in {
       val exp = query {
-        whereAnyFactHas {
-          fieldValueAt(
-            Fact.value[Probs].select(_.scores).atKey("weightloss"),
-          ) {
-            exists(greaterThan(0.4))
-          }
+        __.whereAnyFactHas {
+          __.factTypeOf(FactTypes.probs)
+            .whereValueAt(_.select(_.scores).atKey("weightloss")) {
+              exists(__ > 0.4)
+            }
         }
       }
       val result = evalQuery(JoeSchmoe.facts.toList)(exp)

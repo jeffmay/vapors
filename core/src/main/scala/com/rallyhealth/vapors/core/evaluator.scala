@@ -4,7 +4,7 @@ import cats.data.NonEmptyList
 import cats.free.FreeApplicative
 import cats.instances.function._
 import cats.~>
-import com.rallyhealth.vapors.core.data.Fact
+import com.rallyhealth.vapors.core.data.{Fact, ResultSet}
 
 object evaluator {
   import algebra._
@@ -58,13 +58,13 @@ object evaluator {
     exp.foldMap(new EvalLoop[T])
   }
 
-  def eval[T, A](facts: Seq[Fact[T]])(exp: FactExp[T, A]): Option[A] = {
+  def eval[T, A](facts: Seq[Fact[T]])(exp: FactsExp[T, A]): Option[A] = {
     NonEmptyList.fromList(facts.toList).map { matchingFacts =>
       evalLoop(exp)(matchingFacts)
     }
   }
 
-  def evalQuery[R](facts: Seq[Fact[R]])(query: Query[R]): Option[ExpRes[R]] = {
+  def evalQuery[R](facts: Seq[Fact[R]])(query: Query[R]): Option[ResultSet[R]] = {
     eval(facts)(query.expression)
   }
 }

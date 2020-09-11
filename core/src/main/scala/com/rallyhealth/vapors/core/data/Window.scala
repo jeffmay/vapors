@@ -1,10 +1,10 @@
 package com.rallyhealth.vapors.core.data
 
 import cats.data.Ior
-import cats.implicits.catsKernelStdMonoidForString
 import cats.{Contravariant, Invariant, Show}
 
 import scala.collection.immutable.NumericRange
+import scala.reflect.{classTag, ClassTag}
 
 sealed trait Window[A] {
   def contains(value: A): Boolean
@@ -18,25 +18,13 @@ trait BoundedWindow[A] extends Window[A] {
 
 object Window {
   import Bounded._
-  import cats.syntax.show._
   import cats.syntax.functor._
-
+  import cats.syntax.show._
   import Ordering.Implicits._
 
-  implicit final object UnknownContravariant extends Contravariant[UnknownWindow] {
-    override def contramap[A, B](fa: UnknownWindow[A])(f: B => A): UnknownWindow[B] = { b =>
-      fa.contains(f(b))
-    }
-  }
-
-  implicit final object KnownInvariant extends Invariant[BoundedWindow] {
-    override def imap[A, B](fa: BoundedWindow[A])(f: A => B)(g: B => A): BoundedWindow[B] = {
-      KnownWindow(fa.bounds.bimap(a => a.map(f), b => b.map(f)))(Ordering.by(g.andThen(fa.contains)))
-    }
-  }
-
-  def showWindowWithTerm[A : Show](term: String): Show[BoundedWindow[A]] = Show.show { window =>
+  def showBoundedWithTerm[A : Show](term: String): Show[BoundedWindow[A]] = Show.show { window =>
     import cats.instances.tuple._
+    import cats.instances.string._
     val (op1, op2) = window.bounds
       .bimap(
         b => (if (b.inclusiveLowerBound) ">=" else ">", ""),
@@ -51,7 +39,28 @@ object Window {
     }
   }
 
-  implicit def showWindow[A : Show]: Show[BoundedWindow[A]] = showWindowWithTerm("x")
+  implicit def showBounded[A : Show]: Show[BoundedWindow[A]] = showBoundedWithTerm("x")
+
+  implicit final object BoundedInstances extends Invariant[BoundedWindow] {
+    override def imap[A, B](fa: BoundedWindow[A])(f: A => B)(g: B => A): BoundedWindow[B] = {
+      KnownWindow(fa.bounds.bimap(a => a.map(f), b => b.map(f)))(Ordering.by(g.andThen(fa.contains)))
+    }
+  }
+
+  implicit def showWindow[A : ClassTag : Show]: Show[Window[A]] = Show.show {
+    case window: BoundedWindow[A] => window.show
+    case window: UnknownWindow[A] => window.show
+  }
+
+  implicit final object UnknownInstances extends Contravariant[UnknownWindow] {
+    override def contramap[A, B](fa: UnknownWindow[A])(f: B => A): UnknownWindow[B] = { b =>
+      fa.contains(f(b))
+    }
+  }
+
+  implicit def showUnknown[A : ClassTag]: Show[UnknownWindow[A]] = Show.show { window =>
+    s"($window : UnknownWindow[${classTag[A].runtimeClass.getSimpleName}])"
+  }
 
   def fromRange(range: Range): Window[Int] = {
     Window.between(range.start, includeMin = true, range.end, includeMax = range.isInclusive)
@@ -100,8 +109,7 @@ object Window {
   ): Window[A] =
     KnownWindow(Ior.Both(Above(min, inclusiveLowerBound = true), Below(max, inclusiveUpperBound = true)))
 
-  protected[Window] final case class KnownWindow[A : Ordering](bounds: Ior[Above[A], Below[A]])
-    extends BoundedWindow[A] {
+  private[Window] final case class KnownWindow[A : Ordering](bounds: Ior[Above[A], Below[A]]) extends BoundedWindow[A] {
 
     private val checkBetween: A => Boolean = bounds match {
       case Ior.Left(lb) if lb.inclusiveLowerBound => _ >= lb.lowerBound

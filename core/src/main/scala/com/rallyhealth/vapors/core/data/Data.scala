@@ -11,7 +11,7 @@ sealed trait Data[+A] {
   def isValueOnly: Boolean
 }
 
-final case class Value[A](value: A) extends Data[A] {
+final case class Value[+A](value: A) extends Data[A] {
   override def isValueOnly: Boolean = true
 }
 
@@ -29,6 +29,9 @@ final case class Fact[+A](
 }
 
 object Fact {
+
+  final def lens[A]: NamedLens.Id[Fact[A]] = NamedLens.id[Fact[A]]
+
   final def value[A]: NamedLens[Fact[A], A] = {
     NamedLens[Fact[A], A](DataPath.empty.atField("value"), _.value)
   }

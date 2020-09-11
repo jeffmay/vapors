@@ -22,8 +22,10 @@ final case class FactTypeSet[A] private (types: Map[String, FactType[A]]) {
       fact.asInstanceOf[Fact[B]]
   }
 
+  // TODO: Write unit tests for this to determine the expected utility of this method
   def subset[B](implicit tb: TypeTag[B]): Option[FactTypeSet[B]] = {
     val matchingFactTypes = types.toList.collect {
+      // TODO: Should this use <:< instead of =:= ?
       case (_, factType) if factType.tt.tpe =:= tb.tpe =>
         // Justification: This checks equality of the FactType at runtime after safely casting the value
         factType.asInstanceOf[FactType[B]]
@@ -31,6 +33,8 @@ final case class FactTypeSet[A] private (types: Map[String, FactType[A]]) {
     FactTypeSet.fromList(matchingFactTypes)
   }
 
+  // TODO: Why is this Match implemented differently than matchAs?
+  //       Either we should remove it or rewrite the above code to use it.
   final object Match {
 
     def apply(fact: Fact[_]): Option[Fact[A]] = {
@@ -43,6 +47,7 @@ final case class FactTypeSet[A] private (types: Map[String, FactType[A]]) {
 
 object FactTypeSet {
 
+  // TODO: Why have both empty and of methods? Shouldn't this be a NonEmptyMap?
   def empty[A]: FactTypeSet[A] = new FactTypeSet(Map())
 
   def of[A](
