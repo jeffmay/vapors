@@ -1,5 +1,8 @@
 name := "vapors-root"
 ThisBuild / organization := "com.rallyhealth"
+ThisBuild / organizationName := "Rally Health"
+
+ThisBuild / licenses := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
 
 ThisBuild / scalaVersion := Dependencies.Scala_2_13
 
@@ -12,6 +15,9 @@ ThisBuild / scalacOptions ++= Seq(
   "-Xfatal-warnings",
   "-Ymacro-annotations",
 )
+
+ThisBuild / bintrayOrganization := Some("rallyhealth")
+ThisBuild / bintrayRepository := "maven"
 
 def commonProject(dir: String): Project = {
   Project(dir, file(dir)).settings(
