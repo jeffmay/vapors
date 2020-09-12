@@ -244,24 +244,24 @@ object dsl {
   }
 
   // TODO: Figure out how to expand this to non-terminal expressions
-  def and[T](expressions: NonEmptyList[FactsExp[T, ResultSet[T]]]): TerminalFactExp[T] = liftFactsExp {
+  def and[T](expressions: FactsExp[T, ResultSet[T]]*): TerminalFactExp[T] = liftFactsExp {
     ExpAnd[Facts[T], ResultSet[T]](
       _.reduceLeft[ResultSet[T]]({
         case (NoFactsMatch(), _) | (_, NoFactsMatch()) => NoFactsMatch() // skip the all expressions if the first failed
         case (acc: FactsMatch[T], nextResult: FactsMatch[T]) => acc ++ nextResult // combine all the required facts
       }),
-      expressions,
+      expressions.toList,
     )
   }
 
   // TODO: Figure out how to expand this to non-terminal expressions
-  def or[T](expressions: NonEmptyList[FactsExp[T, ResultSet[T]]]): TerminalFactExp[T] = liftFactsExp {
+  def or[T](expressions: FactsExp[T, ResultSet[T]]*): TerminalFactExp[T] = liftFactsExp {
     ExpOr[Facts[T], ResultSet[T]](
       _.reduceLeft[ResultSet[T]]({
         case (NoFactsMatch(), b) => b // try the next expression if the first failed
         case (a @ FactsMatch(_), _) => a // take the first required set of facts
       }),
-      expressions,
+      expressions.toList,
     )
   }
 

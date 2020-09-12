@@ -1,6 +1,5 @@
 package com.rallyhealth.vapors.core.algebra
 
-import cats.data.NonEmptyList
 import cats.free.FreeApplicative
 import com.rallyhealth.vapors.core.data.{NamedLens, Window}
 
@@ -51,11 +50,11 @@ final case class ExpCond[T, A](
 ) extends ExpAlg[T, A]
 
 final case class ExpAnd[T, A](
-  combine: NonEmptyList[A] => A,
-  expressions: NonEmptyList[FreeApplicative[ExpAlg[T, *], A]],
+  combine: List[A] => A,
+  expressions: List[FreeApplicative[ExpAlg[T, *], A]],
 ) extends ExpAlg[T, A]
 
 final case class ExpOr[T, A](
-  combine: NonEmptyList[A] => A,
-  expressions: NonEmptyList[FreeApplicative[ExpAlg[T, *], A]],
+  combine: List[A] => A,
+  expressions: List[FreeApplicative[ExpAlg[T, *], A]],
 ) extends ExpAlg[T, A]
