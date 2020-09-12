@@ -14,4 +14,5 @@ addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.6")
 // Not needed for Scala 2.13, but leaving this here for if we want to cross-compile to Scala 2.11
 // addSbtPlugin("org.lyranthe.sbt" % "partial-unification" % "1.1.2")
 addSbtPlugin("com.rallyhealth.sbt" %% "sbt-git-versioning" % "1.4.0")
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2")
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0")

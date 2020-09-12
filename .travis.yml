@@ -6,6 +6,8 @@ jdk:
   - openjdk11
 
 script:
+  # Validate formatting
+  - pre-commit run -a
   - sbt clean coverage test coverageAggregate coverageOff
 after_success:
   # Upload coverage reports to codecov.io
