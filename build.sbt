@@ -29,9 +29,3 @@ lazy val core = commonProject("core")
   .settings(
     libraryDependencies ++= Dependencies.CoreProject.all(scalaVersion.value),
   )
-
-lazy val circe = commonProject("circe")
-  .dependsOn(core)
-  .settings(
-    libraryDependencies ++= Dependencies.CirceProject.all,
-  )
