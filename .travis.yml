@@ -6,9 +6,7 @@ jdk:
   - openjdk11
 
 script:
-  # Validate formatting
-  - pre-commit run -a
-  - sbt clean coverage test coverageAggregate coverageOff
+  - sbt scalafmtCheckAll clean coverage test coverageAggregate coverageOff
 after_success:
   # Upload coverage reports to codecov.io
   - bash <(curl -s https://codecov.io/bash) -t 5e8553fe-5357-46a0-ae90-0b373de9e7ac
