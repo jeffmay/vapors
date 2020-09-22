@@ -12,6 +12,7 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
 
   "dsl.query" should {
 
+    // TODO: Remove this once deprecated method is removed
     "improve type inference by filtering to the required fact type" in {
       val program = query {
         filter[Int](_ => true)
@@ -26,23 +27,17 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
   "evaluator" should {
 
     "filter to the expected fact types in nested logical steps" in {
-      val exp = query {
+      val exp = queryAny {
         or(
-          // TODO: Clean up the redundancy of specifying age twice by using a more powerful CondExpBuilder
-          __.withFactsOfType(FactTypes.age) {
-            __.whereAnyFactHas(__.factTypeOf(FactTypes.age).whereValue(__ > 300))
-          },
-          __.withFactsOfType(FactTypes.weight) {
-            __.whereAnyFactHas(__.factTypeOf(FactTypes.weight).whereValue(__ > 300))
-          },
-          __.withFactsOfType(FactTypes.probs) {
-            __.whereAnyFactHas {
-              __.factTypeOf(FactTypes.probs)
-                .whereValueAt(_.select(_.scores).atKey("weightloss")) {
-                  __.exists(__ > 0.5)
-                }
-            }
-          },
+          __.withFactsOfType(FactTypes.age)
+            .whereAnyValue(__ > 300),
+          __.withFactsOfType(FactTypes.weight)
+            .whereAnyValue(__ > 300),
+          __.withFactsOfType(FactTypes.probs)
+            .withValuesAt(_.select(_.scores).atKey("weightloss"))
+            .whereAnyValue {
+              __.exists(__ > 0.5)
+            },
         )
       }
       val result = evalQuery(JoeSchmoe.facts.toList)(exp)
@@ -50,13 +45,12 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
     }
 
     "return matching facts if any fact has prob for weightloss > existing amount" in {
-      val exp = query {
-        __.whereAnyFactHas {
-          __.factTypeOf(FactTypes.probs)
-            .whereValueAt(_.select(_.scores).atKey("weightloss")) {
-              exists(__ > 0.4)
-            }
-        }
+      val exp = queryAny {
+        __.withFactsOfType(FactTypes.probs)
+          .withValuesAt(_.select(_.scores).atKey("weightloss"))
+          .whereAnyValue {
+            exists(__ > 0.4)
+          }
       }
       val result = evalQuery(JoeSchmoe.facts.toList)(exp)
       assert(result.contains(FactsMatch(NonEmptyList.of(JoeSchmoe.probs))))

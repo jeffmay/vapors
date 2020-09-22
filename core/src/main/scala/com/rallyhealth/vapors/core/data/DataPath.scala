@@ -17,6 +17,8 @@ final case class DataPath(nodes: List[DataPath.Node]) extends AnyVal {
     endIdx: Int,
   ): DataPath = slice(startIdx, endIdx)
 
+  def isEmpty: Boolean = nodes.isEmpty
+
   def indexes(at: NonEmptySet[Int]): DataPath = DataPath(nodes ::: IdxSet(BitSet.fromSpecific(at.toSortedSet)) :: Nil)
 
   def slice(
@@ -91,7 +93,7 @@ object DataPath {
       var remaining: List[DataPath.Node] = tail
       head match {
         case MapKey(key) =>
-          buffer.append('[').append(key).append(']')
+          buffer.append("['").append(key).append("']")
         case Field(name) =>
           buffer.append('.').append(name)
         case Head =>

@@ -53,7 +53,8 @@ case class NamedLens[A, B](
 object NamedLens {
 
   type Id[A] = NamedLens[A, A]
-  def id[A]: NamedLens[A, A] = NamedLens(DataPath(Nil), identity[A])
+  val Id: NamedLens[Any, Any] = NamedLens(DataPath(Nil), identity[Any])
+  def id[A]: NamedLens[A, A] = Id.asInstanceOf[Id[A]]
 
   implicit class Selector[A, B](val lens: NamedLens[A, B]) extends AnyVal {
     def select[C](getter: B => C): NamedLens[A, C] = macro NamedLensMacros.selectImpl[A, B, C]

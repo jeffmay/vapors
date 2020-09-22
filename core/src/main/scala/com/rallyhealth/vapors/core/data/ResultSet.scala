@@ -12,6 +12,9 @@ sealed trait ResultSet[+A] {
     */
   def union[B >: A](o: ResultSet[B]): ResultSet[B]
 
+  /**
+    * Alias for [[union]].
+    */
   def ++[B >: A](o: ResultSet[B]): ResultSet[B]
 }
 
@@ -30,6 +33,25 @@ object ResultSet {
       x: ResultSet[A],
       y: ResultSet[A],
     ): ResultSet[A] = x ++ y
+  }
+
+  implicit object UnionResults extends Union[ResultSet[Any]] {
+    override def union(results: Seq[ResultSet[Any]]): ResultSet[Any] = {
+      results.reduceLeft[ResultSet[Any]] {
+        case (NoFactsMatch(), b) => b // try the next expression if the first failed
+        case (a, NoFactsMatch()) => a // use the previous expression if the next fails
+        case (a, b) => a ++ b // union all the possible facts (for better quality calculations)
+      }
+    }
+  }
+
+  implicit object IntersectResults extends Intersect[ResultSet[Any]] {
+    override def intersect(results: Seq[ResultSet[Any]]): ResultSet[Any] = {
+      results.reduceLeft[ResultSet[Any]] {
+        case (NoFactsMatch(), _) | (_, NoFactsMatch()) => NoFactsMatch() // skip the all expressions if the first failed
+        case (acc, nextResult) => acc ++ nextResult // union all the required facts
+      }
+    }
   }
 }
 
