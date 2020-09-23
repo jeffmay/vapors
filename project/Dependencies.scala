@@ -22,11 +22,6 @@ object Dependencies {
     }
   }
 
-  final object Resolvers {
-
-    val danslapman: Resolver = Resolver.bintrayRepo("danslapman", "maven")
-  }
-
   final object CoreProject {
 
     def all(scalaVersion: String): Seq[ModuleID] =
