@@ -1,38 +1,24 @@
 package com.rallyhealth.vapors.core.data
 
-import cats.Functor
+sealed abstract class Fact {
+  type Value
 
-import scala.language.implicitConversions
-
-/**
-  * Magnet type for [[Fact]]s and lifted values.
-  */
-sealed trait Data[+A] {
-  def isValueOnly: Boolean
+  val typeInfo: FactType[Value]
+  val value: Value
 }
 
-final case class Value[+A](value: A) extends Data[A] {
-  override def isValueOnly: Boolean = true
-}
-
-object Value {
-  implicit object FunctorImpl extends Functor[Value] {
-    override def map[A, B](fa: Value[A])(f: A => B): Value[B] = Value(f(fa.value))
-  }
-}
-
-final case class Fact[+A](
+final case class TypedFact[A](
   typeInfo: FactType[A],
   value: A,
-) extends Data[A] {
-  override def isValueOnly: Boolean = false
+) extends Fact {
+  type Value = A
 }
 
-object Fact {
+object TypedFact {
 
-  final def lens[A]: NamedLens.Id[Fact[A]] = NamedLens.id[Fact[A]]
+  final def lens[A]: NamedLens.Id[TypedFact[A]] = NamedLens.id[TypedFact[A]]
 
-  final def value[A]: NamedLens[Fact[A], A] = {
-    NamedLens[Fact[A], A](DataPath.empty.atField("value"), _.value)
+  final def value[A]: NamedLens[TypedFact[A], A] = {
+    NamedLens[TypedFact[A], A](DataPath.empty.atField("value"), _.value)
   }
 }

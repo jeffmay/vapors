@@ -1,7 +1,9 @@
 package com.rallyhealth.vapors.core
 
+import java.time.LocalDate
+
 import cats.data.NonEmptyList
-import com.rallyhealth.vapors.core.data.{Fact, FactType}
+import com.rallyhealth.vapors.core.data.{FactType, FactTypeSet, TypedFact}
 
 private[core] object Example {
 
@@ -13,24 +15,34 @@ private[core] object Example {
   final case class Probs(scores: Map[String, Double])
 
   final object FactTypes {
-    val name = FactType[String]("name")
-    val age = FactType[Int]("age")
-    val weight = FactType[Int]("weight")
-    val bloodPressure = FactType[BloodPressure]("blood_pressure")
-    val probs = FactType[Probs]("probability_to_use")
+    val Name = FactType[String]("name")
+    val Age = FactType[Int]("age")
+    val DateOfBirth = FactType[LocalDate]("date_of_birth")
+    val WeightMeasurement = FactType[Int]("weight_measurement")
+    val WeightSelfReported = FactType[Int]("weight_self_reported")
+    val BloodPressureMeasurement = FactType[BloodPressure]("blood_pressure")
+    val ProbabilityToUse = FactType[Probs]("probability_to_use")
+  }
+
+  final object FactTypeSets {
+    import FactTypes._
+    val Weight = FactTypeSet.of(WeightMeasurement, WeightSelfReported)
   }
 
   final object JoeSchmoe {
-    val name = Fact(FactTypes.name, "Joe Schmoe")
-    val age = Fact(FactTypes.age, 32)
-    val weight = Fact(FactTypes.weight, 250)
-    val bloodPressure = Fact(FactTypes.bloodPressure, 2)
-    val probs = Fact(FactTypes.probs, Probs(Map("weightloss" -> .8)))
+    val name = FactTypes.Name("Joe Schmoe")
+    val age = FactTypes.Age(32)
+    val dateOfBirth = FactTypes.DateOfBirth(LocalDate.of(1987, 1, 1))
+    val weight = FactTypes.WeightMeasurement(250)
+    val weightSelfReported = FactTypes.WeightSelfReported(200)
+    val bloodPressure = FactTypes.BloodPressureMeasurement(BloodPressure(120, 80))
+    val probs = FactTypes.ProbabilityToUse(Probs(Map("weightloss" -> .8)))
 
     val facts = NonEmptyList.of(
       name,
       age,
       weight,
+      weightSelfReported,
       bloodPressure,
       probs,
     )

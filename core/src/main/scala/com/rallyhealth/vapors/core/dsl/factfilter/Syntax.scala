@@ -23,5 +23,5 @@ private[dsl] trait Syntax {
   def <=[T : Ordering](upperBound: T): CondExp[T] = lessThanOrEqual(upperBound)
 
   import scala.language.implicitConversions
-  implicit def logicalOps[T, A](exp: AnyExp[T, A]): LogicalOps[T, A] = new LogicalOps(exp)
+  implicit def logicalOps[T, A](exp: Exp[T, A]): LogicalOps[T, A] = new LogicalOps(exp)
 }
