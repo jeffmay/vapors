@@ -3,12 +3,12 @@ package com.rallyhealth.vapors.core.fql
 import cats.{~>, Applicative, Show}
 import com.rallyhealth.vapors.core.algebra._
 import com.rallyhealth.vapors.core.data.BoundedWindow
-import com.rallyhealth.vapors.core.dsl.AnyExp
+import com.rallyhealth.vapors.core.dsl.Exp
 
 class Printer {
   import Printer._
 
-  def serialize[T, A](exp: AnyExp[T, A]): String = {
+  def serialize[T, A](exp: Exp[T, A]): String = {
     val parts = exp.foldMap(ImmutablePrinter())(ApplicablePrinterF)
     ("_" :: parts).mkString
   }

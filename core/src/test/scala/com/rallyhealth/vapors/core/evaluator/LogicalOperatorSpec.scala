@@ -1,7 +1,7 @@
 package com.rallyhealth.vapors.core.evaluator
 
 import com.rallyhealth.vapors.core.data._
-import com.rallyhealth.vapors.core.dsl.AnyExp
+import com.rallyhealth.vapors.core.dsl.Exp
 import com.rallyhealth.vapors.core.logic.{Intersect, Union}
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -9,13 +9,13 @@ import scala.language.existentials
 
 final class LogicalOperatorSpec extends AnyWordSpec {
 
-  type LogicOpBuilder[T, A] = (AnyExp[T, A], AnyExp[T, A], Seq[AnyExp[T, A]]) => AnyExp[T, A]
+  type LogicOpBuilder[T, A] = (Exp[T, A], Exp[T, A], Seq[Exp[T, A]]) => Exp[T, A]
 
   private def validLogicalOperators[T, A : Intersect : Union](
     andBuilder: LogicOpBuilder[T, A],
     orBuilder: LogicOpBuilder[T, A],
-    trueBuilder: AnyExp[T, A],
-    falseBuilder: AnyExp[T, A],
+    trueBuilder: Exp[T, A],
+    falseBuilder: Exp[T, A],
     input: T,
     trueOutput: A,
     falseOutput: A,
@@ -25,16 +25,16 @@ final class LogicalOperatorSpec extends AnyWordSpec {
     val F = falseBuilder
 
     def and(
-      one: AnyExp[T, A],
-      two: AnyExp[T, A],
-      tail: AnyExp[T, A]*,
-    ): AnyExp[T, A] = andBuilder(one, two, tail)
+      one: Exp[T, A],
+      two: Exp[T, A],
+      tail: Exp[T, A]*,
+    ): Exp[T, A] = andBuilder(one, two, tail)
 
     def or(
-      one: AnyExp[T, A],
-      two: AnyExp[T, A],
-      tail: AnyExp[T, A]*,
-    ): AnyExp[T, A] = orBuilder(one, two, tail)
+      one: Exp[T, A],
+      two: Exp[T, A],
+      tail: Exp[T, A]*,
+    ): Exp[T, A] = orBuilder(one, two, tail)
 
     "return true for one true and one false in an or" in {
       val q = {
@@ -171,7 +171,7 @@ final class LogicalOperatorSpec extends AnyWordSpec {
 
     "operating on ResultSets" should {
 
-      behave like validLogicalOperators[Facts[Any], ResultSet[Any]](
+      behave like validLogicalOperators[Facts, ResultSet](
         builder.andBuilder,
         builder.orBuilder,
         trueBuilder = alwaysMatch,

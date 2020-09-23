@@ -3,13 +3,13 @@ package com.rallyhealth.vapors.core.evaluator
 import cats.instances.function._
 import cats.~>
 import com.rallyhealth.vapors.core.algebra._
-import com.rallyhealth.vapors.core.dsl.AnyExp
+import com.rallyhealth.vapors.core.dsl.Exp
 
 private[evaluator] final class EvalLoop[T] extends (ExpAlg[T, *] ~> (T => *)) {
 
   override def apply[A](fa: ExpAlg[T, A]): T => A = evalF(fa, _)
 
-  private def evalLoop[U, B](exp: AnyExp[U, B]): U => B = {
+  private def evalLoop[U, B](exp: Exp[U, B]): U => B = {
     exp.foldMap(this.asInstanceOf[EvalLoop[U]])
   }
 
