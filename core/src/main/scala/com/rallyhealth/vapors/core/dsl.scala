@@ -16,8 +16,6 @@ object dsl {
     */
   final val __ = this
 
-  // TODO: Make these things more generic to things that are not Facts using typeclasses
-
   /**
     * The root of all expression types.
     *
@@ -54,6 +52,8 @@ object dsl {
     */
   type Facts[T] = NonEmptyList[Fact[T]]
 
+  type TerminalExp[T, V] = AnyExp[V, ResultSet[T]]
+
   /**
     * An expression that operates on a non-empty list of facts.
     *
@@ -63,19 +63,18 @@ object dsl {
   type FactsExp[T, A] = AnyExp[Facts[T], A]
 
   /**
-    * An expression that returns a [[ResultSet]] so that it can be evaluated by
-    * the [[evaluator.evalQuery]] method.
+    * An expression that returns a [[ResultSet]] with metadata and all the facts used to compute the result.
     */
-  type TerminalFactExp[T] = FactsExp[T, ResultSet[T]]
+  type TerminalFactsExp[T] = FactsExp[T, ResultSet[T]]
 
-  /** @see [[TerminalFactExp]] */
-  private def liftTerminal[T](value: ExpAlg[Facts[T], ResultSet[T]]): TerminalFactExp[T] = FreeApplicative.lift(value)
+  /** @see [[TerminalFactsExp]] */
+  private def liftTermExp[T](value: ExpAlg[Facts[T], ResultSet[T]]): TerminalFactsExp[T] = FreeApplicative.lift(value)
 
   /** @see [[FactsExp]] */
   private def liftFactsExp[T, A](value: ExpAlg[Facts[T], A]): FactsExp[T, A] = FreeApplicative.lift(value)
 
   /** @see [[CondExp]] */
-  private def liftPredExp[X](value: ExpAlg[X, Boolean]): CondExp[X] = FreeApplicative.lift(value)
+  private def liftCondExp[X](value: ExpAlg[X, Boolean]): CondExp[X] = FreeApplicative.lift(value)
 
   /** @see [[AnyExp]] */
   private def liftAnyExp[X, A](value: ExpAlg[X, A]): AnyExp[X, A] = FreeApplicative.lift(value)
@@ -88,124 +87,37 @@ object dsl {
   private def Matched[T]: Facts[T] => ResultSet[T] = FactsMatch(_)
   private def Empty[T]: Facts[T] => ResultSet[T] = _ => NoFactsMatch()
 
-  // TODO: Move Query stuff to another file
+  def alwaysTrue[T]: CondExp[T] = liftCondExp(ExpPure("True", _ => true))
 
-  /**
-    * New type wrapper for a [[TerminalFactExp]] for a given type.
-    *
-    * @note you should call [[query]], [[queryAny]], or [[queryOf]] to get one.
-    */
-  // TODO: Should this even be parameterized? Operating over List[Fact[Any]] might be worth committing to
-  final case class Query[T](expression: TerminalFactExp[T])
+  def alwaysFalse[T]: CondExp[T] = liftCondExp(ExpPure("False", _ => false))
 
-  // TODO: This should probably become the new norm and just implement a better filter / compiler error messages
-  def queryAny(exp: TerminalFactExp[Any]): Query[Any] = queryOf(exp)
+  def alwaysMatch: TerminalFactsExp[Any] = liftTermExp(ExpPure("AlwaysMatch", FactsMatch(_)))
 
-  /**
-    * Builds a query that can handle any type of input by filtering the facts down the type expected by
-    * the query.
-    *
-    * This is helpful for building queries with the help of type inference.
-    *
-    * @note if you are using appropriate [[withFactsOfTypeIn]] filters, then this will skip
-    *       the step of filtering the facts to the expected type to avoid wasted computation.
-    *
-    * @param exp the query expression
-    * @tparam U the expected type of facts for the query (if you need a specific type)
-    * @return a [[Query]] that can handle any input
-    */
-  @deprecated(
-    "Use queryAny or queryOf instead. This filters to the expected types, but is different than the way FactType selection works and could cause confusion",
-    "0.0.1",
-  )
-  // TODO: This is too useful to remove without having the unified condition builder
-  def query[U : ClassTag : TypeTag](exp: TerminalFactExp[U]): Query[Any] = {
-    val uType = typeOf[U]
-    if (uType =:= typeOf[Any]) {
-      Query(exp.asInstanceOf[TerminalFactExp[Any]])
-    } else {
-      Query(
-        liftFactsExp(
-          ExpCollect[Facts[Any], Facts[U], ResultSet[Any]](
-            uType.toString,
-            facts =>
-              NonEmptyList.fromList(
-                facts.collect(Function.unlift {
-                  case f @ Fact(typeInfo, _: U) if typeInfo.tt.tpe <:< typeOf[U] => Some(f.asInstanceOf[Fact[U]])
-                  case _ => None
-                }),
-              ),
-            exp.map(res => res: ResultSet[Any]),
-            _ => NoFactsMatch(),
-          ),
-        ),
-      )
-    }
-  }
-
-  def queryOf[U](exp: TerminalFactExp[U]): Query[U] = Query(exp)
-
-  def hasValue[T](expected: T): TerminalFactExp[T] = liftFactsExp {
-    ExpFunctor[Facts[T], ResultSet[T]](facts => ResultSet.fromList(facts.filter(_.value == expected)))
-  }
-
-  @deprecated("Convert this into serializable expressions over facts.", "0.0.1")
-  def filter[T](predicate: Fact[T] => Boolean): TerminalFactExp[T] = liftFactsExp {
-    ExpFunctor[Facts[T], ResultSet[T]](facts => ResultSet.fromList(facts.filter(predicate)))
-  }
-
-  def whereAnyFactHas[T](exp: AnyExp[Fact[T], Boolean]): TerminalFactExp[T] = liftTerminal {
-    ExpExists[Facts[T], Fact[T], ResultSet[T]](_.toList, exp, Matched, Empty)
-  }
-
-  def whereAllFactsHave[T](exp: AnyExp[Fact[T], Boolean]): TerminalFactExp[T] = liftTerminal {
-    ExpForAll[Facts[T], Fact[T], ResultSet[T]](_.toList, exp, Matched, Empty)
-  }
-
-  def factTypeOf[T >: U, U : ClassTag : TypeTag](factType: FactType[U]): CondExpBuilder[T, U] = {
-    factTypeIn[T, U](FactTypeSet.of(factType))
-  }
-
-  def factTypeIn[T >: U, U : ClassTag : TypeTag](factTypeSet: FactTypeSet[U]): CondExpBuilder[T, U] = {
-    new CondExpBuilder[T, U]({ exp: CondExp[Fact[U]] =>
-      liftAnyExp {
-        ExpCollect[Fact[T], Fact[U], Boolean](
-          typeOf[U].toString,
-          fact => factTypeSet.matchAs(fact),
-          exp,
-          _ => false,
-        )
-      }
-    })
-  }
-
-  def factValue[T](exp: CondExp[T]): CondExp[Fact[T]] = liftAnyExp {
-    ExpSelectField[Fact[T], T, Boolean](Fact.value, exp)
-  }
+  def alwaysEmpty: TerminalFactsExp[Any] = liftTermExp(ExpPure("AlwaysEmpty", _ => NoFactsMatch()))
 
   // TODO: Use some cats typeclass instead of iterable?
-  def all[F[x] <: IterableOnce[x], T, A](cond: CondExp[T]): CondExp[F[T]] = liftPredExp {
+  def all[F[x] <: IterableOnce[x], T, A](cond: CondExp[T]): CondExp[F[T]] = liftCondExp {
     ExpForAll[F[T], T, Boolean](identity[F[T]], cond, True, False)
   }
 
   // TODO: Use some cats typeclass instead of iterable?
-  def exists[F[x] <: IterableOnce[x], T, A](cond: CondExp[T]): CondExp[F[T]] = liftPredExp {
+  def exists[F[x] <: IterableOnce[x], T, A](cond: CondExp[T]): CondExp[F[T]] = liftCondExp {
     ExpExists[F[T], T, Boolean](identity[F[T]], cond, True, False)
   }
 
-  def lessThan[T : Ordering](upperBound: T): CondExp[T] = liftPredExp {
+  def lessThan[T : Ordering](upperBound: T): CondExp[T] = liftCondExp {
     ExpWithin[T, Boolean](Window.lessThan(upperBound), True, False)
   }
 
-  def lessThanOrEqual[T : Ordering](upperBound: T): CondExp[T] = liftPredExp {
+  def lessThanOrEqual[T : Ordering](upperBound: T): CondExp[T] = liftCondExp {
     ExpWithin[T, Boolean](Window.lessThanOrEqual(upperBound), True, False)
   }
 
-  def greaterThan[T : Ordering](lowerBound: T): CondExp[T] = liftPredExp {
+  def greaterThan[T : Ordering](lowerBound: T): CondExp[T] = liftCondExp {
     ExpWithin[T, Boolean](Window.greaterThan(lowerBound), True, False)
   }
 
-  def greaterThanOrEqual[T : Ordering](lowerBound: T): CondExp[T] = liftPredExp {
+  def greaterThanOrEqual[T : Ordering](lowerBound: T): CondExp[T] = liftCondExp {
     ExpWithin[T, Boolean](Window.greaterThanOrEqual(lowerBound), True, False)
   }
 
@@ -220,90 +132,111 @@ object dsl {
     ExpCond[T, A](exp, thenExp, elseExp)
   }
 
-  def withFactsOfType[T >: U, U : ClassTag : TypeTag](
-    factType: FactType[U],
-  )(
-    exp: FactsExp[U, ResultSet[T]],
-  ): TerminalFactExp[Any] = {
-    withFactsOfTypeIn[T, U](FactTypeSet.of(factType))(exp)
+  def withFactsOfType[U : ClassTag : TypeTag](factType: FactType[U]): TypedFactExpBuilder[Any, U] = {
+    withFactsOfTypeIn[Any, U](FactTypeSet.of(factType))
   }
 
-  def withFactsOfTypeIn[T >: U, U : ClassTag : TypeTag](
+  def withFactsOfTypeIn[T >: U, U : ClassTag : TypeTag](factTypeSet: FactTypeSet[U]): TypedFactExpBuilder[T, U] = {
+    new TypedFactExpBuilder[T, U](factTypeSet)
+  }
+
+  def and[T, A : Intersect](
+    one: AnyExp[T, A],
+    two: AnyExp[T, A],
+    others: AnyExp[T, A]*,
+  ): AnyExp[T, A] = liftAnyExp {
+    ExpAnd[T, A](
+      Intersect[A].intersect,
+      one :: two :: others.toList,
+    )
+  }
+
+  def or[T, A : Union](
+    one: AnyExp[T, A],
+    two: AnyExp[T, A],
+    others: AnyExp[T, A]*,
+  ): AnyExp[T, A] = liftAnyExp {
+    ExpOr[T, A](
+      Union[A].union,
+      one :: two :: others.toList,
+    )
+  }
+
+  implicit final class DslOps[T, A](private val exp: AnyExp[T, A]) extends AnyVal {
+
+    def &&(o: AnyExp[T, A])(implicit A: Intersect[A]): AnyExp[T, A] = and(exp, o)
+
+    def ||(o: AnyExp[T, A])(implicit A: Union[A]): AnyExp[T, A] = or(exp, o)
+  }
+
+  def typeNameOf[T : TypeTag]: String = typeOf[T].toString.split('.').dropWhile(_.charAt(0).isLower).mkString(".")
+
+  final class FactValuesExpBuilder[T >: U, U : ClassTag : TypeTag, V] private[dsl] (
     factTypeSet: FactTypeSet[U],
-  )(
-    exp: FactsExp[U, ResultSet[T]],
-  ): TerminalFactExp[Any] = liftFactsExp {
-    // TODO: Figure out if there any disadvantages to using Any here
-    //       If there are, we need to figure out why we get compiler errors when using type T
-    ExpCollect[Facts[Any], Facts[U], ResultSet[Any]](
-      typeOf[U].toString,
-      facts => NonEmptyList.fromList(facts.collect(factTypeSet.matchAsPartial[U])),
-      exp.map(identity),
-      _ => NoFactsMatch(),
-    )
-  }
+    factLens: NamedLens[Fact[U], V],
+  ) {
 
-  // TODO: Figure out how to expand this to non-terminal expressions
-  def and[T](
-    one: TerminalFactExp[T],
-    two: TerminalFactExp[T],
-    others: TerminalFactExp[T]*,
-  ): TerminalFactExp[T] = liftFactsExp {
-    ExpAnd[Facts[T], ResultSet[T]](
-      _.reduceLeft[ResultSet[T]]({
-        case (NoFactsMatch(), _) | (_, NoFactsMatch()) => NoFactsMatch() // skip the all expressions if the first failed
-        case (acc: FactsMatch[T], nextResult: FactsMatch[T]) => acc ++ nextResult // combine all the required facts
-      }),
-      one :: two :: others.toList,
-    )
-  }
+    private def selectFactValuesWhere(exp: ExpAlg[Facts[U], ResultSet[T]]): TerminalFactsExp[T] = {
+      liftTermExp {
+        ExpCollect[Facts[T], Facts[U], ResultSet[T]](
+          s"Fact[${typeNameOf[U]}]",
+          facts => NonEmptyList.fromList(facts.collect(factTypeSet.matchAsPartial[U])),
+          liftFactsExp(exp),
+          Empty,
+        )
+      }
+    }
 
-  // TODO: Figure out how to expand this to non-terminal expressions
-  def or[T](
-    one: TerminalFactExp[T],
-    two: TerminalFactExp[T],
-    others: TerminalFactExp[T]*,
-  ): TerminalFactExp[T] = liftFactsExp {
-    ExpOr[Facts[T], ResultSet[T]](
-      s =>
-        s.reduceLeft[ResultSet[T]]({
-          case (NoFactsMatch(), b) => b // try the next expression if the first failed
-          case (a @ FactsMatch(_), _) => a // take the first required set of facts
-        }),
-      one :: two :: others.toList,
-    )
-  }
+    def whereAllValues(condExp: CondExp[V]): TerminalFactsExp[T] = {
+      selectFactValuesWhere {
+        ExpForAll[Facts[U], Fact[U], ResultSet[T]](
+          _.toList,
+          liftCondExp {
+            ExpSelectField[Fact[U], V, Boolean](factLens, condExp)
+          },
+          Matched,
+          Empty,
+        )
+      }
+    }
 
-  /**
-    * A conditional expression builder that captures the type parameters of the expected input and output,
-    * but allows freedom in sub-selecting fields without messing up type inference.
-    */
-  // TODO: Unify the notion of a conditional expression on a single fact with the condition-like syntax
-  //       of operating over lists of facts using filters.
-  final class CondExpBuilder[T, U] private[dsl] (condBuilder: CondExp[Fact[U]] => CondExp[Fact[T]]) {
-
-    /**
-      * Create a conditional expression for a fact from a field on the [[Fact]] itself.
-      *
-      * @note if you plan to create a lens into the value (or compare the value directly), you might want to use
-      *        the [[whereValueAt]] (or [[whereValue]]) method instead.
-      */
-    def where(exp: CondExp[Fact[U]]): CondExp[Fact[T]] = condBuilder(exp)
-
-    /**
-      * Create a conditional expression for a fact based on the given conditional expression over the [[Fact.value]].
-      */
-    def whereValue(exp: CondExp[U]): CondExp[Fact[T]] = whereValueAt(identity[NamedLens.Id[U]])(exp)
-
-    /**
-      * Create a conditional expression for a fact based on the given conditional expression over any [[NamedLens]]
-      * that starts from the [[Fact.value]].
-      */
-    def whereValueAt[V](lens: NamedLens.Id[U] => NamedLens[U, V])(exp: CondExp[V]): CondExp[Fact[T]] = {
-      val namedLens = lens(NamedLens.id[U])
-      condBuilder(liftAnyExp {
-        ExpSelectField[Fact[U], V, Boolean](Fact.value[U].andThen(namedLens), exp)
-      })
+    def whereAnyValue(condExp: CondExp[V]): TerminalFactsExp[T] = {
+      selectFactValuesWhere {
+        ExpExists[Facts[U], Fact[U], ResultSet[T]](
+          _.toList,
+          liftCondExp {
+            ExpSelectField[Fact[U], V, Boolean](factLens, condExp)
+          },
+          Matched,
+          Empty,
+        )
+      }
     }
   }
+
+  final class TypedFactExpBuilder[T >: U, U : ClassTag : TypeTag] private[dsl] (factTypeSet: FactTypeSet[U]) {
+
+    // TODO: These terminal expression methods can be optimized to avoid an unnecessary select expression
+
+    def whereAnyFact(condExp: CondExp[Fact[U]]): TerminalFactsExp[T] = {
+      new FactValuesExpBuilder[T, U, Fact[U]](factTypeSet, NamedLens.id[Fact[U]]).whereAnyValue(condExp)
+    }
+
+    def whereAnyValue(condExp: CondExp[U]): TerminalFactsExp[T] = {
+      new FactValuesExpBuilder[T, U, U](factTypeSet, Fact.value[U]).whereAnyValue(condExp)
+    }
+
+    def whereAllFacts(condExp: CondExp[Fact[U]]): TerminalFactsExp[T] = {
+      new FactValuesExpBuilder[T, U, Fact[U]](factTypeSet, NamedLens.id[Fact[U]]).whereAllValues(condExp)
+    }
+
+    def whereAllValues(condExp: CondExp[U]): TerminalFactsExp[T] = {
+      new FactValuesExpBuilder[T, U, U](factTypeSet, Fact.value[U]).whereAllValues(condExp)
+    }
+
+    def withValuesAt[V](lens: NamedLens.Id[U] => NamedLens[U, V]): FactValuesExpBuilder[T, U, V] = {
+      new FactValuesExpBuilder(factTypeSet, Fact.value[U].andThen(lens(NamedLens.id[U])))
+    }
+  }
+
 }

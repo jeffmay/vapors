@@ -10,7 +10,7 @@ class Printer {
 
   def serialize[T, A](exp: AnyExp[T, A]): String = {
     val parts = exp.foldMap(ImmutablePrinter())(ApplicablePrinterF)
-    parts.mkString
+    ("_" :: parts).mkString
   }
 }
 
@@ -29,23 +29,25 @@ object Printer {
       import cats.syntax.show._
       implicit val showAnyFromToString: Show[Any] = Show.fromToString
       fa match {
-        case ExpFunctor(_) => "<functor>" :: Nil
-        case ExpSelectField(selector, sub) => "_" :: selector.path.show :: " " :: sub.foldMap(this)
-        case ExpForAll(_, sub, _, _) => "forall (" :: sub.foldMap(this) ::: ")" :: Nil
-        case ExpExists(_, sub, _, _) => "exists (" :: sub.foldMap(this) ::: ")" :: Nil
-        case ExpWithin(window: BoundedWindow[Any], _, _) => "where " :: window.show :: ")" :: Nil
-        case ExpWithin(window, _, _) => "within (" :: window.toString :: ")" :: Nil
+        case ExpPure(label, _) => "<" :: label :: ">" :: Nil
+        case ExpSelectField(selector, sub) => selector.path.show :: " " :: sub.foldMap(this)
+        case ExpForAll(_, sub, _, _) => ".forall(_" :: sub.foldMap(this) ::: ")" :: Nil
+        case ExpExists(_, sub, _, _) => ".exists(_" :: sub.foldMap(this) ::: ")" :: Nil
+        case ExpWithin(window: BoundedWindow[Any], _, _) => "where " :: window.show :: Nil
+        case ExpWithin(window, _, _) => "within(" :: window.toString :: ")" :: Nil
         case ExpCollect(subtypeName, _, sub, _) =>
-          "match { case " :: subtypeName :: " => " :: sub.foldMap(this) ::: " }" :: Nil
+          ".collect { case f: " :: subtypeName :: " => f" :: sub.foldMap(this) ::: " }" :: Nil
         case ExpCond(condExp, thenExp, elseExp) =>
           "if " :: condExp.foldMap(this) ::: " then " :: thenExp.foldMap(this) ::: " else " :: elseExp.foldMap(this)
         case ExpAnd(_, subs) =>
           subs.map(_.foldMap(this)).foldLeft[List[String]](Nil) {
-            case (acc, next) => "(" :: acc ::: ") and (" :: next ::: ")" :: Nil
+            case (Nil, next) => next
+            case (acc, next) => acc ::: " and " :: next
           }
         case ExpOr(_, subs) =>
           subs.map(_.foldMap(this)).foldLeft[List[String]](Nil) {
-            case (acc, next) => "(" :: acc ::: ") or (" :: next ::: ")" :: Nil
+            case (Nil, next) => next
+            case (acc, next) => acc ::: " or " :: next
           }
       }
     }

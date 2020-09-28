@@ -12,62 +12,57 @@ class PrinterSpec extends AnyWordSpec {
   "Printer.serialize" should {
 
     "print an expression that selects a specific fact type using whereValue(_ > 30)" in {
-      val q = queryAny {
-        __.withFactsOfType(FactTypes.age) {
-          __.whereAnyFactHas {
-            __.factTypeOf(FactTypes.age).whereValue(__ > 30)
-          }
-        }
+      val q = {
+        __.withFactsOfType(FactTypes.age)
+          .whereAnyValue(__ > 30)
       }
-      val results = evalQuery(JoeSchmoe.facts.toList)(q)
-      assertResult(Some(FactsMatch(NonEmptyList.of(JoeSchmoe.age))))(results)
+      assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.age))) {
+        eval(JoeSchmoe.facts)(q)
+      }
       assertResult(
-        // TODO: This query is overly redundant, we should not need to match on the type twice
-        "match { case Int => exists (match { case Int => _.value where x > 30) }) }",
+        "_.collect { case f: Fact[Int] => f.exists(_.value where x > 30) }",
       ) {
-        printer.serialize(q.expression)
+        printer.serialize(q)
       }
     }
 
     "print an expression that selects a fact type using where(factValue(_ > 200))" in {
-      val q = queryAny {
-        __.withFactsOfType(FactTypes.weight) {
-          __.whereAnyFactHas {
-            __.factTypeOf(FactTypes.weight).where(__.factValue(__ > 200))
-          }
-        }
+      val q = {
+        __.withFactsOfType(FactTypes.weight)
+          .whereAnyValue(__ > 200)
       }
-      val results = evalQuery(JoeSchmoe.facts.toList)(q)
-      assertResult(Some(FactsMatch(NonEmptyList.of(JoeSchmoe.weight))))(results)
+      assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.weight))) {
+        eval(JoeSchmoe.facts)(q)
+      }
       assertResult(
-        // TODO: This query is overly redundant, we should not need to match on the type twice
-        "match { case Int => exists (match { case Int => _.value where x > 200) }) }",
+        "_.collect { case f: Fact[Int] => f.exists(_.value where x > 200) }",
       ) {
-        printer.serialize(q.expression)
+        printer.serialize(q)
       }
     }
 
     "print an expression that selects a value using the NamedLens select" in {
-      val q = queryAny {
-        __.withFactsOfType(FactTypes.probs) {
-          __.whereAnyFactHas {
-            __.factTypeOf(FactTypes.probs).whereValueAt(_.select(_.scores).atKey("weightloss")) {
-              __.exists(__ > 0.5)
-            }
-          }
-        }
+      val q = {
+        __.withFactsOfType(FactTypes.probs)
+          .withValuesAt(_.select(_.scores).atKey("weightloss"))
+          .whereAnyValue(
+            __.or(
+              __.exists(__ > 0.5),
+              __.exists(__ < 0.3),
+            ),
+          )
       }
-      val results = evalQuery(JoeSchmoe.facts.toList)(q)
-      assertResult(Some(FactsMatch(NonEmptyList.of(JoeSchmoe.probs))))(results)
+      assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.probs))) {
+        eval(JoeSchmoe.facts)(q)
+      }
       assertResult(
-        // TODO: This query is overly redundant, we should not need to match on the type twice
-        "match {" +
-          " case com.rallyhealth.vapors.core.Example.Probs => exists (match {" +
-          " case com.rallyhealth.vapors.core.Example.Probs => _.value.scores[weightloss] exists (where x > 0.5))" +
-          " })" +
-          " }",
+        // TODO: This query looks wrong...
+        //       there is a mismatch between how value selection works within .exists() and conditional expressions
+        "_.collect {" +
+          " case f: Fact[Example.Probs] =>" +
+          " f.exists(_.value.scores['weightloss'] .exists(_where x > 0.5) or .exists(_where x < 0.3)) }",
       ) {
-        printer.serialize(q.expression)
+        printer.serialize(q)
       }
     }
   }
