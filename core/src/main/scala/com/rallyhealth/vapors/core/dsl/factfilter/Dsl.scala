@@ -87,12 +87,12 @@ private[dsl] class Dsl extends Evaluation with Types with Syntax {
   private def False[X]: X => Boolean = _ => false
 
   /** @see [[FactsExp]] */
-  private def liftAnyTermExp(value: ExpAlg[Facts, ResultSet]): TerminalFactsExp =
-    FreeApplicative.lift(value)
+  private def liftAnyTermExp(exp: ExpAlg[Facts, ResultSet]): TerminalFactsExp =
+    FreeApplicative.lift(exp)
 
   /** @see [[CondExp]] */
-  private def liftCondExp[X](value: ExpAlg[X, Boolean]): CondExp[X] = FreeApplicative.lift(value)
+  private def liftCondExp[X](exp: ExpAlg[X, Boolean]): CondExp[X] = FreeApplicative.lift(exp)
 
   /** @see [[Exp]] */
-  private def liftExp[X, A](value: ExpAlg[X, A]): Exp[X, A] = FreeApplicative.lift(value)
+  private def liftExp[X, A](exp: ExpAlg[X, A]): Exp[X, A] = FreeApplicative.lift(exp)
 }
