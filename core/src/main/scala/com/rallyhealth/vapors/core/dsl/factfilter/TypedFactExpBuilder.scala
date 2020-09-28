@@ -1,7 +1,6 @@
 package com.rallyhealth.vapors.core.dsl.factfilter
 
 import com.rallyhealth.vapors.core.data.{Fact, FactTypeSet, NamedLens}
-import com.rallyhealth.vapors.core.dsl.{CondExp, TerminalFactsExp}
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag

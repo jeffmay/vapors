@@ -2,10 +2,10 @@ package com.rallyhealth.vapors.core.dsl.factfilter
 
 import cats.free.FreeApplicative
 import com.rallyhealth.vapors.core.logic.{Intersect, Union}
-import com.rallyhealth.vapors.core.{algebra, data, dsl}
+import com.rallyhealth.vapors.core.{algebra, data}
 
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.{typeOf, TypeTag}
+import scala.reflect.runtime.universe.TypeTag
 
 private[dsl] class Dsl extends Types with Syntax {
 
@@ -73,8 +73,6 @@ private[dsl] class Dsl extends Types with Syntax {
       one :: two :: others.toList,
     )
   }
-
-  def typeNameOf[T : TypeTag]: String = typeOf[T].toString.split('.').dropWhile(_.charAt(0).isLower).mkString(".")
 
   def alwaysTrue[T]: CondExp[T] = liftCondExp(ExpAlg.Pure("True", _ => true))
 
