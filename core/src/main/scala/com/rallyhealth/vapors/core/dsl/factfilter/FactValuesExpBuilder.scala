@@ -4,7 +4,7 @@ import cats.data.NonEmptyList
 import cats.free.FreeApplicative
 import com.rallyhealth.vapors.core.algebra._
 import com.rallyhealth.vapors.core.data._
-import com.rallyhealth.vapors.core.dsl.{typeNameOf, CondExp, Facts, TerminalFactsExp}
+import com.rallyhealth.vapors.core.util.ReflectUtils.typeNameOf
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
