@@ -4,4 +4,4 @@ coverage:
       default:
         # TODO: Use better coverage configs after adding better unit test coverage
         target: auto
-        threshold: 5%
+        threshold: 10%
