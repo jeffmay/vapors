@@ -1,7 +1,6 @@
 package com.rallyhealth.vapors.core.dsl.factfilter
 
 import com.rallyhealth.vapors.core.dsl
-import com.rallyhealth.vapors.core.dsl.AnyExp
 import com.rallyhealth.vapors.core.logic.{Intersect, Union}
 
 final class LogicalOps[T, A](private val exp: AnyExp[T, A]) extends AnyVal {
