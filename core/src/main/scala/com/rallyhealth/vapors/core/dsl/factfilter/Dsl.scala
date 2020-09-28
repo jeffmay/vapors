@@ -1,4 +1,4 @@
-package com.rallyhealth.vapors.core.dsl
+package com.rallyhealth.vapors.core.dsl.factfilter
 
 import cats.data.NonEmptyList
 import cats.free.FreeApplicative
@@ -9,7 +9,7 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
 
-private[dsl] class FactFilterDsl {
+private[dsl] class Dsl {
 
   import algebra._
   import data._

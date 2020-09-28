@@ -1,9 +1,10 @@
-package com.rallyhealth.vapors.core.dsl
+package com.rallyhealth.vapors.core.dsl.factfilter
 
 import cats.data.NonEmptyList
 import cats.free.FreeApplicative
 import com.rallyhealth.vapors.core.algebra._
 import com.rallyhealth.vapors.core.data._
+import com.rallyhealth.vapors.core.dsl.{typeNameOf, CondExp, Facts, TerminalFactsExp}
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
