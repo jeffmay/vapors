@@ -1,16 +1,15 @@
-package com.rallyhealth.vapors.core.dsl.factfilter
+package com.rallyhealth.vapors.factfilter.dsl
 
 import cats.free.FreeApplicative
+import com.rallyhealth.vapors.core.algebra.ExpAlg
+import com.rallyhealth.vapors.core.data.Window
 import com.rallyhealth.vapors.core.logic.{Intersect, Union}
-import com.rallyhealth.vapors.core.{algebra, data}
+import com.rallyhealth.vapors.factfilter.data._
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
-private[dsl] class Dsl extends Evaluation with Types with Syntax {
-
-  import algebra._
-  import data._
+private[dsl] class Dsl {
 
   // TODO: Use some cats typeclass instead of iterable?
   def all[F[x] <: IterableOnce[x], T, A](cond: CondExp[T]): CondExp[F[T]] = liftCondExp {

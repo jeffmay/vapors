@@ -1,4 +1,4 @@
-package com.rallyhealth.vapors.core.data
+package com.rallyhealth.vapors.factfilter.data
 
 import cats.data.{NonEmptyList, NonEmptyMap, NonEmptySet}
 

@@ -1,4 +1,6 @@
-package com.rallyhealth.vapors.core.data
+package com.rallyhealth.vapors.factfilter.data
+
+import com.rallyhealth.vapors.core.data.{DataPath, NamedLens}
 
 sealed abstract class Fact {
   type Value

@@ -1,11 +1,11 @@
-package com.rallyhealth.vapors.core
+package com.rallyhealth.vapors.factfilter
 
 import java.time.LocalDate
 
 import cats.data.NonEmptyList
-import com.rallyhealth.vapors.core.data.{FactType, FactTypeSet, TypedFact}
+import com.rallyhealth.vapors.factfilter.data.{FactType, FactTypeSet}
 
-private[core] object Example {
+object Example {
 
   final case class BloodPressure(
     diastolic: Double,

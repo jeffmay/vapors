@@ -1,12 +1,14 @@
 package com.rallyhealth.vapors.core.evaluator
 
-import com.rallyhealth.vapors.core.data._
-import com.rallyhealth.vapors.core.dsl.Exp
 import com.rallyhealth.vapors.core.logic.{Intersect, Union}
+import com.rallyhealth.vapors.factfilter.Example.JoeSchmoe
+import com.rallyhealth.vapors.factfilter.data.{Facts, FactsMatch, NoFactsMatch, ResultSet}
+import com.rallyhealth.vapors.factfilter.dsl._
 import org.scalatest.wordspec.AnyWordSpec
 
 import scala.language.existentials
 
+// TODO: Split out generic logical tests so that other types can be tested with these logical operations
 final class LogicalOperatorSpec extends AnyWordSpec {
 
   type LogicOpBuilder[T, A] = (Exp[T, A], Exp[T, A], Seq[Exp[T, A]]) => Exp[T, A]
@@ -153,8 +155,6 @@ final class LogicalOperatorSpec extends AnyWordSpec {
   }
 
   def validDslLogicalOperators(builder: DslLogicOpBuilder): Unit = {
-    import com.rallyhealth.vapors.core.Example.JoeSchmoe
-    import com.rallyhealth.vapors.core.dsl._
 
     "operating on boolean results" should {
 
@@ -187,7 +187,6 @@ final class LogicalOperatorSpec extends AnyWordSpec {
 
     behave like validDslLogicalOperators {
       new DslLogicOpBuilder {
-        import com.rallyhealth.vapors.core.dsl._
 
         override def andBuilder[T, A : Intersect]: LogicOpBuilder[T, A] = { (one, two, tail) =>
           and(one, two, tail: _*)
@@ -204,7 +203,6 @@ final class LogicalOperatorSpec extends AnyWordSpec {
 
     behave like validDslLogicalOperators {
       new DslLogicOpBuilder {
-        import com.rallyhealth.vapors.core.dsl._
 
         override def andBuilder[T, A : Intersect]: LogicOpBuilder[T, A] = { (one, two, tail) =>
           tail.foldLeft(one && two)(_ && _)
