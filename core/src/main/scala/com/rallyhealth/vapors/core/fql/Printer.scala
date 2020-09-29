@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.core.fql
 import cats.{~>, Applicative, Show}
 import com.rallyhealth.vapors.core.algebra._
 import com.rallyhealth.vapors.core.data.BoundedWindow
-import com.rallyhealth.vapors.core.dsl.Exp
+import com.rallyhealth.vapors.factfilter.dsl.Exp
 
 class Printer {
   import Printer._

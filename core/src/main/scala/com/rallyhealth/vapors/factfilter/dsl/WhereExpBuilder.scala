@@ -1,10 +1,11 @@
-package com.rallyhealth.vapors.core.dsl.factfilter
+package com.rallyhealth.vapors.factfilter.dsl
 
 import cats.data.NonEmptyList
 import cats.free.FreeApplicative
 import com.rallyhealth.vapors.core.algebra._
 import com.rallyhealth.vapors.core.data._
 import com.rallyhealth.vapors.core.util.ReflectUtils.typeNameOf
+import com.rallyhealth.vapors.factfilter.data._
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag

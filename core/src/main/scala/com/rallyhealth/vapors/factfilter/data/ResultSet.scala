@@ -1,7 +1,6 @@
-package com.rallyhealth.vapors.core.data
+package com.rallyhealth.vapors.factfilter.data
 
 import cats.data.NonEmptyList
-import com.rallyhealth.vapors.core.dsl.{Facts, FactsOfType}
 import com.rallyhealth.vapors.core.logic.{Intersect, Union}
 
 sealed abstract class ResultSet extends Equals {

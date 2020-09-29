@@ -1,9 +1,9 @@
 package com.rallyhealth.vapors.core.fql
 
 import cats.data.NonEmptyList
-import com.rallyhealth.vapors.core.Example._
-import com.rallyhealth.vapors.core.data.FactsMatch
-import com.rallyhealth.vapors.core.dsl._
+import com.rallyhealth.vapors.factfilter.Example._
+import com.rallyhealth.vapors.factfilter.data.FactsMatch
+import com.rallyhealth.vapors.factfilter.dsl._
 import org.scalatest.wordspec.AnyWordSpec
 
 class PrinterSpec extends AnyWordSpec {

@@ -1,13 +1,12 @@
 package com.rallyhealth.vapors.core.evaluator
 
 import cats.data.NonEmptyList
-import com.rallyhealth.vapors.core.Example._
-import com.rallyhealth.vapors.core.data.{FactTypeSet, FactsMatch}
-import com.rallyhealth.vapors.core.dsl
+import com.rallyhealth.vapors.factfilter.Example._
+import com.rallyhealth.vapors.factfilter.data.{FactTypeSet, FactsMatch}
+import com.rallyhealth.vapors.factfilter.dsl._
 import org.scalatest.wordspec.AnyWordSpec
 
 final class FreeApEvaluatorSpec extends AnyWordSpec {
-  import dsl._
 
   "evaluator" should {
 

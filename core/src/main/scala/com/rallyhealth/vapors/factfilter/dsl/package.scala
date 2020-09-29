@@ -1,33 +1,22 @@
-package com.rallyhealth.vapors.core.dsl.factfilter
+package com.rallyhealth.vapors.factfilter
 
-import cats.data.NonEmptyList
 import cats.free.FreeApplicative
 import com.rallyhealth.vapors.core.algebra.ExpAlg
-import com.rallyhealth.vapors.core.data.{Fact, NamedLens, ResultSet, TypedFact, TypedResultSet}
+import com.rallyhealth.vapors.factfilter.data.{Facts, FactsOfType, ResultSet, TypedResultSet}
 
-private[dsl] trait Types {
+package object dsl extends Dsl with Evaluation with Syntax {
 
   /**
-    * Alias for a collection of facts with no restriction on Scala type.
+    * An alias to this [[dsl]] object, so you can use infix operators and more easily explore
+    * the list of supported expression builders.
     *
-    * @note This is the input for a top-level fact filter expression.
+    * Example:
+    * {{{
+    *   __.withFactsOfType(FactTypes.Age)
+    *     .whereAnyValue(__ > 35)
+    * }}}
     */
-  final type Facts = NonEmptyList[Fact]
-
-  /**
-    * Alias for a collection of facts of a specific type.
-    */
-  final type FactsOfType[T] = NonEmptyList[TypedFact[T]]
-
-  /**
-    * A [[NamedLens]] defined over a [[TypedFact]] of a known type.
-    */
-  final type FactLens[T, V] = NamedLens[TypedFact[T], V]
-
-  /**
-    * A useful alias for building a [[NamedLens]] by passing the identity lens as a starting point to a function.
-    */
-  final type FactLensId[T] = NamedLens.Id[TypedFact[T]]
+  final val __ = this
 
   /**
     * The root of all expression types.
