@@ -40,7 +40,8 @@ private[dsl] trait Types {
   /**
     * An expression that terminates into a boolean, used for making a conditional query or filter.
     *
-    * Useful for defining sub-expressions to [[whereAnyFactHas]], [[whereAllFactsHave]], [[exists]], [[all]], etc.
+    * Useful for defining sub-expressions to [[WhereFactsExpBuilder.whereAllFacts]],
+    * [[WhereFactsExpBuilder.whereAnyValue]], [[exists]], [[all]], etc.
     */
   final type CondExp[X] = Exp[X, Boolean]
 
