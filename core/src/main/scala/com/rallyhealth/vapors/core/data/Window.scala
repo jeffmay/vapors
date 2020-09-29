@@ -75,19 +75,18 @@ object Window {
     inclusive: Boolean,
   ): Window[A] = KnownWindow(Ior.Right(Below(max, inclusive)))
 
-  def lessThan[A : Ordering](max: A): Window[A] = KnownWindow(Ior.Right(Below(max, inclusiveUpperBound = false)))
+  @inline def lessThan[A : Ordering](max: A): Window[A] = lessThan(max, inclusive = false)
 
-  def lessThanOrEqual[A : Ordering](max: A): Window[A] = KnownWindow(Ior.Right(Below(max, inclusiveUpperBound = true)))
+  @inline def lessThanOrEqual[A : Ordering](max: A): Window[A] = lessThan(max, inclusive = true)
 
   def greaterThan[A : Ordering](
     min: A,
     inclusive: Boolean,
   ): Window[A] = KnownWindow(Ior.Left(Above(min, inclusiveLowerBound = inclusive)))
 
-  def greaterThan[A : Ordering](min: A): Window[A] = KnownWindow(Ior.Left(Above(min, inclusiveLowerBound = false)))
+  @inline def greaterThan[A : Ordering](min: A): Window[A] = greaterThan(min, inclusive = false)
 
-  def greaterThanOrEqual[A : Ordering](min: A): Window[A] =
-    KnownWindow(Ior.Left(Above(min, inclusiveLowerBound = true)))
+  @inline def greaterThanOrEqual[A : Ordering](min: A): Window[A] = greaterThan(min, inclusive = true)
 
   def between[A : Ordering](
     min: A,
@@ -97,17 +96,15 @@ object Window {
   ): Window[A] =
     KnownWindow(Ior.Both(Above(min, includeMin), Below(max, includeMax)))
 
-  def between[A : Ordering](
+  @inline def between[A : Ordering](
     min: A,
     max: A,
-  ): Window[A] =
-    KnownWindow(Ior.Both(Above(min, inclusiveLowerBound = true), Below(max, inclusiveUpperBound = false)))
+  ): Window[A] = between(min, includeMin = true, max, includeMax = false)
 
-  def betweenInclusive[A : Ordering](
+  @inline def betweenInclusive[A : Ordering](
     min: A,
     max: A,
-  ): Window[A] =
-    KnownWindow(Ior.Both(Above(min, inclusiveLowerBound = true), Below(max, inclusiveUpperBound = true)))
+  ): Window[A] = between(min, includeMin = true, max, includeMax = true)
 
   private[Window] final case class KnownWindow[A : Ordering](bounds: Ior[Above[A], Below[A]]) extends BoundedWindow[A] {
 

@@ -19,6 +19,8 @@ ThisBuild / scalacOptions ++= Seq(
 ThisBuild / bintrayOrganization := Some("rallyhealth")
 ThisBuild / bintrayRepository := "maven"
 
+ThisBuild / resolvers += Resolver.bintrayRepo("rallyhealth", "maven")
+
 // ScalaDoc generation is generally broken. It's really mostly useful from within the IDE anyway
 // so just disable generation to allow publishing without ScalaDoc errors.
 ThisBuild / Compile / packageDoc / publishArtifact := false
