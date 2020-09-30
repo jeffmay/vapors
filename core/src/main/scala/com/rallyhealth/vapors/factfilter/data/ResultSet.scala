@@ -3,14 +3,60 @@ package com.rallyhealth.vapors.factfilter.data
 import cats.data.NonEmptyList
 import com.rallyhealth.vapors.core.logic.{Intersect, Union}
 
+/**
+  * The result of evaluating an [[com.rallyhealth.vapors.factfilter.dsl.Exp]]
+  */
 sealed abstract class ResultSet extends Equals {
 
+  /**
+    * A subset of the given facts that can be used to prove the logical query to be true.
+    */
   def matchingFacts: List[Fact]
+
+  /**
+    * True when [[matchingFacts]] is empty, and there is no subset of the facts provided that
+    * * can sufficiently prove the query to be true.
+    *
+    * @see [[isFalse]]
+    */
+  final def isEmpty: Boolean = matchingFacts.isEmpty
+
+  /**
+    * True when [[matchingFacts]] is not empty.
+    *
+    * @see [[isTrue]]
+    */
+  @inline final def nonEmpty: Boolean = !isEmpty
+
+  /**
+    * True when [[matchingFacts]] is not empty, and there exists a subset of the provided facts
+    * that can be used to prove the query to be true.
+    */
+  @inline final def isTrue: Boolean = !isEmpty
+
+  /**
+    * True when [[matchingFacts]] is empty, and there is no subset of the facts provided that
+    * can sufficiently prove the query to be true.
+    */
+  @inline final def isFalse: Boolean = isEmpty
+
+  /**
+    * Same as [[matchingFacts]], but as a Set.
+    */
+  lazy val factSet: Set[Fact] = matchingFacts.toSet
 
   /**
     * Union of the two sets of results.
     */
-  def union(o: ResultSet): ResultSet
+  final def union(o: ResultSet): ResultSet = o match {
+    case NoFactsMatch() => o
+    case FactsMatch(facts) =>
+      val newFacts = facts.collect(Function.unlift { fact =>
+        if (factSet.contains(fact)) None
+        else Some(fact)
+      })
+      new FactsMatch(facts ++ newFacts)
+  }
 
   /**
     * Alias for [[union]].
@@ -62,8 +108,16 @@ object ResultSet {
   }
 }
 
+/**
+  * Extends [[ResultSet]] to provide more specific return types.
+  */
 sealed trait TypedResultSet[A] extends ResultSet {
 
+  /**
+    * Same as [[ResultSet.matchingFacts]], but with [[TypedFact]]s.
+    *
+    * @see [[ResultSet.matchingFacts]]
+    */
   override def matchingFacts: List[TypedFact[A]]
 }
 
@@ -79,19 +133,10 @@ object TypedResultSet {
 // TODO: Should this be protected?
 sealed class FactsMatch(val matchingFactsNel: NonEmptyList[Fact]) extends ResultSet {
 
+  /**
+    * @see [[ResultSet.matchingFacts]]
+    */
   override def matchingFacts: List[Fact] = matchingFactsNel.toList
-
-  private lazy val factSet: Set[Fact] = matchingFacts.toSet
-
-  override def union(o: ResultSet): ResultSet = o match {
-    case NoFactsMatch() => this
-    case FactsMatch(facts) =>
-      val newFacts = facts.collect(Function.unlift { fact =>
-        if (factSet.contains(fact)) None
-        else Some(fact)
-      })
-      new FactsMatch(matchingFactsNel ++ newFacts)
-  }
 }
 
 object FactsMatch {
@@ -113,14 +158,30 @@ final class TypedFactsMatch[A](override val matchingFactsNel: NonEmptyList[Typed
   extends FactsMatch(matchingFactsNel)
   with TypedResultSet[A] {
 
+  /**
+    * Same as [[ResultSet.matchingFacts]], but with [[TypedFact]]s.
+    *
+    * @see [[ResultSet.matchingFacts]]
+    */
   override def matchingFacts: List[TypedFact[A]] = matchingFactsNel.toList
+}
+
+object TypedFactsMatch {
+
+  def apply[A](matching: FactsOfType[A]): TypedFactsMatch[A] = new TypedFactsMatch(matching)
+
+  def unapply[A](resultSet: TypedResultSet[A]): Option[FactsOfType[A]] = resultSet match {
+    case NoFactsMatch() => None
+    case factsMatch: TypedFactsMatch[A] => Some(factsMatch.matchingFactsNel)
+  }
 }
 
 case object NoFactsMatch extends ResultSet with TypedResultSet[Nothing] {
 
+  /**
+    * @see [[ResultSet.matchingFacts]]
+    */
   override def matchingFacts: List[TypedFact[Nothing]] = Nil
-
-  override def union(o: ResultSet): ResultSet = o
 
   /**
     * For forwards compatibility for when this might become a case class.
