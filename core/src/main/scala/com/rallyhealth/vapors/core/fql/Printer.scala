@@ -33,6 +33,7 @@ object Printer {
         case ExpAlg.Select(selector, sub) => selector.path.show :: " " :: sub.foldMap(this)
         case ExpAlg.ForAll(_, sub, _, _) => ".forall(_" :: sub.foldMap(this) ::: ")" :: Nil
         case ExpAlg.Exists(_, sub, _, _) => ".exists(_" :: sub.foldMap(this) ::: ")" :: Nil
+        case ExpAlg.EqualTo(value, _, _) => "_ == " :: value.show :: Nil
         case ExpAlg.Within(window: BoundedWindow[Any], _, _) => "where " :: window.show :: Nil
         case ExpAlg.Within(window, _, _) => "within(" :: window.toString :: ")" :: Nil
         case ExpAlg.Collect(subtypeName, _, sub, _) =>

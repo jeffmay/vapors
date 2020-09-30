@@ -1,5 +1,6 @@
 package com.rallyhealth.vapors.factfilter.dsl
 
+import cats.Eq
 import cats.free.FreeApplicative
 import com.rallyhealth.vapors.core.algebra.ExpAlg
 import com.rallyhealth.vapors.core.data.Window
@@ -35,6 +36,10 @@ private[dsl] class Dsl {
 
   def greaterThanOrEqual[T : Ordering](lowerBound: T): CondExp[T] = liftCondExp {
     ExpAlg.Within[T, Boolean](Window.greaterThanOrEqual(lowerBound), True, False)
+  }
+
+  def equalTo[T : Eq](value: T): CondExp[T] = liftCondExp {
+    ExpAlg.EqualTo[T, Boolean](value, True, False)
   }
 
   // TODO: Figure out how to use this conditional tertiary expression

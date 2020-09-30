@@ -21,6 +21,7 @@ object Example {
     val WeightMeasurement = FactType[Int]("weight_measurement")
     val WeightSelfReported = FactType[Int]("weight_self_reported")
     val BloodPressureMeasurement = FactType[BloodPressure]("blood_pressure")
+    val Tag = FactType[String]("tag")
     val ProbabilityToUse = FactType[Probs]("probability_to_use")
   }
 
@@ -37,6 +38,7 @@ object Example {
     val weightSelfReported = FactTypes.WeightSelfReported(200)
     val bloodPressure = FactTypes.BloodPressureMeasurement(BloodPressure(120, 80))
     val probs = FactTypes.ProbabilityToUse(Probs(Map("weightloss" -> .8)))
+    val asthmaTag = FactTypes.Tag("asthma")
 
     val facts = NonEmptyList.of(
       name,
@@ -45,6 +47,7 @@ object Example {
       weightSelfReported,
       bloodPressure,
       probs,
+      asthmaTag,
     )
   }
 }
