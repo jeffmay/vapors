@@ -1,5 +1,6 @@
 package com.rallyhealth.vapors.core.algebra
 
+import cats.Eq
 import cats.free.FreeApplicative
 import com.rallyhealth.vapors.core.data.{NamedLens, Window}
 
@@ -30,6 +31,14 @@ object ExpAlg {
     whenTrue: T => A,
     whenFalse: T => A,
   ) extends ExpAlg[T, A]
+
+  final case class EqualTo[T : Eq, A](
+    value: T,
+    whenTrue: T => A,
+    whenFalse: T => A,
+  ) extends ExpAlg[T, A] {
+    def eq: Eq[T] = Eq[T]
+  }
 
   final case class Within[T, A](
     window: Window[T],

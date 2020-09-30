@@ -1,6 +1,7 @@
 package com.rallyhealth.vapors.core.evaluator
 
 import cats.data.NonEmptyList
+import cats.instances.string._
 import com.rallyhealth.vapors.factfilter.Example._
 import com.rallyhealth.vapors.factfilter.data.{FactTypeSet, FactsMatch}
 import com.rallyhealth.vapors.factfilter.dsl._
@@ -66,6 +67,18 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
           }
       }
       assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.probs))) {
+        evalWithFacts(JoeSchmoe.facts)(q)
+      }
+    }
+
+    "return matching facts if any fact has prob for string === value" in {
+      val q = {
+        __.withFactsOfType(FactTypes.Tag)
+          .whereAnyValue {
+            __ === "asthma"
+          }
+      }
+      assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.asthmaTag))) {
         evalWithFacts(JoeSchmoe.facts)(q)
       }
     }

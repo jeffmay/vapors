@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.core.fql
 
 import cats.data.NonEmptyList
 import com.rallyhealth.vapors.factfilter.Example._
-import com.rallyhealth.vapors.factfilter.data.FactsMatch
+import com.rallyhealth.vapors.factfilter.data.{FactsMatch, NoFactsMatch}
 import com.rallyhealth.vapors.factfilter.dsl._
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -42,20 +42,20 @@ class PrinterSpec extends AnyWordSpec {
 
     "print an expression that selects a value using the NamedLens select" in {
       val q = {
-        __.or(
+        or(
           __.withFactsOfType(FactTypes.ProbabilityToUse)
             .withValuesAt(_.select(_.scores).atKey("weightloss"))
             .whereAnyValue(
-              __.or(
-                __.exists(__ > 0.5),
-                __.exists(__ < 0.3),
+              and(
+                exists(__ > 0.5),
+                exists(__ < 0.3),
               ),
             ),
           __.withFactsOfType(FactTypes.WeightMeasurement)
             .whereAnyValue(__ > 150),
         )
       }
-      assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.probs, JoeSchmoe.weight))) {
+      assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.weight))) {
         evalWithFacts(JoeSchmoe.facts)(q)
       }
       assertResult(
@@ -63,7 +63,7 @@ class PrinterSpec extends AnyWordSpec {
         //       there is a mismatch between how value selection works within .exists() and conditional expressions
         "_.collect {" +
           " case f: Fact[Example.Probs] =>" +
-          " f.exists(_.value.scores['weightloss'] .exists(_where x > 0.5) or .exists(_where x < 0.3)) " +
+          " f.exists(_.value.scores['weightloss'] .exists(_where x > 0.5) and .exists(_where x < 0.3)) " +
           "} or .collect {" +
           " case f: Fact[Int] =>" +
           " f.exists(_.value where x > 150) " +

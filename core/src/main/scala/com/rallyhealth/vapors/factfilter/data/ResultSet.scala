@@ -43,25 +43,33 @@ sealed abstract class ResultSet extends Equals {
   /**
     * Same as [[matchingFacts]], but as a Set.
     */
-  lazy val factSet: Set[Fact] = matchingFacts.toSet
+  lazy val matchingFactSet: Set[Fact] = matchingFacts.toSet
 
   /**
     * Union of the two sets of results.
     */
-  final def union(o: ResultSet): ResultSet = o match {
-    case NoFactsMatch() => o
-    case FactsMatch(facts) =>
-      val newFacts = facts.collect(Function.unlift { fact =>
-        if (factSet.contains(fact)) None
-        else Some(fact)
-      })
-      new FactsMatch(facts ++ newFacts)
+  final def union(o: ResultSet): ResultSet = {
+    if (o.matchingFactSet == this.matchingFactSet) o
+    else
+      this match {
+        case NoFactsMatch() => o
+        case FactsMatch(matchingFactsNel) =>
+          val newFacts = o.matchingFacts.collect {
+            case fact if !matchingFactSet.contains(fact) => fact
+          }
+          FactsMatch(matchingFactsNel ++ newFacts)
+      }
   }
 
   /**
     * Alias for [[union]].
     */
   final def ++(o: ResultSet): ResultSet = this.union(o)
+
+  /**
+    * Alias for [[union]].
+    */
+  @inline final def |(o: ResultSet): ResultSet = this.union(o)
 
   // SAFE: ResultSet is sealed, so all subclasses are matched on by this parent type.
   def canEqual(other: Any): Boolean = other.isInstanceOf[ResultSet]
@@ -93,17 +101,13 @@ object ResultSet {
   def fromNel(nonEmptyFacts: NonEmptyList[Fact]): FactsMatch = FactsMatch(nonEmptyFacts)
 
   implicit val unionAbstractResultSet: Union[ResultSet] = {
-    _.reduceLeft[ResultSet] {
-      case (NoFactsMatch(), b) => b // try the next expression if the first failed
-      case (a, NoFactsMatch()) => a // use the previous expression if the next fails
-      case (a, b) => a ++ b // union all the possible facts (for better quality calculations)
-    }
+    _.reduceLeft[ResultSet](_ | _) // union all the possible facts (for better quality calculations)
   }
 
   implicit val intersectAbstractResultSet: Intersect[ResultSet] = {
     _.reduceLeft[ResultSet] {
       case (NoFactsMatch(), _) | (_, NoFactsMatch()) => NoFactsMatch() // skip the all expressions if the first failed
-      case (acc, nextResult) => acc ++ nextResult // union all the required facts
+      case (acc, nextResult) => acc | nextResult // union all the required facts
     }
   }
 }
