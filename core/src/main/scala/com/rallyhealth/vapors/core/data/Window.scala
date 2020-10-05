@@ -112,8 +112,8 @@ object Window {
       case Ior.Left(lb) if lb.inclusiveLowerBound => _ >= lb.lowerBound
       case Ior.Left(lb) => _ > lb.lowerBound
 
-      case Ior.Right(ub) if ub.inclusiveUpperBound => _ >= ub.upperBound
-      case Ior.Right(ub) => _ > ub.upperBound
+      case Ior.Right(ub) if ub.inclusiveUpperBound => _ <= ub.upperBound
+      case Ior.Right(ub) => _ < ub.upperBound
 
       case Ior.Both(lb, ub) if lb.inclusiveLowerBound && ub.inclusiveUpperBound =>
         a => a >= lb.lowerBound && a <= ub.upperBound
