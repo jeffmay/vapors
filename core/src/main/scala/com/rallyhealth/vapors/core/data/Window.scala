@@ -75,18 +75,18 @@ object Window {
     inclusive: Boolean,
   ): Window[A] = KnownWindow(Ior.Right(Below(max, inclusive)))
 
-  @inline def lessThan[A : Ordering](max: A): Window[A] = lessThan(max, inclusive = false)
+  def lessThan[A : Ordering](max: A): Window[A] = lessThan(max, inclusive = false)
 
-  @inline def lessThanOrEqual[A : Ordering](max: A): Window[A] = lessThan(max, inclusive = true)
+  def lessThanOrEqual[A : Ordering](max: A): Window[A] = lessThan(max, inclusive = true)
 
   def greaterThan[A : Ordering](
     min: A,
     inclusive: Boolean,
   ): Window[A] = KnownWindow(Ior.Left(Above(min, inclusiveLowerBound = inclusive)))
 
-  @inline def greaterThan[A : Ordering](min: A): Window[A] = greaterThan(min, inclusive = false)
+  def greaterThan[A : Ordering](min: A): Window[A] = greaterThan(min, inclusive = false)
 
-  @inline def greaterThanOrEqual[A : Ordering](min: A): Window[A] = greaterThan(min, inclusive = true)
+  def greaterThanOrEqual[A : Ordering](min: A): Window[A] = greaterThan(min, inclusive = true)
 
   def between[A : Ordering](
     min: A,
@@ -96,12 +96,12 @@ object Window {
   ): Window[A] =
     KnownWindow(Ior.Both(Above(min, includeMin), Below(max, includeMax)))
 
-  @inline def between[A : Ordering](
+  def between[A : Ordering](
     min: A,
     max: A,
   ): Window[A] = between(min, includeMin = true, max, includeMax = false)
 
-  @inline def betweenInclusive[A : Ordering](
+  def betweenInclusive[A : Ordering](
     min: A,
     max: A,
   ): Window[A] = between(min, includeMin = true, max, includeMax = true)
