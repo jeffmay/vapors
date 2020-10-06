@@ -15,7 +15,7 @@ sealed abstract class ResultSet extends Equals {
   /**
     * Alias for [[union]].
     */
-  @inline final def ++(o: ResultSet): ResultSet = this.union(o)
+  final def ++(o: ResultSet): ResultSet = this.union(o)
 
   // SAFE: ResultSet is sealed, so all subclasses are matched on by this parent type.
   def canEqual(other: Any): Boolean = other.isInstanceOf[ResultSet]
