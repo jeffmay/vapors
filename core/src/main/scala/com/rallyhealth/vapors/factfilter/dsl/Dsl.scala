@@ -7,10 +7,7 @@ import com.rallyhealth.vapors.core.data.Window
 import com.rallyhealth.vapors.core.logic.{Intersect, Union}
 import com.rallyhealth.vapors.factfilter.data._
 
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
-
-private[dsl] class Dsl {
+private[dsl] class Dsl extends TypedFactOps {
 
   // TODO: Use some cats typeclass instead of iterable?
   def all[F[x] <: IterableOnce[x], T, A](cond: CondExp[T]): CondExp[F[T]] = liftCondExp {
@@ -46,14 +43,6 @@ private[dsl] class Dsl {
 
   def when[T, A](exp: Exp[T, Boolean])(thenExp: Exp[T, A])(elseExp: Exp[T, A]): Exp[T, A] = liftExp {
     ExpAlg.Cond[T, A](exp, thenExp, elseExp)
-  }
-
-  def withFactsOfType[T >: U, U : ClassTag : TypeTag](factType: FactType[U]): WhereFactsExpBuilder[T, U] = {
-    new WhereFactsExpBuilder[T, U](FactTypeSet.of(factType))
-  }
-
-  def withFactsOfTypeIn[T >: U, U : ClassTag : TypeTag](factTypeSet: FactTypeSet[U]): WhereFactsExpBuilder[T, U] = {
-    new WhereFactsExpBuilder[T, U](factTypeSet)
   }
 
   def and[T, A : Intersect](

@@ -45,12 +45,9 @@ class PrinterSpec extends AnyWordSpec {
         or(
           __.withFactsOfType(FactTypes.ProbabilityToUse)
             .withValuesAt(_.select(_.scores).atKey("weightloss"))
-            .whereAnyValue(
-              and(
-                exists(__ > 0.5),
-                exists(__ < 0.3),
-              ),
-            ),
+            .whereAnyValue {
+              and(exists(__ > 0.5), exists(__ < 0.3))
+            },
           __.withFactsOfType(FactTypes.WeightMeasurement)
             .whereAnyValue(__ > 150),
         )
