@@ -21,7 +21,7 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
           __.withFactsOfType(FactTypes.ProbabilityToUse)
             .withValuesAt(_.select(_.scores).atKey("weightloss"))
             .whereAnyValue {
-              __.exists(__ > 0.5)
+              exists(__ > 0.5)
             },
         )
       }
@@ -50,7 +50,7 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
           __.withFactsOfType(FactTypes.ProbabilityToUse)
             .withValuesAt(_.select(_.scores).atKey("weightloss"))
             .whereAnyValue {
-              __.exists(__ > 0.5)
+              exists(__ > 0.5)
             },
         )
       assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.probs))) {

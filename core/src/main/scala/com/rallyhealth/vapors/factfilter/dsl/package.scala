@@ -4,7 +4,7 @@ import cats.free.FreeApplicative
 import com.rallyhealth.vapors.core.algebra.ExpAlg
 import com.rallyhealth.vapors.factfilter.data.{Facts, FactsOfType, ResultSet, TypedResultSet}
 
-package object dsl extends Dsl with Evaluation with Syntax {
+package object dsl extends Dsl with Evaluation {
 
   /**
     * An alias to this [[dsl]] object, so you can use infix operators and more easily explore
@@ -16,7 +16,10 @@ package object dsl extends Dsl with Evaluation with Syntax {
     *     .whereAnyValue(__ > 35)
     * }}}
     */
-  final val __ = this
+  final val __ = new InfixOps
+
+  import scala.language.implicitConversions
+  implicit def logicalOps[T, A](exp: Exp[T, A]): LogicalOps[T, A] = new LogicalOps(exp)
 
   /**
     * The root of all expression types.
