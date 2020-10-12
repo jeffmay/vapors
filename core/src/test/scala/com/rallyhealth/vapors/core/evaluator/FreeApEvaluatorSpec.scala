@@ -14,16 +14,17 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
     "filter to the expected fact types" in {
       val q = {
         or(
-          __.withType(FactTypes.Age)
-            .whereAnyFactValue(_ > 40),
-          __.withType(FactTypes.WeightMeasurement)
-            .whereAnyFactValue(_ > 300),
-          __.withType(FactTypes.ProbabilityToUse)
-            .whereAnyFactValue { value =>
-              value.at(_.select(_.scores).atKey("weightloss")).exists {
-                _ > 0.5
-              }
-            },
+          withType(FactTypes.Age).whereAnyFactValue {
+            _ > 40
+          },
+          withType(FactTypes.WeightMeasurement).whereAnyFactValue {
+            _ > 300
+          },
+          withType(FactTypes.ProbabilityToUse).whereAnyFactValue { value =>
+            value.at(_.select(_.scores).atKey("weightloss")).exists {
+              _ > 0.5
+            }
+          },
         )
       }
       assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.probs))) {
@@ -35,25 +36,21 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
       val q =
         or(
           and(
-            __.withTypeIn(FactTypeSets.Weight)
-              .whereAnyFactValue { value =>
-                value > 200 and value <= 300
-              },
-            __.withTypeIn(FactTypeSet.of(FactTypes.Age))
-              .whereAnyFactValue {
-                _ > 45
-              },
+            withTypeIn(FactTypeSets.Weight).whereAnyFactValue { value =>
+              value > 200 and value <= 300
+            },
+            withTypeIn(FactTypeSet.of(FactTypes.Age)).whereAnyFactValue {
+              _ > 45
+            },
           ),
-          __.withTypeIn(FactTypeSets.Weight)
-            .whereAnyFactValue {
-              _ > 300
-            },
-          __.withType(FactTypes.ProbabilityToUse)
-            .whereAnyFactValue { value =>
-              value.at(_.select(_.scores).atKey("weightloss")).exists {
-                _ > 0.5
-              }
-            },
+          withTypeIn(FactTypeSets.Weight).whereAnyFactValue {
+            _ > 300
+          },
+          withType(FactTypes.ProbabilityToUse).whereAnyFactValue { value =>
+            value.at(_.select(_.scores).atKey("weightloss")).exists {
+              _ > 0.5
+            }
+          },
         )
       assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.probs))) {
         evalWithFacts(JoeSchmoe.facts)(q)
@@ -62,12 +59,11 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
 
     "return matching facts if any fact has prob for weightloss > existing amount" in {
       val q = {
-        __.withType(FactTypes.ProbabilityToUse)
-          .whereAnyFactValue { value =>
-            value.at(_.select(_.scores).atKey("weightloss")).exists {
-              _ > 0.4
-            }
+        withType(FactTypes.ProbabilityToUse).whereAnyFactValue { value =>
+          value.at(_.select(_.scores).atKey("weightloss")).exists {
+            _ > 0.4
           }
+        }
       }
       assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.probs))) {
         evalWithFacts(JoeSchmoe.facts)(q)
@@ -76,10 +72,9 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
 
     "return matching facts if any fact has prob for string === value" in {
       val q = {
-        __.withType(FactTypes.Tag)
-          .whereAnyFactValue {
-            _ === "asthma"
-          }
+        withType(FactTypes.Tag).whereAnyFactValue {
+          _ === "asthma"
+        }
       }
       assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.asthmaTag))) {
         evalWithFacts(JoeSchmoe.facts)(q)
@@ -88,13 +83,12 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
 
     "using whereEveryValue" in {
       val q = {
-        __.withType(FactTypes.BloodPressureMeasurement)
-          .whereEveryFactValue { value =>
-            and(
-              value.at(_.select(_.diastolic)) < 150,
-              value.at(_.select(_.systolic)) < 100,
-            )
-          }
+        withType(FactTypes.BloodPressureMeasurement).whereEveryFactValue { value =>
+          and(
+            value.at(_.select(_.diastolic)) < 150,
+            value.at(_.select(_.systolic)) < 100,
+          )
+        }
       }
       assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.bloodPressure))) {
         evalWithFacts(JoeSchmoe.facts)(q)

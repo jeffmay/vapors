@@ -12,7 +12,7 @@ class PrinterSpec extends AnyWordSpec {
 
     "print an expression that selects a specific fact type using whereAndFactValue(_ > 30)" in {
       val q = {
-        __.withType(FactTypes.Age)
+        withType(FactTypes.Age)
           .whereAnyFactValue(_ > 30)
       }
       assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.age))) {
@@ -27,7 +27,7 @@ class PrinterSpec extends AnyWordSpec {
 
     "print an expression that selects a fact type using whereAnyFact(_.at(_.select(_.value)) > 200))" in {
       val q = {
-        __.withType(FactTypes.WeightMeasurement)
+        withType(FactTypes.WeightMeasurement)
           .whereAnyFact(_.at(_.select(_.value)) > 200)
       }
       assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.weight))) {
@@ -43,13 +43,13 @@ class PrinterSpec extends AnyWordSpec {
     "print an expression that selects a value using the NamedLens select" in {
       val q = {
         or(
-          __.withType(FactTypes.ProbabilityToUse)
+          withType(FactTypes.ProbabilityToUse)
             .whereAnyFactValue { value =>
               value.at(_.select(_.scores).atKey("weightloss")).exists { score =>
                 score > 0.5 and score < 0.3
               }
             },
-          __.withType(FactTypes.WeightMeasurement)
+          withType(FactTypes.WeightMeasurement)
             .whereAnyFactValue(_ > 150),
         )
       }
