@@ -9,14 +9,12 @@ import com.rallyhealth.vapors.factfilter.data._
 
 private[dsl] class Dsl extends TypedFactOps {
 
-  // TODO: Use some cats typeclass instead of iterable?
-  def all[F[x] <: IterableOnce[x], T, A](cond: CondExp[T]): CondExp[F[T]] = liftCondExp {
-    ExpAlg.ForAll[F[T], T, Boolean](identity[F[T]], cond, True, False)
+  def forall[T, V](cond: CondExp[V])(implicit ev: T <:< IterableOnce[V]): CondExp[T] = liftCondExp {
+    ExpAlg.ForAll[T, V, Boolean](ev, cond, True, False)
   }
 
-  // TODO: Use some cats typeclass instead of iterable?
-  def exists[F[x] <: IterableOnce[x], T, A](cond: CondExp[T]): CondExp[F[T]] = liftCondExp {
-    ExpAlg.Exists[F[T], T, Boolean](identity[F[T]], cond, True, False)
+  def exists[T, V](cond: CondExp[V])(implicit ev: T <:< IterableOnce[V]): CondExp[T] = liftCondExp {
+    ExpAlg.Exists[T, V, Boolean](ev, cond, True, False)
   }
 
   def lessThan[T : Ordering](upperBound: T): CondExp[T] = liftCondExp {

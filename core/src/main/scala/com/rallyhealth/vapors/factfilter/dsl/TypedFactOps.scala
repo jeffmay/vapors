@@ -7,11 +7,12 @@ import scala.reflect.runtime.universe.TypeTag
 
 private[dsl] trait TypedFactOps {
 
-  def withFactsOfType[T >: U, U : ClassTag : TypeTag](factType: FactType[U]): WhereFactsExpBuilder[T, U] = {
-    new WhereFactsExpBuilder[T, U](FactTypeSet.of(factType))
+  def withType[T >: U, U : ClassTag : TypeTag](factType: FactType[U]): WhereBuilder[T, U] = {
+    new WhereBuilder[T, U](FactTypeSet.of(factType))
   }
 
-  def withFactsOfTypeIn[T >: U, U : ClassTag : TypeTag](factTypeSet: FactTypeSet[U]): WhereFactsExpBuilder[T, U] = {
-    new WhereFactsExpBuilder[T, U](factTypeSet)
+  def withTypeIn[T >: U, U : ClassTag : TypeTag](factTypeSet: FactTypeSet[U]): WhereBuilder[T, U] = {
+    new WhereBuilder[T, U](factTypeSet)
   }
+
 }
