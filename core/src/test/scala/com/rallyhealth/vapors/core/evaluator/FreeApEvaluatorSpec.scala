@@ -14,14 +14,15 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
     "filter to the expected fact types" in {
       val q = {
         or(
-          __.withFactsOfType(FactTypes.Age)
-            .whereAnyValue(__ > 40),
-          __.withFactsOfType(FactTypes.WeightMeasurement)
-            .whereAnyValue(__ > 300),
-          __.withFactsOfType(FactTypes.ProbabilityToUse)
-            .withValuesAt(_.select(_.scores).atKey("weightloss"))
-            .whereAnyValue {
-              exists(__ > 0.5)
+          __.withType(FactTypes.Age)
+            .whereAnyFactValue(_ > 40),
+          __.withType(FactTypes.WeightMeasurement)
+            .whereAnyFactValue(_ > 300),
+          __.withType(FactTypes.ProbabilityToUse)
+            .whereAnyFactValue { value =>
+              value.at(_.select(_.scores).atKey("weightloss")).exists {
+                _ > 0.5
+              }
             },
         )
       }
@@ -34,23 +35,24 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
       val q =
         or(
           and(
-            __.withFactsOfTypeIn(FactTypeSets.Weight)
-              .whereAnyValue {
-                __ > 200 and __ <= 300
+            __.withTypeIn(FactTypeSets.Weight)
+              .whereAnyFactValue { value =>
+                value > 200 and value <= 300
               },
-            __.withFactsOfTypeIn(FactTypeSet.of(FactTypes.Age))
-              .whereAnyValue {
-                __ > 45
+            __.withTypeIn(FactTypeSet.of(FactTypes.Age))
+              .whereAnyFactValue {
+                _ > 45
               },
           ),
-          __.withFactsOfTypeIn(FactTypeSets.Weight)
-            .whereAnyValue {
-              __ > 300
+          __.withTypeIn(FactTypeSets.Weight)
+            .whereAnyFactValue {
+              _ > 300
             },
-          __.withFactsOfType(FactTypes.ProbabilityToUse)
-            .withValuesAt(_.select(_.scores).atKey("weightloss"))
-            .whereAnyValue {
-              exists(__ > 0.5)
+          __.withType(FactTypes.ProbabilityToUse)
+            .whereAnyFactValue { value =>
+              value.at(_.select(_.scores).atKey("weightloss")).exists {
+                _ > 0.5
+              }
             },
         )
       assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.probs))) {
@@ -60,10 +62,11 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
 
     "return matching facts if any fact has prob for weightloss > existing amount" in {
       val q = {
-        __.withFactsOfType(FactTypes.ProbabilityToUse)
-          .withValuesAt(_.select(_.scores).atKey("weightloss"))
-          .whereAnyValue {
-            exists(__ > 0.4)
+        __.withType(FactTypes.ProbabilityToUse)
+          .whereAnyFactValue { value =>
+            value.at(_.select(_.scores).atKey("weightloss")).exists {
+              _ > 0.4
+            }
           }
       }
       assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.probs))) {
@@ -73,12 +76,27 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
 
     "return matching facts if any fact has prob for string === value" in {
       val q = {
-        __.withFactsOfType(FactTypes.Tag)
-          .whereAnyValue {
-            __ === "asthma"
+        __.withType(FactTypes.Tag)
+          .whereAnyFactValue {
+            _ === "asthma"
           }
       }
       assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.asthmaTag))) {
+        evalWithFacts(JoeSchmoe.facts)(q)
+      }
+    }
+
+    "using whereEveryValue" in {
+      val q = {
+        __.withType(FactTypes.BloodPressureMeasurement)
+          .whereEveryFactValue { value =>
+            and(
+              value.at(_.select(_.diastolic)) < 150,
+              value.at(_.select(_.systolic)) < 100,
+            )
+          }
+      }
+      assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.bloodPressure))) {
         evalWithFacts(JoeSchmoe.facts)(q)
       }
     }
