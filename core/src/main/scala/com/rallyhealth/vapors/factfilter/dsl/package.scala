@@ -4,21 +4,18 @@ import cats.free.FreeApplicative
 import com.rallyhealth.vapors.core.algebra.ExpAlg
 import com.rallyhealth.vapors.factfilter.data.{Facts, FactsOfType, ResultSet, TypedResultSet}
 
-package object dsl extends Dsl with Evaluation {
+import scala.language.implicitConversions
+
+package object dsl extends FactFilterDsl with Evaluation {
 
   /**
-    * An alias to this [[dsl]] object, so you can use infix operators and more easily explore
-    * the list of supported expression builders.
-    *
-    * Example:
-    * {{{
-    *   __.withFactsOfType(FactTypes.Age)
-    *     .whereAnyValue(__ > 35)
-    * }}}
+    * An alias to all of the methods available from this package (with some exceptions).
     */
-  final val __ = new InfixOps
+  final val __ = new FactFilterDsl
 
-  import scala.language.implicitConversions
+  /**
+    * Adds support for logical infix operators (like [[and]] / [[or]]) to any expression that supports it.
+    */
   implicit def logicalOps[T, A](exp: Exp[T, A]): LogicalOps[T, A] = new LogicalOps(exp)
 
   /**
@@ -32,8 +29,8 @@ package object dsl extends Dsl with Evaluation {
   /**
     * An expression that terminates into a boolean, used for making a conditional query or filter.
     *
-    * Useful for defining sub-expressions to [[WhereFactsExpBuilder.whereAllFacts]],
-    * [[WhereFactsExpBuilder.whereAnyValue]], [[exists]], [[all]], etc.
+    * Useful for defining sub-expressions to [[WhereBuilder.whereEveryFact]],
+    * [[WhereBuilder.whereAnyFactValue]], [[exists]], [[forall]], etc.
     */
   final type CondExp[X] = Exp[X, Boolean]
 
