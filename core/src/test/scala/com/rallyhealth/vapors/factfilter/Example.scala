@@ -2,6 +2,7 @@ package com.rallyhealth.vapors.factfilter
 
 import java.time.LocalDate
 
+import cats.Eq
 import cats.data.NonEmptyList
 import com.rallyhealth.vapors.factfilter.data.{FactType, FactTypeSet}
 
@@ -14,9 +15,24 @@ object Example {
 
   final case class Probs(scores: Map[String, Double])
 
+  sealed trait Role
+  final object Role {
+    case object Admin extends Role
+    case object User extends Role
+
+    implicit val eq: Eq[Role] = Eq.fromUniversalEquals
+    implicit val ordering: Ordering[Role] = Ordering
+      .by[Role, Int] {
+        case Admin => 1
+        case User => 2
+      }
+      .reverse
+  }
+
   final object FactTypes {
     val Name = FactType[String]("name")
     val Age = FactType[Int]("age")
+    val Role = FactType[Role]("role")
     val DateOfBirth = FactType[LocalDate]("date_of_birth")
     val WeightMeasurement = FactType[Int]("weight_measurement")
     val WeightSelfReported = FactType[Int]("weight_self_reported")
@@ -33,6 +49,8 @@ object Example {
   final object JoeSchmoe {
     val name = FactTypes.Name("Joe Schmoe")
     val age = FactTypes.Age(32)
+    val userRole = FactTypes.Role(Role.User)
+    val adminRole = FactTypes.Role(Role.Admin)
     val dateOfBirth = FactTypes.DateOfBirth(LocalDate.of(1987, 1, 1))
     val weight = FactTypes.WeightMeasurement(250)
     val weightSelfReported = FactTypes.WeightSelfReported(200)
@@ -43,6 +61,8 @@ object Example {
     val facts = NonEmptyList.of(
       name,
       age,
+      adminRole,
+      userRole,
       weight,
       weightSelfReported,
       bloodPressure,

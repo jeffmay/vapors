@@ -77,7 +77,7 @@ private[dsl] class Dsl extends TypedFactOps {
   private def True[X]: X => Boolean = _ => true
   private def False[X]: X => Boolean = _ => false
 
-  /** @see [[FactsExp]] */
+  /** @see [[TerminalFactsExp]] */
   private def liftAnyTermExp(exp: ExpAlg[Facts, ResultSet]): TerminalFactsExp =
     FreeApplicative.lift(exp)
 

@@ -1,7 +1,7 @@
 package com.rallyhealth.vapors.core.evaluator
 
-import cats.data.NonEmptyList
 import cats.instances.string._
+import com.rallyhealth.vapors.core.data.Window
 import com.rallyhealth.vapors.factfilter.Example._
 import com.rallyhealth.vapors.factfilter.data.{FactTypeSet, FactsMatch}
 import com.rallyhealth.vapors.factfilter.dsl._
@@ -27,7 +27,7 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
           },
         )
       }
-      assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.probs))) {
+      assertResult(FactsMatch(Facts(JoeSchmoe.probs))) {
         evalWithFacts(JoeSchmoe.facts)(q)
       }
     }
@@ -52,7 +52,7 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
             }
           },
         )
-      assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.probs))) {
+      assertResult(FactsMatch(Facts(JoeSchmoe.probs))) {
         evalWithFacts(JoeSchmoe.facts)(q)
       }
     }
@@ -65,7 +65,7 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
           }
         }
       }
-      assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.probs))) {
+      assertResult(FactsMatch(Facts(JoeSchmoe.probs))) {
         evalWithFacts(JoeSchmoe.facts)(q)
       }
     }
@@ -76,7 +76,7 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
           _ === "asthma"
         }
       }
-      assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.asthmaTag))) {
+      assertResult(FactsMatch(Facts(JoeSchmoe.asthmaTag))) {
         evalWithFacts(JoeSchmoe.facts)(q)
       }
     }
@@ -90,7 +90,19 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
           )
         }
       }
-      assertResult(FactsMatch(NonEmptyList.of(JoeSchmoe.bloodPressure))) {
+      assertResult(FactsMatch(Facts(JoeSchmoe.bloodPressure))) {
+        evalWithFacts(JoeSchmoe.facts)(q)
+      }
+    }
+
+    "using sealed trait / case object pattern" in {
+      val q = {
+        withType(FactTypes.Role).whereAnyFactValue { value =>
+          value >= Role.Admin
+        }
+      }
+      // TODO: This is wrong... it should only be the admin role.
+      assertResult(FactsMatch(Facts(JoeSchmoe.adminRole, JoeSchmoe.userRole))) {
         evalWithFacts(JoeSchmoe.facts)(q)
       }
     }
