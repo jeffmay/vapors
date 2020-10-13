@@ -39,7 +39,7 @@ object CondBuilder {
 
 final class CondBuilder[T, U](private val lens: NamedLens[T, U]) extends AnyVal {
 
-  private[CondBuilder] def wrap(cond: CondExp[U]): CondExp[T] =
+  private def wrap(cond: CondExp[U]): CondExp[T] =
     FreeApplicative.lift(ExpAlg.Select[T, U, Boolean](lens, cond))
 
   def at[V](selector: NamedLens[T, U] => NamedLens[T, V]): CondBuilder[T, V] = new CondBuilder(selector(lens))

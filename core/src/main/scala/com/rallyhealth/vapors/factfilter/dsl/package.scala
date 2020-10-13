@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.factfilter
 
 import cats.free.FreeApplicative
 import com.rallyhealth.vapors.core.algebra.ExpAlg
-import com.rallyhealth.vapors.factfilter.data.{Facts, FactsOfType, ResultSet, TypedResultSet}
+import com.rallyhealth.vapors.factfilter.data.{Facts, ResultSet}
 
 import scala.language.implicitConversions
 
@@ -35,29 +35,8 @@ package object dsl extends FactFilterDsl with Evaluation {
   final type CondExp[X] = Exp[X, Boolean]
 
   /**
-    * An expression that operates on a non-empty list of facts but is unbounded in what it returns.
-    *
-    * @tparam T the type of fact
-    * @tparam A the free parameter
-    */
-  final type FactsExp[T, A] = Exp[FactsOfType[T], A]
-
-  /**
     * A top-level expression that handles facts of any type and returns the filtered list of facts
     * without restriction on type.
     */
   final type TerminalFactsExp = Exp[Facts, ResultSet]
-
-  /**
-    * An expression that is unbounded in its input but always returns a [[TypedResultSet]] and thus can
-    * terminate a fact filter expression.
-    */
-  final type TypedTerminalExp[T, V] = Exp[V, TypedResultSet[T]]
-
-  /**
-    * An expression that returns a [[TypedResultSet]] with metadata and all the facts used to compute the result.
-    *
-    * @see [[TypedTerminalExp]] for more details
-    */
-  final type TypedTerminalFactsExp[T] = FactsExp[T, TypedResultSet[T]]
 }
