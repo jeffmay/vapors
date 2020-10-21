@@ -2,6 +2,8 @@ package com.rallyhealth.vapors.core.data
 
 import com.rallyhealth.vapors.core.macros.NamedLensMacros
 
+import scala.reflect.runtime.universe.TypeTag
+
 case class NamedLens[A, B](
   path: DataPath,
   get: A => B,
