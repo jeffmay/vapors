@@ -1,7 +1,7 @@
 repos:
 - repo: https://github.com/softwaremill/scala-pre-commit-hooks
   rev: v0.3.0
-  default_phase: push
   hooks:
   - id: sbt-scalafmt
+    stages: [push]
 
