@@ -70,6 +70,17 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
       }
     }
 
+    "return matching facts if any fact within some given window" in {
+      val q = {
+        withTypeIn(FactTypeSets.Weight).whereAnyFactValue {
+          _.within(Window.between(100, 250))
+        }
+      }
+      assertResult(FactsMatch(Facts(JoeSchmoe.weight, JoeSchmoe.weightSelfReported))) {
+        evalWithFacts(JoeSchmoe.facts)(q)
+      }
+    }
+
     "return matching facts if any fact has prob for string === value" in {
       val q = {
         withType(FactTypes.Tag).whereAnyFactValue {
