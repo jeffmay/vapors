@@ -17,20 +17,8 @@ private[dsl] class Dsl extends TypedFactOps {
     ExpAlg.Exists[T, V, Boolean](ev, cond, True, False)
   }
 
-  def lessThan[T : Ordering](upperBound: T): CondExp[T] = liftCondExp {
-    ExpAlg.Within[T, Boolean](Window.lessThan(upperBound), True, False)
-  }
-
-  def lessThanOrEqual[T : Ordering](upperBound: T): CondExp[T] = liftCondExp {
-    ExpAlg.Within[T, Boolean](Window.lessThanOrEqual(upperBound), True, False)
-  }
-
-  def greaterThan[T : Ordering](lowerBound: T): CondExp[T] = liftCondExp {
-    ExpAlg.Within[T, Boolean](Window.greaterThan(lowerBound), True, False)
-  }
-
-  def greaterThanOrEqual[T : Ordering](lowerBound: T): CondExp[T] = liftCondExp {
-    ExpAlg.Within[T, Boolean](Window.greaterThanOrEqual(lowerBound), True, False)
+  def within[T](window: Window[T]): CondExp[T] = liftCondExp {
+    ExpAlg.Within[T, Boolean](window, True, False)
   }
 
   def equalTo[T : Eq](value: T): CondExp[T] = liftCondExp {

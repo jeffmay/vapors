@@ -44,10 +44,12 @@ final class CondBuilder[T, U](private val lens: NamedLens[T, U]) extends AnyVal 
 
   def at[V](selector: NamedLens[T, U] => NamedLens[T, V]): CondBuilder[T, V] = new CondBuilder(selector(lens))
 
-  def >(lowerBound: U)(implicit ord: Ordering[U]): CondExp[T] = wrap(greaterThan(lowerBound))
-  def >=(lowerBound: U)(implicit ord: Ordering[U]): CondExp[T] = wrap(greaterThanOrEqual(lowerBound))
-  def <(upperBound: U)(implicit ord: Ordering[U]): CondExp[T] = wrap(lessThan(upperBound))
-  def <=(upperBound: U)(implicit ord: Ordering[U]): CondExp[T] = wrap(lessThanOrEqual(upperBound))
+  def within(window: Window[U]): CondExp[T] = wrap(dsl.within(window))
+
+  def >(min: U)(implicit ord: Ordering[U]): CondExp[T] = within(Window.greaterThan(min))
+  def >=(min: U)(implicit ord: Ordering[U]): CondExp[T] = within(Window.greaterThanOrEqual(min))
+  def <(max: U)(implicit ord: Ordering[U]): CondExp[T] = within(Window.lessThan(max))
+  def <=(max: U)(implicit ord: Ordering[U]): CondExp[T] = within(Window.lessThanOrEqual(max))
   def ===(value: U)(implicit ord: Eq[U]): CondExp[T] = wrap(equalTo(value))
 }
 
