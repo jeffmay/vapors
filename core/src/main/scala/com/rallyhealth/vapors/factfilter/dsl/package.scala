@@ -3,6 +3,7 @@ package com.rallyhealth.vapors.factfilter
 import cats.free.FreeApplicative
 import com.rallyhealth.vapors.core.algebra.ExpAlg
 import com.rallyhealth.vapors.factfilter.data.{Facts, ResultSet}
+import com.rallyhealth.vapors.factfilter.dsl.builder.WhereBuilder
 
 import scala.language.implicitConversions
 

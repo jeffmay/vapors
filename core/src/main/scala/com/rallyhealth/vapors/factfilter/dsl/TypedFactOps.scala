@@ -1,6 +1,7 @@
 package com.rallyhealth.vapors.factfilter.dsl
 
 import com.rallyhealth.vapors.factfilter.data.{FactType, FactTypeSet}
+import com.rallyhealth.vapors.factfilter.dsl.builder.WhereBuilder
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
