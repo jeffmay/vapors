@@ -20,7 +20,7 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
             }
           },
           withType(FactTypes.WeightMeasurement).where {
-            _.value.exists {
+            _.value.at(_.select(_.value)).exists {
               _ > 300
             }
           },
@@ -45,7 +45,7 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
         or(
           and(
             withTypeIn(FactTypeSets.Weight).where {
-              _.value.exists { value =>
+              _.value.at(_.select(_.value)).exists { value =>
                 value > 200 and value <= 300
               }
             },
@@ -56,7 +56,7 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
             },
           ),
           withTypeIn(FactTypeSets.Weight).where {
-            _.value.exists {
+            _.value.at(_.select(_.value)).exists {
               _ > 300
             }
           },
@@ -94,7 +94,7 @@ final class FreeApEvaluatorSpec extends AnyWordSpec {
       val q = {
         withTypeIn(FactTypeSets.Weight).where {
           _.value.exists {
-            _.within(Window.between(100, 250))
+            _.at(_.select(_.value)).within(Window.between(100, 250))
           }
         }
       }
