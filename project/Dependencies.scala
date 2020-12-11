@@ -4,13 +4,14 @@ object Dependencies {
 
   final val Scala_2_13 = "2.13.0"
 
-  private final val catsVersion = "2.1.1"
+  private final val catsVersion = "2.3.0"
   private final val kindProjectorVersion = "0.11.0"
-  private final val scalaCheckVersion = "1.14.3"
-  private final val scalaCheckOpsVersion = "2.5.0"
+  private final val scalaCheckVersion = "1.15.1"
+  private final val scalaCheckOpsVersion = "2.5.1"
   private final val scalaTestVersion = "3.2.2"
   private final val scalaTestPlusScalaCheckVersion = "3.1.4.0"
 
+  private val alleyCatsCore = "org.typelevel" %% "alleycats-core" % catsVersion
   private val catsCore = "org.typelevel" %% "cats-core" % catsVersion
   private val catsFree = "org.typelevel" %% "cats-free" % catsVersion
   private val scalaCheck = "org.scalacheck" %% "scalacheck" % scalaCheckVersion
@@ -31,6 +32,7 @@ object Dependencies {
     def all(scalaVersion: String): Seq[ModuleID] =
       Seq(
         Plugins.kindProjector,
+        alleyCatsCore,
         catsCore,
         catsFree,
         scalaReflect(scalaVersion),
