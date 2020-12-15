@@ -48,16 +48,13 @@ class EmbeddedExpressionSpec extends AnyWordSpec {
   }
 
   "overwrite another fact type" in {
+    val age = FactTypes.Age(15)
     val dob = FactTypes.DateOfBirth(LocalDate.of(1990, 1, 1))
-    val facts = FactTable(
-      List(
-        FactTypes.Age(15),
-        dob,
-      ),
-    )
+    val facts = FactTable(age, dob)
     val result = eval(facts)(isOver18)
     assert(result.output.value)
     pendingUntilFixed {
+      assertResult(Evidence(FactTypes.Age(LocalDate.now().getYear - dob.value.getYear)))(result.output.evidence)
       assertResult(Evidence(dob))(result.output.evidence)
     }
   }

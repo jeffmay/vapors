@@ -4,6 +4,7 @@ import cats.{Monoid, Order}
 import cats.data.NonEmptySet
 import cats.instances.order._
 
+import scala.annotation.tailrec
 import scala.collection.immutable.SortedSet
 
 final class Evidence private (val factSet: SortedSet[Fact]) extends AnyVal {
@@ -31,6 +32,25 @@ final class Evidence private (val factSet: SortedSet[Fact]) extends AnyVal {
     case _ => Evidence(this.factSet | that.factSet)
   }
 
+  // TODO: Use a separate type?
+  def derivedFromSources: Evidence = {
+    @tailrec def loop(
+      mixed: Iterable[Fact],
+      source: FactSet,
+    ): FactSet = {
+      if (mixed.isEmpty) source
+      else {
+        val (remainingEvidence, sourceFacts) = mixed.partitionMap {
+          case DerivedFact(_, _, evidence) => Left(evidence.factSet)
+          case source => Right(source)
+        }
+        loop(remainingEvidence.flatten, source ++ sourceFacts)
+      }
+    }
+    val allSourceFacts = loop(this.factSet, FactSet.empty)
+    new Evidence(allSourceFacts)
+  }
+
   override def toString: String =
     if (this.factSet.isEmpty) "Evidence()"
     else s"Evidence${factSet.mkString("(", ", ", ")")}"
@@ -40,14 +60,9 @@ object Evidence {
 
   def unapply(evidence: Evidence): Some[SortedSet[Fact]] = Some(evidence.factSet)
 
-  final class SetOfFacts private[Evidence] (private[Evidence] val factSet: SortedSet[Fact]) extends AnyVal
-
-  implicit def singleSetOfFacts(fact: Fact): SetOfFacts = new SetOfFacts(SortedSet(fact))
-  implicit def iterableSetOfFacts(facts: Iterable[Fact]): SetOfFacts = new SetOfFacts(SortedSet.from(facts))
-
-  @inline final def apply(factSets: SetOfFacts*): Evidence = {
-    if (factSets.isEmpty) none
-    else new Evidence(factSets.iterator.foldLeft(none.factSet)(_ | _.factSet))
+  @inline final def apply(facts: FactOrFactSet*): Evidence = {
+    if (facts.isEmpty) none
+    else new Evidence(FactOrFactSet.flatten(facts))
   }
 
   final val none = new Evidence(SortedSet.empty[Fact])

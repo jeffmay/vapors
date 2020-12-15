@@ -9,19 +9,22 @@ sealed abstract class Fact {
 
   val typeInfo: FactType[Value]
   val value: Value
-
-  override def toString: String = {
-    // TODO: JSON format for value? Show for value?
-    s"Fact(${typeInfo.fullName} = $value)"
-  }
 }
 
 object Fact {
 
-  @inline final def apply[T](
+  def apply[T](
     factType: FactType[T],
     value: T,
-  ): Fact = TypedFact(factType, value)
+  ): Fact = SourceFactOfType(factType, value)
+
+  def apply[T](
+    factType: FactType[T],
+    value: T,
+    evidence: Evidence,
+  ): DerivedFact = DerivedFactOfType(factType, value, evidence)
+
+  def unapply(fact: Fact): Some[(FactType[fact.Value], fact.Value)] = Some((fact.typeInfo, fact.value))
 
   val orderByFactValue: Order[Fact] = { (x, y) =>
     def maybeXCompared =
@@ -54,14 +57,27 @@ object Fact {
   }
 }
 
-final case class TypedFact[A](
-  typeInfo: FactType[A],
-  value: A,
-) extends Fact {
+sealed trait TypedFact[A] extends Fact {
   type Value = A
 }
 
 object TypedFact {
+
+  def apply[A](
+    typeInfo: FactType[A],
+    value: A,
+  ): TypedFact[A] = SourceFactOfType(typeInfo, value)
+
+  def apply[A](
+    typeInfo: FactType[A],
+    value: A,
+    evidence: Evidence,
+  ): TypedFact[A] with DerivedFact = DerivedFactOfType(typeInfo, value, evidence)
+
+  def unapply[A](fact: TypedFact[A]): Some[(FactType[A], A)] = fact match {
+    case SourceFactOfType(typeInfo, value) => Some((typeInfo, value))
+    case DerivedFactOfType(typeInfo, value, _) => Some((typeInfo, value))
+  }
 
   def orderByTypedFactValue[T]: Order[TypedFact[T]] = { (x, y) =>
     x.typeInfo.order.compare(x.value, y.value)
@@ -74,9 +90,47 @@ object TypedFact {
     }
   }
 
-  final def lens[A]: NamedLens.Id[TypedFact[A]] = NamedLens.id[TypedFact[A]]
+  def lens[A]: NamedLens.Id[TypedFact[A]] = NamedLens.id[TypedFact[A]]
 
-  final def value[A]: NamedLens[TypedFact[A], A] = {
+  def value[A]: NamedLens[TypedFact[A], A] = {
     NamedLens[TypedFact[A], A](DataPath.empty.atField("value"), _.value)
   }
+}
+
+sealed trait DerivedFact extends Fact {
+  def evidence: Evidence
+}
+
+object DerivedFact {
+
+  def apply[A](
+    typeInfo: FactType[A],
+    value: A,
+    evidence: Evidence,
+  ): DerivedFact =
+    DerivedFactOfType(typeInfo, value, evidence)
+
+  def unapply(fact: Fact): Option[(FactType[fact.Value], fact.Value, Evidence)] = fact match {
+    case DerivedFactOfType(_, _, evidence) =>
+      Some((fact.typeInfo, fact.value, evidence))
+    case _ => None
+  }
+}
+
+final case class SourceFactOfType[A](
+  typeInfo: FactType[A],
+  value: A,
+) extends TypedFact[A] {
+
+  override def toString: String = s"SourceFact(${typeInfo.fullName} = $value)"
+}
+
+final case class DerivedFactOfType[A](
+  typeInfo: FactType[A],
+  value: A,
+  evidence: Evidence,
+) extends TypedFact[A]
+  with DerivedFact {
+
+  override def toString: String = s"DerivedFact(${typeInfo.fullName} = $value, evidence = $evidence)"
 }

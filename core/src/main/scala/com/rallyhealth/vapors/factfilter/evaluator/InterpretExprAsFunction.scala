@@ -81,8 +81,9 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     val definitionFn = expr.definitionExpr.visit(InterpretExprAsFunction())
     val definitionContext = input.withValue(input.factTable)
     val definitionResult = definitionFn(definitionContext)
-    val definedFactSet = definitionResult.output.value.foldMap(v => FactSet(Fact(expr.factType, v)))
-    // TODO: The evidence of the definitions should include the facts that proved them
+    val definedFactSet = definitionResult.output.value.foldMap { definitionValue =>
+      FactSet(DerivedFact(expr.factType, definitionValue, definitionResult.output.evidence))
+    }
     val output = Output(definedFactSet, definitionResult.output.evidence)
     val postParam = expr.capture.foldToParam(expr, definitionContext, output, definitionResult.param :: Nil)
     ExprResult.Define(expr, ExprResult.Context(input, output, postParam), definitionResult)

@@ -36,9 +36,10 @@ object FactTable {
 
   final val empty = new FactTable(SortedMap.empty)
 
-  def apply(facts: Iterable[Fact]): FactTable = {
-    if (facts.isEmpty) empty
-    else new FactTable(SortedMap.from(FactSet.from(facts).groupBy(_.typeInfo.fullName)))
+  def apply(facts: FactOrFactSet*): FactTable = {
+    val factSet = FactOrFactSet.flatten(facts)
+    if (factSet.isEmpty) empty
+    else new FactTable(SortedMap.from(factSet.groupBy(_.typeInfo.fullName)))
   }
 
   implicit object MonoidInstance extends Monoid[FactTable] {
