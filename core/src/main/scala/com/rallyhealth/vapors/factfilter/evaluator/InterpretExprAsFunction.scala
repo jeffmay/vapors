@@ -8,12 +8,13 @@ import com.rallyhealth.vapors.core.logic._
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.data._
 import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.{Input, Output}
+import shapeless.HList
 
 import scala.collection.immutable.BitSet
 
 // TODO: Make R the last parameter?
 final class InterpretExprAsFunction[F[_] : Foldable, V, P]
-  extends Expr.Visitor[F, V, P, Lambda[r => Input[F, V] => ExprResult[F, V, r, P]]] {
+  extends Expr.Visitor[F, V, P, Lambda[r => Input[F, V] => ExprResult[F, V, r, P]]] { interpreter =>
 
   import cats.syntax.all._
   import com.rallyhealth.vapors.core.syntax.math._
@@ -308,6 +309,33 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     }
     resultOfManySubExpr(expr, input, selectedValues, inputResult.output.evidence, inputResult.param :: Nil) {
       ExprResult.TakeFromOutput(_, _, inputResult)
+    }
+  }
+
+  // TODO: Where to put this?
+  private type Fn[A] = Input[F, V] => (Output[A], List[Eval[P]])
+  private implicit object FnFunctor extends Functor[Fn] with Semigroupal[Fn] {
+    override def map[A, B](fa: Fn[A])(f: A => B): Fn[B] = fa.andThen {
+      case (o, params) => (o.copy(value = f(o.value)), params)
+    }
+    override def product[A, B](
+      fa: Fn[A],
+      fb: Fn[B],
+    ): Fn[(A, B)] = { input =>
+      val (a, aParams) = fa(input)
+      val (b, bParams) = fb(input)
+      // TODO: Product type should remove evidence if any arg has no evidence
+      (Output((a.value, b.value), a.evidence ++ b.evidence), aParams ::: bParams)
+    }
+  }
+
+  override def visitWrapOutput[T <: HList, R](
+    expr: Expr.WrapOutput[F, V, T, R, P],
+  ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
+    val (tupleOutput, allParams) = expr.inputExprHList.visit(new EvalExprAsOutputAndParam).apply(input)
+    val value = expr.generic.from(tupleOutput.value)
+    resultOfManySubExpr(expr, input, value, tupleOutput.evidence, allParams) {
+      ExprResult.WrapOutput(_, _)
     }
   }
 

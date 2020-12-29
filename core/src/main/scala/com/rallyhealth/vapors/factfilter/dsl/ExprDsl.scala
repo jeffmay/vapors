@@ -9,7 +9,7 @@ import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.data._
 import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction
 
-object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances {
+object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with WrapExprSyntax {
 
   final type CondExpr[F[_], V, P] = Expr[F, V, Boolean, P]
 
