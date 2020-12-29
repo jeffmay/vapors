@@ -8,6 +8,7 @@ import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.data._
 import com.rallyhealth.vapors.factfilter.dsl.CaptureP
+import shapeless.{Generic, HList}
 
 /**
   * The core expression algebra.
@@ -60,6 +61,7 @@ object Expr {
     def visitTakeFromOutput[M[_] : Traverse : TraverseFilter, R](expr: TakeFromOutput[F, V, M, R, P]): G[M[R]]
     def visitUsingDefinitions[R](expr: UsingDefinitions[F, V, R, P]): G[R]
     def visitWhen[R](expr: When[F, V, R, P]): G[R]
+    def visitWrapOutput[T <: HList, R](expr: WrapOutput[F, V, T, R, P]): G[R]
     def visitWithFactsOfType[T, R](expr: WithFactsOfType[T, R, P]): G[R]
   }
 
@@ -301,6 +303,14 @@ object Expr {
     capture: CaptureP[F, V, M[R], P],
   ) extends Expr[F, V, M[R], P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitMapOutput(this)
+  }
+
+  final case class WrapOutput[F[_], V, L <: HList, R, P](
+    inputExprHList: NonEmptyExprHList[F, V, L, P],
+    generic: Generic.Aux[R, L],
+    capture: CaptureP[F, V, R, P],
+  ) extends Expr[F, V, R, P] {
+    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitWrapOutput(this)
   }
 
   final case class OutputIsEmpty[F[_], V, M[_] : Foldable, R, P](

@@ -4,12 +4,13 @@ import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Order, Traverse, Tra
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.{NamedLens, Window}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
-import com.rallyhealth.vapors.factfilter.data.{Evidence, Fact, TypedFact}
+import com.rallyhealth.vapors.factfilter.data.{Evidence, Fact, FactTable, TypedFact}
 
 import scala.collection.Factory
 
 sealed class ExprBuilder[F[_], V, M[_], U, P](val returnOutput: Expr[F, V, M[U], P]) {
 
+  type CaptureEmbed[R] = CaptureP[Id, FactTable, R, P]
   type CaptureResult[R] = CaptureP[F, V, R, P]
 
   type CaptureInput[G[_]] = CaptureP[G, V, G[V], P]
@@ -53,6 +54,7 @@ final class AdditionBuilderOps[R : Addition](number: R) {
   def +[V, P](
     builder: ValExprBuilder[V, R, P],
   )(implicit
+    captureEmbed: builder.CaptureEmbed[R],
     captureResult: builder.CaptureResult[R],
   ): ValExprBuilder[V, R, P] = {
     builder.addTo(number)
@@ -64,6 +66,7 @@ final class SubtractBuilderOps[R : Subtraction](number: R) {
   def -[V, P](
     builder: ValExprBuilder[V, R, P],
   )(implicit
+    captureEmbed: builder.CaptureEmbed[R],
     captureResult: builder.CaptureResult[R],
   ): ValExprBuilder[V, R, P] = {
     builder.subtractFrom(number)
@@ -255,6 +258,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     rhs: R,
   )(implicit
     R: Addition[R],
+    captureEmbed: CaptureEmbed[R],
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
     this + rhs
@@ -263,6 +267,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     rhs: R,
   )(implicit
     R: Addition[R],
+    captureEmbed: CaptureEmbed[R],
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
     new ValExprBuilder(ExprDsl.add(returnOutput, Expr.ConstOutput(rhs, Evidence.none, captureResult)))
@@ -271,6 +276,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     lhs: R,
   )(implicit
     R: Addition[R],
+    captureEmbed: CaptureEmbed[R],
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
     new ValExprBuilder(ExprDsl.add(Expr.ConstOutput(lhs, Evidence.none, captureResult), returnOutput))
@@ -279,6 +285,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     rhs: R,
   )(implicit
     R: Subtraction[R],
+    captureEmbed: CaptureEmbed[R],
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
     this - rhs
@@ -287,17 +294,23 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     rhs: R,
   )(implicit
     R: Subtraction[R],
+    captureEmbed: CaptureEmbed[R],
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
-    new ValExprBuilder(ExprDsl.subtract(returnOutput, Expr.ConstOutput(rhs, Evidence.none, captureResult)))
+    new ValExprBuilder(
+      ExprDsl.subtract(returnOutput, Expr.ConstOutput(rhs, Evidence.none, captureResult)),
+    )
 
   def subtractFrom(
     lhs: R,
   )(implicit
     R: Subtraction[R],
+    captureEmbed: CaptureEmbed[R],
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
-    new ValExprBuilder(ExprDsl.subtract(Expr.ConstOutput(lhs, Evidence.none, captureResult), returnOutput))
+    new ValExprBuilder(
+      ExprDsl.subtract(Expr.ConstOutput(lhs, Evidence.none, captureResult), returnOutput),
+    )
 
   def unary_-(
     implicit

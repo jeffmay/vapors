@@ -3,7 +3,10 @@ package com.rallyhealth.vapors.core.algebra
 import cats.kernel.Monoid
 import cats.{~>, Eval, Foldable, FunctorFilter, Id, Traverse, TraverseFilter}
 import com.rallyhealth.vapors.factfilter.data.{Fact, FactSet, FactTable, TypedFact}
+import cats.{~>, Eval, Foldable, Id}
+import com.rallyhealth.vapors.factfilter.data.{FactSet, FactTable, TypedFact}
 import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.{Input, Output}
+import shapeless.HList
 
 import scala.collection.BitSet
 
@@ -59,6 +62,7 @@ object ExprResult {
     def visitTakeFromOutput[M[_] : Traverse : TraverseFilter, R](result: TakeFromOutput[F, V, M, R, P]): G[M[R]]
     def visitUsingDefinitions[R](result: UsingDefinitions[F, V, R, P]): G[R]
     def visitWhen[R](result: When[F, V, R, P]): G[R]
+    def visitWrapOutput[T <: HList, R](result: WrapOutput[F, V, T, R, P]): G[R]
     def visitWithFactsOfType[T, R](result: WithFactsOfType[F, V, T, R, P]): G[R]
   }
 
@@ -238,6 +242,13 @@ object ExprResult {
     subResultList: List[ExprResult[F, V, R, P]],
   ) extends ExprResult[F, V, R, P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitSubtractOutputs(this)
+  }
+
+  final case class WrapOutput[F[_], V, T <: HList, R, P](
+    expr: Expr.WrapOutput[F, V, T, R, P],
+    context: Context[F, V, R, P],
+  ) extends ExprResult[F, V, R, P] {
+    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitWrapOutput(this)
   }
 
   final case class NegativeOutput[F[_], V, R, P](

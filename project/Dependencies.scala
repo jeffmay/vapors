@@ -10,6 +10,7 @@ object Dependencies {
   private final val scalaCheckOpsVersion = "2.5.1"
   private final val scalaTestVersion = "3.2.2"
   private final val scalaTestPlusScalaCheckVersion = "3.1.4.0"
+  private final val shapelessVersion = "2.3.3"
 
   private val alleyCatsCore = "org.typelevel" %% "alleycats-core" % catsVersion
   private val catsCore = "org.typelevel" %% "cats-core" % catsVersion
@@ -19,6 +20,7 @@ object Dependencies {
   private val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion
   private val scalaTestPlusScalaCheck = "org.scalatestplus" %% "scalacheck-1-14" % scalaTestPlusScalaCheckVersion
   private def scalaReflect(scalacVersion: String): ModuleID = "org.scala-lang" % "scala-reflect" % scalacVersion
+  private val shapeless = "com.chuusai" %% "shapeless" % shapelessVersion
 
   final object Plugins {
 
@@ -36,6 +38,7 @@ object Dependencies {
         catsCore,
         catsFree,
         scalaReflect(scalaVersion),
+        shapeless,
       ) ++ Seq(
         // Test-only dependencies
         scalaCheck,
