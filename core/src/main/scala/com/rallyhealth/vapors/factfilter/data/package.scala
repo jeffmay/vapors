@@ -15,8 +15,16 @@ package object data {
     */
   final type Facts = NonEmptyList[Fact]
 
+  /**
+    * An ordered set of untyped [[Fact]]s.
+    */
   final type FactSet = SortedSet[Fact]
 
+  /**
+    * An ordered set of [[TypedFact]]s.
+    *
+    * @note not to be confused with a [[FactTypeSet]] (which is a set of [[FactType]]s, with not values)
+    */
   final type TypedFactSet[T] = SortedSet[TypedFact[T]]
 
   /**

@@ -5,6 +5,9 @@ import cats.instances.order._
 
 import scala.collection.immutable.SortedSet
 
+/**
+  * @see [[FactSet]]
+  */
 object FactSet {
 
   final val empty: FactSet = SortedSet.empty[Fact]
@@ -18,6 +21,9 @@ object FactSet {
   }
 }
 
+/**
+  * @see [[TypedFactSet]]
+  */
 object TypedFactSet {
 
   @inline final def empty[T : OrderTypedFacts]: TypedFactSet[T] = SortedSet.empty[TypedFact[T]]

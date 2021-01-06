@@ -4,6 +4,13 @@ import cats.data.{NonEmptyList, NonEmptyMap, NonEmptySet}
 
 import scala.collection.immutable.{SortedMap, SortedSet}
 
+/**
+  * A set of [[FactType]]s that all share a common Scala type.
+  *
+  * This can be used to safely cast facts into a required type (lower-bounded by the type parameter of this object).
+  *
+  * @param typeMap a map of type names to [[FactType]]s, used for constant-time look-up
+  */
 final case class FactTypeSet[A] private (typeMap: NonEmptyMap[String, FactType[A]]) extends AnyVal {
 
   def typeList: NonEmptyList[FactType[A]] = NonEmptyList.fromListUnsafe(typeMap.toSortedMap.values.toList)
@@ -33,8 +40,10 @@ final case class FactTypeSet[A] private (typeMap: NonEmptyMap[String, FactType[A
 
 object FactTypeSet {
 
+  /** Automatically wrap a single [[FactType]] into a [[FactTypeSet]] */
   implicit def one[A](factType: FactType[A]): FactTypeSet[A] = of(factType)
 
+  /** Build a [[FactTypeSet]] from multiple [[FactType]]s that all share the same Scala type */
   def of[A](
     one: FactType[A],
     others: FactType[A]*,
