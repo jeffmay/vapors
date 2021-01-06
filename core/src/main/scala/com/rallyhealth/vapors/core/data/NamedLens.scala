@@ -13,7 +13,6 @@ object NamedLens {
   def id[A]: NamedLens[A, A] = Id.asInstanceOf[Id[A]]
 
   type Fn[A, B] = NamedLens.Id[A] => NamedLens[A, B]
-  type ==>[A, B] = NamedLens.Id[A] => NamedLens[A, B]
 
   implicit final class Selector[A, B](val lens: NamedLens[A, B]) extends AnyVal {
     // TODO: Rename downField?
