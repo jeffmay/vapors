@@ -14,7 +14,6 @@ object NamedLensMacros {
     import c.universe._
     // TODO: Handle nested fields better
     // TODO: Better error message for invalid function types and call patterns
-    // TODO: Use quasiquotes for everything?
 //    println(s"SHOWING THIS PREFIX RAW: ${showRaw(c.prefix)}")
 //    println(s"SHOWING THIS PREFIX CODE: ${showCode(c.prefix.tree)}")
 //    println(s"SHOWING GETTER RAW: ${showRaw(getter)}")

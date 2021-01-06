@@ -17,7 +17,7 @@ final case class FactTable private (private val facts: Map[String, List[Fact]]) 
 
   def addAll(facts: List[Fact]): FactTable = {
     val newFacts = facts.groupBy(_.typeInfo.fullName)
-    new FactTable(this.facts |+| newFacts)
+    new FactTable(this.facts.combine(newFacts))
   }
 
   def get[T](factType: FactType[T]): List[TypedFact[T]] =
