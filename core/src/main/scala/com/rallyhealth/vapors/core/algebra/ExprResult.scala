@@ -148,11 +148,11 @@ object ExprResult {
   final case class When[F[_], V, R, P](
     expr: Expr.When[F, V, R, P],
     context: Context[F, V, R, P],
-    conditionResult: ExprResult[F, V, Boolean, P],
+    matchedBranch: Option[ConditionBranch[F, V, R, P]],
     subResult: ExprResult[F, V, R, P],
   ) extends ExprResult[F, V, R, P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitWhen(this)
-    @inline def conditionMet: Boolean = conditionResult.output.value
+    val thenExpr: Expr[F, V, R, P] = matchedBranch.map(_.thenExpr).getOrElse(expr.defaultExpr)
   }
 
   final case class SelectFromOutput[F[_], V, S, R, P](

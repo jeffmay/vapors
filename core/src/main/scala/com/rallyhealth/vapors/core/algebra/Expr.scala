@@ -230,14 +230,13 @@ object Expr {
 
   /**
     * Conditional expression that depends on the output of a given boolean expression to determine whether to
-    * evaluate the [[thenExpr]] or the [[elseExpr]].
+    * evaluate the [[conditionBranches]] or the [[defaultExpr]].
     *
-    * @note this expression <i>does</i> short-circuit
+    * @note this expression <i>does</i> short-circuit on the first branch whose condition is met
     */
   final case class When[F[_], V, R, P](
-    condExpr: Expr[F, V, Boolean, P],
-    thenExpr: Expr[F, V, R, P],
-    elseExpr: Expr[F, V, R, P],
+    conditionBranches: NonEmptyList[ConditionBranch[F, V, R, P]],
+    defaultExpr: Expr[F, V, R, P],
     capture: CaptureP[F, V, R, P],
   ) extends Expr[F, V, R, P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitWhen(this)
@@ -401,3 +400,16 @@ object Expr {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[Boolean] = v.visitOutputWithinWindow(this)
   }
 }
+
+/**
+  * A container for a condition and an expression to compute if the condition is met.
+  *
+  * @see [[Expr.When]] for usage.
+  *
+  * @param whenExpr a conditional expression that guards the resulting [[thenExpr]]
+  * @param thenExpr an expression to compute the result if the [[whenExpr]] returns true
+  */
+final case class ConditionBranch[F[_], V, R, P](
+  whenExpr: Expr[F, V, Boolean, P],
+  thenExpr: Expr[F, V, R, P],
+)

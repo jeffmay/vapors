@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.factfilter.dsl
 
 import cats.data.NonEmptyList
 import cats.{Foldable, Id, Monoid}
-import com.rallyhealth.vapors.core.algebra.{Expr, ExprResult}
+import com.rallyhealth.vapors.core.algebra.{ConditionBranch, Expr, ExprResult}
 import com.rallyhealth.vapors.core.data.{NamedLens, Window}
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
@@ -125,22 +125,31 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances {
 
   def when[F[_], V, R, P](condExpr: CondExpr[F, V, P]): WhenBuilder[F, V, P] = new WhenBuilder(condExpr)
 
-  final class WhenBuilder[F[_], V, P](private val condExpr: CondExpr[F, V, P]) extends AnyVal {
+  final class WhenBuilder[F[_], V, P](private val whenExpr: CondExpr[F, V, P]) extends AnyVal {
 
-    def thenReturn[R](thenExpr: Expr[F, V, R, P]): WhenThenBuilder[F, V, R, P] = new WhenThenBuilder(condExpr, thenExpr)
+    def thenReturn[R](thenExpr: Expr[F, V, R, P]): ElseDefaultBuilder[F, V, R, P] =
+      new ElseDefaultBuilder(NonEmptyList.of(ConditionBranch(whenExpr, thenExpr)))
   }
 
-  final class WhenThenBuilder[F[_], V, R, P](
-    condExpr: CondExpr[F, V, P],
-    thenExpr: Expr[F, V, R, P],
-  ) {
+  final class ElifBuilder[F[_], V, R, P](
+    private val t: (CondExpr[F, V, P], NonEmptyList[ConditionBranch[F, V, R, P]]),
+  ) extends AnyVal {
+
+    def thenReturn(thenExpr: Expr[F, V, R, P]): ElseDefaultBuilder[F, V, R, P] =
+      new ElseDefaultBuilder(t._2 ::: NonEmptyList.of(ConditionBranch(t._1, thenExpr)))
+  }
+
+  final class ElseDefaultBuilder[F[_], V, R, P](private val branches: NonEmptyList[ConditionBranch[F, V, R, P]])
+    extends AnyVal {
 
     def elseReturn(
       elseExpr: Expr[F, V, R, P],
     )(implicit
       postResult: CaptureP[F, V, R, P],
     ): Expr[F, V, R, P] =
-      Expr.When(condExpr, thenExpr, elseExpr, postResult)
+      Expr.When(branches, elseExpr, postResult)
+
+    def elif(elifExpr: CondExpr[F, V, P]): ElifBuilder[F, V, R, P] = new ElifBuilder((elifExpr, branches))
   }
 
   def withFactsOfType[T, P](

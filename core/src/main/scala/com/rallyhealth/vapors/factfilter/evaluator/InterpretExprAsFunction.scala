@@ -4,6 +4,7 @@ import cats._
 import cats.data.Chain
 import com.rallyhealth.vapors.core.algebra.{Expr, ExprResult}
 import com.rallyhealth.vapors.core.data.Window
+import com.rallyhealth.vapors.core.algebra.{ConditionBranch, Expr, ExprResult}
 import com.rallyhealth.vapors.core.logic._
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.data._
@@ -320,14 +321,29 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
   }
 
   override def visitWhen[R](expr: Expr.When[F, V, R, P]): Input[F, V] => ExprResult[F, V, R, P] = { input =>
-    val conditionResult = expr.condExpr.visit(this)(input)
-    val subExpr = if (conditionResult.output.value) expr.thenExpr else expr.elseExpr
-    val subFn = subExpr.visit(this)
-    val subResult = subFn(input)
-    val allEvidence = conditionResult.output.evidence ++ subResult.output.evidence
-    val allParams = conditionResult.param :: subResult.param :: Nil
-    resultOfManySubExpr(expr, input, subResult.output.value, allEvidence, allParams) {
-      ExprResult.When(_, _, conditionResult, subResult)
+    val (maybeConditionResult, condParams) = {
+      expr.conditionBranches.foldLeft((None, Nil): (Option[(ConditionBranch[F, V, R, P], Evidence)], List[Eval[P]])) {
+        case (acc @ (Some(_), _), _) => acc
+        case ((None, params), cond) =>
+          val whenResult = cond.whenExpr.visit(this)(input)
+          val conditionMet = whenResult.output.value
+          (Option.when(conditionMet)((cond, whenResult.output.evidence)), whenResult.param :: params)
+      }
+    }
+    val (thenExpr, condEvidence) = maybeConditionResult
+      .map {
+        case (branch, evidence) => (branch.thenExpr, evidence)
+      }
+      .getOrElse {
+        (expr.defaultExpr, Evidence.none)
+      }
+    val thenResult = thenExpr.visit(this)(input)
+    // union the evidence for the condition with the evidence for the output
+    val allEvidence = condEvidence.union(thenResult.output.evidence)
+    // TODO: Better way to organize the params than to just put the thenExpr param at the head?
+    val allParams = thenResult.param :: condParams
+    resultOfManySubExpr(expr, input, thenResult.output.value, allEvidence, allParams) {
+      ExprResult.When(_, _, maybeConditionResult.map(_._1), thenResult)
     }
   }
 
