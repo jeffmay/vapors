@@ -127,7 +127,7 @@ object Expr {
     * A common top-level expression that defines an output without any input beyond the initial [[FactTable]].
     *
     * The given [[FactTypeSet]] is used to select the matching facts from the [[FactTable]] and provide them
-    * as both the input value and [[ResultSet]] to the [[subExpr]].
+    * as both the input value and [[Evidence]] to the [[subExpr]].
     *
     * @note these expressions can be easily dropped into any place that accepts the [[subExpr]] output type `R`
     *       by wrapping the expression in an [[Embed]].
@@ -191,7 +191,7 @@ object Expr {
     * [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.Output.conjunction]]
     *
     * @note this <i>does not</i> short-circuit.
-    *       [[ResultSet]] for all input values are used in deciding the evidence for the result.
+    *       [[Evidence]] for all input values are used in deciding the evidence for the result.
     *
     *       If you want to apply short-circuiting, you must implement it within the algebra using sorting,
     *       filtering, and limiting operators.
@@ -210,7 +210,7 @@ object Expr {
     * [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.Output.disjunction]]
     *
     * @note this <i>does not</i> short-circuit.
-    *       [[ResultSet]] for all input values are used in deciding the evidence for the result.
+    *       [[Evidence]] for all input values are used in deciding the evidence for the result.
     *
     *       If you want to apply short-circuiting, you must implement it within the algebra using sorting,
     *       filtering, and limiting operators.
@@ -364,7 +364,7 @@ object Expr {
   /**
     * Returns `true` if at least one element in the output of the given [[inputExpr]] meets the given [[conditionExpr]].
     *
-    * @note this <i>does not</i> short-circuit. [[ResultSet]] for all elements that match (or do not match) the
+    * @note this <i>does not</i> short-circuit. [[Evidence]] for all elements that match (or do not match) the
     *       [[conditionExpr]] will be retained as evidence of the whole result.
     * @note if you want to apply this to the input (i.e. `F[V]`), you can pass [[ReturnInput]] as the [[inputExpr]].
     * @see [[Foldable.exists]] for more details.
