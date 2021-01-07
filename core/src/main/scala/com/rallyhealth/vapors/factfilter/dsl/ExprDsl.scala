@@ -32,9 +32,9 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with Wrap
     value: R,
     evidence: Evidence = Evidence.none,
   )(implicit
-    post: CaptureRootExpr[R, P],
+    capture: CaptureRootExpr[R, P],
   ): Expr.ConstOutput[Id, FactTable, R, P] =
-    Expr.ConstOutput(value, evidence, post)
+    Expr.ConstOutput(value, evidence, capture)
 
   /**
     * Uses the value of a given fact and also considers the fact as evidence of its own value.
@@ -42,15 +42,15 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with Wrap
   def factValue[R, P](
     typedFact: TypedFact[R],
   )(implicit
-    post: CaptureRootExpr[R, P],
+    capture: CaptureRootExpr[R, P],
   ): Expr.ConstOutput[Id, FactTable, R, P] =
     const(typedFact.value, Evidence(typedFact))
 
   def input[F[_], V, P](
     implicit
-    post: CaptureP[F, V, F[V], P],
+    capture: CaptureP[F, V, F[V], P],
   ): Expr.ReturnInput[F, V, P] =
-    Expr.ReturnInput(post)
+    Expr.ReturnInput(capture)
 
   def define[T](factType: FactType[T]): DefinitionBuilder[T] = new DefinitionBuilder(factType)
 
@@ -59,16 +59,16 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with Wrap
     def from[P](
       defExpr: RootExpr[T, P],
     )(implicit
-      postResult: CaptureRootExpr[FactSet, P],
+      captureResult: CaptureRootExpr[FactSet, P],
     ): Expr.Define[Id, T, P] =
-      Expr.Define[Id, T, P](factType, defExpr, postResult)
+      Expr.Define[Id, T, P](factType, defExpr, captureResult)
 
     def fromEvery[M[_] : Foldable, P](
       defExpr: RootExpr[M[T], P],
     )(implicit
-      postResult: CaptureRootExpr[FactSet, P],
+      captureResult: CaptureRootExpr[FactSet, P],
     ): Expr.Define[M, T, P] =
-      Expr.Define(factType, defExpr, postResult)
+      Expr.Define(factType, defExpr, captureResult)
   }
 
   def usingDefinitions[F[_], V, R, P](
@@ -76,9 +76,9 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with Wrap
   )(
     subExpr: Expr[F, V, R, P],
   )(implicit
-    postResult: CaptureP[F, V, R, P],
+    captureResult: CaptureP[F, V, R, P],
   ): Expr.UsingDefinitions[F, V, R, P] =
-    Expr.UsingDefinitions(definitions.toVector, subExpr, postResult)
+    Expr.UsingDefinitions(definitions.toVector, subExpr, captureResult)
 
   /**
     * Implicitly allows embedding any expression that only requires the FactTable into expression.
@@ -88,19 +88,19 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with Wrap
   implicit def embed[F[_], V, R, P](
     expr: RootExpr[R, P],
   )(implicit
-    postResult: CaptureP[F, V, R, P],
+    captureResult: CaptureP[F, V, R, P],
   ): Expr.Embed[F, V, R, P] =
-    Expr.Embed(expr, postResult)
+    Expr.Embed(expr, captureResult)
 
   def and[F[_], V, R : Conjunction : ExtractBoolean, P](
     first: Expr[F, V, R, P],
     second: Expr[F, V, R, P],
     remaining: Expr[F, V, R, P]*,
   )(implicit
-    postResult: CaptureP[F, V, R, P],
+    captureResult: CaptureP[F, V, R, P],
   ): Expr.And[F, V, R, P] = {
     val subExpressions = first :: NonEmptyList.of(second, remaining: _*)
-    Expr.And(subExpressions, postResult)
+    Expr.And(subExpressions, captureResult)
   }
 
   def or[F[_], V, R : Disjunction : ExtractBoolean, P](
@@ -108,18 +108,18 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with Wrap
     second: Expr[F, V, R, P],
     remaining: Expr[F, V, R, P]*,
   )(implicit
-    postResult: CaptureP[F, V, R, P],
+    captureResult: CaptureP[F, V, R, P],
   ): Expr.Or[F, V, R, P] = {
     val subExpressions = first :: NonEmptyList.of(second, remaining: _*)
-    Expr.Or(subExpressions, postResult)
+    Expr.Or(subExpressions, captureResult)
   }
 
   def not[F[_], V, R : Negation, P](
     sub: Expr[F, V, R, P],
   )(implicit
-    postResult: CaptureP[F, V, R, P],
+    captureResult: CaptureP[F, V, R, P],
   ): Expr.Not[F, V, R, P] =
-    Expr.Not(sub, postResult)
+    Expr.Not(sub, captureResult)
 
   def when[F[_], V, R, P](condExpr: CondExpr[F, V, P]): WhenBuilder[F, V, P] = new WhenBuilder(condExpr)
 
@@ -143,9 +143,9 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with Wrap
     def elseReturn(
       elseExpr: Expr[F, V, R, P],
     )(implicit
-      postResult: CaptureP[F, V, R, P],
+      captureResult: CaptureP[F, V, R, P],
     ): Expr.When[F, V, R, P] =
-      Expr.When(branches.reverse, elseExpr, postResult)
+      Expr.When(branches.reverse, elseExpr, captureResult)
 
     def elif(elifExpr: CondExpr[F, V, P]): ElifBuilder[F, V, R, P] = new ElifBuilder((elifExpr, branches))
   }
@@ -167,99 +167,101 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with Wrap
   def withFactsOfType[T, P](
     factTypeSet: FactTypeSet[T],
   )(implicit
-    postInput: CaptureFromFacts[T, P],
+    captureInput: CaptureFromFacts[T, P],
   ): WithFactsOfTypeBuilder[T, P] =
     new WithFactsOfTypeBuilder(factTypeSet)
 
-  final class WithFactsOfTypeBuilder[T, P](
-    factTypeSet: FactTypeSet[T],
-  )(implicit
-    postInput: CaptureFromFacts[T, P],
-  ) {
+  /**
+    * @note this is not a value class because the input [[FactTypeSet]] is also a value class AND the [[CaptureP]]
+    *       implicit is needed in the original [[withFactsOfType]] method in order for type inference to work properly.
+    *       We could ask for the implicit again, but that is confusing for the caller who would have to look at the
+    *       source code to know which instance is actually used.
+    */
+  final class WithFactsOfTypeBuilder[T, P](factTypeSet: FactTypeSet[T])(implicit captureInput: CaptureFromFacts[T, P]) {
 
     def where[M[_], U](
       buildSubExpr: ExprBuilder.FoldableFn[Seq, TypedFact[T], M, U, P],
     )(implicit
-      postResult: CaptureRootExpr[M[U], P],
+      captureResult: CaptureRootExpr[M[U], P],
     ): Expr.WithFactsOfType[T, M[U], P] =
       Expr.WithFactsOfType(
         factTypeSet,
         buildSubExpr(new FoldableExprBuilder(ExprDsl.input)).returnOutput,
-        postResult,
+        captureResult,
       )
 
     def returnInput(
       implicit
-      postInput: CaptureFromFacts[T, P],
-      postResult: CaptureRootExpr[Seq[TypedFact[T]], P],
+      captureInput: CaptureFromFacts[T, P],
+      captureResult: CaptureRootExpr[Seq[TypedFact[T]], P],
     ): Expr.WithFactsOfType[T, Seq[TypedFact[T]], P] =
-      Expr.WithFactsOfType(factTypeSet, input(postInput), postResult)
+      Expr.WithFactsOfType(factTypeSet, input(captureInput), captureResult)
   }
 
   def collectSome[F[_], V, M[_] : Foldable, U, R : Monoid, P](
     inputExpr: Expr[F, V, M[U], P],
     collectExpr: ValExpr[U, Option[R], P],
   )(implicit
-    post: CaptureP[F, V, R, P],
+    capture: CaptureP[F, V, R, P],
   ): Expr.CollectFromOutput[F, V, M, U, R, P] =
-    Expr.CollectFromOutput(inputExpr, collectExpr, post)
+    Expr.CollectFromOutput(inputExpr, collectExpr, capture)
 
   def selectFrom[F[_], V, S, R, P](
     inputExpr: Expr[F, V, S, P],
     lens: NamedLens[S, R],
   )(implicit
-    postInput: CaptureP[F, V, R, P],
+    captureInput: CaptureP[F, V, R, P],
   ): Expr.SelectFromOutput[F, V, S, R, P] =
-    Expr.SelectFromOutput(inputExpr, lens, postInput)
+    Expr.SelectFromOutput(inputExpr, lens, captureInput)
 
   def add[F[_], V, R : Addition, P](
     lhs: Expr[F, V, R, P],
     rhs: Expr[F, V, R, P],
   )(implicit
-    post: CaptureP[F, V, R, P],
+    capture: CaptureP[F, V, R, P],
   ): Expr.AddOutputs[F, V, R, P] =
-    Expr.AddOutputs(NonEmptyList.of(lhs, rhs), post)
+    Expr.AddOutputs(NonEmptyList.of(lhs, rhs), capture)
 
   def subtract[F[_], V, R : Subtraction, P](
     lhs: Expr[F, V, R, P],
     rhs: Expr[F, V, R, P],
   )(implicit
-    post: CaptureP[F, V, R, P],
+    capture: CaptureP[F, V, R, P],
   ): Expr.SubtractOutputs[F, V, R, P] =
-    Expr.SubtractOutputs(NonEmptyList.of(lhs, rhs), post)
+    Expr.SubtractOutputs(NonEmptyList.of(lhs, rhs), capture)
 
   def negative[F[_], V, R : Negative, P](
     inputExpr: Expr[F, V, R, P],
   )(implicit
-    post: CaptureP[F, V, R, P],
+    capture: CaptureP[F, V, R, P],
   ): Expr.NegativeOutput[F, V, R, P] =
-    Expr.NegativeOutput(inputExpr, post)
+    Expr.NegativeOutput(inputExpr, capture)
 
   def exists[F[_], V, M[_] : Foldable, U, P](
     inputExpr: Expr[F, V, M[U], P],
     condExpr: ValCondExpr[U, P],
   )(implicit
-    post: CaptureP[F, V, Boolean, P],
+    capture: CaptureP[F, V, Boolean, P],
   ): Expr.ExistsInOutput[F, V, M, U, P] =
-    Expr.ExistsInOutput(inputExpr, condExpr, post)
+    Expr.ExistsInOutput(inputExpr, condExpr, capture)
 
   def returnInputFoldable[F[_], V, P](
     implicit
-    post: CaptureP[F, V, F[V], P],
+    capture: CaptureP[F, V, F[V], P],
   ): Expr.ReturnInput[F, V, P] =
-    Expr.ReturnInput(post)
+    Expr.ReturnInput(capture)
 
   def returnInputValue[V, P](
     implicit
-    post: CaptureP[Id, V, V, P],
+    capture: CaptureP[Id, V, V, P],
   ): Expr.ReturnInput[Id, V, P] =
-    Expr.ReturnInput[Id, V, P](post)
+    Expr.ReturnInput[Id, V, P](capture)
 
   def within[F[_], V, R, P](
     inputExpr: Expr[F, V, R, P],
     window: Window[R],
   )(implicit
-    post: CaptureP[F, V, Boolean, P],
+    capture: CaptureP[F, V, Boolean, P],
   ): Expr.OutputWithinWindow[F, V, R, P] =
-    Expr.OutputWithinWindow(inputExpr, window, post)
+    Expr.OutputWithinWindow(inputExpr, window, capture)
 }
