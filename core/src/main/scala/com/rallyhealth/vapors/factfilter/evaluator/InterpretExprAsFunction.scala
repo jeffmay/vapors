@@ -5,7 +5,6 @@ import cats.data.Chain
 import com.rallyhealth.vapors.core.algebra.{Expr, ExprResult}
 import com.rallyhealth.vapors.core.logic._
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
-import com.rallyhealth.vapors.factfilter.data.Evidence.fromAny
 import com.rallyhealth.vapors.factfilter.data._
 import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.{Input, Output}
 
@@ -53,7 +52,9 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     val inputResult = expr.inputExpr.visit(this)(input)
     val collectFn = expr.collectExpr.visit(InterpretExprAsFunction())
     val (combinedResult, combinedEvidence, allParams) = inputResult.output.value.collectFoldSome { elem =>
-      val collectInput = input.withValueOrFact(elem, input.evidence ++ inputResult.output.evidence)
+      // If given a fact, use it as evidence, otherwise keep input evidence for this value of the collection
+      val inputEvidence = Evidence.fromAny(elem).getOrElse(inputResult.output.evidence)
+      val collectInput = input.withValue(elem, inputEvidence)
       val collectResult = collectFn(collectInput)
       // TODO: Keep all params / replay steps instead of just the ones that return true?
       collectResult.output.value.map { result =>
@@ -108,8 +109,7 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     val conditionFn = expr.conditionExpr.visit(InterpretExprAsFunction())
     val (allMatchedIndexes, allEvidence, allCondResults) = inputResult.output.value.toList.zipWithIndex.collectFold {
       case (elem, idx) =>
-        // TODO: Only add evidence of current fact (if given a list of facts)
-        //       BUT still add input evidence when given a list of values
+        // If given a fact, use it as evidence, otherwise keep input evidence for this value of the collection
         val inputEvidence = Evidence.fromAny(elem).getOrElse(inputResult.output.evidence)
         val conditionInput = input.withValue(elem, inputEvidence)
         val conditionResult = conditionFn(conditionInput)
@@ -135,7 +135,9 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     val inputResult = expr.inputExpr.visit(this)(input)
     val flatMapFn = expr.flatMapExpr.visit(InterpretExprAsFunction())
     val allResults = inputResult.output.value.map { elem =>
-      val flatMapInput = input.withValueOrFact(elem)
+      // If given a fact, use it as evidence, otherwise keep input evidence for this value of the collection
+      val inputEvidence = Evidence.fromAny(elem).getOrElse(inputResult.output.evidence)
+      val flatMapInput = input.withValue(elem, inputEvidence)
       flatMapFn(flatMapInput)
     }
     val allValues = allResults.flatMap(_.output.value)
@@ -152,11 +154,11 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     expr: Expr.MapOutput[F, V, M, U, R, P],
   ): Input[F, V] => ExprResult[F, V, M[R], P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
-    val inputEvidence = input.evidence ++ inputResult.output.evidence
     val mapFn = expr.mapExpr.visit(InterpretExprAsFunction())
     val allResults = inputResult.output.value.map { elem =>
-      // TODO: Maybe only add Evidence (without the special value or fact method)
-      val mapInput = input.withValueOrFact(elem, inputEvidence)
+      // If given a fact, use it as evidence, otherwise keep input evidence for this value of the collection
+      val inputEvidence = Evidence.fromAny(elem).getOrElse(inputResult.output.evidence)
+      val mapInput = input.withValue(elem, inputEvidence)
       mapFn(mapInput)
     }
     val allValues = allResults.map(_.output.value)
@@ -164,8 +166,6 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
       (elemResult.output.evidence, elemResult.param :: Nil)
     }
     val subOps = allResults.toList
-    // TODO: Is this necessary? Correct?
-//    val allEvidencePlusInputEvidence = allEvidence ++ input.evidence
     resultOfManySubExpr(expr, input, allValues, allEvidence, allParams) {
       ExprResult.MapOutput(_, _, inputResult, subOps)
     }
@@ -234,7 +234,6 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
   ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val selected = expr.lens.get(inputResult.output.value)
-    // TODO: Add input facts as evidence to output? OR just leave it up to ReturnInput / other operators to do this?
     resultOfManySubExpr(expr, input, selected, inputResult.output.evidence, inputResult.param :: Nil) {
       ExprResult.SelectFromOutput(_, _, inputResult)
     }
@@ -263,27 +262,25 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
       val definitionResult = definitionFn(definitionInput)
       (definitionResult.output.value, definitionResult.output.evidence, definitionResult.param :: Nil)
     }
-    val subInput =
-      input.copy(factTable = input.factTable.addAll(declaredFacts), evidence = input.evidence ++ evidence)
+    val subInput = input.copy(factTable = input.factTable.addAll(declaredFacts))
     val subFn = expr.subExpr.visit(this)
     val subResult = subFn(subInput)
-    val output = subResult.output.addEvidence(input.evidence)
     // TODO: Come up with a better way to combine the CaptureP params from expressions that have multiple
     //       sub expressions with different meanings.
     val allParams = subResult.param :: declaredParams
-    val postParam = expr.capture.foldToParam(expr, input, output, allParams)
-    ExprResult.UsingDefinitions(expr, ExprResult.Context(input, output, postParam), subResult)
+    val postParam = expr.capture.foldToParam(expr, input, subResult.output, allParams)
+    ExprResult.UsingDefinitions(expr, ExprResult.Context(input, subResult.output, postParam), subResult)
   }
 
   override def visitWhen[R](expr: Expr.When[F, V, R, P]): Input[F, V] => ExprResult[F, V, R, P] = { input =>
     val conditionResult = expr.condExpr.visit(this)(input)
-    val subInput = input.copy(evidence = conditionResult.output.evidence)
-    // TODO: Add input value facts as evidence to input?
     val subExpr = if (conditionResult.output.value) expr.thenExpr else expr.elseExpr
     val subFn = subExpr.visit(this)
-    val output = subFn(subInput)
-    resultOfSingleSubExpr(expr, input, output) {
-      ExprResult.When(_, _, conditionResult, output)
+    val subResult = subFn(input)
+    val allEvidence = conditionResult.output.evidence ++ subResult.output.evidence
+    val allParams = conditionResult.param :: subResult.param :: Nil
+    resultOfManySubExpr(expr, input, subResult.output.value, allEvidence, allParams) {
+      ExprResult.When(_, _, conditionResult, subResult)
     }
   }
 
@@ -294,8 +291,7 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     val withMatchingFactsFn = expr.subExpr.visit(InterpretExprAsFunction())
     val matchingFacts = input.factTable.getAllByFactType(expr.factTypeSet)
     // facts will always be added as their own evidence when used, so we do not need to add them to the evidence here
-    // TODO: Can I revert to just passing the input evidence somehow?
-    val subInput = input.withFoldableValue[SortedSet, TypedFact[T]](matchingFacts, Evidence.none)
+    val subInput = input.withFoldableValue[SortedSet, TypedFact[T]](matchingFacts)
     val subResult = withMatchingFactsFn(subInput)
     val postParam = expr.capture.foldToParam(expr, inputFactTable, subResult.output, subResult.param :: Nil)
     ExprResult.WithFactsOfType(
@@ -356,7 +352,7 @@ object InterpretExprAsFunction {
 
   final case class Input[F[_], V](
     value: F[V],
-    evidence: Evidence, // TODO: Is this needed? Can't I just add the input value as evidence when it is made of Facts?
+    evidence: Evidence,
     factTable: FactTable,
   ) {
 
@@ -369,19 +365,6 @@ object InterpretExprAsFunction {
       value: U,
       evidence: Evidence = this.evidence,
     ): Input[Id, U] = copy[Id, U](value = value, evidence = evidence)
-
-    // add a fact as its own evidence
-    @inline def withValueOrFact[U](
-      value: U,
-      evidence: Evidence = this.evidence,
-    ): Input[Id, U] =
-      copy[Id, U](value = value, evidence = evidence ++ Evidence.fromAnyOrNone(value))
-
-    @inline def withFoldableValueOrFact[G[_] : Foldable, U](
-      value: G[U],
-      evidence: Evidence = this.evidence,
-    ): Input[G, U] =
-      copy(value = value, evidence = evidence ++ Evidence.fromAnyOrNone(Foldable[G].toIterable(value)))
   }
 
   final object Input {
@@ -408,10 +391,7 @@ object InterpretExprAsFunction {
   final case class Output[R](
     value: R,
     evidence: Evidence,
-  ) {
-
-    def addEvidence(evidence: Evidence): Output[R] = copy(evidence = this.evidence ++ evidence)
-  }
+  )
 
   object Output {
 

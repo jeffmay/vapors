@@ -35,15 +35,6 @@ object ExprBuilder extends ExprBuilderSyntax {
   type FoldableFn[F[_], V, M[_], U, P] = FoldableId[F, V, P] => ExprBuilder[F, V, M, U, P]
 }
 
-trait ExprBuilderLowPriorityImplicits {
-
-  // TODO: Add unit test for this
-  implicit def liftFoldableExpr[F[_] : Foldable, V, M[_] : Foldable, U, P](
-    expr: Expr[F, V, M[U], P],
-  ): FoldableExprBuilder[F, V, M, U, P] =
-    new FoldableExprBuilder(expr)
-}
-
 trait ExprBuilderSyntax {
 
   implicit def liftValExpr[V, R, P](expr: Expr[Id, V, R, P]): ValExprBuilder[V, R, P] =

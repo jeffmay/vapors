@@ -32,7 +32,6 @@ final class Evidence private (val factSet: SortedSet[Fact]) extends AnyVal {
     case _ => Evidence(this.factSet | that.factSet)
   }
 
-  // TODO: Use a separate type?
   def derivedFromSources: Evidence = {
     @tailrec def loop(
       mixed: Iterable[Fact],
