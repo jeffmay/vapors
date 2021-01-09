@@ -57,14 +57,24 @@ object ExprDsl extends ExprBuilderSyntax {
   ): Expr[F, V, F[V], P] =
     Expr.ReturnInput(post)
 
-  def define[M[_] : Foldable, T, P](
-    factType: FactType[T],
-  )(
-    defExpr: RootExpr[M[T], P],
-  )(implicit
-    postResult: CaptureRootExpr[FactSet, P],
-  ): Definition[P] =
-    Expr.Define(factType, defExpr, postResult)
+  def define[T](factType: FactType[T]): DefinitionBuilder[T] = new DefinitionBuilder(factType)
+
+  final class DefinitionBuilder[T](private val factType: FactType[T]) extends AnyVal {
+
+    def from[P](
+      defExpr: RootExpr[T, P],
+    )(implicit
+      postResult: CaptureRootExpr[FactSet, P],
+    ): Expr.Define[Id, T, P] =
+      Expr.Define[Id, T, P](factType, defExpr, postResult)
+
+    def fromEvery[M[_] : Foldable, P](
+      defExpr: RootExpr[M[T], P],
+    )(implicit
+      postResult: CaptureRootExpr[FactSet, P],
+    ): Expr.Define[M, T, P] =
+      Expr.Define(factType, defExpr, postResult)
+  }
 
   def usingDefinitions[F[_], V, R, P](
     definitions: Expr.Definition[P]*,
@@ -140,10 +150,10 @@ object ExprDsl extends ExprBuilderSyntax {
     factTypeSet: FactTypeSet[T],
   )(implicit
     postInput: CaptureFromFacts[T, P],
-  ): FactsOfTypeBuilder[T, P] =
-    new FactsOfTypeBuilder(factTypeSet)
+  ): WithFactsOfTypeBuilder[T, P] =
+    new WithFactsOfTypeBuilder(factTypeSet)
 
-  final class FactsOfTypeBuilder[T, P](
+  final class WithFactsOfTypeBuilder[T, P](
     factTypeSet: FactTypeSet[T],
   )(implicit
     postInput: CaptureFromFacts[T, P],
