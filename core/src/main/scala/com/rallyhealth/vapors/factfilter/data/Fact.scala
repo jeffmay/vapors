@@ -18,12 +18,6 @@ object Fact {
     value: T,
   ): Fact = SourceFactOfType(factType, value)
 
-  def apply[T](
-    factType: FactType[T],
-    value: T,
-    evidence: Evidence,
-  ): DerivedFact = DerivedFactOfType(factType, value, evidence)
-
   def unapply(fact: Fact): Some[(FactType[fact.Value], fact.Value)] = Some((fact.typeInfo, fact.value))
 
   val orderByFactValue: Order[Fact] = { (x, y) =>
