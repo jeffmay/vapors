@@ -26,6 +26,10 @@ ThisBuild / resolvers += Resolver.bintrayRepo("rallyhealth", "maven")
 ThisBuild / Compile / packageDoc / publishArtifact := false
 ThisBuild / packageDoc / publishArtifact := false
 
+// Disable publishing of the root project
+publish := {}
+publishLocal := {}
+
 def commonProject(dir: String): Project = {
   Project(dir, file(dir)).settings(
     name := s"vapors-$dir",
