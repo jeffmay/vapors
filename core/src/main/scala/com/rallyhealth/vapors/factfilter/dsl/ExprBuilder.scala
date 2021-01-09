@@ -37,10 +37,11 @@ object ExprBuilder extends ExprBuilderSyntax {
 
 trait ExprBuilderLowPriorityImplicits {
 
+  // TODO: Add unit test for this
   implicit def liftFoldableExpr[F[_] : Foldable, V, M[_] : Foldable, U, P](
     expr: Expr[F, V, M[U], P],
   ): FoldableExprBuilder[F, V, M, U, P] =
-    new FoldableExprBuilder[F, V, M, U, P](expr)
+    new FoldableExprBuilder(expr)
 }
 
 trait ExprBuilderSyntax {
@@ -105,11 +106,11 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
     postEachOutput: CaptureP[Id, U, U, P],
     postMap: CaptureP[F, V, M[R], P],
   ): FoldableExprBuilder[F, V, M, R, P] = {
-    val mapExpr: ExprBuilder[Id, U, Id, R, P] = buildFn(
+    val mapExpr = buildFn(
       new ValExprBuilder(Expr.ReturnInput[Id, U, P](postEachOutput)),
     )
-    val next: Expr[F, V, M[R], P] = Expr.MapOutput[F, V, M, U, R, P](returnOutput, mapExpr.returnOutput, postMap)
-    new FoldableExprBuilder[F, V, M, R, P](next)
+    val next = Expr.MapOutput(returnOutput, mapExpr.returnOutput, postMap)
+    new FoldableExprBuilder(next)
   }
 
   def flatMap[X](
@@ -117,13 +118,13 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
   )(implicit
     flatMapM: FlatMap[M],
     postEachOutput: CaptureP[Id, U, U, P],
-    postMap: CaptureP[F, V, M[X], P],
+    postFlatMap: CaptureP[F, V, M[X], P],
   ): FoldableExprBuilder[F, V, M, X, P] = {
-    val mapExpr: ExprBuilder[Id, U, M, X, P] = buildFn(
+    val flatMapExpr = buildFn(
       new ValExprBuilder(Expr.ReturnInput[Id, U, P](postEachOutput)),
     )
-    val next: Expr[F, V, M[X], P] = Expr.FlatMapOutput[F, V, M, U, X, P](returnOutput, mapExpr.returnOutput, postMap)
-    new FoldableExprBuilder[F, V, M, X, P](next)
+    val next = Expr.FlatMapOutput(returnOutput, flatMapExpr.returnOutput, postFlatMap)
+    new FoldableExprBuilder(next)
   }
 
   def exists(
