@@ -1,8 +1,8 @@
 package com.rallyhealth.vapors.factfilter.data
 
-import cats.{Monoid, Order}
 import cats.data.NonEmptySet
 import cats.instances.order._
+import cats.{Monoid, Order}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.SortedSet
@@ -66,6 +66,28 @@ object Evidence {
   }
 
   final val none = new Evidence(SortedSet.empty[Fact])
+
+  /**
+    * Convert any given value into [[Evidence]] by inspecting whether it is a fact or valid collection of facts.
+    *
+    * This is used by the library when iterating over a collection of facts, where the facts can be used as their own
+    * evidence in the subexpression.
+    */
+  def fromAny(any: Any): Option[Evidence] = any match {
+    case ev: Evidence => Some(ev)
+    case fact: Fact => Some(Evidence(fact))
+    case map: collection.Map[_, _] => fromAnyIterable(map.valuesIterator)
+    case iter: IterableOnce[_] => fromAnyIterable(iter)
+    case _ => None
+  }
+
+  @inline def fromAnyOrNone(any: Any): Evidence = fromAny(any).getOrElse(none)
+
+  private[this] def fromAnyIterable(anyIter: IterableOnce[_]): Option[Evidence] = {
+    val iter = anyIter.iterator
+    if (iter.isEmpty) None
+    else Some(Evidence(FactSet.from(iter.collect { case fact: Fact => fact })))
+  }
 
   /**
     * Unions evidence as a standard definition for monoid.
