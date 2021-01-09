@@ -1,6 +1,5 @@
 package com.rallyhealth.vapors.factfilter.evaluator
 
-import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.Window
 import com.rallyhealth.vapors.factfilter.Example.{FactTypes, JoeSchmoe}
 import com.rallyhealth.vapors.factfilter.data._
@@ -8,56 +7,7 @@ import com.rallyhealth.vapors.factfilter.dsl.ExprDsl._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.time.LocalDate
-
-class EmbeddedExpressionSpec extends AnyWordSpec {
-
-  // TODO: Do the real computation here
-  // TODO: Make a named function to call out to "dateCompare()" (maybe a primitive algebra?)
-  //       Or just hack it for now.
-  // now.year - dob.year - (if (now.dayOfYear < (dob.dayOfYear + (if (dob.isLeapYear) 1 else 0)) 1 else 0)
-  lazy val ageFromDateOfBirth: Expr.Definition[Unit] = {
-    val now = LocalDate.now()
-    define(FactTypes.Age) {
-      withFactsOfType(FactTypes.DateOfBirth).where { facts =>
-        facts.toList.map { fact =>
-          fact.get(_.select(_.value).select(_.getYear)).subtractFrom(now.getYear)
-        }
-      }
-    }
-  }
-
-  lazy val isOver18: RootExpr[Boolean, Unit] = {
-    usingDefinitions(ageFromDateOfBirth) {
-      withFactsOfType(FactTypes.Age).where {
-        _.exists {
-          _.get(_.select(_.value)) >= 18
-        }
-      }
-    }
-  }
-
-  "compute age correctly" in {
-    val result = eval(JoeSchmoe.factTable) {
-      usingDefinitions(ageFromDateOfBirth) {
-        withFactsOfType(FactTypes.Age).returnInput
-      }
-    }
-    val ages = result.output.value.map(_.value)
-    ages should contain only JoeSchmoe.age.value
-  }
-
-  "overwrite another fact type" in {
-    val age = FactTypes.Age(15)
-    val dob = FactTypes.DateOfBirth(LocalDate.of(1990, 1, 1))
-    val facts = FactTable(age, dob)
-    val result = eval(facts)(isOver18)
-    assert(result.output.value)
-    pendingUntilFixed {
-      assertResult(Evidence(FactTypes.Age(LocalDate.now().getYear - dob.value.getYear)))(result.output.evidence)
-      assertResult(Evidence(dob))(result.output.evidence)
-    }
-  }
+class EmbedExprSpec extends AnyWordSpec {
 
   "embedding an expression inside a logical operator inside a 'withFactsOfType'" when {
 
