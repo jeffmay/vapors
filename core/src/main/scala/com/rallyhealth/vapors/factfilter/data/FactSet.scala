@@ -14,7 +14,7 @@ object FactSet {
 
   @inline final def apply(facts: Fact*)(implicit order: Order[Fact]): FactSet = SortedSet.from(facts)
 
-  @inline final def from(facts: Iterable[Fact])(implicit order: Order[Fact]): FactSet = SortedSet.from(facts)
+  @inline final def from(facts: IterableOnce[Fact])(implicit order: Order[Fact]): FactSet = SortedSet.from(facts)
 
   @inline final def fromFoldable[F[_] : Foldable](facts: F[Fact])(implicit order: Order[Fact]): FactSet = {
     SortedSet.from(Foldable[F].toIterable(facts))
