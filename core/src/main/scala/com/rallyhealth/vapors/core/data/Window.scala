@@ -26,8 +26,6 @@ object Window {
   }
 
   def showWindowWithTerm[A : Show](term: String): Show[Window[A]] = Show.show { window =>
-    import cats.instances.string._
-    import cats.instances.tuple._
     val (op1, op2) = window.bounds
       .bimap(
         b => (if (b.inclusiveLowerBound) ">=" else ">", ""),
@@ -44,14 +42,11 @@ object Window {
 
   implicit def showWindow[A : Show]: Show[Window[A]] = showWindowWithTerm("x")
 
-  def fromRange(range: Range): Window[Int] = {
-    import cats.instances.int._
+  def fromRange(range: Range): Window[Int] =
     Window.between(range.start, includeMin = true, range.end, includeMax = range.isInclusive)
-  }
 
-  def fromRange[A : Order](range: NumericRange[A]): Window[A] = {
+  def fromRange[A : Order](range: NumericRange[A]): Window[A] =
     Window.between(range.start, includeMin = true, range.end, includeMax = range.isInclusive)
-  }
 
   def lessThan[A : Order](
     max: A,

@@ -408,7 +408,6 @@ object InterpretExprAsFunction {
       */
     implicit def conjunction[R : Conjunction : ExtractBoolean]: Conjunction[Output[R]] =
       (lhs: Output[R], rhs: Output[R]) => {
-        import cats.instances.option._
         import cats.syntax.apply._
         val R = ExtractBoolean[R]
         @inline def isTrue(output: Output[R]): Boolean = R.isTrue(output.value)
@@ -456,7 +455,6 @@ object InterpretExprAsFunction {
       */
     implicit def disjunction[R : Disjunction : ExtractBoolean]: Disjunction[Output[R]] =
       (lhs: Output[R], rhs: Output[R]) => {
-        import cats.instances.option._
         import cats.syntax.apply._
         val R = ExtractBoolean[R]
         @inline def isTrue(output: Output[R]): Boolean = R.isTrue(output.value)

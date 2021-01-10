@@ -1,6 +1,5 @@
 package com.rallyhealth.vapors.factfilter.evaluator
 
-import cats.instances.double._
 import com.rallyhealth.vapors.factfilter.Example.{FactTypes, JoeSchmoe}
 import com.rallyhealth.vapors.factfilter.data.Evidence
 import com.rallyhealth.vapors.factfilter.dsl.ExprDsl._

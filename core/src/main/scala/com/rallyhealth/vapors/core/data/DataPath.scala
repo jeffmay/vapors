@@ -37,10 +37,8 @@ final case class DataPath(nodes: List[DataPath.Node]) extends AnyVal {
   def atKey[K : ValidDataPathKey](key: K): DataPath =
     DataPath(nodes ::: MapKey(ValidDataPathKey[K].stringify(key)) :: Nil)
 
-  def filterKeys[K : ValidDataPathKey](keys: NonEmptySet[K]): DataPath = {
-    import cats.instances.string._
+  def filterKeys[K : ValidDataPathKey](keys: NonEmptySet[K]): DataPath =
     DataPath(nodes ::: FilterKeys(keys.map(ValidDataPathKey[K].stringify).toSortedSet) :: Nil)
-  }
 
   def atField(name: String): DataPath = DataPath(nodes ::: Field(name) :: Nil)
 

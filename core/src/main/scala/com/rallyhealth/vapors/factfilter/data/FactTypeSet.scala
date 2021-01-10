@@ -47,10 +47,8 @@ object FactTypeSet {
   def of[A](
     one: FactType[A],
     others: FactType[A]*,
-  ): FactTypeSet[A] = {
-    import cats.instances.string._
+  ): FactTypeSet[A] =
     new FactTypeSet(NonEmptyMap.of(one.fullName -> one, others.map(a => (a.fullName, a)): _*))
-  }
 
   def fromFactsNel[A](facts: NonEmptyList[TypedFact[A]]): FactTypeSet[A] = fromNel(facts.map(_.typeInfo))
 

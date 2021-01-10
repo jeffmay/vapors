@@ -1,10 +1,8 @@
 package com.rallyhealth.vapors.core.evaluator
 
 import cats.data.NonEmptyList
-import cats.instances.function._
 import cats.~>
 import com.rallyhealth.vapors.core.algebra._
-import com.rallyhealth.vapors.core.logic.{Intersect, Union}
 import com.rallyhealth.vapors.factfilter.dsl.Exp
 
 private[evaluator] final class EvalLoop[T] extends (ExpAlg[T, *] ~> (T => *)) {
