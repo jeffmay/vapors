@@ -7,13 +7,9 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class InterpretExprAsFunctionSpec extends AnyWordSpec {
 
-  import cats.instances.all._
-
   "InterpretExprAsFunction" when {
 
     "using no post processing" should {
-
-      import com.rallyhealth.vapors.factfilter.dsl.CaptureP.unit._
 
       "find a single fact from a query" in {
         val q = withFactsOfType(FactTypes.Age).where {

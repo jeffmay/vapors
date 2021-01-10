@@ -14,9 +14,6 @@ import scala.reflect.runtime.universe.{typeOf, TypeTag}
 
 class WindowSpec extends AnyWordSpec {
 
-  import cats.instances.int._
-  import Ordering.Implicits._
-
   class BoundedWindowTests[A : Arbitrary : Order](buildWindow: (A, A) => Window[A]) {
     import cats.syntax.order._
 
@@ -211,6 +208,8 @@ class WindowSpec extends AnyWordSpec {
             }
           }
         }
+
+        import cats.syntax.order._
 
         "greaterThan() contains a value greaterThan a given window boundary" in {
           assertContainsValue(Window.greaterThan(_), _ min _, inclusive = false)

@@ -95,10 +95,7 @@ object FactType {
 
   implicit def orderingByName[T]: Ordering[FactType[T]] = Ordering.by(_.fullName)
 
-  implicit def orderByName[T]: Order[FactType[T]] = {
-    import cats.instances.string._
-    Order.by(_.fullName)
-  }
+  implicit def orderByName[T]: Order[FactType[T]] = Order.by(_.fullName)
 
   implicit def validDataPathKey[T]: ValidDataPathKey[FactType[T]] = _.fullName
 }

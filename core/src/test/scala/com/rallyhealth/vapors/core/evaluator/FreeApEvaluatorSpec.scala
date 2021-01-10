@@ -1,6 +1,5 @@
 package com.rallyhealth.vapors.core.evaluator
 
-import cats.instances.string._
 import com.rallyhealth.vapors.core.data.Window
 import com.rallyhealth.vapors.factfilter.Example._
 import com.rallyhealth.vapors.factfilter.data.{FactTypeSet, FactsMatch}
@@ -8,11 +7,6 @@ import com.rallyhealth.vapors.factfilter.dsl._
 import org.scalatest.wordspec.AnyWordSpec
 
 final class FreeApEvaluatorSpec extends AnyWordSpec {
-
-  import cats.instances.ordering._
-  import cats.instances.order._
-  import cats.instances.int._
-  import cats.instances.double._
 
   "evaluator" should {
 
