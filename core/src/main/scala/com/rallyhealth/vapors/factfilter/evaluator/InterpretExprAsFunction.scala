@@ -129,6 +129,21 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     }
   }
 
+  override def visitFilterOutput[M[_] : Foldable : FunctorFilter, U](
+    expr: Expr.FilterOutput[F, V, M, U, P],
+  ): Input[F, V] => ExprResult[F, V, M[U], P] = { input =>
+    val inputResult = expr.inputExpr.visit(this)(input)
+    val matchingValues = inputResult.output.value.filter(expr.validValues)
+    val matchingEvidence =
+      if (expr.valuesAsEvidence)
+        Evidence(matchingValues.toIterable.collect { case fact: Fact => fact })
+      else inputResult.output.evidence
+    // TODO: Better way to capture the param from the inputResult separate from the condResultList params?
+    resultOfManySubExpr(expr, input, matchingValues, matchingEvidence, inputResult.param :: Nil) {
+      ExprResult.FilterOutput(_, _, inputResult)
+    }
+  }
+
   override def visitFlatMapOutput[M[_] : Foldable : FlatMap, U, X](
     expr: Expr.FlatMapOutput[F, V, M, U, X, P],
   ): Input[F, V] => ExprResult[F, V, M[X], P] = { input =>

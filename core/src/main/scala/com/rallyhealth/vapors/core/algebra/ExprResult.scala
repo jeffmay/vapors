@@ -1,7 +1,7 @@
 package com.rallyhealth.vapors.core.algebra
 
 import cats.kernel.Monoid
-import cats.{~>, Eval, Foldable, Id}
+import cats.{~>, Eval, Foldable, FunctorFilter, Id}
 import com.rallyhealth.vapors.factfilter.data.{Fact, FactSet, FactTable, TypedFact}
 import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.{Input, Output}
 
@@ -45,6 +45,7 @@ object ExprResult {
     def visitDeclare[M[_], T](result: Define[F, V, M, T, P]): G[FactSet]
     def visitEmbed[R](result: Embed[F, V, R, P]): G[R]
     def visitExistsInOutput[M[_] : Foldable, U](result: ExistsInOutput[F, V, M, U, P]): G[Boolean]
+    def visitFilterOutput[M[_] : Foldable : FunctorFilter, R](result: FilterOutput[F, V, M, R, P]): G[M[R]]
     def visitFlatMapOutput[M[_], U, R](result: FlatMapOutput[F, V, M, U, R, P]): G[M[R]]
     def visitMapOutput[M[_], U, R](result: MapOutput[F, V, M, U, R, P]): G[M[R]]
     def visitNegativeOutput[R](result: NegativeOutput[F, V, R, P]): G[R]
@@ -159,6 +160,14 @@ object ExprResult {
     inputResult: ExprResult[F, V, S, P],
   ) extends ExprResult[F, V, R, P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitSelectFromOutput(this)
+  }
+
+  final case class FilterOutput[F[_], V, M[_], R, P](
+    expr: Expr.FilterOutput[F, V, M, R, P],
+    context: Context[F, V, M[R], P],
+    inputResult: ExprResult[F, V, M[R], P],
+  ) extends ExprResult[F, V, M[R], P] {
+    override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitFilterOutput(this)
   }
 
   final case class CollectFromOutput[F[_], V, M[_] : Foldable, U, R : Monoid, P](
