@@ -48,6 +48,9 @@ object Window {
   def fromRange[A : Order](range: NumericRange[A]): Window[A] =
     Window.between(range.start, includeMin = true, range.end, includeMax = range.isInclusive)
 
+  def equalTo[A : Order](value: A): Window[A] =
+    Window.betweenInclusive(value, value)
+
   def lessThan[A : Order](
     max: A,
     inclusive: Boolean,
@@ -97,6 +100,8 @@ object Window {
       case Ior.Right(ub) if ub.inclusiveUpperBound => _ <= ub.upperBound
       case Ior.Right(ub) => _ < ub.upperBound
 
+      case Ior.Both(lb, ub) if lb.lowerBound == ub.upperBound && (lb.inclusiveLowerBound || ub.inclusiveUpperBound) =>
+        a => a == lb.lowerBound
       case Ior.Both(lb, ub) if lb.inclusiveLowerBound && ub.inclusiveUpperBound =>
         a => a >= lb.lowerBound && a <= ub.upperBound
       case Ior.Both(lb, ub) if ub.inclusiveUpperBound =>
