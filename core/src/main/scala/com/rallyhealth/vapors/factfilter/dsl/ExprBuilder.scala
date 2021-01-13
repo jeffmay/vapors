@@ -1,12 +1,14 @@
 package com.rallyhealth.vapors.factfilter.dsl
 
-import cats.{FlatMap, Foldable, Functor, Id, Order}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Order}
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.{NamedLens, Window}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
-import com.rallyhealth.vapors.factfilter.data.{Evidence, TypedFact}
+import com.rallyhealth.vapors.factfilter.data.{Evidence, Fact, TypedFact}
+import com.sun.tools.javac.code.TypeTag
 
 import scala.collection.Factory
+import scala.reflect.runtime.universe.typeOf
 
 sealed class ExprBuilder[F[_], V, M[_], U, P](val returnOutput: Expr[F, V, M[U], P]) {
 
@@ -128,6 +130,15 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
     val next = Expr.ExistsInOutput(returnOutput, condExpr.returnOutput, captureResult)
     new FoldInExprBuilder(next)
   }
+
+  def filter(
+    validValues: Set[U],
+  )(implicit
+    filterM: FunctorFilter[M],
+    tt: TypeTag[U],
+    captureResult: CaptureResult[M[U]],
+  ): FoldableExprBuilder[F, V, M, U, P] =
+    new FoldableExprBuilder(Expr.FilterOutput(returnOutput, validValues, typeOf[U] <:< typeOf[Fact], captureResult))
 }
 
 final class FoldInExprBuilder[F[_] : Foldable, V, R, P](returnOutput: Expr[F, V, R, P])
