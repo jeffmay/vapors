@@ -4,7 +4,7 @@ import cats.{FlatMap, Foldable, Functor, Id, Order}
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.{NamedLens, Window}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
-import com.rallyhealth.vapors.factfilter.data.TypedFact
+import com.rallyhealth.vapors.factfilter.data.{Evidence, TypedFact}
 
 import scala.collection.Factory
 
@@ -187,7 +187,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     R: Addition[R],
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
-    new ValExprBuilder(ExprDsl.add(returnOutput, ExprDsl.const(rhs)))
+    new ValExprBuilder(ExprDsl.add(returnOutput, Expr.ConstOutput(rhs, Evidence.none, captureResult)))
 
   def addTo(
     lhs: R,
@@ -195,7 +195,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     R: Addition[R],
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
-    new ValExprBuilder(ExprDsl.add(ExprDsl.const(lhs), returnOutput))
+    new ValExprBuilder(ExprDsl.add(Expr.ConstOutput(lhs, Evidence.none, captureResult), returnOutput))
 
   def subtract(
     rhs: R,
@@ -211,7 +211,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     R: Subtraction[R],
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
-    new ValExprBuilder(ExprDsl.subtract(returnOutput, ExprDsl.const(rhs)))
+    new ValExprBuilder(ExprDsl.subtract(returnOutput, Expr.ConstOutput(rhs, Evidence.none, captureResult)))
 
   def subtractFrom(
     lhs: R,
@@ -219,7 +219,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     R: Subtraction[R],
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
-    new ValExprBuilder(ExprDsl.subtract(ExprDsl.const(lhs), returnOutput))
+    new ValExprBuilder(ExprDsl.subtract(Expr.ConstOutput(lhs, Evidence.none, captureResult), returnOutput))
 
   def unary_-(
     implicit
