@@ -36,7 +36,7 @@ object CaptureP extends CaptureUnitLowPriorityImplicit {
   /**
     * Captures the type parameter from facts with a value of type [[T]].
     */
-  trait FromFactsOfType[T, R, P] extends CaptureP[SortedSet, TypedFact[T], R, P]
+  trait FromFactsOfType[T, R, P] extends CaptureP[Set, TypedFact[T], R, P]
 
   /**
     * Captures the type parameter from facts with a value of type [[T]] (assuming [[P]] is a [[Monoid]])
@@ -44,7 +44,7 @@ object CaptureP extends CaptureUnitLowPriorityImplicit {
     * @see [[AsMonoid]]
     */
   abstract class AsMonoidFromFactsOfType[T, R, P : Monoid]
-    extends AsMonoid[SortedSet, TypedFact[T], R, P]
+    extends AsMonoid[Set, TypedFact[T], R, P]
     with FromFactsOfType[T, R, P]
 
   // TODO: This is not very safe. Nodes will often combine the params of their input expressions and sub expressions.

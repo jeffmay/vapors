@@ -1,14 +1,13 @@
 package com.rallyhealth.vapors.factfilter.dsl
 
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Order}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, MonoidK, Order}
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.{NamedLens, Window}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.data.{Evidence, Fact, TypedFact}
-import com.sun.tools.javac.code.TypeTag
 
 import scala.collection.Factory
-import scala.reflect.runtime.universe.typeOf
+import scala.reflect.runtime.universe.{typeOf, TypeTag}
 
 sealed class ExprBuilder[F[_], V, M[_], U, P](val returnOutput: Expr[F, V, M[U], P]) {
 

@@ -6,7 +6,6 @@ import com.rallyhealth.vapors.factfilter.data.{Fact, FactSet, FactTable, TypedFa
 import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.{Input, Output}
 
 import scala.collection.BitSet
-import scala.collection.immutable.SortedSet
 
 /**
   * The result of evaluating an [[Expr]] with some given [[Input]].
@@ -100,7 +99,7 @@ object ExprResult {
   final case class WithFactsOfType[F[_], V, T, R, P](
     expr: Expr.WithFactsOfType[T, R, P],
     context: Context[F, V, R, P],
-    subResult: ExprResult[SortedSet, TypedFact[T], R, P],
+    subResult: ExprResult[Set, TypedFact[T], R, P],
   ) extends ExprResult[F, V, R, P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitWithFactsOfType(this)
   }
@@ -163,7 +162,7 @@ object ExprResult {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitSelectFromOutput(this)
   }
 
-  final case class FilterOutput[F[_], V, M[_], R, P](
+  final case class FilterOutput[F[_], V, M[_] : Foldable : FunctorFilter, R, P](
     expr: Expr.FilterOutput[F, V, M, R, P],
     context: Context[F, V, M[R], P],
     inputResult: ExprResult[F, V, M[R], P],

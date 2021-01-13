@@ -9,8 +9,6 @@ import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.data._
 import com.rallyhealth.vapors.factfilter.dsl.CaptureP
 
-import scala.collection.immutable.SortedSet
-
 /**
   * The core expression algebra.
   *
@@ -131,7 +129,7 @@ object Expr {
     */
   final case class WithFactsOfType[T, R, P](
     factTypeSet: FactTypeSet[T],
-    subExpr: Expr[SortedSet, TypedFact[T], R, P],
+    subExpr: Expr[Set, TypedFact[T], R, P],
     capture: CaptureP[Id, FactTable, R, P],
   ) extends Expr[Id, FactTable, R, P] {
     override def visit[G[_]](v: Visitor[Id, FactTable, P, G]): G[R] = v.visitWithFactsOfType(this)
