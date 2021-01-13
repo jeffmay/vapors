@@ -33,22 +33,22 @@ object ExprDsl extends ExprBuilderSyntax {
   /**
     * Lifts the given value into the output of an expression with no evidence.
     */
-  def const[F[_], V, R, P](
+  def const[R, P](
     value: R,
     evidence: Evidence = Evidence.none,
   )(implicit
-    post: CaptureP[F, V, R, P],
-  ): Expr[F, V, R, P] =
+    post: CaptureRootExpr[R, P],
+  ): RootExpr[R, P] =
     Expr.ConstOutput(value, evidence, post)
 
   /**
     * Uses the value of a given fact and also considers the fact as evidence of its own value.
     */
-  def factValue[F[_], V, R, P](
+  def factValue[R, P](
     typedFact: TypedFact[R],
   )(implicit
-    post: CaptureP[F, V, R, P],
-  ): Expr[F, V, R, P] =
+    post: CaptureRootExpr[R, P],
+  ): RootExpr[R, P] =
     const(typedFact.value, Evidence(typedFact))
 
   def input[F[_], V, P](
