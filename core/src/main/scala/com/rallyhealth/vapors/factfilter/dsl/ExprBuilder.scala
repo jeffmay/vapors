@@ -235,6 +235,30 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
   ): ValExprBuilder[V, Boolean, P] =
     new ValExprBuilder(ExprDsl.within(returnOutput, window))
 
+  def isEqualTo(
+    value: R,
+  )(implicit
+    orderR: Order[R],
+    captureResult: CaptureCond,
+  ): ValExprBuilder[V, Boolean, P] =
+    within(Window.equalTo(value))
+
+  def ===(
+    value: R,
+  )(implicit
+    orderR: Order[R],
+    captureResult: CaptureCond,
+  ): ValExprBuilder[V, Boolean, P] =
+    within(Window.equalTo(value))
+
+  def !==(
+    value: R,
+  )(implicit
+    orderR: Order[R],
+    captureResult: CaptureCond,
+  ): ValExprBuilder[V, Boolean, P] =
+    Expr.Not(within(Window.equalTo(value)), captureResult)
+
   def <(
     value: R,
   )(implicit
