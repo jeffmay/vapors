@@ -53,6 +53,7 @@ object Expr {
     def visitNegativeOutput[R : Negative](expr: NegativeOutput[F, V, R, P]): G[R]
     def visitNot[R : Negation](expr: Not[F, V, R, P]): G[R]
     def visitOr[R : Disjunction : ExtractBoolean](expr: Or[F, V, R, P]): G[R]
+    def visitOutputIsEmpty[M[_] : Foldable, R](expr: OutputIsEmpty[F, V, M, R, P]): G[Boolean]
     def visitOutputWithinSet[R](expr: OutputWithinSet[F, V, R, P]): G[Boolean]
     def visitOutputWithinWindow[R](expr: OutputWithinWindow[F, V, R, P]): G[Boolean]
     def visitReturnInput(expr: ReturnInput[F, V, P]): G[F[V]]
@@ -303,6 +304,13 @@ object Expr {
     capture: CaptureP[F, V, M[R], P],
   ) extends Expr[F, V, M[R], P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitMapOutput(this)
+  }
+
+  final case class OutputIsEmpty[F[_], V, M[_] : Foldable, R, P](
+    inputExpr: Expr[F, V, M[R], P],
+    capture: CaptureP[F, V, Boolean, P],
+  ) extends Expr[F, V, Boolean, P] {
+    override def visit[G[_]](v: Visitor[F, V, P, G]): G[Boolean] = v.visitOutputIsEmpty(this)
   }
 
   /**

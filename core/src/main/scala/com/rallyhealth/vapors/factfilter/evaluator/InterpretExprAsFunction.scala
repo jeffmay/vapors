@@ -218,6 +218,16 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     }
   }
 
+  override def visitOutputIsEmpty[M[_] : Foldable, R](
+    expr: Expr.OutputIsEmpty[F, V, M, R, P],
+  ): Input[F, V] => ExprResult[F, V, Boolean, P] = { input =>
+    val inputResult = expr.inputExpr.visit(this)(input)
+    val isEmpty = inputResult.output.value.isEmpty
+    resultOfPureExpr(expr, input, isEmpty, inputResult.output.evidence) {
+      ExprResult.OutputIsEmpty(_, _, inputResult)
+    }
+  }
+
   override def visitOutputWithinSet[R](
     expr: Expr.OutputWithinSet[F, V, R, P],
   ): Input[F, V] => ExprResult[F, V, Boolean, P] = { input =>

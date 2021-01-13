@@ -120,6 +120,12 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
     new FoldableExprBuilder(next)
   }
 
+  def isEmpty(
+    implicit
+    captureResult: CaptureCond,
+  ): FoldInExprBuilder[F, V, Boolean, P] =
+    new FoldInExprBuilder(Expr.OutputIsEmpty(returnOutput, captureResult))
+
   def exists(
     buildFn: ValExprBuilder[U, U, P] => ExprBuilder[Id, U, Id, Boolean, P],
   )(implicit
@@ -139,6 +145,21 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
     captureResult: CaptureResult[M[U]],
   ): FoldableExprBuilder[F, V, M, U, P] =
     new FoldableExprBuilder(Expr.FilterOutput(returnOutput, validValues, typeOf[U] <:< typeOf[Fact], captureResult))
+
+  def containsAny(
+    validValues: Set[U],
+  )(implicit
+    filterM: FunctorFilter[M],
+    tt: TypeTag[U],
+    captureResult: CaptureResult[M[U]],
+    captureCond: CaptureCond,
+  ): FoldInExprBuilder[F, V, Boolean, P] =
+    new FoldInExprBuilder(
+      Expr.Not(
+        filter(validValues).isEmpty,
+        captureCond,
+      ),
+    )
 }
 
 final class FoldInExprBuilder[F[_] : Foldable, V, R, P](returnOutput: Expr[F, V, R, P])

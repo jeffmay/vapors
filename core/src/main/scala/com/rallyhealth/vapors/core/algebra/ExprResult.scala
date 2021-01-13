@@ -51,6 +51,7 @@ object ExprResult {
     def visitNegativeOutput[R](result: NegativeOutput[F, V, R, P]): G[R]
     def visitNot[R](result: Not[F, V, R, P]): G[R]
     def visitOr[R](result: Or[F, V, R, P]): G[R]
+    def visitOutputIsEmpty[M[_] : Foldable, R](result: OutputIsEmpty[F, V, M, R, P]): G[Boolean]
     def visitOutputWithinSet[R](result: OutputWithinSet[F, V, R, P]): G[Boolean]
     def visitOutputWithinWindow[R](result: OutputWithinWindow[F, V, R, P]): G[Boolean]
     def visitReturnInput(result: ReturnInput[F, V, P]): G[F[V]]
@@ -194,6 +195,14 @@ object ExprResult {
     subResultList: List[ExprResult[Id, U, R, P]],
   ) extends ExprResult[F, V, M[R], P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitMapOutput(this)
+  }
+
+  final case class OutputIsEmpty[F[_], V, M[_] : Foldable, R, P](
+    expr: Expr.OutputIsEmpty[F, V, M, R, P],
+    context: Context[F, V, Boolean, P],
+    inputResult: ExprResult[F, V, M[R], P],
+  ) extends ExprResult[F, V, Boolean, P] {
+    override def visit[G[_]](v: Visitor[F, V, P, G]): G[Boolean] = v.visitOutputIsEmpty(this)
   }
 
   final case class ExistsInOutput[F[_], V, M[_] : Foldable, U, P](
