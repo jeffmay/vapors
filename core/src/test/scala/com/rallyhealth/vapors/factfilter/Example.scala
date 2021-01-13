@@ -85,6 +85,14 @@ object Example {
     val Weight = FactTypeSet.of(WeightMeasurement, WeightSelfReported)
   }
 
+  final object Tags {
+    val asthma = FactTypes.Tag("asthma")
+    val obeseBmi = FactTypes.Tag("obese_bmi")
+    val normalBmi = FactTypes.Tag("normal_bmi")
+    val smoker = FactTypes.Tag("smoker")
+    val nonSmoker = FactTypes.Tag("non_smoker")
+  }
+
   final object JoeSchmoe {
     val name = FactTypes.Name("Joe Schmoe")
     val age = FactTypes.Age(32)

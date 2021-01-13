@@ -10,9 +10,7 @@ import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.data._
 import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction
 
-import scala.collection.immutable.SortedSet
-
-object ExprDsl extends ExprBuilderSyntax {
+object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances {
 
   final type CondExpr[F[_], V, P] = Expr[F, V, Boolean, P]
 
@@ -22,7 +20,7 @@ object ExprDsl extends ExprBuilderSyntax {
   type RootExpr[R, P] = Expr[Id, FactTable, R, P]
 
   type CaptureRootExpr[R, P] = CaptureP[Id, FactTable, R, P]
-  type CaptureFromFacts[T, P] = CaptureP[SortedSet, TypedFact[T], SortedSet[TypedFact[T]], P]
+  type CaptureFromFacts[T, P] = CaptureP[Set, TypedFact[T], Set[TypedFact[T]], P]
 
   import InterpretExprAsFunction._
 
@@ -160,22 +158,21 @@ object ExprDsl extends ExprBuilderSyntax {
   ) {
 
     def where[M[_], U](
-      buildSubExpr: ExprBuilder.FoldableFn[SortedSet, TypedFact[T], M, U, P],
+      buildSubExpr: ExprBuilder.FoldableFn[Set, TypedFact[T], M, U, P],
     )(implicit
       postResult: CaptureRootExpr[M[U], P],
-    ): RootExpr[M[U], P] = {
+    ): RootExpr[M[U], P] =
       Expr.WithFactsOfType(
         factTypeSet,
         buildSubExpr(new FoldableExprBuilder(ExprDsl.input)).returnOutput,
         postResult,
       )
-    }
 
     def returnInput(
       implicit
       postInput: CaptureFromFacts[T, P],
-      postResult: CaptureRootExpr[SortedSet[TypedFact[T]], P],
-    ): RootExpr[SortedSet[TypedFact[T]], P] =
+      postResult: CaptureRootExpr[Set[TypedFact[T]], P],
+    ): RootExpr[Set[TypedFact[T]], P] =
       Expr.WithFactsOfType(factTypeSet, input(postInput), postResult)
   }
 

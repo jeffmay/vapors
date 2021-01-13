@@ -8,7 +8,7 @@ import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.data._
 import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.{Input, Output}
 
-import scala.collection.immutable.{BitSet, SortedSet}
+import scala.collection.immutable.BitSet
 
 // TODO: Make R the last parameter?
 final class InterpretExprAsFunction[F[_] : Foldable, V, P]
@@ -312,11 +312,12 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
   override def visitWithFactsOfType[T, R](
     expr: Expr.WithFactsOfType[T, R, P],
   ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
+    import alleycats.std.set._
     val inputFactTable = input.withValue(input.factTable)
     val withMatchingFactsFn = expr.subExpr.visit(InterpretExprAsFunction())
     val matchingFacts = input.factTable.getAllByFactType(expr.factTypeSet)
     // facts will always be added as their own evidence when used, so we do not need to add them to the evidence here
-    val subInput = input.withFoldableValue[SortedSet, TypedFact[T]](matchingFacts)
+    val subInput = input.withFoldableValue[Set, TypedFact[T]](matchingFacts)
     val subResult = withMatchingFactsFn(subInput)
     val postParam = expr.capture.foldToParam(expr, inputFactTable, subResult.output, subResult.param :: Nil)
     ExprResult.WithFactsOfType(

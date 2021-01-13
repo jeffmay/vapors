@@ -6,16 +6,14 @@ import com.rallyhealth.vapors.factfilter.data.TypedFact
 import com.rallyhealth.vapors.factfilter.dsl.CaptureP
 import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction
 
-import scala.collection.immutable.SortedSet
-
 object CaptureTimeRange extends CaptureP.AsMonoidCompanion[TimeRange] {
 
   implicit def captureTimeRangeFromFacts[T : ExtractInstant, R]: CaptureP.AsMonoidFromFactsOfType[T, R, TimeRange] = {
     new CaptureP.AsMonoidFromFactsOfType[T, R, TimeRange] {
 
       override protected def foldWithParentParam(
-        expr: Expr[SortedSet, TypedFact[T], R, TimeRange],
-        input: InterpretExprAsFunction.Input[SortedSet, TypedFact[T]],
+        expr: Expr[Set, TypedFact[T], R, TimeRange],
+        input: InterpretExprAsFunction.Input[Set, TypedFact[T]],
         output: InterpretExprAsFunction.Output[R],
         processedChildren: TimeRange,
       ): Eval[TimeRange] = {
