@@ -1,6 +1,6 @@
 package com.rallyhealth.vapors.factfilter.dsl
 
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, MonoidK, Order}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Order}
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.{NamedLens, Window}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
@@ -81,15 +81,28 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
   ): FoldableExprBuilder[F, V, List, U, P] =
     to(List)
 
-  def to[N[+_] : Foldable](
+  def toSet(
+    implicit
+    ev: M[U] <:< Iterable[U],
+    captureOutput: CaptureP[F, V, Set[U], P],
+  ): FoldableExprBuilder[F, V, Set, U, P] = {
+    import alleycats.std.set.alleyCatsSetTraverse
+    to(Set)
+  }
+
+  def to[N[_] : Foldable](
     factory: Factory[U, N[U]],
   )(implicit
     ev: M[U] <:< Iterable[U],
     captureOutput: CaptureP[F, V, N[U], P],
   ): FoldableExprBuilder[F, V, N, U, P] =
-    new FoldableExprBuilder(
-      Expr.SelectFromOutput(returnOutput, NamedLens.id[M[U]].asIterable.to(factory), captureOutput),
-    )
+    new FoldableExprBuilder({
+      Expr.SelectFromOutput[F, V, M[U], N[U], P](
+        returnOutput,
+        NamedLens.id[M[U]].asIterable.to(factory),
+        captureOutput,
+      )
+    })
 
   def map[R](
     buildFn: ValExprBuilder[U, U, P] => ExprBuilder[Id, U, Id, R, P],

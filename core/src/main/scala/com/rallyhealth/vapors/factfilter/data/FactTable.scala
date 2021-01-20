@@ -4,7 +4,7 @@ import cats.instances.order._
 import cats.{Eq, Monoid}
 import com.rallyhealth.vapors.core.data.Indexed
 
-import scala.collection.immutable.SortedMap
+import scala.collection.immutable.{SortedMap, SortedSet}
 
 /**
   * The current state of all the facts in an expression.
@@ -21,14 +21,19 @@ final case class FactTable(factsByName: SortedMap[String, FactSet]) extends AnyV
     new FactTable(this.factsByName.combine(newFactTable.factsByName))
   }
 
-  def getAllByFactType[T](factTypeSet: FactTypeSet[T]): TypedFactSet[T] = {
+  def getSortedSeq[T](factTypeSet: FactTypeSet[T]): IndexedSeq[TypedFact[T]] = {
+    val sortedArray = getSet(factTypeSet).toArray.sortInPlace()
+    sortedArray.toIndexedSeq
+  }
+
+  def getSet[T](factTypeSet: FactTypeSet[T]): TypedFactSet[T] = {
     val matchingFacts = for {
       factName <- factTypeSet.typeMap.toSortedMap.keys
       matchingFactsByName <- this.factsByName.get(factName)
     } yield matchingFactsByName.collect {
       case factTypeSet(matchingByType) => matchingByType
     }
-    matchingFacts.reduceOption(_ | _).map(TypedFactSet.from).getOrElse(TypedFactSet.empty)
+    matchingFacts.reduceOption(_ | _).map(TypedFactSet.from).getOrElse(Set.empty)
   }
 }
 
@@ -58,14 +63,14 @@ object FactTable {
   implicit def indexedByFactType[T]: Indexed[FactTable, FactType[T], TypedFactSet[T]] = {
     new Indexed[FactTable, FactType[T], TypedFactSet[T]] {
       override def get(container: FactTable)(key: FactType[T]): TypedFactSet[T] = {
-        container.getAllByFactType(key)
+        container.getSet(key)
       }
     }
   }
 
   implicit def indexedByFactTypeSet[T]: Indexed[FactTable, FactTypeSet[T], TypedFactSet[T]] = {
     new Indexed[FactTable, FactTypeSet[T], TypedFactSet[T]] {
-      override def get(container: FactTable)(key: FactTypeSet[T]): TypedFactSet[T] = container.getAllByFactType(key)
+      override def get(container: FactTable)(key: FactTypeSet[T]): TypedFactSet[T] = container.getSet(key)
     }
   }
 }

@@ -2,7 +2,6 @@ package com.rallyhealth.vapors.factfilter.dsl
 
 import cats.data.NonEmptyList
 import cats.{Foldable, Id, Monoid}
-import com.rallyhealth.vapors.core.algebra.Expr.Definition
 import com.rallyhealth.vapors.core.algebra.{Expr, ExprResult}
 import com.rallyhealth.vapors.core.data.{NamedLens, Window}
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
@@ -20,7 +19,7 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances {
   type RootExpr[R, P] = Expr[Id, FactTable, R, P]
 
   type CaptureRootExpr[R, P] = CaptureP[Id, FactTable, R, P]
-  type CaptureFromFacts[T, P] = CaptureP[Set, TypedFact[T], Set[TypedFact[T]], P]
+  type CaptureFromFacts[T, P] = CaptureP[Seq, TypedFact[T], Seq[TypedFact[T]], P]
 
   import InterpretExprAsFunction._
 
@@ -158,7 +157,7 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances {
   ) {
 
     def where[M[_], U](
-      buildSubExpr: ExprBuilder.FoldableFn[Set, TypedFact[T], M, U, P],
+      buildSubExpr: ExprBuilder.FoldableFn[Seq, TypedFact[T], M, U, P],
     )(implicit
       postResult: CaptureRootExpr[M[U], P],
     ): RootExpr[M[U], P] =
@@ -171,8 +170,8 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances {
     def returnInput(
       implicit
       postInput: CaptureFromFacts[T, P],
-      postResult: CaptureRootExpr[Set[TypedFact[T]], P],
-    ): RootExpr[Set[TypedFact[T]], P] =
+      postResult: CaptureRootExpr[Seq[TypedFact[T]], P],
+    ): RootExpr[Seq[TypedFact[T]], P] =
       Expr.WithFactsOfType(factTypeSet, input(postInput), postResult)
   }
 

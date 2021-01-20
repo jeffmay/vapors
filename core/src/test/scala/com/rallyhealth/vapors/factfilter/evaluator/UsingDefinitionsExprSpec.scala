@@ -20,7 +20,7 @@ class UsingDefinitionsExprSpec extends AnyWordSpec {
     lazy val ageFromDateOfBirth = {
       val now = LocalDate.now()
       withFactsOfType(FactTypes.DateOfBirth).where { facts =>
-        facts.toList.map { fact =>
+        facts.map { fact =>
           fact.get(_.select(_.value).select(_.getYear)).subtractFrom(now.getYear)
         }
       }
@@ -44,7 +44,7 @@ class UsingDefinitionsExprSpec extends AnyWordSpec {
 
     lazy val isUser: RootExpr[Boolean, Unit] = {
       withFactsOfType(FactTypes.Role).where {
-        _.toList.exists {
+        _.exists {
           _.get(_.select(_.value)) >= Role.User
         }
       }
@@ -86,13 +86,15 @@ class UsingDefinitionsExprSpec extends AnyWordSpec {
       val result = eval(facts) {
         usingDefinitions(isEligibleDef) {
           withFactsOfType(isEligibleDef.factType).where {
-            _.toList.exists(_.get(_.select(_.value)))
+            _.exists(_.get(_.select(_.value)))
           }
         }
       }
       assert(result.output.value)
-      val evidenceOfAge = Evidence(DerivedFactOfType(FactTypes.Age, 19, Evidence(dob)))
-      val evidenceOfEligibility = Evidence(DerivedFactOfType(isEligibleDef.factType, true, evidenceOfAge))
+      val correctAge = DerivedFactOfType(FactTypes.Age, 19, Evidence(dob))
+      val evidenceOfEligibility = Evidence(
+        DerivedFactOfType(isEligibleDef.factType, true, Evidence(correctAge, userRole)),
+      )
       assertResult(evidenceOfEligibility)(result.output.evidence)
       assertResult(Evidence(dob, userRole))(result.output.evidence.derivedFromSources)
     }

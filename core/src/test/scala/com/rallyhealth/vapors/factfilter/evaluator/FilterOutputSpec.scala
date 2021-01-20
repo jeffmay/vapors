@@ -4,6 +4,7 @@ import com.rallyhealth.vapors.factfilter.Example.{FactTypes, Tags}
 import com.rallyhealth.vapors.factfilter.data.{Evidence, FactTable}
 import org.scalatest.wordspec.AnyWordSpec
 import com.rallyhealth.vapors.factfilter.dsl.ExprDsl._
+import org.scalatest.matchers.should.Matchers._
 
 class FilterOutputSpec extends AnyWordSpec {
 
@@ -75,7 +76,7 @@ class FilterOutputSpec extends AnyWordSpec {
           facts.filter(Set(Tags.asthma))
         }
         val res = eval(sampleFactTable)(q)
-        assertResult(Set(Tags.asthma))(res.output.value)
+        res.output.value should contain theSameElementsAs Seq(Tags.asthma)
       }
 
       "return all matching values from a given subset" in {
@@ -83,7 +84,7 @@ class FilterOutputSpec extends AnyWordSpec {
           facts.toList.map(_.value).filter(Set(Tags.asthma).map(_.value))
         }
         val res = eval(sampleFactTable)(q)
-        assertResult(List(Tags.asthma).map(_.value))(res.output.value)
+        res.output.value should contain theSameElementsAs Seq(Tags.asthma).map(_.value)
       }
 
       "return the correct evidence for the matching values from a given subset" in {
@@ -101,7 +102,7 @@ class FilterOutputSpec extends AnyWordSpec {
           facts.filter(Set(Tags.asthma, Tags.obeseBmi))
         }
         val res = eval(sampleFactTable)(q)
-        assertResult(Set(Tags.asthma))(res.output.value)
+        res.output.value should contain theSameElementsAs Seq(Tags.asthma)
       }
 
       "return the matching values from a given superset" in {
@@ -109,7 +110,7 @@ class FilterOutputSpec extends AnyWordSpec {
           facts.toList.map(_.value).filter(Set(Tags.asthma, Tags.obeseBmi).map(_.value))
         }
         val res = eval(sampleFactTable)(q)
-        assertResult(List(Tags.asthma).map(_.value))(res.output.value)
+        res.output.value should contain theSameElementsAs Seq(Tags.asthma).map(_.value)
       }
 
       "return the correct evidence for the matching values from a given superset" in {

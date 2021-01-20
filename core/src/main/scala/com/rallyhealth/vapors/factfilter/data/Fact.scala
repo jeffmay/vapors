@@ -73,13 +73,13 @@ object TypedFact {
     case DerivedFactOfType(typeInfo, value, _) => Some((typeInfo, value))
   }
 
-  def orderByTypedFactValue[T]: Order[TypedFact[T]] = { (x, y) =>
+  def orderTypedFactByValue[T]: Order[TypedFact[T]] = { (x, y) =>
     x.typeInfo.order.compare(x.value, y.value)
   }
 
-  implicit def order[T](implicit orderFactNames: Order[String]): Order[TypedFact[T]] = { (x, y) =>
+  implicit def orderFactByNameThenValue[T](implicit orderFactNames: Order[String]): Order[TypedFact[T]] = { (x, y) =>
     orderFactNames.compare(x.typeInfo.name, y.typeInfo.name) match {
-      case 0 => orderByTypedFactValue[T].compare(x, y)
+      case 0 => orderTypedFactByValue[T].compare(x, y)
       case orderByName => orderByName
     }
   }

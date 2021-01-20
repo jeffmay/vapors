@@ -1,13 +1,13 @@
 package com.rallyhealth.vapors.factfilter.data
 
+import cats.Monoid
 import cats.data.NonEmptySet
 import cats.instances.order._
-import cats.{Monoid, Order}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.SortedSet
 
-final class Evidence private (val factSet: SortedSet[Fact]) extends AnyVal {
+final class Evidence private (val factSet: Set[Fact]) extends AnyVal {
 
   def isEmpty: Boolean = factSet.isEmpty
   def nonEmpty: Boolean = factSet.nonEmpty
@@ -15,11 +15,7 @@ final class Evidence private (val factSet: SortedSet[Fact]) extends AnyVal {
   @inline def ++(that: Evidence): Evidence = union(that)
   @inline def |(that: Evidence): Evidence = union(that)
 
-  def ofType[T](
-    factTypeSet: FactTypeSet[T],
-  )(implicit
-    orderFacts: Order[TypedFact[T]],
-  ): Option[NonEmptySet[TypedFact[T]]] = {
+  def ofType[T](factTypeSet: FactTypeSet[T]): Option[NonEmptySet[TypedFact[T]]] = {
     val matchingFacts = SortedSet.from(this.factSet.iterator.collect(factTypeSet.collector))
     NonEmptySet.fromSet(matchingFacts)
   }
@@ -57,14 +53,14 @@ final class Evidence private (val factSet: SortedSet[Fact]) extends AnyVal {
 
 object Evidence {
 
-  def unapply(evidence: Evidence): Some[SortedSet[Fact]] = Some(evidence.factSet)
+  def unapply(evidence: Evidence): Some[Set[Fact]] = Some(evidence.factSet)
 
   @inline final def apply(facts: FactOrFactSet*): Evidence = {
     if (facts.isEmpty) none
     else new Evidence(FactOrFactSet.flatten(facts))
   }
 
-  final val none = new Evidence(SortedSet.empty[Fact])
+  final val none = new Evidence(Set.empty)
 
   /**
     * Convert any given value into [[Evidence]] by inspecting whether it is a fact or valid collection of facts.

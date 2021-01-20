@@ -99,7 +99,7 @@ object ExprResult {
   final case class WithFactsOfType[F[_], V, T, R, P](
     expr: Expr.WithFactsOfType[T, R, P],
     context: Context[F, V, R, P],
-    subResult: ExprResult[Set, TypedFact[T], R, P],
+    subResult: ExprResult[Seq, TypedFact[T], R, P],
   ) extends ExprResult[F, V, R, P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitWithFactsOfType(this)
   }

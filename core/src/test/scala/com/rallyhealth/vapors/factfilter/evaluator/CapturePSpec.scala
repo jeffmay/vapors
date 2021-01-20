@@ -4,9 +4,10 @@ import com.rallyhealth.vapors.factfilter.Example.{FactTypes, JoeSchmoe}
 import com.rallyhealth.vapors.factfilter.data.Evidence
 import com.rallyhealth.vapors.factfilter.dsl.ExprDsl._
 import com.rallyhealth.vapors.factfilter.extras.TimeRange
+import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.wordspec.AnyWordSpec
 
-class CapturePSpec extends AnyWordSpec {
+class CapturePSpec extends AnyWordSpec with TypeCheckedTripleEquals {
 
   "CaptureP" should {
 
