@@ -211,7 +211,16 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     captureResult: CaptureP[Id, V, N[X], P],
   ): Expr[Id, V, N[X], P] = {
     val lens = buildLens(NamedLens.id[R])
-    Expr.SelectFromOutput(returnOutput, lens, captureResult)
+    // if the previous node was a SelectFromOutput, then combine the lenses and produce a single node
+    returnOutput match {
+      case prev: Expr.SelectFromOutput[Id, V, s, R, P] =>
+        // capture the starting type as an existential type parameter 's'
+        // it is ignored in the return type after the compile proves that this code is safe
+        Expr.SelectFromOutput[Id, V, s, N[X], P](prev.inputExpr, prev.lens.andThen(lens), captureResult)
+      case _ =>
+        // otherwise, build the lens as a new SelectFromOutput node
+        Expr.SelectFromOutput(returnOutput, lens, captureResult)
+    }
   }
 
   def get[X](
