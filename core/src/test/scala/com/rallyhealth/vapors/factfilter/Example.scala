@@ -67,12 +67,20 @@ object Example {
     override def unit: String = "lbs"
   }
 
+  final case class GenericMeasurement(
+    name: String,
+    value: Double,
+    unit: String,
+    timestamp: Instant,
+  ) extends Measurement
+
   final object FactTypes {
     val Name = FactType[String]("name")
     val Age = FactType[Int]("age")
     val Role = FactType[Role]("role")
     val BirthYear = FactType[Int]("year_of_birth")
     val DateOfBirth = FactType[LocalDate]("date_of_birth")
+    val GenericMeasurement = FactType[GenericMeasurement]("generic_measurement")
     val WeightMeasurement = FactType[WeightMeasurementLbs]("weight_measurement")
     val WeightSelfReported = FactType[WeightMeasurementLbs]("weight_self_reported")
     val BloodPressureMeasurement = FactType[BloodPressure]("blood_pressure")
