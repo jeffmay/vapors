@@ -74,6 +74,15 @@ object Example {
     timestamp: Instant,
   ) extends Measurement
 
+  final case class TagsUpdate(
+    tags: Set[String],
+    timestamp: Instant,
+  ) extends HasTimestamp
+
+  final object TagsUpdate {
+    implicit val orderByLatestTimestamp: Order[TagsUpdate] = Order.by(_.timestamp)
+  }
+
   final object FactTypes {
     val Name = FactType[String]("name")
     val Age = FactType[Int]("age")
@@ -85,6 +94,7 @@ object Example {
     val WeightSelfReported = FactType[WeightMeasurementLbs]("weight_self_reported")
     val BloodPressureMeasurement = FactType[BloodPressure]("blood_pressure")
     val Tag = FactType[String]("tag")
+    val TagsUpdate = FactType[TagsUpdate]("tags_update")
     val ProbabilityToUse = FactType[Probs]("probability_to_use")
   }
 

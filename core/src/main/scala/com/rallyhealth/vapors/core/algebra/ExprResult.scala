@@ -1,7 +1,7 @@
 package com.rallyhealth.vapors.core.algebra
 
 import cats.kernel.Monoid
-import cats.{~>, Eval, Foldable, FunctorFilter, Id}
+import cats.{~>, Eval, Foldable, FunctorFilter, Id, Traverse, TraverseFilter}
 import com.rallyhealth.vapors.factfilter.data.{Fact, FactSet, FactTable, TypedFact}
 import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.{Input, Output}
 
@@ -56,6 +56,7 @@ object ExprResult {
     def visitReturnInput(result: ReturnInput[F, V, P]): G[F[V]]
     def visitSelectFromOutput[S, R](result: SelectFromOutput[F, V, S, R, P]): G[R]
     def visitSubtractOutputs[R](result: SubtractOutputs[F, V, R, P]): G[R]
+    def visitTakeFromOutput[M[_] : Traverse : TraverseFilter, R](result: TakeFromOutput[F, V, M, R, P]): G[M[R]]
     def visitUsingDefinitions[R](result: UsingDefinitions[F, V, R, P]): G[R]
     def visitWhen[R](result: When[F, V, R, P]): G[R]
     def visitWithFactsOfType[T, R](result: WithFactsOfType[F, V, T, R, P]): G[R]
@@ -202,6 +203,14 @@ object ExprResult {
     inputResult: ExprResult[F, V, M[R], P],
   ) extends ExprResult[F, V, Boolean, P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[Boolean] = v.visitOutputIsEmpty(this)
+  }
+
+  final case class TakeFromOutput[F[_], V, M[_] : Traverse : TraverseFilter, R, P](
+    expr: Expr.TakeFromOutput[F, V, M, R, P],
+    context: Context[F, V, M[R], P],
+    inputResult: ExprResult[F, V, M[R], P],
+  ) extends ExprResult[F, V, M[R], P] {
+    override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitTakeFromOutput(this)
   }
 
   final case class ExistsInOutput[F[_], V, M[_] : Foldable, U, P](

@@ -1,6 +1,8 @@
 package com.rallyhealth.vapors.core.data
 
+import alleycats.{Empty, Zero}
 import cats.data.Ior
+import cats.kernel.Monoid
 import cats.{Invariant, Order, Show}
 
 import scala.collection.immutable.NumericRange
@@ -16,6 +18,17 @@ object Window {
   import cats.syntax.functor._
   import cats.syntax.order._
   import cats.syntax.show._
+
+  def empty[A : Order : Empty]: Window[A] = new EmptyWindow[A]
+
+  private final class EmptyWindow[A : Order : Empty] extends Window[A] {
+    private val zero = Empty[A].empty
+    override val order: Order[A] = Order[A]
+    override def contains(value: A): Boolean = false
+    override def bounds: Ior[Above[A], Below[A]] =
+      Ior.Both(Above(zero, inclusiveLowerBound = false), Below(zero, inclusiveUpperBound = false))
+    override def toString: String = s"Window.empty($zero)"
+  }
 
   implicit object InvariantWindow extends Invariant[Window] {
     override def imap[A, B](fa: Window[A])(f: A => B)(g: B => A): Window[B] = {

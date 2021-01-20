@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.core.algebra
 
 import cats.data.NonEmptyList
 import cats.kernel.Monoid
-import cats.{FlatMap, Foldable, Functor, FunctorFilter}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse, TraverseFilter}
 import com.rallyhealth.vapors.core.data.{NamedLens, Window}
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
@@ -57,6 +57,7 @@ object Expr {
     def visitReturnInput(expr: ReturnInput[F, V, P]): G[F[V]]
     def visitSelectFromOutput[S, R](expr: SelectFromOutput[F, V, S, R, P]): G[R]
     def visitSubtractOutputs[R : Subtraction](expr: SubtractOutputs[F, V, R, P]): G[R]
+    def visitTakeFromOutput[M[_] : Traverse : TraverseFilter, R](expr: TakeFromOutput[F, V, M, R, P]): G[M[R]]
     def visitUsingDefinitions[R](expr: UsingDefinitions[F, V, R, P]): G[R]
     def visitWhen[R](expr: When[F, V, R, P]): G[R]
     def visitWithFactsOfType[T, R](expr: WithFactsOfType[T, R, P]): G[R]
@@ -309,6 +310,21 @@ object Expr {
     capture: CaptureP[F, V, Boolean, P],
   ) extends Expr[F, V, Boolean, P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[Boolean] = v.visitOutputIsEmpty(this)
+  }
+
+  /**
+    * Take a given number of elements from the input sequence.
+    *
+    * If the number to take is positive, it will pull that number of elements from the start of the sequence.
+    * If negative, it will pull that number of elements from the tail of the sequence. If zero, it will return
+    * an empty sequence.
+    */
+  final case class TakeFromOutput[F[_], V, M[_] : Traverse : TraverseFilter, R, P](
+    inputExpr: Expr[F, V, M[R], P],
+    take: Int,
+    capture: CaptureP[F, V, M[R], P],
+  ) extends Expr[F, V, M[R], P] {
+    override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitTakeFromOutput(this)
   }
 
   /**
