@@ -9,4 +9,8 @@ trait ExprBuilderCatsInstances {
   implicit def traverseSet: Traverse[Set] = alleycats.std.set.alleyCatsSetTraverse
 
   implicit def traverseFilterSet: TraverseFilter[Set] = alleycats.std.set.alleyCatsSetTraverseFilter
+
+  implicit def traverseMap[K]: Traverse[Map[K, *]] = alleycats.std.map.alleycatsStdInstancesForMap
+
+  implicit def traverseFilterMap[K]: TraverseFilter[Map[K, *]] = alleycats.std.map.alleycatsStdMapTraverseFilter
 }
