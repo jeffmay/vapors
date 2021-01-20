@@ -3,6 +3,7 @@ package com.rallyhealth.vapors.factfilter.evaluator
 import cats._
 import cats.data.Chain
 import com.rallyhealth.vapors.core.algebra.{Expr, ExprResult}
+import com.rallyhealth.vapors.core.data.Window
 import com.rallyhealth.vapors.core.logic._
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.data._
@@ -274,6 +275,27 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     val allParams = allResultsList.map(_.param)
     resultOfManySubExpr(expr, input, addResult, allEvidence, allParams) {
       ExprResult.SubtractOutputs(_, _, allResultsList)
+    }
+  }
+
+  override def visitTakeFromOutput[M[_] : Traverse : TraverseFilter, R](
+    expr: Expr.TakeFromOutput[F, V, M, R, P],
+  ): Input[F, V] => ExprResult[F, V, M[R], P] = { input =>
+    val inputResult = expr.inputExpr.visit(this)(input)
+    val values = inputResult.output.value
+    val takeWindow: Window[Int] = expr.take match {
+      case pos if pos > 0 => Window.between(0, pos)
+      case 0 => Window.empty
+      case neg if neg < 0 =>
+        val totalSize = values.size.toInt
+        Window.between(totalSize + neg, totalSize)
+    }
+    // TODO: Handle evidence when the input is a set / sequence of facts
+    val selectedValues = values.zipWithIndex.collect {
+      case (elem, idx) if takeWindow.contains(idx) => elem
+    }
+    resultOfManySubExpr(expr, input, selectedValues, inputResult.output.evidence, inputResult.param :: Nil) {
+      ExprResult.TakeFromOutput(_, _, inputResult)
     }
   }
 

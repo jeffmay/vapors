@@ -1,6 +1,6 @@
 package com.rallyhealth.vapors.factfilter.dsl
 
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Order}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Order, Traverse, TraverseFilter}
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.{NamedLens, Window}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
@@ -104,6 +104,27 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
       )
     })
 
+  def take(
+    n: Int,
+  )(implicit
+    traverseM: Traverse[M],
+    traverseFilterM: TraverseFilter[M],
+    captureAllOutput: CaptureP[F, V, M[U], P],
+  ): FoldableExprBuilder[F, V, M, U, P] =
+    new FoldableExprBuilder(Expr.TakeFromOutput(returnOutput, n, captureAllOutput))
+
+  def headOption(
+    implicit
+    traverseM: Traverse[M],
+    traverseFilterM: TraverseFilter[M],
+    ev: M[U] <:< Iterable[U],
+    captureAllOutput: CaptureP[F, V, M[U], P],
+    captureHeadOutput: CaptureP[F, V, Option[U], P],
+  ): FoldableExprBuilder[F, V, Option, U, P] =
+    new FoldableExprBuilder(
+      Expr.SelectFromOutput(take(1), NamedLens.id[M[U]].headOption, captureHeadOutput),
+    )
+
   def map[R](
     buildFn: ValExprBuilder[U, U, P] => ExprBuilder[Id, U, Id, R, P],
   )(implicit
@@ -141,7 +162,7 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
   def exists(
     buildFn: ValExprBuilder[U, U, P] => ExprBuilder[Id, U, Id, Boolean, P],
   )(implicit
-    postEachOutput: CaptureEachOutput,
+    postEachOutput: CaptureP[Id, U, U, P],
     captureResult: CaptureCond,
   ): FoldInExprBuilder[F, V, Boolean, P] = {
     val condExpr = buildFn(new ValExprBuilder(Expr.ReturnInput[Id, U, P](postEachOutput)))
