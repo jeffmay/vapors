@@ -315,9 +315,9 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     import alleycats.std.set._
     val inputFactTable = input.withValue(input.factTable)
     val withMatchingFactsFn = expr.subExpr.visit(InterpretExprAsFunction())
-    val matchingFacts = input.factTable.getAllByFactType(expr.factTypeSet)
+    val matchingFacts = input.factTable.getSortedSeq(expr.factTypeSet)
     // facts will always be added as their own evidence when used, so we do not need to add them to the evidence here
-    val subInput = input.withFoldableValue[Set, TypedFact[T]](matchingFacts)
+    val subInput = input.withFoldableValue[Seq, TypedFact[T]](matchingFacts)
     val subResult = withMatchingFactsFn(subInput)
     val postParam = expr.capture.foldToParam(expr, inputFactTable, subResult.output, subResult.param :: Nil)
     ExprResult.WithFactsOfType(

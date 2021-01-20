@@ -4,8 +4,6 @@ import cats.Order
 import cats.data.NonEmptyList
 import com.rallyhealth.vapors.core.data.NamedLens
 
-import scala.collection.immutable.SortedSet
-
 package object data {
 
   /**
@@ -18,14 +16,14 @@ package object data {
   /**
     * An ordered set of untyped [[Fact]]s.
     */
-  final type FactSet = SortedSet[Fact]
+  final type FactSet = Set[Fact]
 
   /**
     * An ordered set of [[TypedFact]]s.
     *
     * @note not to be confused with a [[FactTypeSet]] (which is a set of [[FactType]]s, with not values)
     */
-  final type TypedFactSet[T] = SortedSet[TypedFact[T]]
+  final type TypedFactSet[T] = Set[TypedFact[T]]
 
   /**
     * A [[NamedLens]] defined over a [[TypedFact]] of a known type.

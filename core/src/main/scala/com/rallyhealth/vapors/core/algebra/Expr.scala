@@ -129,7 +129,7 @@ object Expr {
     */
   final case class WithFactsOfType[T, R, P](
     factTypeSet: FactTypeSet[T],
-    subExpr: Expr[Set, TypedFact[T], R, P],
+    subExpr: Expr[Seq, TypedFact[T], R, P],
     capture: CaptureP[Id, FactTable, R, P],
   ) extends Expr[Id, FactTable, R, P] {
     override def visit[G[_]](v: Visitor[Id, FactTable, P, G]): G[R] = v.visitWithFactsOfType(this)

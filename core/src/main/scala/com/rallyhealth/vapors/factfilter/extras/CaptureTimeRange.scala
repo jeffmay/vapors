@@ -12,8 +12,8 @@ object CaptureTimeRange extends CaptureP.AsMonoidCompanion[TimeRange] {
     new CaptureP.AsMonoidFromFactsOfType[T, R, TimeRange] {
 
       override protected def foldWithParentParam(
-        expr: Expr[Set, TypedFact[T], R, TimeRange],
-        input: InterpretExprAsFunction.Input[Set, TypedFact[T]],
+        expr: Expr[Seq, TypedFact[T], R, TimeRange],
+        input: InterpretExprAsFunction.Input[Seq, TypedFact[T]],
         output: InterpretExprAsFunction.Output[R],
         processedChildren: TimeRange,
       ): Eval[TimeRange] = {
