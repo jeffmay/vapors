@@ -92,12 +92,15 @@ object CaptureP extends CaptureUnitLowPriorityImplicit {
     *       to pass the captured params from this node's children up to the next parent.
     */
   final class AsMonoidAndPass[F[_], V, R, P : Monoid] extends AsMonoid[F, V, R, P] {
+
     override protected def foldWithParentParam(
       expr: Expr[F, V, R, P],
       input: Input[F, V],
       output: Output[R],
       processedChildren: P,
     ): Eval[P] = Eval.now(processedChildren)
+
+    override def toString: String = "captureParamAndPass"
   }
 
   /**
@@ -111,5 +114,15 @@ object CaptureP extends CaptureUnitLowPriorityImplicit {
 
 sealed trait CaptureUnitLowPriorityImplicit {
 
-  implicit def captureUnit[F[_], V, R]: CaptureP[F, V, R, Unit] = (_, _, _, _) => Eval.Unit
+  implicit def captureUnit[F[_], V, R]: CaptureP[F, V, R, Unit] = new CaptureP[F, V, R, Unit] {
+
+    override final def foldToParam(
+      expr: Expr[F, V, R, Unit],
+      input: Input[F, V],
+      output: Output[R],
+      subExprParams: List[Eval[Unit]],
+    ): Eval[Unit] = Eval.Unit
+
+    override final def toString: String = "captureUnit"
+  }
 }
