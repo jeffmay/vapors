@@ -136,7 +136,7 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances {
   ) extends AnyVal {
 
     def thenReturn(thenExpr: Expr[F, V, R, P]): ElseDefaultBuilder[F, V, R, P] =
-      new ElseDefaultBuilder(t._2 ::: NonEmptyList.of(ConditionBranch(t._1, thenExpr)))
+      new ElseDefaultBuilder(ConditionBranch(t._1, thenExpr) :: t._2)
   }
 
   final class ElseDefaultBuilder[F[_], V, R, P](private val branches: NonEmptyList[ConditionBranch[F, V, R, P]])
@@ -147,7 +147,7 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances {
     )(implicit
       postResult: CaptureP[F, V, R, P],
     ): Expr[F, V, R, P] =
-      Expr.When(branches, elseExpr, postResult)
+      Expr.When(branches.reverse, elseExpr, postResult)
 
     def elif(elifExpr: CondExpr[F, V, P]): ElifBuilder[F, V, R, P] = new ElifBuilder((elifExpr, branches))
   }
