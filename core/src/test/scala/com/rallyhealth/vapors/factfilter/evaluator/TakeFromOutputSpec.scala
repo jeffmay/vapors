@@ -34,6 +34,36 @@ class TakeFromOutputSpec extends AnyWordSpec {
       }
     }
 
+    "using .take(n) with a negative number" should {
+
+      "return an empty list if the collection is empty" in {
+        val q = withFactsOfType(FactTypes.TagsUpdate).where(_.take(-1))
+        val res = eval(FactTable.empty)(q)
+        assert(res.output.value.isEmpty)
+      }
+
+      "return the number of elements selected from the end of the list by fact ordering" in {
+        val q = withFactsOfType(FactTypes.TagsUpdate).where(_.take(-1))
+        val res = eval(FactTable(updateABC, updateDEF))(q)
+        assertResult(Seq(updateABC))(res.output.value)
+      }
+
+      "return all the elements of the list by fact ordering when the number requested is greater than the size" in {
+        val q = withFactsOfType(FactTypes.TagsUpdate).where(_.take(-3))
+        val res = eval(FactTable(updateABC, updateDEF))(q)
+        assertResult(Seq(updateDEF, updateABC))(res.output.value)
+      }
+    }
+
+    "using .take(n) with 0" should {
+
+      "return an empty collection" in {
+        val q = withFactsOfType(FactTypes.TagsUpdate).where(_.take(0))
+        val res = eval(FactTable(updateABC, updateDEF))(q)
+        assertResult(Seq.empty)(res.output.value)
+      }
+    }
+
     "using .headOption" should {
 
       "return None if the collection is empty" in {
