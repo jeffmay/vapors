@@ -110,21 +110,6 @@ trait WrapExprSyntax {
   ): ExprHListWrapper[F, V, E1 :: E2 :: E3 :: E4 :: E5 :: E6 :: E7 :: E8 :: E9 :: E10 :: E11 :: HNil, P] =
     new ExprHListWrapper(e1 :: e2 :: e3 :: e4 :: e5 :: e6 :: e7 :: e8 :: e9 :: e10 :: ExprLast(e11))
 
-  def wrap[F[_], V, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, P](
-    e1: Expr[F, V, E1, P],
-    e2: Expr[F, V, E2, P],
-    e3: Expr[F, V, E3, P],
-    e4: Expr[F, V, E4, P],
-    e5: Expr[F, V, E5, P],
-    e6: Expr[F, V, E6, P],
-    e7: Expr[F, V, E7, P],
-    e8: Expr[F, V, E8, P],
-    e9: Expr[F, V, E9, P],
-    e10: Expr[F, V, E10, P],
-    e11: Expr[F, V, E11, P],
-  ): ExprHListWrapper[F, V, E1 :: E2 :: E3 :: E4 :: E5 :: E6 :: E7 :: E8 :: E9 :: E10 :: E11 :: HNil, P] =
-    new ExprHListWrapper(e1 :: e2 :: e3 :: e4 :: e5 :: e6 :: e7 :: e8 :: e9 :: e10 :: ExprLast(e11))
-
   def wrap[F[_], V, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12, P](
     e1: Expr[F, V, E1, P],
     e2: Expr[F, V, E2, P],
