@@ -6,11 +6,12 @@ import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.{Inpu
 
 class InterpretExprAsSimpleOutputFn[F[_] : Foldable, V, P]
   extends VisitGenericExprWithProxyFn[F, V, P, InterpretExprAsSimpleOutputFn.GenSimpleOutput[*, P]] {
+  import InterpretExprAsSimpleOutputFn.GenSimpleOutput
 
   override protected def visitGeneric[M[_] : Foldable, U, R](
     expr: Expr[M, U, R, P],
     input: Input[M, U],
-  ): (Output[R], List[Eval[P]]) = {
+  ): GenSimpleOutput[R, P] = {
     val result = InterpretExprAsResultFn(expr)(input)
     (result.output, result.param :: Nil)
   }
