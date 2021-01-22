@@ -4,13 +4,12 @@ import cats.syntax.all._
 import cats.{Functor, Semigroupal}
 import shapeless.{::, HList, HNil}
 
-// TODO: How to convert this back into an HList of Expr nodes?
-sealed trait NonEmptyExprHList[F[_], V, T <: HList, P] {
+sealed trait NonEmptyExprHList[F[_], V, L <: HList, P] {
 
-  def ::[H](other: Expr[F, V, H, P]): NonEmptyExprHList[F, V, H :: T, P] =
-    new ExprHCons[F, V, H, T, P](other, this)
+  def ::[H](other: Expr[F, V, H, P]): NonEmptyExprHList[F, V, H :: L, P] =
+    new ExprHCons[F, V, H, L, P](other, this)
 
-  def visit[G[_] : Functor : Semigroupal](v: Expr.Visitor[F, V, P, G]): G[T]
+  def visit[G[_] : Functor : Semigroupal](v: Expr.Visitor[F, V, P, G]): G[L]
 }
 
 final case class ExprHCons[F[_], V, H, T <: HList, P](

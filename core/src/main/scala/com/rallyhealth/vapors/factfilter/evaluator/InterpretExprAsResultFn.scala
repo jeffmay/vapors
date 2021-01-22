@@ -3,11 +3,12 @@ package com.rallyhealth.vapors.factfilter.evaluator
 import cats._
 import cats.data.Chain
 import com.rallyhealth.vapors.core.data.Window
-import com.rallyhealth.vapors.core.algebra.{ConditionBranch, Expr, ExprResult}
+import com.rallyhealth.vapors.core.algebra.{ConditionBranch, Expr, ExprResult, NonEmptyExprHList}
 import com.rallyhealth.vapors.core.logic._
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.data._
 import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.{Input, Output}
+import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsSimpleOutputFn.SimpleOutputFnFunctorBuilder
 import shapeless.HList
 
 import scala.collection.immutable.BitSet
@@ -314,7 +315,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   override def visitWrapOutput[T <: HList, R](
     expr: Expr.WrapOutput[F, V, T, R, P],
   ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
-    val (tupleOutput, allParams) = expr.inputExprHList.visit(new InterpretExprAsSimpleOutputFn).apply(input)
+    val (tupleOutput, allParams) = visitHListSimpleOutput(expr.inputExprHList, input)
     val value = expr.generic.from(tupleOutput.value)
     resultOfManySubExpr(expr, input, value, tupleOutput.evidence, allParams) {
       ExprResult.WrapOutput(_, _)
@@ -371,7 +372,6 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   override def visitWithFactsOfType[T, R](
     expr: Expr.WithFactsOfType[T, R, P],
   ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
-    import alleycats.std.set._
     val inputFactTable = input.withValue(input.factTable)
     val withMatchingFactsFn = expr.subExpr.visit(InterpretExprAsResultFn())
     val matchingFacts = input.factTable.getSortedSeq(expr.factTypeSet)
@@ -425,21 +425,24 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     }
   }
 
-  // This type and functor are used for HList operations that require the EvalExprAsOutputAndParam interpreter
-  private type OutputAndParam[R] = InterpretExprAsSimpleOutputFn.OutputAndParam[F, V, R, P]
-  private implicit object OutputAndParamFunctor extends Functor[OutputAndParam] with Semigroupal[OutputAndParam] {
-    override def map[A, B](fa: OutputAndParam[A])(f: A => B): OutputAndParam[B] = fa.andThen {
-      case (o, params) => (o.copy(value = f(o.value)), params)
-    }
-    override def product[A, B](
-      fa: OutputAndParam[A],
-      fb: OutputAndParam[B],
-    ): OutputAndParam[(A, B)] = { input =>
-      val (a, aParams) = fa(input)
-      val (b, bParams) = fb(input)
-      // TODO: Product type should remove evidence if any arg has no evidence
-      (Output((a.value, b.value), a.evidence ++ b.evidence), aParams ::: bParams)
-    }
+  /**
+    * This type and functor are used for HList operations that require the [[InterpretExprAsSimpleOutputFn]] interpreter
+    */
+  private object SimpleOutputFnFunctorBuilder extends SimpleOutputFnFunctorBuilder[F, V, P]
+  import SimpleOutputFnFunctorBuilder._
+
+  /**
+    * Uses the [[SimpleOutputFunctor]] to visit and map over each expression of the given `exprHList` and return
+    * a simplified output of [[InterpretExprAsSimpleOutputFn.GenSimpleOutput]] combined as a Monoid.
+    *
+    * The evidence sets are unioned together, the params are combined in a list, and the values are mapped into
+    * an [[HList]] of the given type.
+    */
+  private def visitHListSimpleOutput[L <: HList](
+    exprHList: NonEmptyExprHList[F, V, L, P],
+    input: Input[F, V],
+  ): SimpleOutput[L] = {
+    exprHList.visit(new InterpretExprAsSimpleOutputFn).apply(input)
   }
 }
 
