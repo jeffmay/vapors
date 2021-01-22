@@ -35,8 +35,7 @@ object InterpretExprAsSimpleOutputFn {
       ): SimpleOutputFn[(A, B)] = { input =>
         val (a, aParams) = fa(input)
         val (b, bParams) = fb(input)
-        // TODO: Product type should remove evidence if any arg has no evidence
-        (Output((a.value, b.value), a.evidence ++ b.evidence), aParams ::: bParams)
+        (Output((a.value, b.value), a.evidence & b.evidence), aParams ::: bParams)
       }
     }
   }

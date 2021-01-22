@@ -28,6 +28,16 @@ final class Evidence private (val factSet: Set[Fact]) extends AnyVal {
     case _ => Evidence(this.factSet | that.factSet)
   }
 
+  @inline def &(that: Evidence): Evidence = combineNonEmpty(that)
+
+  /**
+    * If either side contains empty evidence then the result contains no evidence.
+    */
+  def combineNonEmpty(that: Evidence): Evidence = {
+    if (this.isEmpty || that.isEmpty) Evidence.none
+    else this.union(that)
+  }
+
   def derivedFromSources: Evidence = {
     @tailrec def loop(
       mixed: Iterable[Fact],
