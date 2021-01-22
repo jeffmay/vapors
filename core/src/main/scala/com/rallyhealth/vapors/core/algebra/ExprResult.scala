@@ -5,7 +5,7 @@ import cats.{~>, Eval, Foldable, FunctorFilter, Id, Traverse, TraverseFilter}
 import com.rallyhealth.vapors.factfilter.data.{Fact, FactSet, FactTable, TypedFact}
 import cats.{~>, Eval, Foldable, Id}
 import com.rallyhealth.vapors.factfilter.data.{FactSet, FactTable, TypedFact}
-import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.{Input, Output}
+import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.{Input, Output}
 import shapeless.HList
 
 import scala.collection.BitSet

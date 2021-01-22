@@ -89,7 +89,7 @@ object ResultSet {
     * However, if you want to perform logical operations for combining [[ResultSet]]s, you should use
     * a separate type-class, like [[Union]] or [[Intersect]].
     *
-    * @see [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.Output.monoid]]
+    * @see [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.Output.monoid]]
     */
   implicit val monoid: Monoid[ResultSet] = {
     new Monoid[ResultSet] {

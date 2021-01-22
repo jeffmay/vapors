@@ -6,7 +6,7 @@ import cats.{Invariant, Semigroupal}
   * Defines logical conjunction (aka AND) for a specific type.
   *
   * @see for more details on how this works, check out
-  *      [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.Output.conjunction]]
+  *      [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.Output.conjunction]]
   */
 trait Conjunction[A] {
 

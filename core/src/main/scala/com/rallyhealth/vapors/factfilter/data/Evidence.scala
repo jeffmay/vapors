@@ -91,7 +91,7 @@ object Evidence {
     * you wlil probably want to be more specific if you need to represent the behavior of merging
     * evidence from the output of various expressions (or their input).
     *
-    * @see [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.Output.monoid]]
+    * @see [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.Output.monoid]]
     */
   implicit val monoid: Monoid[Evidence] = {
     new Monoid[Evidence] {

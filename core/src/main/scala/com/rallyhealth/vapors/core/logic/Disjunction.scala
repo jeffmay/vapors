@@ -6,7 +6,7 @@ import cats.{Invariant, Semigroupal}
   * Defines logical disjunction (aka OR) for a specific type.
   *
   * @see for more details on how this works, check out
-  *      [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.Output.disjunction]]
+  *      [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.Output.disjunction]]
   */
 trait Disjunction[A] {
 

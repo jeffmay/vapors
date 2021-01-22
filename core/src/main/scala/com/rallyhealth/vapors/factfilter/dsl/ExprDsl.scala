@@ -7,7 +7,7 @@ import com.rallyhealth.vapors.core.data.{NamedLens, Window}
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.data._
-import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction
+import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn
 
 object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with WrapExprSyntax {
 
@@ -21,10 +21,10 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with Wrap
   type CaptureRootExpr[R, P] = CaptureP[Id, FactTable, R, P]
   type CaptureFromFacts[T, P] = CaptureP[Seq, TypedFact[T], Seq[TypedFact[T]], P]
 
-  import InterpretExprAsFunction._
+  import InterpretExprAsResultFn._
 
   def eval[R, P](facts: FactTable)(query: RootExpr[R, P]): ExprResult[Id, FactTable, R, P] = {
-    InterpretExprAsFunction(query)(Input.fromFactTable(facts))
+    InterpretExprAsResultFn(query)(Input.fromFactTable(facts))
   }
 
   /**
