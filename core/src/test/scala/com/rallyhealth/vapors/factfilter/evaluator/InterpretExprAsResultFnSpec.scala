@@ -5,7 +5,7 @@ import com.rallyhealth.vapors.factfilter.data.Evidence
 import com.rallyhealth.vapors.factfilter.dsl.ExprDsl._
 import org.scalatest.wordspec.AnyWordSpec
 
-class InterpretExprAsFunctionSpec extends AnyWordSpec {
+class InterpretExprAsResultFnSpec extends AnyWordSpec {
 
   "InterpretExprAsFunction" when {
 

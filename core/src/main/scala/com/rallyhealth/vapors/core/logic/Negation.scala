@@ -6,7 +6,7 @@ import cats.{Invariant, Semigroupal}
   * Defines logical negaction (aka NOT) for a specific type.
   *
   * @see for more details on how this works, check out
-  *      [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.Output.negation]]
+  *      [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.Output.negation]]
   */
 trait Negation[A] {
   def negation(value: A): A

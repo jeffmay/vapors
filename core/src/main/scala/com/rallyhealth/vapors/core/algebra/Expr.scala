@@ -17,7 +17,8 @@ import shapeless.{Generic, HList}
   * point in the expression using a [[CaptureP]].
   *
   * This expression is folded over to produce serialized versions of the expression as well as the evaluator function.
-  * @see [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction]]
+  *
+  * @see [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn]]
   *
   * F = Foldable type constructor
   * V = Value type
@@ -186,7 +187,7 @@ object Expr {
     * Returns the [[Conjunction]] of all results of the given input expressions.
     *
     * All evidence is tracked using the logic defined in
-    * [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.Output.conjunction]]
+    * [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.Output.conjunction]]
     *
     * @note this <i>does not</i> short-circuit.
     *       [[ResultSet]] for all input values are used in deciding the evidence for the result.
@@ -205,7 +206,7 @@ object Expr {
     * Returns the [[Disjunction]] of all results of the given input expressions.
     *
     * All evidence is tracked using the logic defined in
-    * [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.Output.disjunction]]
+    * [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.Output.disjunction]]
     *
     * @note this <i>does not</i> short-circuit.
     *       [[ResultSet]] for all input values are used in deciding the evidence for the result.

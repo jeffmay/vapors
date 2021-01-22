@@ -7,7 +7,7 @@ import com.rallyhealth.vapors.factfilter.Example.JoeSchmoe
 import com.rallyhealth.vapors.factfilter.data.{Evidence, ExtractBoolean, FactTable, Facts}
 import com.rallyhealth.vapors.factfilter.dsl.ExprDsl._
 import com.rallyhealth.vapors.factfilter.dsl.{CaptureP, ExprDsl}
-import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.{Input, Output}
+import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.{Input, Output}
 import org.scalactic.source.Position
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -21,7 +21,7 @@ class LogicalExprSpec extends AnyWordSpec {
   private type UnaryLogicOpBuilder[R] = LogicExpr[R] => LogicExpr[R]
 
   private def evalUnit[R](facts: Facts)(expr: LogicExpr[R]): Output[R] = {
-    InterpretExprAsFunction(expr)(Input[Id, Unit]((), Evidence(facts.toList), FactTable(facts.toList))).output
+    InterpretExprAsResultFn(expr)(Input[Id, Unit]((), Evidence(facts.toList), FactTable(facts.toList))).output
   }
 
   private def validLogicalOperators[R](

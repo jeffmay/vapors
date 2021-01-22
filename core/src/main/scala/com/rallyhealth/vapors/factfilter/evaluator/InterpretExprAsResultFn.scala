@@ -7,14 +7,13 @@ import com.rallyhealth.vapors.core.algebra.{ConditionBranch, Expr, ExprResult}
 import com.rallyhealth.vapors.core.logic._
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.data._
-import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsFunction.{Input, Output}
+import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.{Input, Output}
 import shapeless.HList
 
 import scala.collection.immutable.BitSet
 
-// TODO: Make R the last parameter?
-final class InterpretExprAsFunction[F[_] : Foldable, V, P]
-  extends Expr.Visitor[F, V, P, Lambda[r => Input[F, V] => ExprResult[F, V, r, P]]] { interpreter =>
+final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
+  extends Expr.Visitor[F, V, P, Lambda[r => Input[F, V] => ExprResult[F, V, r, P]]] {
 
   import cats.syntax.all._
   import com.rallyhealth.vapors.core.syntax.math._
@@ -52,7 +51,7 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     expr: Expr.CollectFromOutput[F, V, M, U, R, P],
   ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
-    val collectFn = expr.collectExpr.visit(InterpretExprAsFunction())
+    val collectFn = expr.collectExpr.visit(InterpretExprAsResultFn())
     val (combinedResult, combinedEvidence, allParams) = inputResult.output.value.collectFoldSome { elem =>
       // If given a fact, use it as evidence, otherwise keep input evidence for this value of the collection
       val inputEvidence = Evidence.fromAny(elem).getOrElse(inputResult.output.evidence)
@@ -82,7 +81,7 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
   override def visitDefine[M[_] : Foldable, T](
     expr: Expr.Define[M, T, P],
   ): Input[F, V] => ExprResult[F, V, FactSet, P] = { input =>
-    val definitionFn = expr.definitionExpr.visit(InterpretExprAsFunction())
+    val definitionFn = expr.definitionExpr.visit(InterpretExprAsResultFn())
     val definitionContext = input.withValue(input.factTable)
     val definitionResult = definitionFn(definitionContext)
     val definedFactSet = definitionResult.output.value.foldMap { definitionValue =>
@@ -94,7 +93,7 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
   }
 
   override def visitEmbed[R](expr: Expr.Embed[F, V, R, P]): Input[F, V] => ExprResult[F, V, R, P] = { input =>
-    val embeddedFn = expr.embeddedExpr.visit(InterpretExprAsFunction())
+    val embeddedFn = expr.embeddedExpr.visit(InterpretExprAsResultFn())
     val embeddedInput = input.withValue(input.factTable)
     val embeddedResult = embeddedFn(embeddedInput)
     // The evidence of the surrounding context is not relevant to the evidence of the embedded expression
@@ -108,7 +107,7 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     expr: Expr.ExistsInOutput[F, V, M, U, P],
   ): Input[F, V] => ExprResult[F, V, Boolean, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
-    val conditionFn = expr.conditionExpr.visit(InterpretExprAsFunction())
+    val conditionFn = expr.conditionExpr.visit(InterpretExprAsResultFn())
     val (allMatchedIndexes, allEvidence, allCondResults) = inputResult.output.value.toList.zipWithIndex.collectFold {
       case (elem, idx) =>
         // If given a fact, use it as evidence, otherwise keep input evidence for this value of the collection
@@ -161,7 +160,7 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     expr: Expr.FlatMapOutput[F, V, M, U, X, P],
   ): Input[F, V] => ExprResult[F, V, M[X], P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
-    val flatMapFn = expr.flatMapExpr.visit(InterpretExprAsFunction())
+    val flatMapFn = expr.flatMapExpr.visit(InterpretExprAsResultFn())
     val allResults = inputResult.output.value.map { elem =>
       // If given a fact, use it as evidence, otherwise keep input evidence for this value of the collection
       val inputEvidence = Evidence.fromAny(elem).getOrElse(inputResult.output.evidence)
@@ -183,7 +182,7 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     expr: Expr.MapOutput[F, V, M, U, R, P],
   ): Input[F, V] => ExprResult[F, V, M[R], P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
-    val mapFn = expr.mapExpr.visit(InterpretExprAsFunction())
+    val mapFn = expr.mapExpr.visit(InterpretExprAsResultFn())
     val allResults = inputResult.output.value.map { elem =>
       // If given a fact, use it as evidence, otherwise keep input evidence for this value of the collection
       val inputEvidence = Evidence.fromAny(elem).getOrElse(inputResult.output.evidence)
@@ -312,27 +311,10 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     }
   }
 
-  // TODO: Where to put this?
-  private type Fn[A] = Input[F, V] => (Output[A], List[Eval[P]])
-  private implicit object FnFunctor extends Functor[Fn] with Semigroupal[Fn] {
-    override def map[A, B](fa: Fn[A])(f: A => B): Fn[B] = fa.andThen {
-      case (o, params) => (o.copy(value = f(o.value)), params)
-    }
-    override def product[A, B](
-      fa: Fn[A],
-      fb: Fn[B],
-    ): Fn[(A, B)] = { input =>
-      val (a, aParams) = fa(input)
-      val (b, bParams) = fb(input)
-      // TODO: Product type should remove evidence if any arg has no evidence
-      (Output((a.value, b.value), a.evidence ++ b.evidence), aParams ::: bParams)
-    }
-  }
-
   override def visitWrapOutput[T <: HList, R](
     expr: Expr.WrapOutput[F, V, T, R, P],
   ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
-    val (tupleOutput, allParams) = expr.inputExprHList.visit(new EvalExprAsOutputAndParam).apply(input)
+    val (tupleOutput, allParams) = expr.inputExprHList.visit(new InterpretExprAsSimpleOutputFn).apply(input)
     val value = expr.generic.from(tupleOutput.value)
     resultOfManySubExpr(expr, input, value, tupleOutput.evidence, allParams) {
       ExprResult.WrapOutput(_, _)
@@ -342,7 +324,7 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
   override def visitUsingDefinitions[R](
     expr: Expr.UsingDefinitions[F, V, R, P],
   ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
-    val definitionVisitor = new InterpretExprAsFunction[Id, FactTable, P]
+    val definitionVisitor = new InterpretExprAsResultFn[Id, FactTable, P]
     val definitionInput = input.withValue(input.factTable)
     val (declaredFacts, evidence, declaredParams) = expr.definitions.foldMap { defExpr =>
       val definitionFn = defExpr.visit(definitionVisitor)
@@ -391,7 +373,7 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
   ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
     import alleycats.std.set._
     val inputFactTable = input.withValue(input.factTable)
-    val withMatchingFactsFn = expr.subExpr.visit(InterpretExprAsFunction())
+    val withMatchingFactsFn = expr.subExpr.visit(InterpretExprAsResultFn())
     val matchingFacts = input.factTable.getSortedSeq(expr.factTypeSet)
     // facts will always be added as their own evidence when used, so we do not need to add them to the evidence here
     val subInput = input.withFoldableValue[Seq, TypedFact[T]](matchingFacts)
@@ -443,14 +425,30 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     }
   }
 
+  // This type and functor are used for HList operations that require the EvalExprAsOutputAndParam interpreter
+  private type OutputAndParam[R] = InterpretExprAsSimpleOutputFn.OutputAndParam[F, V, R, P]
+  private implicit object OutputAndParamFunctor extends Functor[OutputAndParam] with Semigroupal[OutputAndParam] {
+    override def map[A, B](fa: OutputAndParam[A])(f: A => B): OutputAndParam[B] = fa.andThen {
+      case (o, params) => (o.copy(value = f(o.value)), params)
+    }
+    override def product[A, B](
+      fa: OutputAndParam[A],
+      fb: OutputAndParam[B],
+    ): OutputAndParam[(A, B)] = { input =>
+      val (a, aParams) = fa(input)
+      val (b, bParams) = fb(input)
+      // TODO: Product type should remove evidence if any arg has no evidence
+      (Output((a.value, b.value), a.evidence ++ b.evidence), aParams ::: bParams)
+    }
+  }
 }
 
-object InterpretExprAsFunction {
+object InterpretExprAsResultFn {
 
-  final def apply[F[_] : Foldable, V, P](): InterpretExprAsFunction[F, V, P] = new InterpretExprAsFunction
+  final def apply[F[_] : Foldable, V, P](): InterpretExprAsResultFn[F, V, P] = new InterpretExprAsResultFn
 
   final def apply[F[_] : Foldable, V, R, P](expr: Expr[F, V, R, P])(input: Input[F, V]): ExprResult[F, V, R, P] = {
-    expr.visit(InterpretExprAsFunction())(input)
+    expr.visit(InterpretExprAsResultFn())(input)
   }
 
   final case class Input[F[_], V](
