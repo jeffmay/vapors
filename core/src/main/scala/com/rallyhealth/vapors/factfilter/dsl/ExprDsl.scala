@@ -152,6 +152,20 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with Wrap
     def elif(elifExpr: CondExpr[F, V, P]): ElifBuilder[F, V, R, P] = new ElifBuilder((elifExpr, branches))
   }
 
+  def factsOfType[T, P](
+    factTypeSet: FactTypeSet[T],
+  )(implicit
+    captureInput: CaptureFromFacts[T, P],
+    captureAllResults: CaptureRootExpr[Seq[TypedFact[T]], P],
+  ): FoldableExprBuilder[Id, FactTable, Seq, TypedFact[T], P] =
+    new FoldableExprBuilder(
+      Expr.WithFactsOfType[T, Seq[TypedFact[T]], P](
+        factTypeSet,
+        input(captureInput),
+        captureAllResults,
+      ),
+    )
+
   def withFactsOfType[T, P](
     factTypeSet: FactTypeSet[T],
   )(implicit

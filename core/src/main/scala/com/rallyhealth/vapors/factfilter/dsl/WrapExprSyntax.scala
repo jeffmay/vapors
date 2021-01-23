@@ -137,4 +137,20 @@ final class ExprHListWrapper[F[_], V, L <: HList, P](private val exprHList: NonE
     captureResult: CaptureP[F, V, R, P],
   ): Expr[F, V, R, P] =
     Expr.WrapOutput(exprHList, gen, captureResult)
+
+  def asHList(
+    implicit
+    captureResult: CaptureP[F, V, L, P],
+  ): Expr[F, V, L, P] =
+    Expr.WrapOutput(exprHList, GenericIdentity[L], captureResult)
+}
+
+final class GenericIdentity[R] extends Generic[R] {
+  override type Repr = R
+  override def to(repr: R): Repr = repr
+  override def from(repr: Repr): R = repr
+}
+
+object GenericIdentity {
+  def apply[R]: GenericIdentity[R] = new GenericIdentity[R]
 }
