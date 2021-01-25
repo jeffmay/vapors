@@ -190,7 +190,6 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
       mapFn(mapInput)
     }
     val allValues = allResults.map(_.output.value)
-    // TODO: Shouldn't I only look at the evidence of results that aren't empty?
     val (allEvidence, allParams) = allResults.foldMap { elemResult =>
       (elemResult.output.evidence, elemResult.param :: Nil)
     }
