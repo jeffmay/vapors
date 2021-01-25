@@ -7,7 +7,6 @@ import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.data.{Evidence, Fact, TypedFact}
 
 import scala.collection.Factory
-import scala.reflect.runtime.universe.{typeOf, TypeTag}
 
 sealed class ExprBuilder[F[_], V, M[_], U, P](val returnOutput: Expr[F, V, M[U], P]) {
 
