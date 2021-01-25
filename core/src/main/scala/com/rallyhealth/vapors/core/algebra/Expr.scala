@@ -257,8 +257,7 @@ object Expr {
 
   final case class FilterOutput[F[_], V, M[_] : Foldable : FunctorFilter, R, P](
     inputExpr: Expr[F, V, M[R], P],
-    validValues: Set[R],
-    valuesAsEvidence: Boolean,
+    condExpr: Expr[Id, R, Boolean, P],
     capture: CaptureP[F, V, M[R], P],
   ) extends Expr[F, V, M[R], P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitFilterOutput(this)

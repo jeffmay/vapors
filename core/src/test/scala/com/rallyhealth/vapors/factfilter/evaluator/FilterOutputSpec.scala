@@ -12,139 +12,134 @@ class FilterOutputSpec extends AnyWordSpec {
 
   "Expr.FilterOutput" when {
 
-    "using containsAny op" should {
+    "using with an 'OutputWithinSet' op" when {
 
-      "return 'true' when the fact table contains a superset of the given set" in {
-        val q = withFactsOfType(FactTypes.Tag).where { facts =>
-          facts.toList.map(_.value).containsAny(Set(Tags.asthma).map(_.value))
-        }
-        val res = eval(sampleFactTable)(q)
-        assert(res.output.value)
-      }
+      "comparing facts" should {
 
-      "return the correct evidence for the facts that contain a superset of the given set" in {
-        val q = withFactsOfType(FactTypes.Tag).where { facts =>
-          facts.toList.map(_.value).containsAny(Set(Tags.asthma).map(_.value))
-        }
-        val res = eval(sampleFactTable)(q)
-        pendingUntilFixed {
+        "return all matching facts from a given subset" in {
+          val q = withFactsOfType(FactTypes.Tag).where { facts =>
+            facts.filter(_ in Set(Tags.asthma))
+          }
+          val res = eval(sampleFactTable)(q)
+          res.output.value should contain theSameElementsAs Seq(Tags.asthma)
           assertResult(Evidence(Tags.asthma))(res.output.evidence)
         }
-      }
 
-      "return 'true' when the fact table contains a subset of the given set" in {
-        val q = withFactsOfType(FactTypes.Tag).where { facts =>
-          facts.toList.map(_.value).containsAny(Set(Tags.asthma, Tags.obeseBmi).map(_.value))
-        }
-        val res = eval(sampleFactTable)(q)
-        assert(res.output.value)
-      }
-
-      "return the correct evidence for the facts that contain a subset of the given set" in {
-        val q = withFactsOfType(FactTypes.Tag).where { facts =>
-          facts.toList.map(_.value).containsAny(Set(Tags.asthma, Tags.obeseBmi).map(_.value))
-        }
-        val res = eval(sampleFactTable)(q)
-        pendingUntilFixed {
+        "return all matching facts from a given superset" in {
+          val q = withFactsOfType(FactTypes.Tag).where { facts =>
+            facts.filter(_ in Set(Tags.asthma, Tags.obeseBmi))
+          }
+          val res = eval(sampleFactTable)(q)
+          res.output.value should contain theSameElementsAs Seq(Tags.asthma)
           assertResult(Evidence(Tags.asthma))(res.output.evidence)
         }
-      }
 
-      "return 'false' when the facts do not contain anything in the given set" in {
-        val q = withFactsOfType(FactTypes.Tag).where { facts =>
-          facts.toList.map(_.value).containsAny(Set(Tags.obeseBmi).map(_.value))
-        }
-        val res = eval(sampleFactTable)(q)
-        assert(!res.output.value)
-      }
-
-      "return empty evidence when the fact table does not contain anything in the given set" in {
-        val q = withFactsOfType(FactTypes.Tag).where { facts =>
-          facts.toList.map(_.value).containsAny(Set(Tags.obeseBmi).map(_.value))
-        }
-        val res = eval(sampleFactTable)(q)
-        pendingUntilFixed {
+        "return an empty list of facts when given a set that contains no common elements" in {
+          val q = withFactsOfType(FactTypes.Tag).where { facts =>
+            facts.filter(_ in Set(Tags.obeseBmi))
+          }
+          val res = eval(sampleFactTable)(q)
+          assert(res.output.value.isEmpty)
           assert(res.output.evidence.isEmpty)
         }
       }
-    }
 
-    "using filter op" should {
+      "comparing values" should {
 
-      "return all matching facts from a given subset" in {
-        val q = withFactsOfType(FactTypes.Tag).where { facts =>
-          facts.filter(Set(Tags.asthma))
+        "return all matching values from a given subset" in {
+          val q = withFactsOfType(FactTypes.Tag).where { facts =>
+            facts.toList.map(_.value).filter(_ in Set(Tags.asthma).map(_.value))
+          }
+          val res = eval(sampleFactTable)(q)
+          res.output.value should contain theSameElementsAs Seq(Tags.asthma).map(_.value)
         }
-        val res = eval(sampleFactTable)(q)
-        res.output.value should contain theSameElementsAs Seq(Tags.asthma)
-      }
 
-      "return all matching values from a given subset" in {
-        val q = withFactsOfType(FactTypes.Tag).where { facts =>
-          facts.toList.map(_.value).filter(Set(Tags.asthma).map(_.value))
+        "return the correct evidence for the matching values from a given subset" in {
+          val q = withFactsOfType(FactTypes.Tag).where { facts =>
+            facts.toList.map(_.value).filter(_ in Set(Tags.asthma).map(_.value))
+          }
+          val res = eval(sampleFactTable)(q)
+          pendingUntilFixed {
+            // TODO: Merge this assertion the above unit test when it passes
+            assertResult(Evidence(Tags.asthma))(res.output.evidence)
+          }
         }
-        val res = eval(sampleFactTable)(q)
-        res.output.value should contain theSameElementsAs Seq(Tags.asthma).map(_.value)
-      }
 
-      "return the correct evidence for the matching values from a given subset" in {
-        val q = withFactsOfType(FactTypes.Tag).where { facts =>
-          facts.toList.map(_.value).filter(Set(Tags.asthma).map(_.value))
+        "return the matching values from a given superset" in {
+          val q = withFactsOfType(FactTypes.Tag).where { facts =>
+            facts.toList.map(_.value).filter(_ in Set(Tags.asthma, Tags.obeseBmi).map(_.value))
+          }
+          val res = eval(sampleFactTable)(q)
+          res.output.value should contain theSameElementsAs Seq(Tags.asthma).map(_.value)
         }
-        val res = eval(sampleFactTable)(q)
-        pendingUntilFixed {
-          assertResult(Evidence(Tags.asthma))(res.output.evidence)
-        }
-      }
 
-      "return all matching facts from a given superset" in {
-        val q = withFactsOfType(FactTypes.Tag).where { facts =>
-          facts.filter(Set(Tags.asthma, Tags.obeseBmi))
+        "return the correct evidence for the matching values from a given superset" in {
+          val q = withFactsOfType(FactTypes.Tag).where { facts =>
+            facts.toList.map(_.value).filter(_ in Set(Tags.asthma, Tags.obeseBmi).map(_.value))
+          }
+          val res = eval(sampleFactTable)(q)
+          pendingUntilFixed {
+            // TODO: Merge this assertion the above unit test when it passes
+            assertResult(Evidence(Tags.asthma))(res.output.evidence)
+          }
         }
-        val res = eval(sampleFactTable)(q)
-        res.output.value should contain theSameElementsAs Seq(Tags.asthma)
-      }
 
-      "return the matching values from a given superset" in {
-        val q = withFactsOfType(FactTypes.Tag).where { facts =>
-          facts.toList.map(_.value).filter(Set(Tags.asthma, Tags.obeseBmi).map(_.value))
-        }
-        val res = eval(sampleFactTable)(q)
-        res.output.value should contain theSameElementsAs Seq(Tags.asthma).map(_.value)
-      }
-
-      "return the correct evidence for the matching values from a given superset" in {
-        val q = withFactsOfType(FactTypes.Tag).where { facts =>
-          facts.toList.map(_.value).filter(Set(Tags.asthma, Tags.obeseBmi).map(_.value))
-        }
-        val res = eval(sampleFactTable)(q)
-        pendingUntilFixed {
-          assertResult(Evidence(Tags.asthma))(res.output.evidence)
+        "return an empty list of values when given a set that contains no common elements" in {
+          val q = withFactsOfType(FactTypes.Tag).where { facts =>
+            facts.toList.map(_.value).filter(_ in Set(Tags.obeseBmi).map(_.value))
+          }
+          val res = eval(sampleFactTable)(q)
+          assert(res.output.value.isEmpty)
+          assert(res.output.evidence.isEmpty)
         }
       }
 
-      "return an empty list of facts when given a set that contains no common elements" in {
-        val q = withFactsOfType(FactTypes.Tag).where { facts =>
-          facts.filter(Set(Tags.obeseBmi))
-        }
-        val res = eval(sampleFactTable)(q)
-        assert(res.output.value.isEmpty)
-      }
+      "using the 'containsAny' op" should {
 
-      "return an empty list of values when given a set that contains no common elements" in {
-        val q = withFactsOfType(FactTypes.Tag).where { facts =>
-          facts.toList.map(_.value).filter(Set(Tags.obeseBmi).map(_.value))
+        "return 'true' when the fact table contains a superset of the given set" in {
+          val q = withFactsOfType(FactTypes.Tag).where { facts =>
+            facts.toList.map(_.value).containsAny(Set(Tags.asthma).map(_.value))
+          }
+          val res = eval(sampleFactTable)(q)
+          assert(res.output.value)
         }
-        val res = eval(sampleFactTable)(q)
-        assert(res.output.value.isEmpty)
-      }
 
-      "return empty evidence when given a set that contains no common elements" in {
-        val q = withFactsOfType(FactTypes.Tag).where { facts =>
-          facts.toList.map(_.value).filter(Set(Tags.obeseBmi).map(_.value))
+        "return the correct evidence for the facts that contain a superset of the given set" in {
+          val q = withFactsOfType(FactTypes.Tag).where { facts =>
+            facts.toList.map(_.value).containsAny(Set(Tags.asthma).map(_.value))
+          }
+          val res = eval(sampleFactTable)(q)
+          pendingUntilFixed {
+            // TODO: Merge this assertion the above unit test when it passes
+            assertResult(Evidence(Tags.asthma))(res.output.evidence)
+          }
         }
-        val res = eval(sampleFactTable)(q)
-        pendingUntilFixed {
+
+        "return 'true' when the fact table contains a subset of the given set" in {
+          val q = withFactsOfType(FactTypes.Tag).where { facts =>
+            facts.toList.map(_.value).containsAny(Set(Tags.asthma, Tags.obeseBmi).map(_.value))
+          }
+          val res = eval(sampleFactTable)(q)
+          assert(res.output.value)
+        }
+
+        "return the correct evidence for the facts that contain a subset of the given set" in {
+          val q = withFactsOfType(FactTypes.Tag).where { facts =>
+            facts.toList.map(_.value).containsAny(Set(Tags.asthma, Tags.obeseBmi).map(_.value))
+          }
+          val res = eval(sampleFactTable)(q)
+          pendingUntilFixed {
+            // TODO: Merge this assertion the above unit test when it passes
+            assertResult(Evidence(Tags.asthma))(res.output.evidence)
+          }
+        }
+
+        "return 'false' with no Evidence when the facts do not contain anything in the given set" in {
+          val q = withFactsOfType(FactTypes.Tag).where { facts =>
+            facts.toList.map(_.value).containsAny(Set(Tags.obeseBmi).map(_.value))
+          }
+          val res = eval(sampleFactTable)(q)
+          assert(!res.output.value)
           assert(res.output.evidence.isEmpty)
         }
       }

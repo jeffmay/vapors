@@ -12,15 +12,15 @@ import scala.reflect.runtime.universe.{typeOf, TypeTag}
 sealed class ExprBuilder[F[_], V, M[_], U, P](val returnOutput: Expr[F, V, M[U], P]) {
 
   type CaptureResult[R] = CaptureP[F, V, R, P]
-  type CaptureCond = CaptureResult[Boolean]
 
   type CaptureInput[G[_]] = CaptureP[G, V, G[V], P]
+  type CaptureAllInputCond = CaptureResult[Boolean]
   type CaptureAllInput = CaptureInput[F]
   type CaptureEachInput = CaptureInput[Id]
 
-  type CaptureOutput[G[_]] = CaptureP[G, U, G[U], P]
-  type CaptureAllOutput = CaptureOutput[M]
-  type CaptureEachOutput = CaptureOutput[Id]
+  type CaptureEachOutputResult[R] = CaptureP[Id, U, R, P]
+  type CaptureEachOutput = CaptureEachOutputResult[U]
+  type CaptureEachOutputCond = CaptureEachOutputResult[Boolean]
 
   def returnInput(implicit captureInput: CaptureAllInput): Expr[F, V, F[V], P] = Expr.ReturnInput(captureInput)
 
@@ -155,7 +155,7 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
 
   def isEmpty(
     implicit
-    captureResult: CaptureCond,
+    captureResult: CaptureAllInputCond,
   ): FoldInExprBuilder[F, V, Boolean, P] =
     new FoldInExprBuilder(Expr.OutputIsEmpty(returnOutput, captureResult))
 
@@ -163,7 +163,7 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
     buildFn: ValExprBuilder[U, U, P] => ExprBuilder[Id, U, Id, Boolean, P],
   )(implicit
     postEachOutput: CaptureP[Id, U, U, P],
-    captureResult: CaptureCond,
+    captureResult: CaptureAllInputCond,
   ): FoldInExprBuilder[F, V, Boolean, P] = {
     val condExpr = buildFn(new ValExprBuilder(Expr.ReturnInput[Id, U, P](postEachOutput)))
     val next = Expr.ExistsInOutput(returnOutput, condExpr.returnOutput, captureResult)
@@ -171,25 +171,30 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
   }
 
   def filter(
-    validValues: Set[U],
+    buildFn: ValExprBuilder[U, U, P] => ExprBuilder[Id, U, Id, Boolean, P],
   )(implicit
     filterM: FunctorFilter[M],
-    tt: TypeTag[U],
+    captureEachOutput: CaptureEachOutput,
     captureResult: CaptureResult[M[U]],
-  ): FoldableExprBuilder[F, V, M, U, P] =
-    new FoldableExprBuilder(Expr.FilterOutput(returnOutput, validValues, typeOf[U] <:< typeOf[Fact], captureResult))
+  ): FoldableExprBuilder[F, V, M, U, P] = {
+    val condExpr = buildFn(
+      new ValExprBuilder(Expr.ReturnInput[Id, U, P](captureEachOutput)),
+    )
+    new FoldableExprBuilder(Expr.FilterOutput(returnOutput, condExpr.returnOutput, captureResult))
+  }
 
   def containsAny(
     validValues: Set[U],
   )(implicit
     filterM: FunctorFilter[M],
-    tt: TypeTag[U],
+    captureEachOutput: CaptureEachOutput,
+    captureEachOutputCond: CaptureEachOutputCond,
     captureResult: CaptureResult[M[U]],
-    captureCond: CaptureCond,
+    captureCond: CaptureAllInputCond,
   ): FoldInExprBuilder[F, V, Boolean, P] =
     new FoldInExprBuilder(
       Expr.Not(
-        filter(validValues).isEmpty,
+        filter(_ in validValues).isEmpty,
         captureCond,
       ),
     )
@@ -305,7 +310,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
   def within(
     window: Window[R],
   )(implicit
-    captureResult: CaptureCond,
+    captureResult: CaptureAllInputCond,
   ): ValExprBuilder[V, Boolean, P] =
     new ValExprBuilder(ExprDsl.within(returnOutput, window))
 
@@ -313,7 +318,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     value: R,
   )(implicit
     orderR: Order[R],
-    captureResult: CaptureCond,
+    captureResult: CaptureAllInputCond,
   ): ValExprBuilder[V, Boolean, P] =
     within(Window.equalTo(value))
 
@@ -321,7 +326,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     value: R,
   )(implicit
     orderR: Order[R],
-    captureResult: CaptureCond,
+    captureResult: CaptureAllInputCond,
   ): ValExprBuilder[V, Boolean, P] =
     within(Window.equalTo(value))
 
@@ -329,7 +334,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     value: R,
   )(implicit
     orderR: Order[R],
-    captureResult: CaptureCond,
+    captureResult: CaptureAllInputCond,
   ): ValExprBuilder[V, Boolean, P] =
     Expr.Not(within(Window.equalTo(value)), captureResult)
 
@@ -337,7 +342,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     value: R,
   )(implicit
     orderR: Order[R],
-    captureResult: CaptureCond,
+    captureResult: CaptureAllInputCond,
   ): ValExprBuilder[V, Boolean, P] =
     within(Window.lessThan(value))
 
@@ -345,7 +350,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     value: R,
   )(implicit
     orderR: Order[R],
-    captureResult: CaptureCond,
+    captureResult: CaptureAllInputCond,
   ): ValExprBuilder[V, Boolean, P] =
     within(Window.lessThanOrEqual(value))
 
@@ -353,7 +358,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     value: R,
   )(implicit
     orderR: Order[R],
-    captureResult: CaptureCond,
+    captureResult: CaptureAllInputCond,
   ): ValExprBuilder[V, Boolean, P] =
     within(Window.greaterThan(value))
 
@@ -361,7 +366,7 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
     value: R,
   )(implicit
     orderR: Order[R],
-    captureResult: CaptureCond,
+    captureResult: CaptureAllInputCond,
   ): ValExprBuilder[V, Boolean, P] =
     within(Window.greaterThanOrEqual(value))
 }
