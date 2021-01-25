@@ -167,6 +167,7 @@ object ExprResult {
     expr: Expr.FilterOutput[F, V, M, R, P],
     context: Context[F, V, M[R], P],
     inputResult: ExprResult[F, V, M[R], P],
+    condResultList: List[ExprResult[Id, R, Boolean, P]],
   ) extends ExprResult[F, V, M[R], P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitFilterOutput(this)
   }

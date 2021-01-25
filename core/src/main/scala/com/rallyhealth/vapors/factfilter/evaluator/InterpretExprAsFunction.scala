@@ -136,23 +136,23 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
     implicit val functorM: Functor[M] = FunctorFilter[M].functor
     val inputResult = expr.inputExpr.visit(this)(input)
     val condFn = expr.condExpr.visit(InterpretExprAsFunction())
-    val condResultTuples = inputResult.output.value.map { elem =>
+    val condResults = inputResult.output.value.map { elem =>
       val inputEvidence = Evidence.fromAny(elem).getOrElse(inputResult.output.evidence)
       val condInput = input.withValue(elem, inputEvidence)
-      (condFn(condInput), elem)
+      condFn(condInput)
     }
-    val matchingValues = condResultTuples.mapFilter {
-      case (result, elem) => Option.when(result.output.value)(elem)
+    val matchingValues = condResults.collect {
+      case condResult if condResult.output.value => condResult.input.value
     }
-    val (matchingEvidence, matchingParams) = condResultTuples.collectFoldSome {
-      case (result, _) =>
-        Option.when(result.output.value) {
-          (result.output.evidence, result.param :: Nil)
-        }
+    val (matchingEvidence, matchingParams) = condResults.collectFoldSome { result =>
+      Option.when(result.output.value) {
+        (result.output.evidence, result.param :: Nil)
+      }
     }
+    val condResultList = condResults.toList
     // TODO: Better way to capture the param from the inputResult separate from the condResultList params?
     resultOfManySubExpr(expr, input, matchingValues, matchingEvidence, inputResult.param :: matchingParams) {
-      ExprResult.FilterOutput(_, _, inputResult)
+      ExprResult.FilterOutput(_, _, inputResult, condResultList)
     }
   }
 
