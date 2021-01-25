@@ -143,5 +143,58 @@ class FilterOutputSpec extends AnyWordSpec {
         }
       }
     }
+
+    "using with an 'OutputWithinRange' operator" should {
+      val low = FactTypes.Age(10)
+      val middle = FactTypes.Age(18)
+      val high = FactTypes.Age(85)
+      val numericFacts = FactTable(low, middle, high)
+
+      "return all values that match the condition" in {
+        val q = withFactsOfType(FactTypes.Age).where { facts =>
+          facts.map(_.value).filter(_ >= middle.value)
+        }
+        val res = eval(numericFacts)(q)
+        res.output.value should contain theSameElementsAs Seq(middle, high).map(_.value)
+      }
+
+      "return the correct evidence for the matching values from a given subset" in {
+        val q = withFactsOfType(FactTypes.Age).where { facts =>
+          facts.map(_.value).filter(_ >= middle.value)
+        }
+        val res = eval(numericFacts)(q)
+        pendingUntilFixed {
+          // TODO: Merge this assertion the above unit test when it passes
+          assertResult(Evidence(middle, high))(res.output.evidence)
+        }
+      }
+
+      "return all facts that match the condition" in {
+        val q = withFactsOfType(FactTypes.Age).where { facts =>
+          facts.filter(_.value >= middle.value)
+        }
+        val res = eval(numericFacts)(q)
+        res.output.value should contain theSameElementsAs Seq(middle, high)
+        assertResult(Evidence(middle, high))(res.output.evidence)
+      }
+
+      "return an empty list of values when none of the elements meet the condition" in {
+        val q = withFactsOfType(FactTypes.Age).where { facts =>
+          facts.map(_.value).filter(_ > high.value)
+        }
+        val res = eval(numericFacts)(q)
+        assert(res.output.value.isEmpty)
+        assert(res.output.evidence.isEmpty)
+      }
+
+      "return an empty list of facts when none meet the condition" in {
+        val q = withFactsOfType(FactTypes.Age).where { facts =>
+          facts.filter(_.value > high.value)
+        }
+        val res = eval(numericFacts)(q)
+        assert(res.output.value.isEmpty)
+        assert(res.output.evidence.isEmpty)
+      }
+    }
   }
 }
