@@ -133,15 +133,26 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
   override def visitFilterOutput[M[_] : Foldable : FunctorFilter, U](
     expr: Expr.FilterOutput[F, V, M, U, P],
   ): Input[F, V] => ExprResult[F, V, M[U], P] = { input =>
+    implicit val functorM: Functor[M] = FunctorFilter[M].functor
     val inputResult = expr.inputExpr.visit(this)(input)
-    val matchingValues = inputResult.output.value.filter(expr.validValues)
-    val matchingEvidence =
-      if (expr.valuesAsEvidence)
-        Evidence(matchingValues.toIterable.collect { case fact: Fact => fact })
-      else inputResult.output.evidence
+    val condFn = expr.condExpr.visit(InterpretExprAsFunction())
+    val condResults = inputResult.output.value.map { elem =>
+      val inputEvidence = Evidence.fromAny(elem).getOrElse(inputResult.output.evidence)
+      val condInput = input.withValue(elem, inputEvidence)
+      condFn(condInput)
+    }
+    val matchingValues = condResults.collect {
+      case condResult if condResult.output.value => condResult.input.value
+    }
+    val (matchingEvidence, matchingParams) = condResults.collectFoldSome { result =>
+      Option.when(result.output.value) {
+        (result.output.evidence, result.param :: Nil)
+      }
+    }
+    val condResultList = condResults.toList
     // TODO: Better way to capture the param from the inputResult separate from the condResultList params?
-    resultOfManySubExpr(expr, input, matchingValues, matchingEvidence, inputResult.param :: Nil) {
-      ExprResult.FilterOutput(_, _, inputResult)
+    resultOfManySubExpr(expr, input, matchingValues, matchingEvidence, inputResult.param :: matchingParams) {
+      ExprResult.FilterOutput(_, _, inputResult, condResultList)
     }
   }
 
@@ -157,6 +168,7 @@ final class InterpretExprAsFunction[F[_] : Foldable, V, P]
       flatMapFn(flatMapInput)
     }
     val allValues = allResults.flatMap(_.output.value)
+    // TODO: Shouldn't I only look at the evidence of results that aren't empty?
     val (allEvidence, allParams) = allResults.foldMap { elemResult =>
       (elemResult.output.evidence, elemResult.param :: Nil)
     }
