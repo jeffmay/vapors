@@ -136,7 +136,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   ): Input[F, V] => ExprResult[F, V, M[U], P] = { input =>
     implicit val functorM: Functor[M] = FunctorFilter[M].functor
     val inputResult = expr.inputExpr.visit(this)(input)
-    val condFn = expr.condExpr.visit(InterpretExprAsFunction())
+    val condFn = expr.condExpr.visit(InterpretExprAsResultFn())
     val condResults = inputResult.output.value.map { elem =>
       val inputEvidence = Evidence.fromAny(elem).getOrElse(inputResult.output.evidence)
       val condInput = input.withValue(elem, inputEvidence)
