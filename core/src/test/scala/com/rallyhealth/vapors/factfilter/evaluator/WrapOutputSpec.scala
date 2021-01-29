@@ -1,45 +1,61 @@
 package com.rallyhealth.vapors.factfilter.evaluator
 
-import cats.Order
-import com.rallyhealth.vapors.factfilter.Example.{FactTypes, JoeSchmoe}
-import com.rallyhealth.vapors.factfilter.data.{Evidence, FactTable, FactType}
+import com.rallyhealth.vapors.factfilter.Example.{ColorCoding, FactTypes, JoeSchmoe, TagsUpdate}
+import com.rallyhealth.vapors.factfilter.data.{Evidence, FactTable}
 import com.rallyhealth.vapors.factfilter.dsl.ExprDsl._
 import org.scalatest.wordspec.AnyWordSpec
 import shapeless.HNil
+
+import java.time.Instant
 
 class WrapOutputSpec extends AnyWordSpec {
 
   "Expr.WrapOutput" when {
 
-    "compareing outputs" should {
+    "wrapping const nodes into a case class" should {
 
-      "wrap two constant integers and cast as a Point2D" in {
-        val p = Point2D(1, 2)
+      "wrap some constant nodes as a case class" in {
+        val f = TagsUpdate(Set("X"), Instant.now())
         val q = {
-          wrap(const(p.x), const(p.y)).as[Point2D]
+          wrap(const(f.tags), const(f.timestamp)).as[TagsUpdate]
         }
         val result = eval(FactTable.empty)(q)
-        assertResult(p)(result.output.value)
+        assertResult(f)(result.output.value)
       }
 
-      "NOT compile when using three integers in a Point2D" in {
+      "NOT compile when attempting to wrap one less constant than required into a case class" in {
+        val f = TagsUpdate(Set("X"), Instant.now())
         assertDoesNotCompile {
-          "wrap(const(1), const(2), const(3)).as[Point2D]"
+          "wrap(const(f.tags)).as[TagsUpdate]"
         }
       }
 
-      "convert const expressions into an expr of a tuple" in {
-        val t = (1, "two", Color.Blue)
+      "NOT compile when attempting to wrap some constant nodes into a case class in the wrong order" in {
+        val f = TagsUpdate(Set("X"), Instant.now())
+        assertDoesNotCompile {
+          "wrap(const(f.timestamp), const(f.tags)).as[TagsUpdate]"
+        }
+      }
+
+    }
+
+    "wrapping const nodes into a tuple" should {
+
+      "convert into a tuple-3" in {
+        val t = (1, "two", ColorCoding.Blue)
         val q = {
           wrap(const(t._1), const(t._2), const(t._3))
-            .as[(Int, String, Color.Blue.type)]
+            .as[(Int, String, ColorCoding.Blue.type)]
         }
         val result = eval(FactTable.empty)(q)
         assertResult(t)(result.output.value)
       }
+    }
 
-      "convert const expressions into an expr of a HList" in {
-        val hlist = 1 :: "two" :: Color.Blue :: HNil
+    "wrapping const nodes into an hlist" should {
+
+      "return an hlist of size 3" in {
+        val hlist = 1 :: "two" :: ColorCoding.Blue :: HNil
         val t = hlist.tupled
         val q = {
           wrap(const(t._1), const(t._2), const(t._3)).asHList
@@ -76,23 +92,4 @@ class WrapOutputSpec extends AnyWordSpec {
     }
   }
 
-}
-
-// TODO: Use a fact type from the examples? Maybe an existing compound fact type?
-final case class Point2D(
-  x: Int,
-  y: Int,
-)
-
-object Point2D {
-  implicit val order: Order[Point2D] = Order.by(p => (p.x, p.y))
-  val factType = FactType[Point2D]("point_2d")
-}
-
-sealed trait Color
-
-object Color {
-  final case object Red extends Color
-  final case object Green extends Color
-  final case object Blue extends Color
 }
