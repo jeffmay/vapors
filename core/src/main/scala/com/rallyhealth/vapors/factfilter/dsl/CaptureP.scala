@@ -3,10 +3,9 @@ package com.rallyhealth.vapors.factfilter.dsl
 import cats.{Eval, Monoid}
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.factfilter.data.TypedFact
-import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.{Input, Output}
+import com.rallyhealth.vapors.factfilter.evaluator.{ExprInput, ExprOutput}
 
 import scala.annotation.implicitNotFound
-import scala.collection.immutable.SortedSet
 
 @implicitNotFound(
   """
@@ -25,8 +24,8 @@ trait CaptureP[F[_], V, R, P] {
 
   def foldToParam(
     expr: Expr[F, V, R, P],
-    input: Input[F, V],
-    output: Output[R],
+    input: ExprInput[F, V],
+    output: ExprOutput[R],
     subExprParams: List[Eval[P]],
   ): Eval[P]
 }
@@ -68,8 +67,8 @@ object CaptureP extends CaptureUnitLowPriorityImplicit {
 
     override def foldToParam(
       expr: Expr[F, V, R, P],
-      input: Input[F, V],
-      output: Output[R],
+      input: ExprInput[F, V],
+      output: ExprOutput[R],
       subExprParams: List[Eval[P]],
     ): Eval[P] = {
       val combinedChildren = Monoid[Eval[P]].combineAll(subExprParams)
@@ -78,8 +77,8 @@ object CaptureP extends CaptureUnitLowPriorityImplicit {
 
     protected def foldWithParentParam(
       expr: Expr[F, V, R, P],
-      input: Input[F, V],
-      output: Output[R],
+      input: ExprInput[F, V],
+      output: ExprOutput[R],
       processedChildren: P,
     ): Eval[P]
   }
@@ -95,8 +94,8 @@ object CaptureP extends CaptureUnitLowPriorityImplicit {
 
     override protected def foldWithParentParam(
       expr: Expr[F, V, R, P],
-      input: Input[F, V],
-      output: Output[R],
+      input: ExprInput[F, V],
+      output: ExprOutput[R],
       processedChildren: P,
     ): Eval[P] = Eval.now(processedChildren)
 
@@ -118,8 +117,8 @@ sealed trait CaptureUnitLowPriorityImplicit {
 
     override final def foldToParam(
       expr: Expr[F, V, R, Unit],
-      input: Input[F, V],
-      output: Output[R],
+      input: ExprInput[F, V],
+      output: ExprOutput[R],
       subExprParams: List[Eval[Unit]],
     ): Eval[Unit] = Eval.Unit
 

@@ -7,7 +7,6 @@ import com.rallyhealth.vapors.factfilter.Example.JoeSchmoe
 import com.rallyhealth.vapors.factfilter.data.{Evidence, ExtractBoolean, FactTable, Facts}
 import com.rallyhealth.vapors.factfilter.dsl.ExprDsl._
 import com.rallyhealth.vapors.factfilter.dsl.{CaptureP, ExprDsl}
-import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.{Input, Output}
 import org.scalactic.source.Position
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -20,8 +19,8 @@ class LogicalExprSpec extends AnyWordSpec {
 
   private type UnaryLogicOpBuilder[R] = LogicExpr[R] => LogicExpr[R]
 
-  private def evalUnit[R](facts: Facts)(expr: LogicExpr[R]): Output[R] = {
-    InterpretExprAsResultFn(expr)(Input[Id, Unit]((), Evidence(facts.toList), FactTable(facts.toList))).output
+  private def evalUnit[R](facts: Facts)(expr: LogicExpr[R]): ExprOutput[R] = {
+    InterpretExprAsResultFn(expr)(ExprInput[Id, Unit]((), Evidence(facts.toList), FactTable(facts.toList))).output
   }
 
   private def validLogicalOperators[R](
@@ -31,8 +30,8 @@ class LogicalExprSpec extends AnyWordSpec {
     trueBuilder: LogicExpr[R],
     falseBuilder: LogicExpr[R],
     facts: Facts,
-    assertTrue: Position => Output[R] => Unit,
-    assertFalse: Position => Output[R] => Unit,
+    assertTrue: Position => ExprOutput[R] => Unit,
+    assertFalse: Position => ExprOutput[R] => Unit,
   ): Unit = {
 
     val T = trueBuilder
@@ -53,11 +52,11 @@ class LogicalExprSpec extends AnyWordSpec {
 
     val evalOutput = evalUnit[R](facts)(_)
 
-    def shouldBeTrue(output: Output[R])(implicit pos: Position): Unit = {
+    def shouldBeTrue(output: ExprOutput[R])(implicit pos: Position): Unit = {
       assertTrue(pos)(output)
     }
 
-    def shouldBeFalse(output: Output[R])(implicit pos: Position): Unit = {
+    def shouldBeFalse(output: ExprOutput[R])(implicit pos: Position): Unit = {
       assertFalse(pos)(output)
     }
 
