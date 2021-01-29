@@ -1,17 +1,15 @@
 package com.rallyhealth.vapors.core.algebra
 
 import cats.kernel.Monoid
-import cats.{~>, Eval, Foldable, FunctorFilter, Id, Traverse, TraverseFilter}
-import com.rallyhealth.vapors.factfilter.data.{Fact, FactSet, FactTable, TypedFact}
-import cats.{~>, Eval, Foldable, Id}
+import cats._
 import com.rallyhealth.vapors.factfilter.data.{FactSet, FactTable, TypedFact}
-import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.{Input, Output}
+import com.rallyhealth.vapors.factfilter.evaluator.{ExprInput, ExprOutput}
 import shapeless.HList
 
 import scala.collection.BitSet
 
 /**
-  * The result of evaluating an [[Expr]] with some given [[Input]].
+  * The result of evaluating an [[Expr]] with some given [[ExprInput]].
   *
   * You can fold over this result to see the input, output, value, and captured custom parameter at each node in the
   * original expression. Every node of this algebra matches to the [[Expr]] subclass with the same name.
@@ -20,9 +18,9 @@ sealed trait ExprResult[F[_], V, R, P] {
 
   def context: ExprResult.Context[F, V, R, P]
 
-  @inline final def input: Input[F, V] = context.input
+  @inline final def input: ExprInput[F, V] = context.input
 
-  @inline final def output: Output[R] = context.output
+  @inline final def output: ExprOutput[R] = context.output
 
   @inline final def param: Eval[P] = context.param
 
@@ -32,8 +30,8 @@ sealed trait ExprResult[F[_], V, R, P] {
 object ExprResult {
 
   final case class Context[F[_], V, R, P](
-    input: Input[F, V],
-    output: Output[R],
+    input: ExprInput[F, V],
+    output: ExprOutput[R],
     param: Eval[P],
   )
 

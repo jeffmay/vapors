@@ -7,21 +7,20 @@ import com.rallyhealth.vapors.core.algebra.{ConditionBranch, Expr, ExprResult, N
 import com.rallyhealth.vapors.core.logic._
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.data._
-import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.{Input, Output}
 import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsSimpleOutputFn.SimpleOutputFnFunctorBuilder
 import shapeless.HList
 
 import scala.collection.immutable.BitSet
 
 final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
-  extends Expr.Visitor[F, V, P, Lambda[r => Input[F, V] => ExprResult[F, V, r, P]]] {
+  extends Expr.Visitor[F, V, P, Lambda[r => ExprInput[F, V] => ExprResult[F, V, r, P]]] {
 
   import cats.syntax.all._
   import com.rallyhealth.vapors.core.syntax.math._
 
   override def visitAddOutputs[R : Addition](
     expr: Expr.AddOutputs[F, V, R, P],
-  ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
     val inputResults = expr.inputExprList.map { inputExpr =>
       inputExpr.visit(this)(input)
     }
@@ -36,11 +35,11 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitAnd[R : Conjunction : ExtractBoolean](
     expr: Expr.And[F, V, R, P],
-  ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
     val inputResults = expr.inputExprList.map { inputExpr =>
       inputExpr.visit(this)(input)
     }
-    val combinedOutput = inputResults.map(_.output).reduceLeft(Conjunction[Output[R]].conjunction)
+    val combinedOutput = inputResults.map(_.output).reduceLeft(Conjunction[ExprOutput[R]].conjunction)
     val inputResultList = inputResults.toList
     val allParams = inputResultList.map(_.param)
     resultOfManySubExpr(expr, input, combinedOutput.value, combinedOutput.evidence, allParams) {
@@ -50,7 +49,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitCollectSomeOutput[M[_] : Foldable, U, R : Monoid](
     expr: Expr.CollectFromOutput[F, V, M, U, R, P],
-  ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val collectFn = expr.collectExpr.visit(InterpretExprAsResultFn())
     val (combinedResult, combinedEvidence, allParams) = inputResult.output.value.collectFoldSome { elem =>
@@ -72,7 +71,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     }
   }
 
-  override def visitConstOutput[R](expr: Expr.ConstOutput[F, V, R, P]): Input[F, V] => ExprResult[F, V, R, P] = {
+  override def visitConstOutput[R](expr: Expr.ConstOutput[F, V, R, P]): ExprInput[F, V] => ExprResult[F, V, R, P] = {
     input =>
       resultOfPureExpr(expr, input, expr.value, input.evidence) {
         ExprResult.ConstOutput(_, _)
@@ -81,19 +80,19 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitDefine[M[_] : Foldable, T](
     expr: Expr.Define[M, T, P],
-  ): Input[F, V] => ExprResult[F, V, FactSet, P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, FactSet, P] = { input =>
     val definitionFn = expr.definitionExpr.visit(InterpretExprAsResultFn())
     val definitionContext = input.withValue(input.factTable)
     val definitionResult = definitionFn(definitionContext)
     val definedFactSet = definitionResult.output.value.foldMap { definitionValue =>
       FactSet(DerivedFact(expr.factType, definitionValue, definitionResult.output.evidence))
     }
-    val output = Output(definedFactSet, definitionResult.output.evidence)
+    val output = ExprOutput(definedFactSet, definitionResult.output.evidence)
     val postParam = expr.capture.foldToParam(expr, definitionContext, output, definitionResult.param :: Nil)
     ExprResult.Define(expr, ExprResult.Context(input, output, postParam), definitionResult)
   }
 
-  override def visitEmbed[R](expr: Expr.Embed[F, V, R, P]): Input[F, V] => ExprResult[F, V, R, P] = { input =>
+  override def visitEmbed[R](expr: Expr.Embed[F, V, R, P]): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
     val embeddedFn = expr.embeddedExpr.visit(InterpretExprAsResultFn())
     val embeddedInput = input.withValue(input.factTable)
     val embeddedResult = embeddedFn(embeddedInput)
@@ -106,7 +105,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitExistsInOutput[M[_] : Foldable, U](
     expr: Expr.ExistsInOutput[F, V, M, U, P],
-  ): Input[F, V] => ExprResult[F, V, Boolean, P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, Boolean, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val conditionFn = expr.conditionExpr.visit(InterpretExprAsResultFn())
     val (allMatchedIndexes, allEvidence, allCondResults) = inputResult.output.value.toList.zipWithIndex.collectFold {
@@ -133,7 +132,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitFilterOutput[M[_] : Foldable : FunctorFilter, U](
     expr: Expr.FilterOutput[F, V, M, U, P],
-  ): Input[F, V] => ExprResult[F, V, M[U], P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, M[U], P] = { input =>
     implicit val functorM: Functor[M] = FunctorFilter[M].functor
     val inputResult = expr.inputExpr.visit(this)(input)
     val condFn = expr.condExpr.visit(InterpretExprAsResultFn())
@@ -159,7 +158,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitFlatMapOutput[M[_] : Foldable : FlatMap, U, X](
     expr: Expr.FlatMapOutput[F, V, M, U, X, P],
-  ): Input[F, V] => ExprResult[F, V, M[X], P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, M[X], P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val flatMapFn = expr.flatMapExpr.visit(InterpretExprAsResultFn())
     val allResults = inputResult.output.value.map { elem =>
@@ -181,7 +180,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitMapOutput[M[_] : Foldable : Functor, U, R](
     expr: Expr.MapOutput[F, V, M, U, R, P],
-  ): Input[F, V] => ExprResult[F, V, M[R], P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, M[R], P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val mapFn = expr.mapExpr.visit(InterpretExprAsResultFn())
     val allResults = inputResult.output.value.map { elem =>
@@ -202,7 +201,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitNegativeOutput[R : Negative](
     expr: Expr.NegativeOutput[F, V, R, P],
-  ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val outputValue = Negative[R].negative(inputResult.output.value)
     resultOfManySubExpr(expr, input, outputValue, inputResult.output.evidence, inputResult.param :: Nil) {
@@ -210,21 +209,22 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     }
   }
 
-  override def visitNot[R : Negation](expr: Expr.Not[F, V, R, P]): Input[F, V] => ExprResult[F, V, R, P] = { input =>
-    val inputResult = expr.inputExpr.visit(this)(input)
-    val outputValue = Negation[R].negation(inputResult.output.value)
-    resultOfManySubExpr(expr, input, outputValue, inputResult.output.evidence, inputResult.param :: Nil) {
-      ExprResult.Not(_, _, inputResult)
-    }
+  override def visitNot[R : Negation](expr: Expr.Not[F, V, R, P]): ExprInput[F, V] => ExprResult[F, V, R, P] = {
+    input =>
+      val inputResult = expr.inputExpr.visit(this)(input)
+      val outputValue = Negation[R].negation(inputResult.output.value)
+      resultOfManySubExpr(expr, input, outputValue, inputResult.output.evidence, inputResult.param :: Nil) {
+        ExprResult.Not(_, _, inputResult)
+      }
   }
 
   override def visitOr[R : Disjunction : ExtractBoolean](
     expr: Expr.Or[F, V, R, P],
-  ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
     val inputResults = expr.inputExprList.map { inputExpr =>
       inputExpr.visit(this)(input)
     }
-    val combinedOutput = inputResults.map(_.output).reduceLeft(Disjunction[Output[R]].disjunction)
+    val combinedOutput = inputResults.map(_.output).reduceLeft(Disjunction[ExprOutput[R]].disjunction)
     val inputResultList = inputResults.toList
     val allParams = inputResultList.map(_.param)
     resultOfManySubExpr(expr, input, combinedOutput.value, combinedOutput.evidence, allParams) {
@@ -234,7 +234,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitOutputIsEmpty[M[_] : Foldable, R](
     expr: Expr.OutputIsEmpty[F, V, M, R, P],
-  ): Input[F, V] => ExprResult[F, V, Boolean, P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, Boolean, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val isEmpty = inputResult.output.value.isEmpty
     resultOfPureExpr(expr, input, isEmpty, inputResult.output.evidence) {
@@ -244,7 +244,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitOutputWithinSet[R](
     expr: Expr.OutputWithinSet[F, V, R, P],
-  ): Input[F, V] => ExprResult[F, V, Boolean, P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, Boolean, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val isWithinSet = expr.accepted.contains(inputResult.output.value)
     resultOfPureExpr(expr, input, isWithinSet, inputResult.output.evidence) {
@@ -254,7 +254,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitOutputWithinWindow[R](
     expr: Expr.OutputWithinWindow[F, V, R, P],
-  ): Input[F, V] => ExprResult[F, V, Boolean, P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, Boolean, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val isWithinWindow = expr.window.contains(inputResult.output.value)
     resultOfPureExpr(expr, input, isWithinWindow, inputResult.output.evidence) {
@@ -262,15 +262,16 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     }
   }
 
-  override def visitReturnInput(expr: Expr.ReturnInput[F, V, P]): Input[F, V] => ExprResult[F, V, F[V], P] = { input =>
-    resultOfPureExpr(expr, input, input.value, input.evidence ++ Evidence.fromAnyOrNone(input.value)) {
-      ExprResult.ReturnInput(_, _)
-    }
+  override def visitReturnInput(expr: Expr.ReturnInput[F, V, P]): ExprInput[F, V] => ExprResult[F, V, F[V], P] = {
+    input =>
+      resultOfPureExpr(expr, input, input.value, input.evidence ++ Evidence.fromAnyOrNone(input.value)) {
+        ExprResult.ReturnInput(_, _)
+      }
   }
 
   override def visitSelectFromOutput[S, R](
     expr: Expr.SelectFromOutput[F, V, S, R, P],
-  ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val selected = expr.lens.get(inputResult.output.value)
     resultOfManySubExpr(expr, input, selected, inputResult.output.evidence, inputResult.param :: Nil) {
@@ -280,7 +281,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitSubtractOutputs[R : Subtraction](
     expr: Expr.SubtractOutputs[F, V, R, P],
-  ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
     val allResults = expr.inputExprList.map(_.visit(this)(input))
     val allResultsList = allResults.toList
     val addResult = allResultsList.map(_.output.value).reduceLeft(_ - _)
@@ -293,7 +294,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitTakeFromOutput[M[_] : Traverse : TraverseFilter, R](
     expr: Expr.TakeFromOutput[F, V, M, R, P],
-  ): Input[F, V] => ExprResult[F, V, M[R], P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, M[R], P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val values = inputResult.output.value
     val takeWindow: Window[Int] = expr.take match {
@@ -314,7 +315,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitWrapOutput[T <: HList, R](
     expr: Expr.WrapOutput[F, V, T, R, P],
-  ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
     val (tupleOutput, allParams) = visitHListSimpleOutput(expr.inputExprHList, input)
     val value = expr.generic.from(tupleOutput.value)
     resultOfManySubExpr(expr, input, value, tupleOutput.evidence, allParams) {
@@ -324,7 +325,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitUsingDefinitions[R](
     expr: Expr.UsingDefinitions[F, V, R, P],
-  ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
     val definitionVisitor = new InterpretExprAsResultFn[Id, FactTable, P]
     val definitionInput = input.withValue(input.factTable)
     val (declaredFacts, evidence, declaredParams) = expr.definitions.foldMap { defExpr =>
@@ -342,7 +343,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     ExprResult.UsingDefinitions(expr, ExprResult.Context(input, subResult.output, postParam), subResult)
   }
 
-  override def visitWhen[R](expr: Expr.When[F, V, R, P]): Input[F, V] => ExprResult[F, V, R, P] = { input =>
+  override def visitWhen[R](expr: Expr.When[F, V, R, P]): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
     val (maybeConditionResult, condParams) = {
       expr.conditionBranches.foldLeft((None, Nil): (Option[(ConditionBranch[F, V, R, P], Evidence)], List[Eval[P]])) {
         case (acc @ (Some(_), _), _) => acc
@@ -371,7 +372,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitWithFactsOfType[T, R](
     expr: Expr.WithFactsOfType[T, R, P],
-  ): Input[F, V] => ExprResult[F, V, R, P] = { input =>
+  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
     val inputFactTable = input.withValue(input.factTable)
     val withMatchingFactsFn = expr.subExpr.visit(InterpretExprAsResultFn())
     val matchingFacts = input.factTable.getSortedSeq(expr.factTypeSet)
@@ -388,7 +389,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   @inline private def resultOfPureExpr[R](
     expr: Expr[F, V, R, P],
-    input: Input[F, V],
+    input: ExprInput[F, V],
     result: R,
     evidence: Evidence,
   )(
@@ -399,14 +400,14 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   @inline private def resultOfManySubExpr[R](
     expr: Expr[F, V, R, P],
-    input: Input[F, V],
+    input: ExprInput[F, V],
     result: R,
     evidence: Evidence,
     capturedParams: List[Eval[P]],
   )(
     buildResult: (expr.type, ExprResult.Context[F, V, R, P]) => ExprResult[F, V, R, P],
   ): ExprResult[F, V, R, P] = {
-    val output = Output(result, evidence)
+    val output = ExprOutput(result, evidence)
     val param = expr.capture.foldToParam(expr, input, output, capturedParams)
     buildResult(expr, ExprResult.Context(input, output, param))
   }
@@ -415,7 +416,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   // See https://github.com/scala/bug/issues/8039 for more details
   @inline private def resultOfSingleSubExpr[G[_], R](
     expr: Expr[F, V, R, P],
-    input: Input[F, V],
+    input: ExprInput[F, V],
     subResult: ExprResult[G, _, R, P],
   )(
     buildPostOp: (expr.type, ExprResult.Context[F, V, R, P]) => ExprResult[F, V, R, P],
@@ -440,7 +441,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     */
   private def visitHListSimpleOutput[L <: HList](
     exprHList: NonEmptyExprHList[F, V, L, P],
-    input: Input[F, V],
+    input: ExprInput[F, V],
   ): SimpleOutput[L] = {
     exprHList.visit(new InterpretExprAsSimpleOutputFn).apply(input)
   }
@@ -450,183 +451,7 @@ object InterpretExprAsResultFn {
 
   final def apply[F[_] : Foldable, V, P](): InterpretExprAsResultFn[F, V, P] = new InterpretExprAsResultFn
 
-  final def apply[F[_] : Foldable, V, R, P](expr: Expr[F, V, R, P])(input: Input[F, V]): ExprResult[F, V, R, P] = {
+  final def apply[F[_] : Foldable, V, R, P](expr: Expr[F, V, R, P])(input: ExprInput[F, V]): ExprResult[F, V, R, P] = {
     expr.visit(InterpretExprAsResultFn())(input)
   }
-
-  final case class Input[F[_], V](
-    value: F[V],
-    evidence: Evidence,
-    factTable: FactTable,
-  ) {
-
-    @inline def withFoldableValue[G[_], U](
-      value: G[U],
-      evidence: Evidence = this.evidence,
-    ): Input[G, U] = copy(value = value, evidence = evidence)
-
-    @inline def withValue[U](
-      value: U,
-      evidence: Evidence = this.evidence,
-    ): Input[Id, U] = copy[Id, U](value = value, evidence = evidence)
-  }
-
-  final object Input {
-
-    type Init = Input[Id, FactTable]
-
-    @inline def fromFactTable(factTable: FactTable): Init =
-      Input[Id, FactTable](factTable, Evidence.none, factTable)
-
-    @inline def fromValue[V](
-      value: V,
-      evidence: Evidence,
-      factTable: FactTable,
-    ): Input[Id, V] =
-      Input[Id, V](value, evidence, factTable)
-
-    @inline def fromValue[V](
-      value: V,
-      evidence: Evidence = Evidence.none,
-    ): Input[Id, V] =
-      fromValue(value, evidence, FactTable(evidence.factSet))
-  }
-
-  final case class Output[R](
-    value: R,
-    evidence: Evidence,
-  )
-
-  object Output {
-
-    /**
-      * Logical Conjunction (aka AND)
-      *
-      * - If either side is false, the result is false
-      * - Evidence of falseness is accumulated
-      * - Evidence of truthiness requires evidence of truth on both sides, otherwise no evidence of truth
-      *
-      * Examples:
-      *
-      * | X is True | Evidence of X | Y is True | Evidence of Y | Result is True | Evidence of Result |
-      * | --------- | ------------- | --------- | ------------- | -------------- | ------------------ |
-      * | T         | {}            | T         | {}            | T              | {}                 |
-      * | T         | {}            | F         | {}            | F              | {}                 |
-      * | T         | {}            | T         | {A}           | T              | {}                 |
-      * | T         | {}            | F         | {A}           | F              | {A}                |
-      * | T         | {B}           | T         | {A}           | T              | {A, B}             |
-      * | T         | {B}           | F         | {}            | F              | {}                 |
-      * | T         | {B}           | T         | {}            | T              | {}                 |
-      * | T         | {B}           | F         | {A}           | F              | {A}                |
-      * | F         | {}            | T         | {A}           | F              | {}                 |
-      * | F         | {B}           | F         | {A}           | F              | {A, B}             |
-      * | F         | {B}           | T         | {A}           | F              | {B}                |
-      * | F         | {B}           | F         | {}            | F              | {B}                |
-      * | F         | {}            | F         | {A}           | F              | {}                 |
-      */
-    implicit def conjunction[R : Conjunction : ExtractBoolean]: Conjunction[Output[R]] =
-      (lhs: Output[R], rhs: Output[R]) => {
-        import cats.syntax.apply._
-        val R = ExtractBoolean[R]
-        @inline def isTrue(output: Output[R]): Boolean = R.isTrue(output.value)
-        val value = Conjunction[R].conjunction(lhs.value, rhs.value)
-        val evidence = {
-          if (R.isTrue(value)) {
-            // only combine evidence of truthiness if both sides are true
-            val evTrueL = Option.when(isTrue(lhs))(lhs.evidence)
-            val evTrueR = Option.when(isTrue(rhs))(rhs.evidence)
-            (evTrueL, evTrueR).mapN(_ ++ _).getOrElse(Evidence.none)
-          } else {
-            val evFalseL = Option.unless(isTrue(lhs))(lhs.evidence)
-            val evFalseR = Option.unless(isTrue(rhs))(rhs.evidence)
-            // combine any evidence of falseness
-            (evFalseL ++ evFalseR).foldLeft(Evidence.none) { case (l, r) => l ++ r }
-          }
-        }
-        Output(value, evidence)
-      }
-
-    /**
-      * Logical Disjunction (aka inclusive OR)
-      *
-      * - If either side is true, the result is true
-      * - Evidence of truthiness is accumulated
-      * - Evidence of falseness requires evidence of false on both sides, otherwise there is no evidence of false
-      *
-      * Examples:
-      *
-      * | X is True | Evidence of X | Y is True | Evidence of Y | Result is True | Evidence of Result |
-      * | --------- | ------------- | --------- | ------------- | -------------- | ------------------ |
-      * | T         | {}            | T         | {}            | T              | {}                 |
-      * | T         | {}            | F         | {}            | T              | {}                 |
-      * | T         | {}            | T         | {A}           | T              | {A}                |
-      * | T         | {}            | F         | {A}           | T              | {}                 |
-      * | T         | {B}           | T         | {A}           | T              | {A, B}             |
-      * | T         | {B}           | F         | {}            | T              | {B}                |
-      * | T         | {B}           | T         | {}            | T              | {B}                |
-      * | T         | {B}           | F         | {A}           | T              | {B}                |
-      * | F         | {}            | T         | {A}           | T              | {A}                |
-      * | F         | {B}           | F         | {A}           | F              | {A, B}             |
-      * | F         | {B}           | T         | {A}           | T              | {A}                |
-      * | F         | {B}           | F         | {}            | F              | {}                 |
-      * | F         | {}            | F         | {A}           | F              | {}                 |
-      */
-    implicit def disjunction[R : Disjunction : ExtractBoolean]: Disjunction[Output[R]] =
-      (lhs: Output[R], rhs: Output[R]) => {
-        import cats.syntax.apply._
-        val R = ExtractBoolean[R]
-        @inline def isTrue(output: Output[R]): Boolean = R.isTrue(output.value)
-        val value = Disjunction[R].disjunction(lhs.value, rhs.value)
-        val evidence = {
-          if (R.isTrue(value)) {
-            // combine all evidence of truthiness from sides that are truthy
-            val evTrueL = Option.when(isTrue(lhs))(lhs.evidence)
-            val evTrueR = Option.when(isTrue(rhs))(rhs.evidence)
-            (evTrueL ++ evTrueR).foldLeft(Evidence.none) { case (l, r) => l ++ r }
-          } else {
-            // only combine evidence of falseness if both sides are false
-            val evFalseL = Option.unless(lhs.evidence.isEmpty)(lhs.evidence)
-            val evFalseR = Option.unless(rhs.evidence.isEmpty)(rhs.evidence)
-            (evFalseL, evFalseR).mapN(_ ++ _).getOrElse(Evidence.none)
-          }
-        }
-        Output(value, evidence)
-      }
-
-    implicit def negation[R : Negation]: Negation[Output[R]] = { output =>
-      val negatedValue = Negation[R].negation(output.value)
-      output.copy(value = negatedValue)
-    }
-
-    /**
-      * Combine two monoidal values and union their evidence.
-      *
-      * @note This is not _always_ safe. There may be some combinations of values in which you must combine
-      *       [[Evidence]] for the resulting value differently based on the inputs. However, this is not the
-      *       general purpose or intent of saying something is a [[Monoid]], so this definition should be
-      *       generally safe. For example, there is no standard definition of [[Monoid]] for Boolean, because
-      *       there is no safe assumption for and "empty" boolean value. However, evidence of true || true is
-      *       not necessarily the same as evidence of true && true. Any definitions for which this distinction
-      *       matters will typically use its own typeclasses, such as [[Conjunction]] or [[Disjunction]].
-      */
-    implicit def monoid[A : Monoid]: Monoid[Output[A]] = {
-      new Monoid[Output[A]] {
-
-        override final def empty: Output[A] = {
-          Output(Monoid[A].empty, Evidence.none)
-        }
-
-        override final def combine(
-          x: Output[A],
-          y: Output[A],
-        ): Output[A] = {
-          Output(
-            Monoid[A].combine(x.value, y.value),
-            x.evidence ++ y.evidence,
-          )
-        }
-      }
-    }
-  }
-
 }

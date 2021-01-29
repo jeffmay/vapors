@@ -4,7 +4,7 @@ import cats.Eval
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.factfilter.data.TypedFact
 import com.rallyhealth.vapors.factfilter.dsl.CaptureP
-import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn
+import com.rallyhealth.vapors.factfilter.evaluator.{ExprInput, ExprOutput}
 
 object CaptureTimeRange extends CaptureP.AsMonoidCompanion[TimeRange] {
 
@@ -13,8 +13,8 @@ object CaptureTimeRange extends CaptureP.AsMonoidCompanion[TimeRange] {
 
       override protected def foldWithParentParam(
         expr: Expr[Seq, TypedFact[T], R, TimeRange],
-        input: InterpretExprAsResultFn.Input[Seq, TypedFact[T]],
-        output: InterpretExprAsResultFn.Output[R],
+        input: ExprInput[Seq, TypedFact[T]],
+        output: ExprOutput[R],
         processedChildren: TimeRange,
       ): Eval[TimeRange] = {
         val timestamps = input.value.map(fact => ExtractInstant[T].extractValue(fact.value))
