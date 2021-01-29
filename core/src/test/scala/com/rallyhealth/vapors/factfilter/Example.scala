@@ -32,6 +32,14 @@ object Example {
     }
   }
 
+  sealed trait ColorCoding
+
+  object ColorCoding {
+    final case object Red extends ColorCoding
+    final case object Green extends ColorCoding
+    final case object Blue extends ColorCoding
+  }
+
   trait HasTimestamp {
     def timestamp: Instant
   }
