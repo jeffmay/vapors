@@ -8,7 +8,8 @@ import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.data._
 import com.rallyhealth.vapors.factfilter.dsl.CaptureP
-import shapeless.{Generic, HList}
+import shapeless.ops.hlist.Tupler
+import shapeless.{DepFn1, Generic, HList}
 
 /**
   * The core expression algebra.
@@ -308,10 +309,34 @@ object Expr {
 
   final case class WrapOutput[F[_], V, L <: HList, R, P](
     inputExprHList: NonEmptyExprHList[F, V, L, P],
-    generic: Generic.Aux[R, L],
+    converter: WrapOutput.Converter[L, R],
     capture: CaptureP[F, V, R, P],
   ) extends Expr[F, V, R, P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitWrapOutput(this)
+  }
+
+  final object WrapOutput {
+
+    sealed trait Converter[L, R] {
+      def conversionType: String
+      def apply(in: L): R
+    }
+
+    // TODO: Capture type information about R for debugging?
+    private final class ConverterImpl[L, R](
+      convert: L => R,
+      override val conversionType: String,
+    ) extends Converter[L, R] {
+      override def apply(in: L): R = convert(in)
+    }
+
+    def asHListIdentity[R <: HList]: Converter[R, R] = new ConverterImpl(identity, "asHList")
+
+    def asProductType[L <: HList, R](implicit gen: Generic.Aux[R, L]): Converter[L, R] =
+      new ConverterImpl(gen.from, "asProduct")
+
+    def asTuple[L <: HList, R](implicit tupler: Tupler.Aux[L, R]): Converter[L, R] =
+      new ConverterImpl(tupler.apply, "asTuple")
   }
 
   final case class OutputIsEmpty[F[_], V, M[_] : Foldable, R, P](

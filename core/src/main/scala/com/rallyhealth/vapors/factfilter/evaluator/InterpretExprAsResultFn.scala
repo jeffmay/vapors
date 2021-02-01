@@ -317,7 +317,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     expr: Expr.WrapOutput[F, V, T, R, P],
   ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
     val (tupleOutput, allParams) = visitHListSimpleOutput(expr.inputExprHList, input)
-    val value = expr.generic.from(tupleOutput.value)
+    val value = expr.converter(tupleOutput.value)
     resultOfManySubExpr(expr, input, value, tupleOutput.evidence, allParams) {
       ExprResult.WrapOutput(_, _)
     }
