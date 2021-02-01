@@ -15,25 +15,25 @@ class WrapOutputSpec extends AnyWordSpec {
     "wrapping const nodes into a case class" should {
 
       "wrap some constant nodes as a case class" in {
-        val f = TagsUpdate(Set("X"), Instant.now())
-        val q = {
-          wrap(const(f.tags), const(f.timestamp)).as[TagsUpdate]
+        val expected = TagsUpdate(Set("X"), Instant.now())
+        val query = {
+          wrap(const(expected.tags), const(expected.timestamp)).as[TagsUpdate]
         }
-        val result = eval(FactTable.empty)(q)
-        assertResult(f)(result.output.value)
+        val result = eval(FactTable.empty)(query)
+        assertResult(expected)(result.output.value)
       }
 
       "NOT compile when attempting to wrap one less constant than required into a case class" in {
-        val f = TagsUpdate(Set("X"), Instant.now())
+        val t = TagsUpdate(Set("X"), Instant.now())
         assertDoesNotCompile {
-          "wrap(const(f.tags)).as[TagsUpdate]"
+          "wrap(const(t.tags)).as[TagsUpdate]"
         }
       }
 
       "NOT compile when attempting to wrap some constant nodes into a case class in the wrong order" in {
-        val f = TagsUpdate(Set("X"), Instant.now())
+        val t = TagsUpdate(Set("X"), Instant.now())
         assertDoesNotCompile {
-          "wrap(const(f.timestamp), const(f.tags)).as[TagsUpdate]"
+          "wrap(const(t.timestamp), const(t.tags)).as[TagsUpdate]"
         }
       }
 
@@ -43,11 +43,10 @@ class WrapOutputSpec extends AnyWordSpec {
 
       "convert into a tuple-3" in {
         val t = (1, "two", ColorCoding.Blue)
-        val q = {
-          wrap(const(t._1), const(t._2), const(t._3))
-            .as[(Int, String, ColorCoding.Blue.type)]
+        val query = {
+          wrap(const(t._1), const(t._2), const(t._3)).asTuple
         }
-        val result = eval(FactTable.empty)(q)
+        val result = eval(FactTable.empty)(query)
         assertResult(t)(result.output.value)
       }
     }
@@ -57,10 +56,10 @@ class WrapOutputSpec extends AnyWordSpec {
       "return an hlist of size 3" in {
         val hlist = 1 :: "two" :: ColorCoding.Blue :: HNil
         val t = hlist.tupled
-        val q = {
+        val query = {
           wrap(const(t._1), const(t._2), const(t._3)).asHList
         }
-        val result = eval(FactTable.empty)(q)
+        val result = eval(FactTable.empty)(query)
         assertResult(hlist)(result.output.value)
       }
     }
@@ -68,25 +67,25 @@ class WrapOutputSpec extends AnyWordSpec {
     "comparing evidence" should {
 
       "combine all non-empty evidence" in {
-        val q = {
+        val query = {
           wrap(
             factsOfType(FactTypes.Name).headOption,
             factsOfType(FactTypes.Age).headOption,
           ).asHList
         }
         val facts = List(JoeSchmoe.name, JoeSchmoe.age)
-        val result = eval(FactTable(facts))(q)
+        val result = eval(FactTable(facts))(query)
         assertResult(Evidence(facts))(result.output.evidence)
       }
 
       "return no evidence if any branch has no evidence" in {
-        val q = {
+        val query = {
           wrap(
             factsOfType(FactTypes.Name).headOption,
             factsOfType(FactTypes.Age).headOption,
           ).asHList
         }
-        val result = eval(FactTable(JoeSchmoe.name))(q)
+        val result = eval(FactTable(JoeSchmoe.name))(query)
         assertResult(Evidence.none)(result.output.evidence)
       }
     }
