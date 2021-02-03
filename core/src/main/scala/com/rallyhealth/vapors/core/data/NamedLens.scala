@@ -5,6 +5,7 @@ import cats.kernel.Semigroup
 import com.rallyhealth.vapors.core.macros.NamedLensMacros
 
 import scala.collection.Factory
+import scala.reflect.ClassTag
 
 object NamedLens {
 
@@ -22,8 +23,11 @@ object NamedLens {
   implicit final class AsIterableBuilder[A, B[x] <: IterableOnce[x], V](private val lens: NamedLens[A, B[V]])
     extends AnyVal {
 
-    def to[C](factory: Factory[V, C]): NamedLens[A, C] =
-      lens.copy(get = lens.get.andThen(_.iterator.to(factory)))
+    def to[C <: IterableOnce[_] : ClassTag](factory: Factory[V, C]): NamedLens[A, C] =
+      lens.copy(
+        path = lens.path.to(factory),
+        get = lens.get.andThen(_.iterator.to(factory)),
+      )
   }
 
 }
