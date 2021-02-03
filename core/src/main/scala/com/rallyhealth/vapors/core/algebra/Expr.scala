@@ -1,6 +1,6 @@
 package com.rallyhealth.vapors.core.algebra
 
-import cats.data.NonEmptyList
+import cats.data.{NonEmptyList, NonEmptyVector}
 import cats.kernel.Monoid
 import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse, TraverseFilter}
 import com.rallyhealth.vapors.core.data.{NamedLens, Window}
@@ -239,7 +239,7 @@ object Expr {
     * @note this expression <i>does</i> short-circuit on the first branch whose condition is met
     */
   final case class When[F[_], V, R, P](
-    conditionBranches: NonEmptyList[ConditionBranch[F, V, R, P]],
+    conditionBranches: NonEmptyVector[ConditionBranch[F, V, R, P]],
     defaultExpr: Expr[F, V, R, P],
     capture: CaptureP[F, V, R, P],
   ) extends Expr[F, V, R, P] {

@@ -145,7 +145,7 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with Wrap
     )(implicit
       captureResult: CaptureP[F, V, R, P],
     ): Expr.When[F, V, R, P] =
-      Expr.When(branches.reverse, elseExpr, captureResult)
+      Expr.When(branches.reverse.toNev, elseExpr, captureResult)
 
     def elif(elifExpr: CondExpr[F, V, P]): ElifBuilder[F, V, R, P] = new ElifBuilder((elifExpr, branches))
   }
