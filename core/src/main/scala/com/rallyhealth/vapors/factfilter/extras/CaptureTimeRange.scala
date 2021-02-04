@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.factfilter.extras
 
 import cats.Eval
 import com.rallyhealth.vapors.core.algebra.Expr
-import com.rallyhealth.vapors.factfilter.data.TypedFact
+import com.rallyhealth.vapors.core.data.TypedFact
 import com.rallyhealth.vapors.factfilter.dsl.CaptureP
 import com.rallyhealth.vapors.factfilter.evaluator.{ExprInput, ExprOutput}
 

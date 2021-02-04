@@ -1,10 +1,9 @@
-package com.rallyhealth.vapors.factfilter.data
+package com.rallyhealth.vapors.core.data
 
 import cats.instances.order._
 import cats.{Eq, Monoid}
-import com.rallyhealth.vapors.core.data.Indexed
 
-import scala.collection.immutable.{SortedMap, SortedSet}
+import scala.collection.immutable.SortedMap
 
 /**
   * The current state of all the facts in an expression.

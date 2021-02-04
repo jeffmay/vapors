@@ -1,4 +1,4 @@
-package com.rallyhealth.vapors.factfilter.data
+package com.rallyhealth.vapors.core.data
 
 import cats.Monoid
 import cats.data.NonEmptySet

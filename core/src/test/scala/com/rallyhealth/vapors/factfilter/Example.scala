@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.factfilter
 
 import cats.Order
 import cats.data.NonEmptyList
-import com.rallyhealth.vapors.factfilter.data.{FactTable, FactType, FactTypeSet}
+import com.rallyhealth.vapors.core.data.{FactSet, FactTable, FactType, FactTypeSet}
 import com.rallyhealth.vapors.factfilter.extras.ExtractInstant
 
 import java.time.{Instant, LocalDate, ZoneOffset}
@@ -141,7 +141,7 @@ object Example {
     val probs = FactTypes.ProbabilityToUse(Probs(Map("weightloss" -> .8)))
     val asthmaTag = FactTypes.Tag("asthma")
 
-    val facts = NonEmptyList.of(
+    val facts = FactSet(
       name,
       age,
       adminRole,

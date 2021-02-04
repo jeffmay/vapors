@@ -3,13 +3,12 @@ package com.rallyhealth.vapors.core.algebra
 import cats.data.NonEmptyList
 import cats.kernel.Monoid
 import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse, TraverseFilter}
-import com.rallyhealth.vapors.core.data.{NamedLens, Window}
+import com.rallyhealth.vapors.core.data._
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
-import com.rallyhealth.vapors.factfilter.data._
 import com.rallyhealth.vapors.factfilter.dsl.CaptureP
 import shapeless.ops.hlist.Tupler
-import shapeless.{DepFn1, Generic, HList}
+import shapeless.{Generic, HList}
 
 /**
   * The core expression algebra.

@@ -1,4 +1,4 @@
-package com.rallyhealth.vapors.factfilter.data
+package com.rallyhealth.vapors.core.data
 
 /**
   * Special case of [[ExtractValue]] that extracts a [[Boolean]] value.
