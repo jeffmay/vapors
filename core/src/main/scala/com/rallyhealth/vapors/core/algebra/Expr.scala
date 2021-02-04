@@ -4,6 +4,8 @@ import cats.data.NonEmptyList
 import cats.kernel.Monoid
 import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse, TraverseFilter}
 import com.rallyhealth.vapors.core.data._
+import com.rallyhealth.vapors.core.interpreter
+import com.rallyhealth.vapors.core.interpreter.InterpretExprAsResultFn
 import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
@@ -19,7 +21,7 @@ import shapeless.{Generic, HList}
   *
   * This expression is folded over to produce serialized versions of the expression as well as the evaluator function.
   *
-  * @see [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn]]
+  * @see [[InterpretExprAsResultFn]]
   *
   * F = Foldable type constructor
   * V = Value type
@@ -188,7 +190,7 @@ object Expr {
     * Returns the [[Conjunction]] of all results of the given input expressions.
     *
     * All evidence is tracked using the logic defined in
-    * [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.Output.conjunction]]
+    * [[interpreter.InterpretExprAsResultFn.Output.conjunction]]
     *
     * @note this <i>does not</i> short-circuit.
     *       [[Evidence]] for all input values are used in deciding the evidence for the result.
@@ -207,7 +209,7 @@ object Expr {
     * Returns the [[Disjunction]] of all results of the given input expressions.
     *
     * All evidence is tracked using the logic defined in
-    * [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.Output.disjunction]]
+    * [[interpreter.InterpretExprAsResultFn.Output.disjunction]]
     *
     * @note this <i>does not</i> short-circuit.
     *       [[Evidence]] for all input values are used in deciding the evidence for the result.

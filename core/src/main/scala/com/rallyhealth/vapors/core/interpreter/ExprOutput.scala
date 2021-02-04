@@ -1,4 +1,4 @@
-package com.rallyhealth.vapors.factfilter.evaluator
+package com.rallyhealth.vapors.core.interpreter
 
 import cats.Monoid
 import com.rallyhealth.vapors.core.data.{Evidence, ExtractBoolean}

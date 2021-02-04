@@ -3,8 +3,8 @@ package com.rallyhealth.vapors.factfilter.extras
 import cats.Eval
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.TypedFact
+import com.rallyhealth.vapors.core.interpreter.{ExprInput, ExprOutput}
 import com.rallyhealth.vapors.factfilter.dsl.CaptureP
-import com.rallyhealth.vapors.factfilter.evaluator.{ExprInput, ExprOutput}
 
 object CaptureTimeRange extends CaptureP.AsMonoidCompanion[TimeRange] {
 

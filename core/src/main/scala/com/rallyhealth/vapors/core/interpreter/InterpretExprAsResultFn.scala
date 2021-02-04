@@ -1,13 +1,12 @@
-package com.rallyhealth.vapors.factfilter.evaluator
+package com.rallyhealth.vapors.core.interpreter
 
 import cats._
 import cats.data.Chain
-import com.rallyhealth.vapors.core.data.{DerivedFact, Evidence, ExtractBoolean, FactSet, FactTable, TypedFact, Window}
 import com.rallyhealth.vapors.core.algebra.{ConditionBranch, Expr, ExprResult, NonEmptyExprHList}
+import com.rallyhealth.vapors.core.data._
+import com.rallyhealth.vapors.core.interpreter.InterpretExprAsSimpleOutputFn.SimpleOutputFnFunctorBuilder
 import com.rallyhealth.vapors.core.logic._
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
-import com.rallyhealth.vapors.factfilter.data._
-import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsSimpleOutputFn.SimpleOutputFnFunctorBuilder
 import shapeless.HList
 
 import scala.collection.immutable.BitSet
