@@ -1,4 +1,4 @@
-package com.rallyhealth.vapors.factfilter.data
+package com.rallyhealth.vapors.core.data
 
 final class FactOrFactSet private[FactOrFactSet] (val toSet: Set[Fact]) extends AnyVal
 

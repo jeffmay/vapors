@@ -1,8 +1,8 @@
 package com.rallyhealth.vapors.core.algebra
 
-import cats.kernel.Monoid
 import cats._
-import com.rallyhealth.vapors.factfilter.data.{FactSet, FactTable, TypedFact}
+import cats.kernel.Monoid
+import com.rallyhealth.vapors.core.data.{FactSet, FactTable, TypedFact}
 import com.rallyhealth.vapors.factfilter.evaluator.{ExprInput, ExprOutput}
 import shapeless.HList
 

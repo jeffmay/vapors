@@ -2,45 +2,118 @@ package com.rallyhealth.vapors.factfilter
 
 import cats.Order
 import cats.data.NonEmptyList
-import com.rallyhealth.vapors.core.data.NamedLens
+import com.rallyhealth.vapors.core.data
 
 package object data {
 
-  /**
-    * Alias for a collection of facts with no restriction on Scala type.
-    *
-    * @note This is the input for a top-level fact filter expression.
-    */
-  final type Facts = NonEmptyList[Fact]
+  // Removed type aliases //
 
-  /**
-    * An ordered set of untyped [[Fact]]s.
-    */
-  final type FactSet = Set[Fact]
+  @deprecated("Removed in next breaking version change", "0.8.0")
+  final type Facts = NonEmptyList[data.Fact]
 
-  /**
-    * An ordered set of [[TypedFact]]s.
-    *
-    * @note not to be confused with a [[FactTypeSet]] (which is a set of [[FactType]]s, with not values)
-    */
-  final type TypedFactSet[T] = Set[TypedFact[T]]
+  @deprecated("Removed in next breaking version change", "0.8.0")
+  final type FactLens[T, V] = data.NamedLens[data.TypedFact[T], V]
 
-  /**
-    * A [[NamedLens]] defined over a [[TypedFact]] of a known type.
-    */
-  final type FactLens[T, V] = NamedLens[TypedFact[T], V]
+  @deprecated("Removed in next breaking version change", "0.8.0")
+  final type FactLensId[T] = data.NamedLens.Id[data.TypedFact[T]]
 
-  /**
-    * A useful alias for building a [[NamedLens]] by passing the identity lens as a starting point to a function.
-    */
-  final type FactLensId[T] = NamedLens.Id[TypedFact[T]]
+  @deprecated("Removed in next breaking version change", "0.8.0")
+  final type FactsOfType[T] = NonEmptyList[data.TypedFact[T]]
 
-  /**
-    * Alias for a collection of facts of a specific type.
-    */
-  final type FactsOfType[T] = NonEmptyList[TypedFact[T]]
+  @deprecated("Removed in next breaking version change", "0.8.0")
+  final type TypedFacts[T] = List[data.TypedFact[T]]
 
-  final type TypedFacts[T] = List[TypedFact[T]]
+  @deprecated("Removed in next breaking version change", "0.8.0")
+  final type OrderTypedFacts[T] = Order[data.TypedFact[T]]
 
-  final type OrderTypedFacts[T] = Order[TypedFact[T]]
+  // Aliases for source compatibility warnings //
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.DerivedFact instead", "0.8.0")
+  final type DerivedFact = data.DerivedFact
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.DerivedFact instead", "0.8.0")
+  final val DerivedFact = data.DerivedFact
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.DerivedFactOfType instead", "0.8.0")
+  final type DerivedFactOfType[T] = data.DerivedFactOfType[T]
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.DerivedFactOfType instead", "0.8.0")
+  final val DerivedFactOfType = data.DerivedFactOfType
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.SourceFactOfType instead", "0.8.0")
+  final type SourceFactOfType[T] = data.SourceFactOfType[T]
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.SourceFactOfType instead", "0.8.0")
+  final val SourceFactOfType = data.SourceFactOfType
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.FactSet instead", "0.8.0")
+  final type FactSet = data.FactSet
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.FactSet instead", "0.8.0")
+  final val FactSet = data.FactSet
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.TypedFact instead", "0.8.0")
+  final type TypedFact[T] = data.TypedFact[T]
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.TypedFact instead", "0.8.0")
+  final val TypedFact = data.TypedFact
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.TypedFactSet instead", "0.8.0")
+  final type TypedFactSet[T] = data.TypedFactSet[T]
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.TypedFactSet instead", "0.8.0")
+  final val TypedFactSet = data.TypedFactSet
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.Evidence instead", "0.8.0")
+  final type Evidence = data.Evidence
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.Evidence instead", "0.8.0")
+  final val Evidence = data.Evidence
+
+  // TODO: Move somewhere else
+  @deprecated("Use com.rallyhealth.vapors.core.data.ExtractBoolean instead", "0.8.0")
+  final type ExtractBoolean[-T] = data.ExtractBoolean[T]
+
+  // TODO: Move somewhere else
+  @deprecated("Use com.rallyhealth.vapors.core.data.ExtractBoolean instead", "0.8.0")
+  final val ExtractBoolean = data.ExtractBoolean
+
+  // TODO: Move somewhere else
+  @deprecated("Use com.rallyhealth.vapors.core.data.ExtractValue instead", "0.8.0")
+  final type ExtractValue[-T, +V] = data.ExtractValue[T, V]
+
+  // TODO: Move somewhere else
+  @deprecated("Use com.rallyhealth.vapors.core.data.ExtractValue instead", "0.8.0")
+  final val ExtractValue = data.ExtractValue
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.Fact instead", "0.8.0")
+  final type Fact = data.Fact
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.Fact instead", "0.8.0")
+  final val Fact = data.Fact
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.FactOrFactSet instead", "0.8.0")
+  final type FactOrFactSet = data.FactOrFactSet
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.FactOrFactSet instead", "0.8.0")
+  final val FactOrFactSet = data.FactOrFactSet
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.FactTable instead", "0.8.0")
+  final type FactTable = data.FactTable
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.FactTable instead", "0.8.0")
+  final val FactTable = data.FactTable
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.FactType instead", "0.8.0")
+  final type FactType[T] = data.FactType[T]
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.FactType instead", "0.8.0")
+  final val FactType = data.FactType
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.FactTypeSet instead", "0.8.0")
+  final type FactTypeSet[T] = data.FactTypeSet[T]
+
+  @deprecated("Use com.rallyhealth.vapors.core.data.FactTypeSet instead", "0.8.0")
+  final val FactTypeSet = data.FactTypeSet
+
 }

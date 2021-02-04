@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.factfilter.evaluator
 
 import cats._
 import cats.data.Chain
-import com.rallyhealth.vapors.core.data.Window
+import com.rallyhealth.vapors.core.data.{DerivedFact, Evidence, ExtractBoolean, FactSet, FactTable, TypedFact, Window}
 import com.rallyhealth.vapors.core.algebra.{ConditionBranch, Expr, ExprResult, NonEmptyExprHList}
 import com.rallyhealth.vapors.core.logic._
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}

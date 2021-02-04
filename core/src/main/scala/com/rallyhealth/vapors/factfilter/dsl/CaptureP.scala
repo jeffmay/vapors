@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.factfilter.dsl
 
 import cats.{Eval, Monoid}
 import com.rallyhealth.vapors.core.algebra.Expr
-import com.rallyhealth.vapors.factfilter.data.TypedFact
+import com.rallyhealth.vapors.core.data.TypedFact
 import com.rallyhealth.vapors.factfilter.evaluator.{ExprInput, ExprOutput}
 
 import scala.annotation.implicitNotFound

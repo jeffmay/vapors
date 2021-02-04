@@ -1,7 +1,6 @@
-package com.rallyhealth.vapors.factfilter.data
+package com.rallyhealth.vapors.core.data
 
 import cats.Order
-import com.rallyhealth.vapors.core.data.{NamedLens, ValidDataPathKey}
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag

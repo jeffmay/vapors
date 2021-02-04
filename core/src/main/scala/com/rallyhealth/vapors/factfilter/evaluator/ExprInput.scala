@@ -1,7 +1,7 @@
 package com.rallyhealth.vapors.factfilter.evaluator
 
 import cats.Id
-import com.rallyhealth.vapors.factfilter.data.{Evidence, FactTable}
+import com.rallyhealth.vapors.core.data.{Evidence, FactTable}
 
 final case class ExprInput[F[_], V](
   value: F[V],

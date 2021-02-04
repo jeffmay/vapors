@@ -1,4 +1,4 @@
-package com.rallyhealth.vapors.factfilter.data
+package com.rallyhealth.vapors.core.data
 
 /**
   * Extracts a value from some starting value.

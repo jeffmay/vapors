@@ -1,8 +1,8 @@
 package com.rallyhealth.vapors.factfilter.evaluator
 
 import cats.Monoid
+import com.rallyhealth.vapors.core.data.{Evidence, ExtractBoolean}
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
-import com.rallyhealth.vapors.factfilter.data.{Evidence, ExtractBoolean}
 
 final case class ExprOutput[R](
   value: R,

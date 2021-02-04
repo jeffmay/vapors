@@ -2,11 +2,10 @@ package com.rallyhealth.vapors.factfilter.evaluator
 
 import cats.Id
 import com.rallyhealth.vapors.core.algebra.Expr
+import com.rallyhealth.vapors.core.data.{Evidence, ExtractBoolean, FactSet, FactTable}
 import com.rallyhealth.vapors.core.logic._
 import com.rallyhealth.vapors.factfilter.Example.JoeSchmoe
-import com.rallyhealth.vapors.factfilter.data.{Evidence, ExtractBoolean, FactTable, Facts}
 import com.rallyhealth.vapors.factfilter.dsl.ExprDsl._
-import com.rallyhealth.vapors.factfilter.dsl.{CaptureP, ExprDsl}
 import org.scalactic.source.Position
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -19,8 +18,8 @@ class LogicalExprSpec extends AnyWordSpec {
 
   private type UnaryLogicOpBuilder[R] = LogicExpr[R] => LogicExpr[R]
 
-  private def evalUnit[R](facts: Facts)(expr: LogicExpr[R]): ExprOutput[R] = {
-    InterpretExprAsResultFn(expr)(ExprInput[Id, Unit]((), Evidence(facts.toList), FactTable(facts.toList))).output
+  private def evalUnit[R](facts: FactSet)(expr: LogicExpr[R]): ExprOutput[R] = {
+    InterpretExprAsResultFn(expr)(ExprInput[Id, Unit]((), Evidence(facts), FactTable(facts))).output
   }
 
   private def validLogicalOperators[R](
@@ -29,7 +28,7 @@ class LogicalExprSpec extends AnyWordSpec {
     notBuilder: UnaryLogicOpBuilder[R],
     trueBuilder: LogicExpr[R],
     falseBuilder: LogicExpr[R],
-    facts: Facts,
+    facts: FactSet,
     assertTrue: Position => ExprOutput[R] => Unit,
     assertFalse: Position => ExprOutput[R] => Unit,
   ): Unit = {
@@ -315,15 +314,15 @@ class LogicalExprSpec extends AnyWordSpec {
       new DslLogicOpBuilder {
 
         override def andBuilder[R : Conjunction : ExtractBoolean]: LogicOpBuilder[R] = { (one, two, tail) =>
-          ExprDsl.and(one, two, tail: _*)
+          and(one, two, tail: _*)
         }
 
         override def orBuilder[R : Disjunction : ExtractBoolean]: LogicOpBuilder[R] = { (one, two, tail) =>
-          ExprDsl.or(one, two, tail: _*)
+          or(one, two, tail: _*)
         }
 
         override def notBuilder[R : Negation]: UnaryLogicOpBuilder[R] = {
-          ExprDsl.not(_)
+          not(_)
         }
       }
     }

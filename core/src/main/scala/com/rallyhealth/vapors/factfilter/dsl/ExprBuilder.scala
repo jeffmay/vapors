@@ -2,9 +2,8 @@ package com.rallyhealth.vapors.factfilter.dsl
 
 import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Order, Traverse, TraverseFilter}
 import com.rallyhealth.vapors.core.algebra.Expr
-import com.rallyhealth.vapors.core.data.{NamedLens, Window}
+import com.rallyhealth.vapors.core.data.{Evidence, NamedLens, TypedFact, Window}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
-import com.rallyhealth.vapors.factfilter.data.{Evidence, Fact, TypedFact}
 
 import scala.collection.Factory
 

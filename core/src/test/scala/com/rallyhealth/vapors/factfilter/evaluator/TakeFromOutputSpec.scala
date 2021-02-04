@@ -1,7 +1,7 @@
 package com.rallyhealth.vapors.factfilter.evaluator
 
+import com.rallyhealth.vapors.core.data.FactTable
 import com.rallyhealth.vapors.factfilter.Example.{FactTypes, TagsUpdate}
-import com.rallyhealth.vapors.factfilter.data.FactTable
 import com.rallyhealth.vapors.factfilter.dsl.ExprDsl._
 import org.scalatest.wordspec.AnyWordSpec
 

@@ -3,9 +3,9 @@ package com.rallyhealth.vapors.factfilter.evaluator
 import cats.kernel.Monoid
 import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse, TraverseFilter}
 import com.rallyhealth.vapors.core.algebra.Expr
+import com.rallyhealth.vapors.core.data.{ExtractBoolean, FactSet}
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
-import com.rallyhealth.vapors.factfilter.data.{ExtractBoolean, FactSet}
 import shapeless.HList
 
 /**

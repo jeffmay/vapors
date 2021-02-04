@@ -1,7 +1,7 @@
 package com.rallyhealth.vapors.core.data
 
 import com.rallyhealth.vapors.factfilter.Example._
-import com.rallyhealth.vapors.factfilter.data.{FactTable, TypedFact}
+import com.rallyhealth.vapors.factfilter.data.FactTable
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.time.Instant
