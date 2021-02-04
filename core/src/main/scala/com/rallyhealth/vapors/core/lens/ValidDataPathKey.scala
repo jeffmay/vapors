@@ -1,4 +1,4 @@
-package com.rallyhealth.vapors.core.data
+package com.rallyhealth.vapors.core.lens
 
 import cats.Contravariant
 

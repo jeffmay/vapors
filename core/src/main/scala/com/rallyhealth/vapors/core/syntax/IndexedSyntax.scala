@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.core.syntax
 
 import cats.Semigroup
 import cats.data.NonEmptySet
-import com.rallyhealth.vapors.core.data.Indexed
+import com.rallyhealth.vapors.core.lens.Indexed
 
 trait IndexedSyntax {
 

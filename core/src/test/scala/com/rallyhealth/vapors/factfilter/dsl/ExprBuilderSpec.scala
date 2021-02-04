@@ -1,7 +1,7 @@
 package com.rallyhealth.vapors.factfilter.dsl
 
 import com.rallyhealth.vapors.core.algebra.Expr
-import com.rallyhealth.vapors.core.data.DataPath
+import com.rallyhealth.vapors.core.lens.DataPath
 import com.rallyhealth.vapors.factfilter.Example.{FactTypes, GenericMeasurement, Probs}
 import com.rallyhealth.vapors.factfilter.dsl.ExprDsl._
 import org.scalatest.Inside.inside

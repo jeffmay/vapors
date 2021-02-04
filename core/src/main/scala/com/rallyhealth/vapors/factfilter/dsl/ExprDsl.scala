@@ -4,6 +4,7 @@ import cats.data.NonEmptyList
 import cats.{Foldable, Id, Monoid}
 import com.rallyhealth.vapors.core.algebra.{ConditionBranch, Expr, ExprResult}
 import com.rallyhealth.vapors.core.data._
+import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import com.rallyhealth.vapors.factfilter.evaluator.{ExprInput, InterpretExprAsResultFn}

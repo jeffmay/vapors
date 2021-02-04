@@ -1,8 +1,7 @@
-package com.rallyhealth.vapors.core.data
+package com.rallyhealth.vapors.core.lens
 
 import cats.data.NonEmptySet
 import cats.kernel.Semigroup
-import com.rallyhealth.vapors.core.macros.NamedLensMacros
 
 import scala.collection.Factory
 
