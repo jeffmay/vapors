@@ -1,9 +1,11 @@
 package com.rallyhealth.vapors.core.data
 
+import com.rallyhealth.vapors.core.algebra.CaptureP
+
 /**
   * Extracts a value from some starting value.
   *
-  * This is useful for defining [[com.rallyhealth.vapors.factfilter.dsl.CaptureP]] based on some input
+  * This is useful for defining [[CaptureP]] based on some input
   * type, without having to share a common supertype. Although, because of variance rules, this makes it
   * easy to define an [[ExtractValue]] for a supertype, if desired.
   */

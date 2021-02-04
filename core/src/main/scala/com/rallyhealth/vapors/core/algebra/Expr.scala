@@ -9,7 +9,6 @@ import com.rallyhealth.vapors.core.interpreter.InterpretExprAsResultFn
 import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
-import com.rallyhealth.vapors.factfilter.dsl.CaptureP
 import shapeless.ops.hlist.Tupler
 import shapeless.{Generic, HList}
 

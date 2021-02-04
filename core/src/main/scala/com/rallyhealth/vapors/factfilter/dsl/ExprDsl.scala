@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.factfilter.dsl
 
 import cats.data.NonEmptyList
 import cats.{Foldable, Id, Monoid}
-import com.rallyhealth.vapors.core.algebra.{ConditionBranch, Expr, ExprResult}
+import com.rallyhealth.vapors.core.algebra.{CaptureP, ConditionBranch, Expr, ExprResult}
 import com.rallyhealth.vapors.core.data._
 import com.rallyhealth.vapors.core.interpreter.{ExprInput, InterpretExprAsResultFn}
 import com.rallyhealth.vapors.core.lens.NamedLens

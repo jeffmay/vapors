@@ -1,7 +1,6 @@
-package com.rallyhealth.vapors.factfilter.dsl
+package com.rallyhealth.vapors.core.algebra
 
 import cats.{Eval, Monoid}
-import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.TypedFact
 import com.rallyhealth.vapors.core.interpreter.{ExprInput, ExprOutput}
 

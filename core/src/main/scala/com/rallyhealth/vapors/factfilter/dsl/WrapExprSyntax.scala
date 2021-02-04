@@ -1,6 +1,6 @@
 package com.rallyhealth.vapors.factfilter.dsl
 
-import com.rallyhealth.vapors.core.algebra.{Expr, ExprLast, NonEmptyExprHList}
+import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, ExprLast, NonEmptyExprHList}
 import shapeless.ops.hlist.Tupler
 import shapeless.{::, Generic, HList, HNil}
 

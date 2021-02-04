@@ -1,10 +1,9 @@
 package com.rallyhealth.vapors.factfilter.extras
 
 import cats.Eval
-import com.rallyhealth.vapors.core.algebra.Expr
+import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr}
 import com.rallyhealth.vapors.core.data.TypedFact
 import com.rallyhealth.vapors.core.interpreter.{ExprInput, ExprOutput}
-import com.rallyhealth.vapors.factfilter.dsl.CaptureP
 
 object CaptureTimeRange extends CaptureP.AsMonoidCompanion[TimeRange] {
 
