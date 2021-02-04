@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.factfilter.evaluator
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.{DerivedFactOfType, Evidence, FactTable, FactType}
 import com.rallyhealth.vapors.core.dsl._
-import com.rallyhealth.vapors.factfilter.Example.{FactTypes, JoeSchmoe, Role}
+import com.rallyhealth.vapors.core.example.{FactTypes, JoeSchmoe, Role}
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 

@@ -1,6 +1,6 @@
 package com.rallyhealth.vapors.core.data
 
-import com.rallyhealth.vapors.factfilter.Example._
+import com.rallyhealth.vapors.core.example.{FactTypes, GenericMeasurement}
 import com.rallyhealth.vapors.factfilter.data.FactTable
 import org.scalatest.wordspec.AnyWordSpec
 

@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.factfilter.evaluator
 
 import com.rallyhealth.vapors.core.data.{Evidence, FactTable}
 import com.rallyhealth.vapors.core.dsl._
-import com.rallyhealth.vapors.factfilter.Example.{FactTypes, Tags}
+import com.rallyhealth.vapors.core.example.{FactTypes, Tags}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers._
 
