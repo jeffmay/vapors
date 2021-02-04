@@ -1,6 +1,4 @@
-package com.rallyhealth.vapors.core.macros
-
-import com.rallyhealth.vapors.core.data.NamedLens
+package com.rallyhealth.vapors.core.lens
 
 import scala.reflect.macros.blackbox
 

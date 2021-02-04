@@ -3,6 +3,7 @@ package com.rallyhealth.vapors.factfilter
 import cats.Order
 import cats.data.NonEmptyList
 import com.rallyhealth.vapors.core.data
+import com.rallyhealth.vapors.core.lens
 
 package object data {
 
@@ -12,10 +13,10 @@ package object data {
   final type Facts = NonEmptyList[data.Fact]
 
   @deprecated("Removed in next breaking version change", "0.8.0")
-  final type FactLens[T, V] = data.NamedLens[data.TypedFact[T], V]
+  final type FactLens[T, V] = lens.NamedLens[data.TypedFact[T], V]
 
   @deprecated("Removed in next breaking version change", "0.8.0")
-  final type FactLensId[T] = data.NamedLens.Id[data.TypedFact[T]]
+  final type FactLensId[T] = lens.NamedLens.Id[data.TypedFact[T]]
 
   @deprecated("Removed in next breaking version change", "0.8.0")
   final type FactsOfType[T] = NonEmptyList[data.TypedFact[T]]

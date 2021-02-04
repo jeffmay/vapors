@@ -2,6 +2,7 @@ package com.rallyhealth.vapors.core.data
 
 import cats.instances.order._
 import cats.{Eq, Monoid}
+import com.rallyhealth.vapors.core.lens.Indexed
 
 import scala.collection.immutable.SortedMap
 
