@@ -1,9 +1,9 @@
-package com.rallyhealth.vapors.core.macros
+package com.rallyhealth.vapors.core.lens
 
-import java.time.LocalDate
-import com.rallyhealth.vapors.core.lens.{DataPath, NamedLens}
 import com.rallyhealth.vapors.factfilter.Example._
 import org.scalatest.wordspec.AnyWordSpec
+
+import java.time.LocalDate
 
 class NamedLensSpec extends AnyWordSpec {
 
