@@ -1,10 +1,10 @@
-package com.rallyhealth.vapors.factfilter.evaluator
+package com.rallyhealth.vapors.core.interpreter
 
 import com.rallyhealth.vapors.core.data.{Evidence, FactTable}
 import com.rallyhealth.vapors.core.dsl._
 import com.rallyhealth.vapors.core.example.{FactTypes, Tags}
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers._
+import org.scalatest.wordspec.AnyWordSpec
 
 class FilterOutputSpec extends AnyWordSpec {
 

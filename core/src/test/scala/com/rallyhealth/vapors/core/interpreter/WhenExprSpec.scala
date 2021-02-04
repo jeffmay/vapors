@@ -1,4 +1,4 @@
-package com.rallyhealth.vapors.factfilter.evaluator
+package com.rallyhealth.vapors.core.interpreter
 
 import com.rallyhealth.vapors.core.data.FactTable
 import com.rallyhealth.vapors.core.dsl._

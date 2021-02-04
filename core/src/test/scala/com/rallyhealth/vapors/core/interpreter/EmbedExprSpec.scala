@@ -1,8 +1,8 @@
-package com.rallyhealth.vapors.factfilter.evaluator
+package com.rallyhealth.vapors.core.interpreter
 
-import com.rallyhealth.vapors.core.example.{FactTypes, JoeSchmoe}
 import com.rallyhealth.vapors.core.data._
 import com.rallyhealth.vapors.core.dsl._
+import com.rallyhealth.vapors.core.example.{FactTypes, JoeSchmoe}
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
