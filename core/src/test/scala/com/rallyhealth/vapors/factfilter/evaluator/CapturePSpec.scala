@@ -1,8 +1,8 @@
 package com.rallyhealth.vapors.factfilter.evaluator
 
 import com.rallyhealth.vapors.core.data.Evidence
+import com.rallyhealth.vapors.core.dsl._
 import com.rallyhealth.vapors.factfilter.Example.{FactTypes, JoeSchmoe}
-import com.rallyhealth.vapors.factfilter.dsl.ExprDsl._
 import com.rallyhealth.vapors.factfilter.extras.TimeRange
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.wordspec.AnyWordSpec

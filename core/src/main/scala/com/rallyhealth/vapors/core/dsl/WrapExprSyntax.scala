@@ -1,4 +1,4 @@
-package com.rallyhealth.vapors.factfilter.dsl
+package com.rallyhealth.vapors.core.dsl
 
 import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, ExprLast, NonEmptyExprHList}
 import shapeless.ops.hlist.Tupler
@@ -136,20 +136,20 @@ final class ExprHListWrapper[F[_], V, L <: HList, P](private val exprHList: NonE
     implicit
     gen: Generic.Aux[R, L],
     captureResult: CaptureP[F, V, R, P],
-  ): Expr[F, V, R, P] =
+  ): Expr.WrapOutput[F, V, L, R, P] =
     Expr.WrapOutput(exprHList, Expr.WrapOutput.asProductType, captureResult)
 
   def asHList(
     implicit
     captureResult: CaptureP[F, V, L, P],
-  ): Expr[F, V, L, P] =
+  ): Expr.WrapOutput[F, V, L, L, P] =
     Expr.WrapOutput(exprHList, Expr.WrapOutput.asHListIdentity, captureResult)
 
   def asTuple[T](
     implicit
     tupler: Tupler.Aux[L, T],
     captureResult: CaptureP[F, V, T, P],
-  ): Expr[F, V, T, P] =
+  ): Expr.WrapOutput[F, V, L, T, P] =
     Expr.WrapOutput(exprHList, Expr.WrapOutput.asTuple, captureResult)
 }
 

@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.factfilter.evaluator
 
 import com.rallyhealth.vapors.factfilter.Example.{FactTypes, JoeSchmoe}
 import com.rallyhealth.vapors.core.data._
-import com.rallyhealth.vapors.factfilter.dsl.ExprDsl._
+import com.rallyhealth.vapors.core.dsl._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 

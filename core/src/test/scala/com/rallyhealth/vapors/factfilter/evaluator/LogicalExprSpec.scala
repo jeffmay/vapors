@@ -3,10 +3,10 @@ package com.rallyhealth.vapors.factfilter.evaluator
 import cats.Id
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.{Evidence, ExtractBoolean, FactSet, FactTable}
+import com.rallyhealth.vapors.core.dsl._
 import com.rallyhealth.vapors.core.interpreter.{ExprInput, ExprOutput, InterpretExprAsResultFn}
 import com.rallyhealth.vapors.core.logic._
 import com.rallyhealth.vapors.factfilter.Example.JoeSchmoe
-import com.rallyhealth.vapors.factfilter.dsl.ExprDsl._
 import org.scalactic.source.Position
 import org.scalatest.wordspec.AnyWordSpec
 
