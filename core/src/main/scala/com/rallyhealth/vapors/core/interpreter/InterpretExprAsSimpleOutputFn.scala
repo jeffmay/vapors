@@ -1,8 +1,8 @@
-package com.rallyhealth.vapors.factfilter.evaluator
+package com.rallyhealth.vapors.core.interpreter
 
 import cats.{Eval, Foldable, Functor, Semigroupal}
 import com.rallyhealth.vapors.core.algebra.Expr
-import com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsSimpleOutputFn.GenSimpleOutput
+import com.rallyhealth.vapors.core.interpreter.InterpretExprAsSimpleOutputFn.GenSimpleOutput
 
 /**
   * Interprets an [[Expr]] as a function from [[ExprInput]] to a tuple of [[ExprOutput]] and a list of captured params.

@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.core.algebra
 import cats._
 import cats.kernel.Monoid
 import com.rallyhealth.vapors.core.data.{FactSet, FactTable, TypedFact}
-import com.rallyhealth.vapors.factfilter.evaluator.{ExprInput, ExprOutput}
+import com.rallyhealth.vapors.core.interpreter.{ExprInput, ExprOutput}
 import shapeless.HList
 
 import scala.collection.BitSet

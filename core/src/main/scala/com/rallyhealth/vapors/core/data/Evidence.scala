@@ -3,6 +3,7 @@ package com.rallyhealth.vapors.core.data
 import cats.Monoid
 import cats.data.NonEmptySet
 import cats.instances.order._
+import com.rallyhealth.vapors.core.interpreter.InterpretExprAsResultFn
 
 import scala.annotation.tailrec
 import scala.collection.immutable.SortedSet
@@ -101,7 +102,7 @@ object Evidence {
     * you wlil probably want to be more specific if you need to represent the behavior of merging
     * evidence from the output of various expressions (or their input).
     *
-    * @see [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.Output.monoid]]
+    * @see [[InterpretExprAsResultFn.Output.monoid]]
     */
   implicit val monoid: Monoid[Evidence] = {
     new Monoid[Evidence] {

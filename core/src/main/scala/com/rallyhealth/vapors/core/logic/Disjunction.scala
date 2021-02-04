@@ -1,12 +1,13 @@
 package com.rallyhealth.vapors.core.logic
 
 import cats.{Invariant, Semigroupal}
+import com.rallyhealth.vapors.core.interpreter.InterpretExprAsResultFn
 
 /**
   * Defines logical disjunction (aka OR) for a specific type.
   *
   * @see for more details on how this works, check out
-  *      [[com.rallyhealth.vapors.factfilter.evaluator.InterpretExprAsResultFn.Output.disjunction]]
+  *      [[InterpretExprAsResultFn.Output.disjunction]]
   */
 trait Disjunction[A] {
 

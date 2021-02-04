@@ -1,4 +1,4 @@
-package com.rallyhealth.vapors.factfilter.evaluator
+package com.rallyhealth.vapors.core.interpreter
 
 import cats.Id
 import com.rallyhealth.vapors.core.data.{Evidence, FactTable}

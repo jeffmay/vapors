@@ -1,4 +1,4 @@
-package com.rallyhealth.vapors.factfilter.evaluator
+package com.rallyhealth.vapors.core.interpreter
 
 import cats.kernel.Monoid
 import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse, TraverseFilter}
