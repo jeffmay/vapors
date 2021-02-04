@@ -2,8 +2,8 @@ package com.rallyhealth.vapors.factfilter.evaluator
 
 import com.rallyhealth.vapors.core.data.Evidence
 import com.rallyhealth.vapors.core.dsl._
+import com.rallyhealth.vapors.core.example.TimeRange
 import com.rallyhealth.vapors.factfilter.Example.{FactTypes, JoeSchmoe}
-import com.rallyhealth.vapors.factfilter.extras.TimeRange
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -13,7 +13,7 @@ class CapturePSpec extends AnyWordSpec with TypeCheckedTripleEquals {
 
     "capture a timestamp range post processing param" should {
 
-      import com.rallyhealth.vapors.factfilter.extras.CaptureTimeRange._
+      import com.rallyhealth.vapors.core.example.CaptureTimeRange._
 
       "find a single fact from a query" in {
         val q = withFactsOfType(FactTypes.WeightMeasurement).where {

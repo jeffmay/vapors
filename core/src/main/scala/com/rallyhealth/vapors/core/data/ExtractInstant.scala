@@ -1,8 +1,6 @@
-package com.rallyhealth.vapors.factfilter.extras
+package com.rallyhealth.vapors.core.data
 
-import com.rallyhealth.vapors.core.data.ExtractValue
-
-import java.time.{Instant, LocalDate, LocalDateTime, ZoneId, ZonedDateTime}
+import java.time._
 
 /**
   * Special case of [[ExtractValue]] that extracts an [[Instant]].

@@ -1,9 +1,7 @@
 package com.rallyhealth.vapors.factfilter
 
 import cats.Order
-import cats.data.NonEmptyList
-import com.rallyhealth.vapors.core.data.{FactSet, FactTable, FactType, FactTypeSet}
-import com.rallyhealth.vapors.factfilter.extras.ExtractInstant
+import com.rallyhealth.vapors.core.data._
 
 import java.time.{Instant, LocalDate, ZoneOffset}
 
