@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.factfilter.evaluator
 
 import com.rallyhealth.vapors.core.data.FactTable
 import com.rallyhealth.vapors.core.dsl._
-import com.rallyhealth.vapors.factfilter.Example.{FactTypes, TagsUpdate}
+import com.rallyhealth.vapors.core.example.{FactTypes, TagsUpdate}
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.time.Instant

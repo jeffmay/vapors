@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.factfilter.dsl
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.dsl._
 import com.rallyhealth.vapors.core.lens.DataPath
-import com.rallyhealth.vapors.factfilter.Example.{FactTypes, GenericMeasurement, Probs}
+import com.rallyhealth.vapors.core.example.{FactTypes, GenericMeasurement, Probs}
 import org.scalatest.Inside.inside
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec

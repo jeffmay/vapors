@@ -1,8 +1,8 @@
 package com.rallyhealth.vapors.factfilter.evaluator
 
 import com.rallyhealth.vapors.core.data.Evidence
-import com.rallyhealth.vapors.factfilter.Example._
 import com.rallyhealth.vapors.core.dsl._
+import com.rallyhealth.vapors.core.example.{FactTypes, JoeSchmoe}
 import org.scalatest.wordspec.AnyWordSpec
 
 class InterpretExprAsResultFnSpec extends AnyWordSpec {

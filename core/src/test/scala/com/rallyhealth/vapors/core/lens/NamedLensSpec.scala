@@ -1,6 +1,6 @@
 package com.rallyhealth.vapors.core.lens
 
-import com.rallyhealth.vapors.factfilter.Example._
+import com.rallyhealth.vapors.core.example.{BloodPressure, JoeSchmoe}
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.time.LocalDate
