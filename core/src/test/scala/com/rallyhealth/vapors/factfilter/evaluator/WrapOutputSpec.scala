@@ -1,8 +1,8 @@
 package com.rallyhealth.vapors.factfilter.evaluator
 
 import com.rallyhealth.vapors.core.data.{Evidence, FactTable}
+import com.rallyhealth.vapors.core.dsl._
 import com.rallyhealth.vapors.factfilter.Example.{ColorCoding, FactTypes, JoeSchmoe, TagsUpdate}
-import com.rallyhealth.vapors.factfilter.dsl.ExprDsl._
 import org.scalatest.wordspec.AnyWordSpec
 import shapeless.HNil
 

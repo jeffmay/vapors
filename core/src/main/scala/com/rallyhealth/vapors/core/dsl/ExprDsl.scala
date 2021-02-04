@@ -1,25 +1,32 @@
-package com.rallyhealth.vapors.factfilter.dsl
+package com.rallyhealth.vapors.core.dsl
 
 import cats.data.NonEmptyList
 import cats.{Foldable, Id, Monoid}
 import com.rallyhealth.vapors.core.algebra.{CaptureP, ConditionBranch, Expr, ExprResult}
 import com.rallyhealth.vapors.core.data._
+import com.rallyhealth.vapors.core.dsl
 import com.rallyhealth.vapors.core.interpreter.{ExprInput, InterpretExprAsResultFn}
 import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 
-object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with WrapExprSyntax {
+object ExprDsl extends ExprDsl {
 
+  @deprecated("Use com.rallyhealth.vapors.core.dsl.CondExpr instead.", "0.8.0")
   final type CondExpr[F[_], V, P] = Expr[F, V, Boolean, P]
 
+  @deprecated("Use com.rallyhealth.vapors.core.dsl.ValExpr instead.", "0.8.0")
   final type ValExpr[V, R, P] = Expr[Id, V, R, P]
-  final type ValCondExpr[V, P] = ValExpr[V, Boolean, P]
 
-  type RootExpr[R, P] = Expr[Id, FactTable, R, P]
+  @deprecated("Use com.rallyhealth.vapors.core.dsl.ValCondExpr instead.", "0.8.0")
+  final type ValCondExpr[V, P] = dsl.ValExpr[V, Boolean, P]
 
-  type CaptureRootExpr[R, P] = CaptureP[Id, FactTable, R, P]
-  type CaptureFromFacts[T, P] = CaptureP[Seq, TypedFact[T], Seq[TypedFact[T]], P]
+  @deprecated("Use com.rallyhealth.vapors.core.dsl.RootExpr instead.", "0.8.0")
+  final type RootExpr[R, P] = Expr[Id, FactTable, R, P]
+}
+
+// TODO: Remove methods that are not useful anymore and move less-useful methods to a separate object
+trait ExprDsl extends WrapExprSyntax {
 
   def eval[R, P](facts: FactTable)(query: RootExpr[R, P]): ExprResult[Id, FactTable, R, P] = {
     InterpretExprAsResultFn(query)(ExprInput.fromFactTable(facts))
@@ -52,24 +59,7 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with Wrap
   ): Expr.ReturnInput[F, V, P] =
     Expr.ReturnInput(capture)
 
-  def define[T](factType: FactType[T]): DefinitionBuilder[T] = new DefinitionBuilder(factType)
-
-  final class DefinitionBuilder[T](private val factType: FactType[T]) extends AnyVal {
-
-    def from[P](
-      defExpr: RootExpr[T, P],
-    )(implicit
-      captureResult: CaptureRootExpr[FactSet, P],
-    ): Expr.Define[Id, T, P] =
-      Expr.Define[Id, T, P](factType, defExpr, captureResult)
-
-    def fromEvery[M[_] : Foldable, P](
-      defExpr: RootExpr[M[T], P],
-    )(implicit
-      captureResult: CaptureRootExpr[FactSet, P],
-    ): Expr.Define[M, T, P] =
-      Expr.Define(factType, defExpr, captureResult)
-  }
+  def define[T](factType: FactType[T]): DefinitionExprBuilder[T] = new DefinitionExprBuilder(factType)
 
   def usingDefinitions[F[_], V, R, P](
     definitions: Expr.Definition[P]*,
@@ -80,12 +70,7 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with Wrap
   ): Expr.UsingDefinitions[F, V, R, P] =
     Expr.UsingDefinitions(definitions.toVector, subExpr, captureResult)
 
-  /**
-    * Implicitly allows embedding any expression that only requires the FactTable into expression.
-    *
-    * @see [[Expr.Embed]]
-    */
-  implicit def embed[F[_], V, R, P](
+  def embed[F[_], V, R, P](
     expr: RootExpr[R, P],
   )(implicit
     captureResult: CaptureP[F, V, R, P],
@@ -121,34 +106,7 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with Wrap
   ): Expr.Not[F, V, R, P] =
     Expr.Not(sub, captureResult)
 
-  def when[F[_], V, R, P](condExpr: CondExpr[F, V, P]): WhenBuilder[F, V, P] = new WhenBuilder(condExpr)
-
-  final class WhenBuilder[F[_], V, P](private val whenExpr: CondExpr[F, V, P]) extends AnyVal {
-
-    def thenReturn[R](thenExpr: Expr[F, V, R, P]): ElseDefaultBuilder[F, V, R, P] =
-      new ElseDefaultBuilder(NonEmptyList.of(ConditionBranch(whenExpr, thenExpr)))
-  }
-
-  final class ElifBuilder[F[_], V, R, P](
-    private val t: (CondExpr[F, V, P], NonEmptyList[ConditionBranch[F, V, R, P]]),
-  ) extends AnyVal {
-
-    def thenReturn(thenExpr: Expr[F, V, R, P]): ElseDefaultBuilder[F, V, R, P] =
-      new ElseDefaultBuilder(ConditionBranch(t._1, thenExpr) :: t._2)
-  }
-
-  final class ElseDefaultBuilder[F[_], V, R, P](private val branches: NonEmptyList[ConditionBranch[F, V, R, P]])
-    extends AnyVal {
-
-    def elseReturn(
-      elseExpr: Expr[F, V, R, P],
-    )(implicit
-      captureResult: CaptureP[F, V, R, P],
-    ): Expr.When[F, V, R, P] =
-      Expr.When(branches.reverse, elseExpr, captureResult)
-
-    def elif(elifExpr: CondExpr[F, V, P]): ElifBuilder[F, V, R, P] = new ElifBuilder((elifExpr, branches))
-  }
+  def when[F[_], V, R, P](condExpr: CondExpr[F, V, P]): WhenExprBuilder[F, V, P] = new WhenExprBuilder(condExpr)
 
   def factsOfType[T, P](
     factTypeSet: FactTypeSet[T],
@@ -170,33 +128,6 @@ object ExprDsl extends ExprBuilderSyntax with ExprBuilderCatsInstances with Wrap
     captureInput: CaptureFromFacts[T, P],
   ): WithFactsOfTypeBuilder[T, P] =
     new WithFactsOfTypeBuilder(factTypeSet)
-
-  /**
-    * @note this is not a value class because the input [[FactTypeSet]] is also a value class AND the [[CaptureP]]
-    *       implicit is needed in the original [[withFactsOfType]] method in order for type inference to work properly.
-    *       We could ask for the implicit again, but that is confusing for the caller who would have to look at the
-    *       source code to know which instance is actually used.
-    */
-  final class WithFactsOfTypeBuilder[T, P](factTypeSet: FactTypeSet[T])(implicit captureInput: CaptureFromFacts[T, P]) {
-
-    def where[M[_], U](
-      buildSubExpr: ExprBuilder.FoldableFn[Seq, TypedFact[T], M, U, P],
-    )(implicit
-      captureResult: CaptureRootExpr[M[U], P],
-    ): Expr.WithFactsOfType[T, M[U], P] =
-      Expr.WithFactsOfType(
-        factTypeSet,
-        buildSubExpr(new FoldableExprBuilder(ExprDsl.input)).returnOutput,
-        captureResult,
-      )
-
-    def returnInput(
-      implicit
-      captureInput: CaptureFromFacts[T, P],
-      captureResult: CaptureRootExpr[Seq[TypedFact[T]], P],
-    ): Expr.WithFactsOfType[T, Seq[TypedFact[T]], P] =
-      Expr.WithFactsOfType(factTypeSet, input(captureInput), captureResult)
-  }
 
   def collectSome[F[_], V, M[_] : Foldable, U, R : Monoid, P](
     inputExpr: Expr[F, V, M[U], P],

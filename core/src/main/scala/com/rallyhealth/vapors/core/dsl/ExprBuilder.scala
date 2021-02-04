@@ -1,4 +1,4 @@
-package com.rallyhealth.vapors.factfilter.dsl
+package com.rallyhealth.vapors.core.dsl
 
 import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Order, Traverse, TraverseFilter}
 import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr}
@@ -26,7 +26,7 @@ sealed class ExprBuilder[F[_], V, M[_], U, P](val returnOutput: Expr[F, V, M[U],
   def embed[R](expr: Expr[M, U, R, P]): ExprBuilder[M, U, Id, R, P] = new ExprBuilder[M, U, Id, R, P](expr)
 }
 
-object ExprBuilder extends ExprBuilderSyntax {
+object ExprBuilder {
 
   type ValId[V, P] = ValExprBuilder[V, V, P]
   type ValFn[V, R, P] = ValExprBuilder[V, V, P] => ExprBuilder[Id, V, Id, R, P]
@@ -37,10 +37,26 @@ object ExprBuilder extends ExprBuilderSyntax {
 
 trait ExprBuilderSyntax {
 
+  /**
+    * Implicitly allows embedding any expression that only requires the FactTable into expression.
+    *
+    * @see [[Expr.Embed]]
+    */
+  implicit def embedExpr[F[_], V, R, P](
+    expr: RootExpr[R, P],
+  )(implicit
+    captureResult: CaptureP[F, V, R, P],
+  ): Expr.Embed[F, V, R, P] = Expr.Embed(expr, captureResult)
+
   implicit def liftValExpr[V, R, P](expr: Expr[Id, V, R, P]): ValExprBuilder[V, R, P] =
     new ValExprBuilder(expr)
 
-  implicit def returnOutput[F[_], V, M[_], U, P](builder: ExprBuilder[F, V, M, U, P]): Expr[F, V, M[U], P] =
+  implicit def returnFoldableExprOutput[F[_], V, M[_], U, P](
+    builder: FoldableExprBuilder[F, V, M, U, P],
+  ): Expr[F, V, M[U], P] =
+    builder.returnOutput
+
+  implicit def returnValExprOutput[V, R, P](builder: ValExprBuilder[V, R, P]): Expr[Id, V, R, P] =
     builder.returnOutput
 
   implicit def addTo[R : Addition](lhs: R): AdditionBuilderOps[R] = new AdditionBuilderOps(lhs)
@@ -85,7 +101,6 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
     ev: M[U] <:< Iterable[U],
     captureOutput: CaptureP[F, V, Set[U], P],
   ): FoldableExprBuilder[F, V, Set, U, P] = {
-    import alleycats.std.set.alleyCatsSetTraverse
     to(Set)
   }
 

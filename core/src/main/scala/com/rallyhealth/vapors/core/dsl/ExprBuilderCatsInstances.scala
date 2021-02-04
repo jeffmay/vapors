@@ -1,4 +1,4 @@
-package com.rallyhealth.vapors.factfilter.dsl
+package com.rallyhealth.vapors.core.dsl
 
 import cats.{Monad, Traverse, TraverseFilter}
 
