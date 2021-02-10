@@ -3,91 +3,78 @@ package com.rallyhealth.vapors.core.interpreter
 import com.rallyhealth.vapors.core.data.{Evidence, FactTable}
 import com.rallyhealth.vapors.core.dsl._
 import com.rallyhealth.vapors.core.example.{ColorCoding, FactTypes, JoeSchmoe, TagsUpdate}
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.freespec.AnyFreeSpec
 import shapeless.HNil
 
-import java.time.Instant
+class WrapOutputSpec extends AnyFreeSpec {
 
-class WrapOutputSpec extends AnyWordSpec {
+  import com.rallyhealth.vapors.core.example.SimpleTagUpdates._
 
-  "Expr.WrapOutput" when {
+  "wrap, when given const nodes, should" - {
 
-    "wrapping const nodes into a case class" should {
-
-      "wrap some constant nodes as a case class" in {
-        val expected = TagsUpdate(Set("X"), Instant.now())
-        val query = {
-          wrap(const(expected.tags), const(expected.timestamp)).as[TagsUpdate]
-        }
-        val result = eval(FactTable.empty)(query)
-        assertResult(expected)(result.output.value)
+    "convert to a case class with the correct number of inputs" in {
+      val query = {
+        wrap(const(tagsNow.source), const(tagsNow.tags), const(tagsNow.timestamp)).as[TagsUpdate]
       }
-
-      "NOT compile when attempting to wrap one less constant than required into a case class" in {
-        val t = TagsUpdate(Set("X"), Instant.now())
-        assertDoesNotCompile {
-          "wrap(const(t.tags)).as[TagsUpdate]"
-        }
-      }
-
-      "NOT compile when attempting to wrap some constant nodes into a case class in the wrong order" in {
-        val t = TagsUpdate(Set("X"), Instant.now())
-        assertDoesNotCompile {
-          "wrap(const(t.timestamp), const(t.tags)).as[TagsUpdate]"
-        }
-      }
-
+      val result = eval(FactTable.empty)(query)
+      assertResult(tagsNow)(result.output.value)
     }
 
-    "wrapping const nodes into a tuple" should {
-
-      "convert into a tuple-3" in {
-        val t = (1, "two", ColorCoding.Blue)
-        val query = {
-          wrap(const(t._1), const(t._2), const(t._3)).asTuple
-        }
-        val result = eval(FactTable.empty)(query)
-        assertResult(t)(result.output.value)
+    "NOT compile when attempting to convert fewer inputs than required into a case class" in {
+      assertDoesNotCompile {
+        "wrap(const(tagsNow.tags)).as[TagsUpdate]"
       }
     }
 
-    "wrapping const nodes into an hlist" should {
-
-      "return an hlist of size 3" in {
-        val hlist = 1 :: "two" :: ColorCoding.Blue :: HNil
-        val t = hlist.tupled
-        val query = {
-          wrap(const(t._1), const(t._2), const(t._3)).asHList
-        }
-        val result = eval(FactTable.empty)(query)
-        assertResult(hlist)(result.output.value)
+    "NOT compile when attempting to convert inputs into a case class in the wrong order" in {
+      assertDoesNotCompile {
+        "wrap(const(tagsNow.tags), const(tagsNow.timestamp), const(tagsNow.source)).as[TagsUpdate]"
       }
     }
 
-    "comparing evidence" should {
-
-      "combine all non-empty evidence" in {
-        val query = {
-          wrap(
-            factsOfType(FactTypes.Name).headOption,
-            factsOfType(FactTypes.Age).headOption,
-          ).asHList
-        }
-        val facts = List(JoeSchmoe.name, JoeSchmoe.age)
-        val result = eval(FactTable(facts))(query)
-        assertResult(Evidence(facts))(result.output.evidence)
+    "convert into a tuple-3" in {
+      val t = (1, "two", ColorCoding.Blue)
+      val query = {
+        wrap(const(t._1), const(t._2), const(t._3)).asTuple
       }
+      val result = eval(FactTable.empty)(query)
+      assertResult(t)(result.output.value)
+    }
 
-      "return no evidence if any branch has no evidence" in {
-        val query = {
-          wrap(
-            factsOfType(FactTypes.Name).headOption,
-            factsOfType(FactTypes.Age).headOption,
-          ).asHList
-        }
-        val result = eval(FactTable(JoeSchmoe.name))(query)
-        assertResult(Evidence.none)(result.output.evidence)
+    "convert into an hlist of size 3" in {
+      val hlist = 1 :: "two" :: ColorCoding.Blue :: HNil
+      val t = hlist.tupled
+      val query = {
+        wrap(const(t._1), const(t._2), const(t._3)).asHList
       }
+      val result = eval(FactTable.empty)(query)
+      assertResult(hlist)(result.output.value)
+    }
+  }
+
+  "wrap, when comparing evidence, should" - {
+
+    "combine all non-empty evidence" in {
+      val query = {
+        wrap(
+          factsOfType(FactTypes.Name).headOption,
+          factsOfType(FactTypes.Age).headOption,
+        ).asHList
+      }
+      val facts = List(JoeSchmoe.name, JoeSchmoe.age)
+      val result = eval(FactTable(facts))(query)
+      assertResult(Evidence(facts))(result.output.evidence)
+    }
+
+    "return no evidence if any branch has no evidence" in {
+      val query = {
+        wrap(
+          factsOfType(FactTypes.Name).headOption,
+          factsOfType(FactTypes.Age).headOption,
+        ).asHList
+      }
+      val result = eval(FactTable(JoeSchmoe.name))(query)
+      assertResult(Evidence.none)(result.output.evidence)
     }
   }
 

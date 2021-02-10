@@ -10,8 +10,10 @@ import java.time.Instant
 class TakeFromOutputSpec extends AnyWordSpec {
 
   "Expr.TakeFromOutput" when {
-    val updateABC = FactTypes.TagsUpdate(TagsUpdate(Set("A", "B", "C"), Instant.now().minusSeconds(60 * 60 * 24)))
-    val updateDEF = FactTypes.TagsUpdate(TagsUpdate(Set("D", "E", "F"), Instant.now()))
+    val now = Instant.now()
+    val updateABC =
+      FactTypes.TagsUpdate(TagsUpdate("ABC", Set("A", "B", "C"), now.minusSeconds(60 * 60 * 24)))
+    val updateDEF = FactTypes.TagsUpdate(TagsUpdate("DEF", Set("D", "E", "F"), now))
 
     "using .take(n) with a positive number" should {
 

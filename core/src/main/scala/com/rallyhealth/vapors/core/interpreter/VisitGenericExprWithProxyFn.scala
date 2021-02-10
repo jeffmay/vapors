@@ -1,7 +1,7 @@
 package com.rallyhealth.vapors.core.interpreter
 
 import cats.kernel.Monoid
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse, TraverseFilter}
+import cats.{Align, FlatMap, Foldable, Functor, FunctorFilter, Traverse, TraverseFilter}
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.{ExtractBoolean, FactSet}
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
@@ -104,4 +104,8 @@ abstract class VisitGenericExprWithProxyFn[F[_] : Foldable, V, P, G[_]]
 
   override def visitWrapOutput[T <: HList, R](expr: Expr.WrapOutput[F, V, T, R, P]): ExprInput[F, V] => G[R] =
     visitGeneric(expr, _)
+
+  override def visitZipOutput[M[_] : Align : FunctorFilter, L <: HList, R](
+    expr: Expr.ZipOutput[F, V, M, L, R, P],
+  ): ExprInput[F, V] => G[M[R]] = visitGeneric(expr, _)
 }

@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.core.algebra
 
 import cats.data.NonEmptyList
 import cats.kernel.Monoid
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse, TraverseFilter}
+import cats.{Align, FlatMap, Foldable, Functor, FunctorFilter, Traverse, TraverseFilter}
 import com.rallyhealth.vapors.core.data._
 import com.rallyhealth.vapors.core.interpreter
 import com.rallyhealth.vapors.core.interpreter.InterpretExprAsResultFn
@@ -66,6 +66,7 @@ object Expr {
     def visitWhen[R](expr: When[F, V, R, P]): G[R]
     def visitWrapOutput[T <: HList, R](expr: WrapOutput[F, V, T, R, P]): G[R]
     def visitWithFactsOfType[T, R](expr: WithFactsOfType[T, R, P]): G[R]
+    def visitZipOutput[M[_] : Align : FunctorFilter, L <: HList, R](expr: ZipOutput[F, V, M, L, R, P]): G[M[R]]
   }
 
   /*
@@ -309,18 +310,19 @@ object Expr {
   }
 
   final case class WrapOutput[F[_], V, L <: HList, R, P](
-    inputExprHList: NonEmptyExprHList[F, V, L, P],
+    inputExprHList: NonEmptyExprHList[F, V, Id, L, P],
     converter: WrapOutput.Converter[L, R],
     capture: CaptureP[F, V, R, P],
   ) extends Expr[F, V, R, P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitWrapOutput(this)
   }
 
+  // TODO: Move this to more general purpose area
   final object WrapOutput {
 
-    sealed trait Converter[L, R] {
+    sealed trait Converter[L, R] extends (L => R) {
       def conversionType: String
-      def apply(in: L): R
+      override def apply(inputValue: L): R
     }
 
     // TODO: Capture type information about R for debugging?
@@ -338,6 +340,14 @@ object Expr {
 
     def asTuple[L <: HList, R](implicit tupler: Tupler.Aux[L, R]): Converter[L, R] =
       new ConverterImpl(tupler.apply, "asTuple")
+  }
+
+  final case class ZipOutput[F[_], V, M[_] : Align : FunctorFilter, L <: HList, R, P](
+    inputExprHList: NonEmptyExprHList[F, V, M, L, P],
+    converter: WrapOutput.Converter[L, R],
+    capture: CaptureP[F, V, M[R], P],
+  ) extends Expr[F, V, M[R], P] {
+    override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitZipOutput(this)
   }
 
   final case class OutputIsEmpty[F[_], V, M[_] : Foldable, R, P](
