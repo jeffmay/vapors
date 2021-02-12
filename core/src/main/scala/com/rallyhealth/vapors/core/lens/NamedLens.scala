@@ -46,6 +46,16 @@ object NamedLens {
         path = lens.path.atKey(Nat.toInt[n.N]),
         get = lens.get.andThen(at.apply(_)),
       )
+
+    def at[N <: Nat : ToInt, B](
+      n: N,
+    )(implicit
+      at: At.Aux[L, N, B],
+    ): NamedLens[A, B] =
+      lens.copy(
+        path = lens.path.atKey(Nat.toInt[N]),
+        get = lens.get.andThen(at.apply(_)),
+      )
   }
 
 }
