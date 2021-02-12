@@ -4,8 +4,7 @@ import cats.data.NonEmptyList
 import cats.kernel.Monoid
 import cats.{Align, FlatMap, Foldable, Functor, FunctorFilter, Traverse, TraverseFilter}
 import com.rallyhealth.vapors.core.data._
-import com.rallyhealth.vapors.core.interpreter
-import com.rallyhealth.vapors.core.interpreter.InterpretExprAsResultFn
+import com.rallyhealth.vapors.core.interpreter.{ExprOutput, InterpretExprAsResultFn}
 import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
@@ -189,8 +188,7 @@ object Expr {
   /**
     * Returns the [[Conjunction]] of all results of the given input expressions.
     *
-    * All evidence is tracked using the logic defined in
-    * [[interpreter.InterpretExprAsResultFn.Output.conjunction]]
+    * All evidence is tracked using the logic defined in [[ExprOutput.conjunction]]
     *
     * @note this <i>does not</i> short-circuit.
     *       [[Evidence]] for all input values are used in deciding the evidence for the result.
@@ -208,8 +206,7 @@ object Expr {
   /**
     * Returns the [[Disjunction]] of all results of the given input expressions.
     *
-    * All evidence is tracked using the logic defined in
-    * [[interpreter.InterpretExprAsResultFn.Output.disjunction]]
+    * All evidence is tracked using the logic defined in [[ExprOutput.disjunction]]
     *
     * @note this <i>does not</i> short-circuit.
     *       [[Evidence]] for all input values are used in deciding the evidence for the result.
@@ -309,6 +306,13 @@ object Expr {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitMapOutput(this)
   }
 
+  /**
+    * Convert a non-empty HList of expressions into an expression of HList, then map a [[converter]] function.
+    *
+    * This is very similar to [[ZipOutput]], except that for concrete types, there is no possibility of having
+    * anything other than a single instance of the expected type, so you don't need any type-classes for the
+    * return type.
+    */
   final case class WrapOutput[F[_], V, L <: HList, R, P](
     inputExprHList: NonEmptyExprHList[F, V, Id, L, P],
     converter: WrapOutput.Converter[L, R],
@@ -342,6 +346,10 @@ object Expr {
       new ConverterImpl(tupler.apply, "asTuple")
   }
 
+  /**
+    * Apply a given [[converter]] to every HList produced by zipping the outputs of expressions that return the
+    * same higher-kinded sequence, stopping at the shortest sequence.
+    */
   final case class ZipOutput[F[_], V, M[_] : Align : FunctorFilter, L <: HList, R, P](
     inputExprHList: NonEmptyExprHList[F, V, M, L, P],
     converter: WrapOutput.Converter[L, R],
@@ -350,6 +358,9 @@ object Expr {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitZipOutput(this)
   }
 
+  /**
+    * Return true if the output of the given [[inputExpr]] is an empty collection.
+    */
   final case class OutputIsEmpty[F[_], V, M[_] : Foldable, R, P](
     inputExpr: Expr[F, V, M[R], P],
     capture: CaptureP[F, V, Boolean, P],
