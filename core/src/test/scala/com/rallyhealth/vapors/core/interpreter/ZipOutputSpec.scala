@@ -88,6 +88,21 @@ class ZipOutputSpec extends AnyFreeSpec {
       }
     }
 
+    "not force a LazyList when" - {
+
+      "taking the headOption" in {
+        val query = zip(
+          const((tagsNow #:: fail("forced source") #:: LazyList.empty).map(_.source)),
+          const((tagsNow #:: fail("forced tags") #:: LazyList.empty).map(_.tags)),
+          const((tagsNow #:: fail("forced timestamp") #:: LazyList.empty).map(_.timestamp)),
+        ).as[TagsUpdate].withOutputFoldable.headOption
+        val result = eval(FactTable.empty)(query)
+        assertResult(Some(tagsNow)) {
+          result.output.value
+        }
+      }
+    }
+
     "not compile when" - {
 
       "given too many arguments for a case class" in {
