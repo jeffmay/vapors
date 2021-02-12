@@ -4,7 +4,7 @@ import cats.Id
 import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr}
 import com.rallyhealth.vapors.core.data.{FactTable, TypedFact}
 
-package object dsl extends ExprDsl with ExprBuilderSyntax with ExprBuilderCatsInstances {
+package object dsl extends ExprDsl with ExprBuilderSyntax with WithOutputSyntax with ExprBuilderCatsInstances {
 
   final type CondExpr[F[_], V, P] = Expr[F, V, Boolean, P]
 
