@@ -1,7 +1,7 @@
 package com.rallyhealth.vapors.core.dsl
 
-import cats.{Foldable, Functor, Id}
-import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, NonEmptyExprHList}
+import cats.Id
+import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, ExprConverter, NonEmptyExprHList}
 import shapeless.ops.hlist.Tupler
 import shapeless.{::, Generic, HList, HNil}
 
@@ -140,20 +140,20 @@ final class ExprHListWrapper[F[_], V, L <: HList, P](private val exprHList: NonE
     gen: Generic.Aux[R, L],
     captureResult: CaptureP[F, V, R, P],
   ): Expr.WrapOutput[F, V, L, R, P] =
-    Expr.WrapOutput(exprHList, Expr.WrapOutput.asProductType, captureResult)
+    Expr.WrapOutput(exprHList, ExprConverter.asProductType, captureResult)
 
   def asHList(
     implicit
     captureResult: CaptureP[F, V, L, P],
   ): Expr.WrapOutput[F, V, L, L, P] =
-    Expr.WrapOutput(exprHList, Expr.WrapOutput.asHListIdentity, captureResult)
+    Expr.WrapOutput(exprHList, ExprConverter.asHListIdentity, captureResult)
 
   def asTuple[T](
     implicit
     tupler: Tupler.Aux[L, T],
     captureResult: CaptureP[F, V, T, P],
   ): Expr.WrapOutput[F, V, L, T, P] =
-    Expr.WrapOutput(exprHList, Expr.WrapOutput.asTuple, captureResult)
+    Expr.WrapOutput(exprHList, ExprConverter.asTuple, captureResult)
 }
 
 final class GenericIdentity[R] extends Generic[R] {

@@ -8,8 +8,7 @@ import com.rallyhealth.vapors.core.interpreter.{ExprOutput, InterpretExprAsResul
 import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
-import shapeless.ops.hlist.Tupler
-import shapeless.{Generic, HList}
+import shapeless.HList
 
 /**
   * The core expression algebra.
@@ -315,35 +314,10 @@ object Expr {
     */
   final case class WrapOutput[F[_], V, L <: HList, R, P](
     inputExprHList: NonEmptyExprHList[F, V, Id, L, P],
-    converter: WrapOutput.Converter[L, R],
+    converter: ExprConverter[L, R],
     capture: CaptureP[F, V, R, P],
   ) extends Expr[F, V, R, P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitWrapOutput(this)
-  }
-
-  // TODO: Move this to more general purpose area
-  final object WrapOutput {
-
-    sealed trait Converter[L, R] extends (L => R) {
-      def conversionType: String
-      override def apply(inputValue: L): R
-    }
-
-    // TODO: Capture type information about R for debugging?
-    private final class ConverterImpl[L, R](
-      convert: L => R,
-      override val conversionType: String,
-    ) extends Converter[L, R] {
-      override def apply(in: L): R = convert(in)
-    }
-
-    def asHListIdentity[R <: HList]: Converter[R, R] = new ConverterImpl(identity, "asHList")
-
-    def asProductType[L <: HList, R](implicit gen: Generic.Aux[R, L]): Converter[L, R] =
-      new ConverterImpl(gen.from, "asProduct")
-
-    def asTuple[L <: HList, R](implicit tupler: Tupler.Aux[L, R]): Converter[L, R] =
-      new ConverterImpl(tupler.apply, "asTuple")
   }
 
   /**
@@ -352,7 +326,7 @@ object Expr {
     */
   final case class ZipOutput[F[_], V, M[_] : Align : FunctorFilter, L <: HList, R, P](
     inputExprHList: NonEmptyExprHList[F, V, M, L, P],
-    converter: WrapOutput.Converter[L, R],
+    converter: ExprConverter[L, R],
     capture: CaptureP[F, V, M[R], P],
   ) extends Expr[F, V, M[R], P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitZipOutput(this)

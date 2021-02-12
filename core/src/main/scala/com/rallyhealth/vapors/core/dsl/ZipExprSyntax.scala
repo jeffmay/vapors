@@ -1,7 +1,7 @@
 package com.rallyhealth.vapors.core.dsl
 
 import cats.{Align, Functor, FunctorFilter, Semigroupal}
-import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, NonEmptyExprHList}
+import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, ExprConverter, NonEmptyExprHList}
 import shapeless.ops.hlist.Tupler
 import shapeless.{::, Generic, HList, HNil}
 
@@ -50,7 +50,7 @@ final class ZipExprHListWrapper[F[_], V, M[_], L <: HList, P](private val exprHL
   ): Expr.ZipOutput[F, V, M, L, T, P] =
     Expr.ZipOutput(
       exprHList,
-      Expr.WrapOutput.asTuple,
+      ExprConverter.asTuple,
       captureAllResults,
     )
 
@@ -62,7 +62,7 @@ final class ZipExprHListWrapper[F[_], V, M[_], L <: HList, P](private val exprHL
   ): Expr.ZipOutput[F, V, M, L, L, P] =
     Expr.ZipOutput(
       exprHList,
-      Expr.WrapOutput.asHListIdentity,
+      ExprConverter.asHListIdentity,
       captureAllResults,
     )
 
@@ -75,7 +75,7 @@ final class ZipExprHListWrapper[F[_], V, M[_], L <: HList, P](private val exprHL
   ): Expr.ZipOutput[F, V, M, L, R, P] =
     Expr.ZipOutput(
       exprHList,
-      Expr.WrapOutput.asProductType,
+      ExprConverter.asProductType,
       captureAllResults,
     )
 }
