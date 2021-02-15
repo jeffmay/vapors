@@ -36,24 +36,14 @@ object NamedLens {
         get = lens.get.andThen(tupler.apply),
       )
 
-//    def at(
-//      n: Nat,
-//    )(implicit
-//      at: At[L, n.N],
-//      toInt: ToInt[n.N],
-//    ): NamedLens[A, at.Out] =
-//      lens.copy(
-//        path = lens.path.atKey(Nat.toInt[n.N]),
-//        get = lens.get.andThen(at.apply(_)),
-//      )
-
-    def at[N <: Nat : ToInt, B](
-      n: N,
+    def at[R](
+      n: Nat,
     )(implicit
-      at: At.Aux[L, N, B],
-    ): NamedLens[A, B] =
+      at: At.Aux[L, n.N, R],
+      toInt: ToInt[n.N],
+    ): NamedLens[A, R] =
       lens.copy(
-        path = lens.path.atKey(Nat.toInt[N]),
+        path = lens.path.atKey(Nat.toInt[n.N]),
         get = lens.get.andThen(at.apply(_)),
       )
   }
