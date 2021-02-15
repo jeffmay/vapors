@@ -1,42 +1,42 @@
 package com.rallyhealth.vapors.core.interpreter
 
-import cats.Id
 import com.rallyhealth.vapors.core.data.{Evidence, FactTable}
 
-final case class ExprInput[F[_], V](
-  value: F[V],
+final case class ExprInput[V](
+  value: V,
   evidence: Evidence,
   factTable: FactTable,
 ) {
 
+  // TODO: Remove
   @inline def withFoldableValue[G[_], U](
     value: G[U],
     evidence: Evidence = this.evidence,
-  ): ExprInput[G, U] = copy(value = value, evidence = evidence)
+  ): ExprInput[G[U]] = copy(value = value, evidence = evidence)
 
   @inline def withValue[U](
     value: U,
     evidence: Evidence = this.evidence,
-  ): ExprInput[Id, U] = copy[Id, U](value = value, evidence = evidence)
+  ): ExprInput[U] = copy(value = value, evidence = evidence)
 }
 
 object ExprInput {
 
-  type Init = ExprInput[Id, FactTable]
+  type Init = ExprInput[FactTable]
 
   @inline def fromFactTable(factTable: FactTable): Init =
-    ExprInput[Id, FactTable](factTable, Evidence.none, factTable)
+    ExprInput(factTable, Evidence.none, factTable)
 
   @inline def fromValue[V](
     value: V,
     evidence: Evidence,
     factTable: FactTable,
-  ): ExprInput[Id, V] =
-    ExprInput[Id, V](value, evidence, factTable)
+  ): ExprInput[V] =
+    ExprInput(value, evidence, factTable)
 
   @inline def fromValue[V](
     value: V,
     evidence: Evidence = Evidence.none,
-  ): ExprInput[Id, V] =
+  ): ExprInput[V] =
     fromValue(value, evidence, FactTable(evidence.factSet))
 }

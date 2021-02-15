@@ -1,6 +1,6 @@
 package com.rallyhealth.vapors.core.dsl
 
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Order, Traverse, TraverseFilter}
+import cats._
 import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, ExprSorter}
 import com.rallyhealth.vapors.core.data.{Evidence, TypedFact, Window}
 import com.rallyhealth.vapors.core.lens.NamedLens
@@ -9,31 +9,29 @@ import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import scala.collection.Factory
 import scala.reflect.runtime.universe.TypeTag
 
-sealed class ExprBuilder[F[_], V, M[_], U, P](val returnOutput: Expr[F, V, M[U], P]) {
+sealed class ExprBuilder[V, M[_], U, P](val returnOutput: Expr[V, M[U], P]) {
 
-  type CaptureResult[R] = CaptureP[F, V, R, P]
+  type CaptureResult[R] = CaptureP[V, R, P]
 
-  type CaptureInput[G[_]] = CaptureP[G, V, G[V], P]
+  type CaptureInput[G[_]] = CaptureP[V, G[V], P]
   type CaptureAllInputCond = CaptureResult[Boolean]
-  type CaptureAllInput = CaptureInput[F]
-  type CaptureEachInput = CaptureInput[Id]
 
-  type CaptureEachOutputResult[R] = CaptureP[Id, U, R, P]
+  type CaptureEachOutputResult[R] = CaptureP[U, R, P]
   type CaptureEachOutput = CaptureEachOutputResult[U]
   type CaptureEachOutputCond = CaptureEachOutputResult[Boolean]
 
-  def returnInput(implicit captureInput: CaptureAllInput): Expr[F, V, F[V], P] = Expr.ReturnInput(captureInput)
+  def returnInput(implicit captureInput: CaptureResult[V]): Expr[V, V, P] = Expr.ReturnInput(captureInput)
 
-  def embed[R](expr: Expr[M, U, R, P]): ExprBuilder[M, U, Id, R, P] = new ExprBuilder[M, U, Id, R, P](expr)
+  def embed[R](expr: Expr[M[U], R, P]): ExprBuilder[M[U], Id, R, P] = new ExprBuilder[M[U], Id, R, P](expr)
 }
 
 object ExprBuilder {
 
   type ValId[V, P] = ValExprBuilder[V, V, P]
-  type ValFn[V, R, P] = ValExprBuilder[V, V, P] => ExprBuilder[Id, V, Id, R, P]
+  type ValFn[V, R, P] = ValExprBuilder[V, V, P] => ExprBuilder[V, Id, R, P]
 
-  type FoldableId[F[_], V, P] = FoldableExprBuilder[F, V, F, V, P]
-  type FoldableFn[F[_], V, M[_], U, P] = FoldableId[F, V, P] => ExprBuilder[F, V, M, U, P]
+  type FoldableId[F[_], V, P] = FoldableExprBuilder[F[V], F, V, P]
+  type FoldableFn[F[_], V, M[_], U, P] = FoldableId[F, V, P] => ExprBuilder[F[V], M, U, P]
 }
 
 trait ExprBuilderSyntax {
@@ -43,21 +41,19 @@ trait ExprBuilderSyntax {
     *
     * @see [[Expr.Embed]]
     */
-  implicit def embedExpr[F[_], V, R, P](
+  implicit def embedExpr[V, R, P](
     expr: RootExpr[R, P],
   )(implicit
-    captureResult: CaptureP[F, V, R, P],
-  ): Expr.Embed[F, V, R, P] = Expr.Embed(expr, captureResult)
+    captureResult: CaptureP[V, R, P],
+  ): Expr.Embed[V, R, P] = Expr.Embed(expr, captureResult)
 
-  implicit def liftValExpr[V, R, P](expr: Expr[Id, V, R, P]): ValExprBuilder[V, R, P] =
+  implicit def liftValExpr[V, R, P](expr: Expr[V, R, P]): ValExprBuilder[V, R, P] =
     new ValExprBuilder(expr)
 
-  implicit def returnFoldableExprOutput[F[_], V, M[_], U, P](
-    builder: FoldableExprBuilder[F, V, M, U, P],
-  ): Expr[F, V, M[U], P] =
+  implicit def returnFoldableExprOutput[V, M[_], U, P](builder: FoldableExprBuilder[V, M, U, P]): Expr[V, M[U], P] =
     builder.returnOutput
 
-  implicit def returnValExprOutput[V, R, P](builder: ValExprBuilder[V, R, P]): Expr[Id, V, R, P] =
+  implicit def returnValExprOutput[V, R, P](builder: ValExprBuilder[V, R, P]): Expr[V, R, P] =
     builder.returnOutput
 
   implicit def addTo[R : Addition](lhs: R): AdditionBuilderOps[R] = new AdditionBuilderOps(lhs)
@@ -87,21 +83,21 @@ final class SubtractBuilderOps[R : Subtraction](number: R) {
   }
 }
 
-sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](returnOutput: Expr[F, V, M[U], P])
-  extends ExprBuilder[F, V, M, U, P](returnOutput) {
+sealed class FoldableExprBuilder[V, M[_] : Foldable, U, P](returnOutput: Expr[V, M[U], P])
+  extends ExprBuilder[V, M, U, P](returnOutput) {
 
   def toList(
     implicit
     ev: M[U] <:< Iterable[U],
-    captureOutput: CaptureP[F, V, List[U], P],
-  ): FoldableExprBuilder[F, V, List, U, P] =
+    captureOutput: CaptureP[V, List[U], P],
+  ): FoldableExprBuilder[V, List, U, P] =
     to(List)
 
   def toSet(
     implicit
     ev: M[U] <:< Iterable[U],
-    captureOutput: CaptureP[F, V, Set[U], P],
-  ): FoldableExprBuilder[F, V, Set, U, P] = {
+    captureOutput: CaptureP[V, Set[U], P],
+  ): FoldableExprBuilder[V, Set, U, P] = {
     to(Set)
   }
 
@@ -109,10 +105,10 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
     factory: Factory[U, N[U]],
   )(implicit
     ev: M[U] <:< Iterable[U],
-    captureOutput: CaptureP[F, V, N[U], P],
-  ): FoldableExprBuilder[F, V, N, U, P] =
+    captureOutput: CaptureP[V, N[U], P],
+  ): FoldableExprBuilder[V, N, U, P] =
     new FoldableExprBuilder({
-      Expr.SelectFromOutput[F, V, M[U], N[U], P](
+      Expr.SelectFromOutput[V, M[U], N[U], P](
         returnOutput,
         NamedLens.id[M[U]].asIterable.to(factory),
         captureOutput,
@@ -126,7 +122,7 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
     tt: TypeTag[U],
     factory: Factory[U, M[U]],
     captureResult: CaptureResult[M[U]],
-  ): FoldableExprBuilder[F, V, M, U, P] =
+  ): FoldableExprBuilder[V, M, U, P] =
     new FoldableExprBuilder(Expr.SortOutput(returnOutput, ExprSorter.byNaturalOrder[M, U], captureResult))
 
   def sortBy[R : Order](
@@ -136,7 +132,7 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
     tt: TypeTag[U],
     factory: Factory[U, M[U]],
     captureResult: CaptureResult[M[U]],
-  ): FoldableExprBuilder[F, V, M, U, P] = {
+  ): FoldableExprBuilder[V, M, U, P] = {
     val lens = buildLens(NamedLens.id[U])
     new FoldableExprBuilder(Expr.SortOutput(returnOutput, ExprSorter.byField[M, U, R](lens), captureResult))
   }
@@ -146,8 +142,8 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
   )(implicit
     traverseM: Traverse[M],
     traverseFilterM: TraverseFilter[M],
-    captureAllOutput: CaptureP[F, V, M[U], P],
-  ): FoldableExprBuilder[F, V, M, U, P] =
+    captureAllOutput: CaptureP[V, M[U], P],
+  ): FoldableExprBuilder[V, M, U, P] =
     new FoldableExprBuilder(Expr.TakeFromOutput(returnOutput, n, captureAllOutput))
 
   def headOption(
@@ -155,36 +151,36 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
     traverseM: Traverse[M],
     traverseFilterM: TraverseFilter[M],
     ev: M[U] <:< Iterable[U],
-    captureAllOutput: CaptureP[F, V, M[U], P],
-    captureHeadOutput: CaptureP[F, V, Option[U], P],
-  ): FoldableExprBuilder[F, V, Option, U, P] =
+    captureAllOutput: CaptureP[V, M[U], P],
+    captureHeadOutput: CaptureP[V, Option[U], P],
+  ): FoldableExprBuilder[V, Option, U, P] =
     new FoldableExprBuilder(
       Expr.SelectFromOutput(take(1), NamedLens.id[M[U]].headOption, captureHeadOutput),
     )
 
   def map[R](
-    buildFn: ValExprBuilder[U, U, P] => ExprBuilder[Id, U, Id, R, P],
+    buildFn: ValExprBuilder[U, U, P] => ExprBuilder[U, Id, R, P],
   )(implicit
     functorM: Functor[M],
-    postEachOutput: CaptureP[Id, U, U, P],
-    postMap: CaptureP[F, V, M[R], P],
-  ): FoldableExprBuilder[F, V, M, R, P] = {
+    postEachOutput: CaptureP[U, U, P],
+    postMap: CaptureP[V, M[R], P],
+  ): FoldableExprBuilder[V, M, R, P] = {
     val mapExpr = buildFn(
-      new ValExprBuilder(Expr.ReturnInput[Id, U, P](postEachOutput)),
+      new ValExprBuilder(Expr.ReturnInput(postEachOutput)),
     )
     val next = Expr.MapOutput(returnOutput, mapExpr.returnOutput, postMap)
     new FoldableExprBuilder(next)
   }
 
   def flatMap[X](
-    buildFn: ValExprBuilder[U, U, P] => ExprBuilder[Id, U, M, X, P],
+    buildFn: ValExprBuilder[U, U, P] => ExprBuilder[U, M, X, P],
   )(implicit
     flatMapM: FlatMap[M],
-    postEachOutput: CaptureP[Id, U, U, P],
-    postFlatMap: CaptureP[F, V, M[X], P],
-  ): FoldableExprBuilder[F, V, M, X, P] = {
+    postEachOutput: CaptureP[U, U, P],
+    postFlatMap: CaptureP[V, M[X], P],
+  ): FoldableExprBuilder[V, M, X, P] = {
     val flatMapExpr = buildFn(
-      new ValExprBuilder(Expr.ReturnInput[Id, U, P](postEachOutput)),
+      new ValExprBuilder(Expr.ReturnInput(postEachOutput)),
     )
     val next = Expr.FlatMapOutput(returnOutput, flatMapExpr.returnOutput, postFlatMap)
     new FoldableExprBuilder(next)
@@ -193,29 +189,29 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
   def isEmpty(
     implicit
     captureResult: CaptureAllInputCond,
-  ): FoldInExprBuilder[F, V, Boolean, P] =
+  ): FoldInExprBuilder[V, Boolean, P] =
     new FoldInExprBuilder(Expr.OutputIsEmpty(returnOutput, captureResult))
 
   def exists(
-    buildFn: ValExprBuilder[U, U, P] => ExprBuilder[Id, U, Id, Boolean, P],
+    buildFn: ValExprBuilder[U, U, P] => ExprBuilder[U, Id, Boolean, P],
   )(implicit
-    postEachOutput: CaptureP[Id, U, U, P],
+    postEachOutput: CaptureP[U, U, P],
     captureResult: CaptureAllInputCond,
-  ): FoldInExprBuilder[F, V, Boolean, P] = {
-    val condExpr = buildFn(new ValExprBuilder(Expr.ReturnInput[Id, U, P](postEachOutput)))
+  ): FoldInExprBuilder[V, Boolean, P] = {
+    val condExpr = buildFn(new ValExprBuilder(Expr.ReturnInput(postEachOutput)))
     val next = Expr.ExistsInOutput(returnOutput, condExpr.returnOutput, captureResult)
     new FoldInExprBuilder(next)
   }
 
   def filter(
-    buildFn: ValExprBuilder[U, U, P] => ExprBuilder[Id, U, Id, Boolean, P],
+    buildFn: ValExprBuilder[U, U, P] => ExprBuilder[U, Id, Boolean, P],
   )(implicit
     filterM: FunctorFilter[M],
     captureEachOutput: CaptureEachOutput,
     captureResult: CaptureResult[M[U]],
-  ): FoldableExprBuilder[F, V, M, U, P] = {
+  ): FoldableExprBuilder[V, M, U, P] = {
     val condExpr = buildFn(
-      new ValExprBuilder(Expr.ReturnInput[Id, U, P](captureEachOutput)),
+      new ValExprBuilder(Expr.ReturnInput[U, P](captureEachOutput)),
     )
     new FoldableExprBuilder(Expr.FilterOutput(returnOutput, condExpr.returnOutput, captureResult))
   }
@@ -228,7 +224,7 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
     captureEachOutputCond: CaptureEachOutputCond,
     captureResult: CaptureResult[M[U]],
     captureCond: CaptureAllInputCond,
-  ): FoldInExprBuilder[F, V, Boolean, P] =
+  ): FoldInExprBuilder[V, Boolean, P] =
     new FoldInExprBuilder(
       Expr.Not(
         filter(_ in validValues).isEmpty,
@@ -237,28 +233,27 @@ sealed class FoldableExprBuilder[F[_] : Foldable, V, M[_] : Foldable, U, P](retu
     )
 }
 
-final class FoldInExprBuilder[F[_] : Foldable, V, R, P](returnOutput: Expr[F, V, R, P])
-  extends FoldableExprBuilder[F, V, Id, R, P](returnOutput)
+final class FoldInExprBuilder[V, R, P](returnOutput: Expr[V, R, P])
+  extends FoldableExprBuilder[V, Id, R, P](returnOutput)
 
-final class FoldOutExprBuilder[V, M[_] : Foldable, U, P](returnOutput: Expr[Id, V, M[U], P])
-  extends FoldableExprBuilder[Id, V, M, U, P](returnOutput)
+final class FoldOutExprBuilder[V, M[_] : Foldable, U, P](returnOutput: Expr[V, M[U], P])
+  extends FoldableExprBuilder[V, M, U, P](returnOutput)
 
 // TODO: Combine with FoldIn / FoldOut?
-final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
-  extends ExprBuilder[Id, V, Id, R, P](returnOutput) {
+final class ValExprBuilder[V, R, P](returnOutput: Expr[V, R, P]) extends ExprBuilder[V, Id, R, P](returnOutput) {
 
   @inline private def buildGetExpr[N[_], X](
     buildLens: NamedLens.Fn[R, N[X]],
   )(implicit
-    captureResult: CaptureP[Id, V, N[X], P],
-  ): Expr[Id, V, N[X], P] = {
+    captureResult: CaptureP[V, N[X], P],
+  ): Expr[V, N[X], P] = {
     val lens = buildLens(NamedLens.id[R])
     // if the previous node was a SelectFromOutput, then combine the lenses and produce a single node
     returnOutput match {
-      case prev: Expr.SelectFromOutput[Id, V, s, R, P] =>
+      case prev: Expr.SelectFromOutput[V, s, R, P] =>
         // capture the starting type as an existential type parameter 's'
         // it is ignored in the return type after the compile proves that this code is safe
-        Expr.SelectFromOutput[Id, V, s, N[X], P](prev.inputExpr, prev.lens.andThen(lens), captureResult)
+        Expr.SelectFromOutput[V, s, N[X], P](prev.inputExpr, prev.lens.andThen(lens), captureResult)
       case _ =>
         // otherwise, build the lens as a new SelectFromOutput node
         Expr.SelectFromOutput(returnOutput, lens, captureResult)
@@ -268,14 +263,14 @@ final class ValExprBuilder[V, R, P](returnOutput: Expr[Id, V, R, P])
   def get[X](
     buildLens: NamedLens.Fn[R, X],
   )(implicit
-    captureResult: CaptureP[Id, V, X, P],
+    captureResult: CaptureP[V, X, P],
   ): ValExprBuilder[V, X, P] =
     new ValExprBuilder(buildGetExpr[Id, X](buildLens))
 
   def getFoldable[N[_] : Foldable, X](
     buildLens: NamedLens.Fn[R, N[X]],
   )(implicit
-    captureResult: CaptureP[Id, V, N[X], P],
+    captureResult: CaptureP[V, N[X], P],
   ): FoldOutExprBuilder[V, N, X, P] =
     new FoldOutExprBuilder(buildGetExpr(buildLens))
 

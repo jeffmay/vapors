@@ -1,6 +1,5 @@
 package com.rallyhealth.vapors.core.interpreter
 
-import cats.Id
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.{Evidence, ExtractBoolean, FactSet, FactTable}
 import com.rallyhealth.vapors.core.dsl._
@@ -11,7 +10,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class LogicalExprSpec extends AnyWordSpec {
 
-  private type LogicExpr[R] = Expr[Id, Unit, R, Unit]
+  private type LogicExpr[R] = Expr[Unit, R, Unit]
 
   private type LogicOpBuilder[R] =
     (LogicExpr[R], LogicExpr[R], Seq[LogicExpr[R]]) => LogicExpr[R]
@@ -19,7 +18,7 @@ class LogicalExprSpec extends AnyWordSpec {
   private type UnaryLogicOpBuilder[R] = LogicExpr[R] => LogicExpr[R]
 
   private def evalUnit[R](facts: FactSet)(expr: LogicExpr[R]): ExprOutput[R] = {
-    InterpretExprAsResultFn(expr)(ExprInput[Id, Unit]((), Evidence(facts), FactTable(facts))).output
+    InterpretExprAsResultFn(expr)(ExprInput((), Evidence(facts), FactTable(facts))).output
   }
 
   private def validLogicalOperators[R](

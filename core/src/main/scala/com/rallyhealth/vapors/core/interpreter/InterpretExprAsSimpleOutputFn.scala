@@ -1,6 +1,6 @@
 package com.rallyhealth.vapors.core.interpreter
 
-import cats.{Eval, Foldable, Functor, Semigroupal}
+import cats.{Eval, Functor, Semigroupal}
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.interpreter.InterpretExprAsSimpleOutputFn.GenSimpleOutput
 
@@ -16,12 +16,11 @@ import com.rallyhealth.vapors.core.interpreter.InterpretExprAsSimpleOutputFn.Gen
   * these instances. By simplifying to the more generic return type of [[GenSimpleOutput]] we are able to leverage
   * the standard function, tuple, and list instances from cats over the well defined type constructor of [[ExprOutput]].
   */
-class InterpretExprAsSimpleOutputFn[F[_] : Foldable, V, P]
-  extends VisitGenericExprWithProxyFn[F, V, P, GenSimpleOutput[*, P]] {
+class InterpretExprAsSimpleOutputFn[V, P] extends VisitGenericExprWithProxyFn[V, P, GenSimpleOutput[*, P]] {
 
-  override protected def visitGeneric[M[_] : Foldable, U, R](
-    expr: Expr[M, U, R, P],
-    input: ExprInput[M, U],
+  override protected def visitGeneric[U, R](
+    expr: Expr[U, R, P],
+    input: ExprInput[U],
   ): GenSimpleOutput[R, P] = {
     val result = InterpretExprAsResultFn(expr)(input)
     (result.output, result.param :: Nil)
@@ -31,9 +30,9 @@ class InterpretExprAsSimpleOutputFn[F[_] : Foldable, V, P]
 object InterpretExprAsSimpleOutputFn {
   type GenSimpleOutput[R, P] = (ExprOutput[R], List[Eval[P]])
 
-  class SimpleOutputFnFunctorBuilder[F[_], V, P] {
+  class SimpleOutputFnFunctorBuilder[V, P] {
     type SimpleOutput[R] = GenSimpleOutput[R, P]
-    type SimpleOutputFn[R] = ExprInput[F, V] => SimpleOutput[R]
+    type SimpleOutputFn[R] = ExprInput[V] => SimpleOutput[R]
 
     implicit object SimpleOutputFunctor extends Functor[SimpleOutputFn] with Semigroupal[SimpleOutputFn] {
       override def map[A, B](fa: SimpleOutputFn[A])(f: A => B): SimpleOutputFn[B] = fa.andThen {
