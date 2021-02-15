@@ -14,56 +14,56 @@ import scala.collection.BitSet
   * You can fold over this result to see the input, output, value, and captured custom parameter at each node in the
   * original expression. Every node of this algebra matches to the [[Expr]] subclass with the same name.
   */
-sealed trait ExprResult[F[_], V, R, P] {
+sealed trait ExprResult[V, R, P] {
 
-  def context: ExprResult.Context[F, V, R, P]
+  def context: ExprResult.Context[V, R, P]
 
-  @inline final def input: ExprInput[F, V] = context.input
+  @inline final def input: ExprInput[V] = context.input
 
   @inline final def output: ExprOutput[R] = context.output
 
   @inline final def param: Eval[P] = context.param
 
-  def visit[G[_]](v: ExprResult.Visitor[F, V, P, G]): G[R]
+  def visit[G[_]](v: ExprResult.Visitor[V, P, G]): G[R]
 }
 
 object ExprResult {
 
-  final case class Context[F[_], V, R, P](
-    input: ExprInput[F, V],
+  final case class Context[V, R, P](
+    input: ExprInput[V],
     output: ExprOutput[R],
     param: Eval[P],
   )
 
-  trait Visitor[F[_], V, P, G[_]] extends (ExprResult[F, V, *, P] ~> G) {
+  trait Visitor[V, P, G[_]] extends (ExprResult[V, *, P] ~> G) {
     // Please keep the following methods in alphabetical order
-    override final def apply[R](fa: ExprResult[F, V, R, P]): G[R] = fa.visit(this)
-    def visitAddOutputs[R](result: AddOutputs[F, V, R, P]): G[R]
-    def visitAnd[R](result: And[F, V, R, P]): G[R]
-    def visitCollectFromOutput[M[_] : Foldable, U, R : Monoid](result: CollectFromOutput[F, V, M, U, R, P]): G[R]
-    def visitConstOutput[R](result: ConstOutput[F, V, R, P]): G[R]
-    def visitDeclare[M[_], T](result: Define[F, V, M, T, P]): G[FactSet]
-    def visitEmbed[R](result: Embed[F, V, R, P]): G[R]
-    def visitExistsInOutput[M[_] : Foldable, U](result: ExistsInOutput[F, V, M, U, P]): G[Boolean]
-    def visitFilterOutput[M[_] : Foldable : FunctorFilter, R](result: FilterOutput[F, V, M, R, P]): G[M[R]]
-    def visitFlatMapOutput[M[_], U, R](result: FlatMapOutput[F, V, M, U, R, P]): G[M[R]]
-    def visitMapOutput[M[_], U, R](result: MapOutput[F, V, M, U, R, P]): G[M[R]]
-    def visitNegativeOutput[R](result: NegativeOutput[F, V, R, P]): G[R]
-    def visitNot[R](result: Not[F, V, R, P]): G[R]
-    def visitOr[R](result: Or[F, V, R, P]): G[R]
-    def visitOutputIsEmpty[M[_] : Foldable, R](result: OutputIsEmpty[F, V, M, R, P]): G[Boolean]
-    def visitOutputWithinSet[R](result: OutputWithinSet[F, V, R, P]): G[Boolean]
-    def visitOutputWithinWindow[R](result: OutputWithinWindow[F, V, R, P]): G[Boolean]
-    def visitReturnInput(result: ReturnInput[F, V, P]): G[F[V]]
-    def visitSelectFromOutput[S, R](result: SelectFromOutput[F, V, S, R, P]): G[R]
-    def visitSortOutput[M[_], R](result: SortOutput[F, V, M, R, P]): G[M[R]]
-    def visitSubtractOutputs[R](result: SubtractOutputs[F, V, R, P]): G[R]
-    def visitTakeFromOutput[M[_] : Traverse : TraverseFilter, R](result: TakeFromOutput[F, V, M, R, P]): G[M[R]]
-    def visitUsingDefinitions[R](result: UsingDefinitions[F, V, R, P]): G[R]
-    def visitWhen[R](result: When[F, V, R, P]): G[R]
-    def visitWrapOutput[T <: HList, R](result: WrapOutput[F, V, T, R, P]): G[R]
-    def visitWithFactsOfType[T, R](result: WithFactsOfType[F, V, T, R, P]): G[R]
-    def visitZipOutput[M[_] : Align : FunctorFilter, L <: HList, R](result: ZipOutput[F, V, M, L, R, P]): G[M[R]]
+    override final def apply[R](fa: ExprResult[V, R, P]): G[R] = fa.visit(this)
+    def visitAddOutputs[R](result: AddOutputs[V, R, P]): G[R]
+    def visitAnd[R](result: And[V, R, P]): G[R]
+    def visitCollectFromOutput[M[_] : Foldable, U, R : Monoid](result: CollectFromOutput[V, M, U, R, P]): G[R]
+    def visitConstOutput[R](result: ConstOutput[V, R, P]): G[R]
+    def visitDeclare[M[_], T](result: Define[V, M, T, P]): G[FactSet]
+    def visitEmbed[R](result: Embed[V, R, P]): G[R]
+    def visitExistsInOutput[M[_] : Foldable, U](result: ExistsInOutput[V, M, U, P]): G[Boolean]
+    def visitFilterOutput[M[_] : Foldable : FunctorFilter, R](result: FilterOutput[V, M, R, P]): G[M[R]]
+    def visitFlatMapOutput[M[_], U, R](result: FlatMapOutput[V, M, U, R, P]): G[M[R]]
+    def visitMapOutput[M[_], U, R](result: MapOutput[V, M, U, R, P]): G[M[R]]
+    def visitNegativeOutput[R](result: NegativeOutput[V, R, P]): G[R]
+    def visitNot[R](result: Not[V, R, P]): G[R]
+    def visitOr[R](result: Or[V, R, P]): G[R]
+    def visitOutputIsEmpty[M[_] : Foldable, R](result: OutputIsEmpty[V, M, R, P]): G[Boolean]
+    def visitOutputWithinSet[R](result: OutputWithinSet[V, R, P]): G[Boolean]
+    def visitOutputWithinWindow[R](result: OutputWithinWindow[V, R, P]): G[Boolean]
+    def visitReturnInput(result: ReturnInput[V, P]): G[V]
+    def visitSelectFromOutput[S, R](result: SelectFromOutput[V, S, R, P]): G[R]
+    def visitSortOutput[M[_], R](result: SortOutput[V, M, R, P]): G[M[R]]
+    def visitSubtractOutputs[R](result: SubtractOutputs[V, R, P]): G[R]
+    def visitTakeFromOutput[M[_] : Traverse : TraverseFilter, R](result: TakeFromOutput[V, M, R, P]): G[M[R]]
+    def visitUsingDefinitions[R](result: UsingDefinitions[V, R, P]): G[R]
+    def visitWhen[R](result: When[V, R, P]): G[R]
+    def visitWrapOutput[T <: HList, R](result: WrapOutput[V, T, R, P]): G[R]
+    def visitWithFactsOfType[T, R](result: WithFactsOfType[V, T, R, P]): G[R]
+    def visitZipOutput[M[_] : Align : FunctorFilter, L <: HList, R](result: ZipOutput[V, M, L, R, P]): G[M[R]]
   }
 
   /*
@@ -79,215 +79,215 @@ object ExprResult {
    * without the compiler complaining.
    */
 
-  final case class ConstOutput[F[_], V, R, P](
-    expr: Expr.ConstOutput[F, V, R, P],
-    context: Context[F, V, R, P],
-  ) extends ExprResult[F, V, R, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitConstOutput(this)
+  final case class ConstOutput[V, R, P](
+    expr: Expr.ConstOutput[V, R, P],
+    context: Context[V, R, P],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitConstOutput(this)
   }
 
-  final case class ReturnInput[F[_], V, P](
-    expr: Expr.ReturnInput[F, V, P],
-    context: Context[F, V, F[V], P],
-  ) extends ExprResult[F, V, F[V], P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[F[V]] = v.visitReturnInput(this)
+  final case class ReturnInput[V, P](
+    expr: Expr.ReturnInput[V, P],
+    context: Context[V, V, P],
+  ) extends ExprResult[V, V, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[V] = v.visitReturnInput(this)
   }
 
-  final case class Embed[F[_], V, R, P](
-    expr: Expr.Embed[F, V, R, P],
-    context: Context[F, V, R, P],
-    embeddedResult: ExprResult[Id, FactTable, R, P],
-  ) extends ExprResult[F, V, R, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitEmbed(this)
+  final case class Embed[V, R, P](
+    expr: Expr.Embed[V, R, P],
+    context: Context[V, R, P],
+    embeddedResult: ExprResult[FactTable, R, P],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitEmbed(this)
   }
 
-  final case class WithFactsOfType[F[_], V, T, R, P](
+  final case class WithFactsOfType[V, T, R, P](
     expr: Expr.WithFactsOfType[T, R, P],
-    context: Context[F, V, R, P],
-    subResult: ExprResult[Seq, TypedFact[T], R, P],
-  ) extends ExprResult[F, V, R, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitWithFactsOfType(this)
+    context: Context[V, R, P],
+    subResult: ExprResult[Seq[TypedFact[T]], R, P],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitWithFactsOfType(this)
   }
 
-  final case class Define[F[_], V, M[_], T, P](
+  final case class Define[V, M[_], T, P](
     expr: Expr.Define[M, T, P],
-    context: Context[F, V, FactSet, P],
-    definitionResult: ExprResult[Id, FactTable, M[T], P],
-  ) extends ExprResult[F, V, FactSet, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[FactSet] = v.visitDeclare(this)
+    context: Context[V, FactSet, P],
+    definitionResult: ExprResult[FactTable, M[T], P],
+  ) extends ExprResult[V, FactSet, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[FactSet] = v.visitDeclare(this)
   }
 
-  final case class UsingDefinitions[F[_], V, R, P](
-    expr: Expr.UsingDefinitions[F, V, R, P],
-    context: Context[F, V, R, P],
-    subResult: ExprResult[F, V, R, P],
-  ) extends ExprResult[F, V, R, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitUsingDefinitions(this)
+  final case class UsingDefinitions[V, R, P](
+    expr: Expr.UsingDefinitions[V, R, P],
+    context: Context[V, R, P],
+    subResult: ExprResult[V, R, P],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitUsingDefinitions(this)
   }
 
-  final case class And[F[_], V, R, P](
-    expr: Expr.And[F, V, R, P],
-    context: Context[F, V, R, P],
-    subResultList: List[ExprResult[F, V, R, P]],
-  ) extends ExprResult[F, V, R, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitAnd(this)
+  final case class And[V, R, P](
+    expr: Expr.And[V, R, P],
+    context: Context[V, R, P],
+    subResultList: List[ExprResult[V, R, P]],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitAnd(this)
   }
 
-  final case class Or[F[_], V, R, P](
-    expr: Expr.Or[F, V, R, P],
-    context: Context[F, V, R, P],
-    subResultList: List[ExprResult[F, V, R, P]],
-  ) extends ExprResult[F, V, R, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitOr(this)
+  final case class Or[V, R, P](
+    expr: Expr.Or[V, R, P],
+    context: Context[V, R, P],
+    subResultList: List[ExprResult[V, R, P]],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitOr(this)
   }
 
-  final case class Not[F[_], V, R, P](
-    expr: Expr.Not[F, V, R, P],
-    context: Context[F, V, R, P],
-    subResult: ExprResult[F, V, R, P],
-  ) extends ExprResult[F, V, R, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitNot(this)
+  final case class Not[V, R, P](
+    expr: Expr.Not[V, R, P],
+    context: Context[V, R, P],
+    subResult: ExprResult[V, R, P],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitNot(this)
   }
 
-  final case class When[F[_], V, R, P](
-    expr: Expr.When[F, V, R, P],
-    context: Context[F, V, R, P],
-    matchedBranch: Option[ConditionBranch[F, V, R, P]],
-    subResult: ExprResult[F, V, R, P],
-  ) extends ExprResult[F, V, R, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitWhen(this)
-    val thenExpr: Expr[F, V, R, P] = matchedBranch.map(_.thenExpr).getOrElse(expr.defaultExpr)
+  final case class When[V, R, P](
+    expr: Expr.When[V, R, P],
+    context: Context[V, R, P],
+    matchedBranch: Option[ConditionBranch[V, R, P]],
+    subResult: ExprResult[V, R, P],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitWhen(this)
+    val thenExpr: Expr[V, R, P] = matchedBranch.map(_.thenExpr).getOrElse(expr.defaultExpr)
   }
 
-  final case class SelectFromOutput[F[_], V, S, R, P](
-    expr: Expr.SelectFromOutput[F, V, S, R, P],
-    context: Context[F, V, R, P],
-    inputResult: ExprResult[F, V, S, P],
-  ) extends ExprResult[F, V, R, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitSelectFromOutput(this)
+  final case class SelectFromOutput[V, S, R, P](
+    expr: Expr.SelectFromOutput[V, S, R, P],
+    context: Context[V, R, P],
+    inputResult: ExprResult[V, S, P],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitSelectFromOutput(this)
   }
 
-  final case class FilterOutput[F[_], V, M[_] : Foldable : FunctorFilter, R, P](
-    expr: Expr.FilterOutput[F, V, M, R, P],
-    context: Context[F, V, M[R], P],
-    inputResult: ExprResult[F, V, M[R], P],
-    condResultList: List[ExprResult[Id, R, Boolean, P]],
-  ) extends ExprResult[F, V, M[R], P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitFilterOutput(this)
+  final case class FilterOutput[V, M[_] : Foldable : FunctorFilter, R, P](
+    expr: Expr.FilterOutput[V, M, R, P],
+    context: Context[V, M[R], P],
+    inputResult: ExprResult[V, M[R], P],
+    condResultList: List[ExprResult[R, Boolean, P]],
+  ) extends ExprResult[V, M[R], P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[M[R]] = v.visitFilterOutput(this)
   }
 
-  final case class CollectFromOutput[F[_], V, M[_] : Foldable, U, R : Monoid, P](
-    expr: Expr.CollectFromOutput[F, V, M, U, R, P],
-    context: Context[F, V, R, P],
-    inputResult: ExprResult[F, V, M[U], P],
-  ) extends ExprResult[F, V, R, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitCollectFromOutput(this)
+  final case class CollectFromOutput[V, M[_] : Foldable, U, R : Monoid, P](
+    expr: Expr.CollectFromOutput[V, M, U, R, P],
+    context: Context[V, R, P],
+    inputResult: ExprResult[V, M[U], P],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitCollectFromOutput(this)
   }
 
-  final case class FlatMapOutput[F[_], V, M[_], U, R, P](
-    expr: Expr.FlatMapOutput[F, V, M, U, R, P],
-    context: Context[F, V, M[R], P],
-    inputResult: ExprResult[F, V, M[U], P],
-    subResultList: List[ExprResult[Id, U, M[R], P]],
-  ) extends ExprResult[F, V, M[R], P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitFlatMapOutput(this)
+  final case class FlatMapOutput[V, M[_], U, R, P](
+    expr: Expr.FlatMapOutput[V, M, U, R, P],
+    context: Context[V, M[R], P],
+    inputResult: ExprResult[V, M[U], P],
+    subResultList: List[ExprResult[U, M[R], P]],
+  ) extends ExprResult[V, M[R], P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[M[R]] = v.visitFlatMapOutput(this)
   }
 
-  final case class MapOutput[F[_], V, M[_], U, R, P](
-    expr: Expr.MapOutput[F, V, M, U, R, P],
-    context: Context[F, V, M[R], P],
-    inputResult: ExprResult[F, V, M[U], P],
-    subResultList: List[ExprResult[Id, U, R, P]],
-  ) extends ExprResult[F, V, M[R], P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitMapOutput(this)
+  final case class MapOutput[V, M[_], U, R, P](
+    expr: Expr.MapOutput[V, M, U, R, P],
+    context: Context[V, M[R], P],
+    inputResult: ExprResult[V, M[U], P],
+    subResultList: List[ExprResult[U, R, P]],
+  ) extends ExprResult[V, M[R], P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[M[R]] = v.visitMapOutput(this)
   }
 
-  final case class SortOutput[F[_], V, M[_], R, P](
-    expr: Expr.SortOutput[F, V, M, R, P],
-    context: Context[F, V, M[R], P],
-    inputResult: ExprResult[F, V, M[R], P],
-  ) extends ExprResult[F, V, M[R], P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitSortOutput(this)
+  final case class SortOutput[V, M[_], R, P](
+    expr: Expr.SortOutput[V, M, R, P],
+    context: Context[V, M[R], P],
+    inputResult: ExprResult[V, M[R], P],
+  ) extends ExprResult[V, M[R], P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[M[R]] = v.visitSortOutput(this)
   }
 
-  final case class OutputIsEmpty[F[_], V, M[_] : Foldable, R, P](
-    expr: Expr.OutputIsEmpty[F, V, M, R, P],
-    context: Context[F, V, Boolean, P],
-    inputResult: ExprResult[F, V, M[R], P],
-  ) extends ExprResult[F, V, Boolean, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[Boolean] = v.visitOutputIsEmpty(this)
+  final case class OutputIsEmpty[V, M[_] : Foldable, R, P](
+    expr: Expr.OutputIsEmpty[V, M, R, P],
+    context: Context[V, Boolean, P],
+    inputResult: ExprResult[V, M[R], P],
+  ) extends ExprResult[V, Boolean, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[Boolean] = v.visitOutputIsEmpty(this)
   }
 
-  final case class TakeFromOutput[F[_], V, M[_] : Traverse : TraverseFilter, R, P](
-    expr: Expr.TakeFromOutput[F, V, M, R, P],
-    context: Context[F, V, M[R], P],
-    inputResult: ExprResult[F, V, M[R], P],
-  ) extends ExprResult[F, V, M[R], P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitTakeFromOutput(this)
+  final case class TakeFromOutput[V, M[_] : Traverse : TraverseFilter, R, P](
+    expr: Expr.TakeFromOutput[V, M, R, P],
+    context: Context[V, M[R], P],
+    inputResult: ExprResult[V, M[R], P],
+  ) extends ExprResult[V, M[R], P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[M[R]] = v.visitTakeFromOutput(this)
   }
 
-  final case class ExistsInOutput[F[_], V, M[_] : Foldable, U, P](
-    expr: Expr.ExistsInOutput[F, V, M, U, P],
-    context: Context[F, V, Boolean, P],
-    inputResult: ExprResult[F, V, M[U], P],
-    conditionResultList: List[ExprResult[Id, U, Boolean, P]],
+  final case class ExistsInOutput[V, M[_] : Foldable, U, P](
+    expr: Expr.ExistsInOutput[V, M, U, P],
+    context: Context[V, Boolean, P],
+    inputResult: ExprResult[V, M[U], P],
+    conditionResultList: List[ExprResult[U, Boolean, P]],
     matchedIndexes: BitSet,
-  ) extends ExprResult[F, V, Boolean, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[Boolean] = v.visitExistsInOutput(this)
+  ) extends ExprResult[V, Boolean, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[Boolean] = v.visitExistsInOutput(this)
   }
 
-  final case class AddOutputs[F[_], V, R, P](
-    expr: Expr.AddOutputs[F, V, R, P],
-    context: Context[F, V, R, P],
-    subResultList: List[ExprResult[F, V, R, P]],
-  ) extends ExprResult[F, V, R, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitAddOutputs(this)
+  final case class AddOutputs[V, R, P](
+    expr: Expr.AddOutputs[V, R, P],
+    context: Context[V, R, P],
+    subResultList: List[ExprResult[V, R, P]],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitAddOutputs(this)
   }
 
-  final case class SubtractOutputs[F[_], V, R, P](
-    expr: Expr.SubtractOutputs[F, V, R, P],
-    context: Context[F, V, R, P],
-    subResultList: List[ExprResult[F, V, R, P]],
-  ) extends ExprResult[F, V, R, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitSubtractOutputs(this)
+  final case class SubtractOutputs[V, R, P](
+    expr: Expr.SubtractOutputs[V, R, P],
+    context: Context[V, R, P],
+    subResultList: List[ExprResult[V, R, P]],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitSubtractOutputs(this)
   }
 
-  final case class WrapOutput[F[_], V, T <: HList, R, P](
-    expr: Expr.WrapOutput[F, V, T, R, P],
-    context: Context[F, V, R, P],
-  ) extends ExprResult[F, V, R, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitWrapOutput(this)
+  final case class WrapOutput[V, T <: HList, R, P](
+    expr: Expr.WrapOutput[V, T, R, P],
+    context: Context[V, R, P],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitWrapOutput(this)
   }
 
-  final case class ZipOutput[F[_], V, M[_] : Align : FunctorFilter, L <: HList, R, P](
-    expr: Expr.ZipOutput[F, V, M, L, R, P],
-    context: Context[F, V, M[R], P],
-  ) extends ExprResult[F, V, M[R], P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitZipOutput(this)
+  final case class ZipOutput[V, M[_] : Align : FunctorFilter, L <: HList, R, P](
+    expr: Expr.ZipOutput[V, M, L, R, P],
+    context: Context[V, M[R], P],
+  ) extends ExprResult[V, M[R], P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[M[R]] = v.visitZipOutput(this)
   }
 
-  final case class NegativeOutput[F[_], V, R, P](
-    expr: Expr.NegativeOutput[F, V, R, P],
-    context: Context[F, V, R, P],
-    inputResult: ExprResult[F, V, R, P],
-  ) extends ExprResult[F, V, R, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitNegativeOutput(this)
+  final case class NegativeOutput[V, R, P](
+    expr: Expr.NegativeOutput[V, R, P],
+    context: Context[V, R, P],
+    inputResult: ExprResult[V, R, P],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitNegativeOutput(this)
   }
 
-  final case class OutputWithinSet[F[_], V, R, P](
-    expr: Expr.OutputWithinSet[F, V, R, P],
-    context: Context[F, V, Boolean, P],
-    inputResult: ExprResult[F, V, R, P],
-  ) extends ExprResult[F, V, Boolean, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[Boolean] = v.visitOutputWithinSet(this)
+  final case class OutputWithinSet[V, R, P](
+    expr: Expr.OutputWithinSet[V, R, P],
+    context: Context[V, Boolean, P],
+    inputResult: ExprResult[V, R, P],
+  ) extends ExprResult[V, Boolean, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[Boolean] = v.visitOutputWithinSet(this)
   }
 
-  final case class OutputWithinWindow[F[_], V, R, P](
-    expr: Expr.OutputWithinWindow[F, V, R, P],
-    context: Context[F, V, Boolean, P],
-    inputResult: ExprResult[F, V, R, P],
-  ) extends ExprResult[F, V, Boolean, P] {
-    override def visit[G[_]](v: Visitor[F, V, P, G]): G[Boolean] = v.visitOutputWithinWindow(this)
+  final case class OutputWithinWindow[V, R, P](
+    expr: Expr.OutputWithinWindow[V, R, P],
+    context: Context[V, Boolean, P],
+    inputResult: ExprResult[V, R, P],
+  ) extends ExprResult[V, Boolean, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[Boolean] = v.visitOutputWithinWindow(this)
   }
 
 }

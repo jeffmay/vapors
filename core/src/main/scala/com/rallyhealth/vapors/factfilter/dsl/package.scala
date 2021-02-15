@@ -6,13 +6,13 @@ import com.rallyhealth.vapors.core.dsl
 package object dsl {
 
   @deprecated("Use com.rallyhealth.vapors.core.algebra.CaptureP instead.", "0.8.0")
-  final type CaptureP[F[_], V, R, P] = algebra.CaptureP[F, V, R, P]
+  final type CaptureP[F[_], V, R, P] = algebra.CaptureP[V, R, P]
 
   @deprecated("Use com.rallyhealth.vapors.core.algebra.CaptureP instead.", "0.8.0")
   final val CaptureP = algebra.CaptureP
 
   @deprecated("Use com.rallyhealth.vapors.core.dsl.ExprBuilder instead.", "0.8.0")
-  final type ExprBuilder[F[_], V, M[_], U, P] = dsl.ExprBuilder[F, V, M, U, P]
+  final type ExprBuilder[F[_], V, M[_], U, P] = dsl.ExprBuilder[V, M, U, P]
 
   @deprecated("Use com.rallyhealth.vapors.core.dsl.ExprBuilder instead.", "0.8.0")
   final val ExprBuilder = dsl.ExprBuilder

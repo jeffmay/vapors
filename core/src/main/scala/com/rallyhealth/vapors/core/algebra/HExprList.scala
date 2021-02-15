@@ -11,14 +11,14 @@ import shapeless.{::, HList, HNil}
   * This not only provides syntactic sugar by fixing some of the type arguments to avoid repetition, it also
   * provides implementation for some recursive operations that produce HList outputs.
   */
-sealed trait NonEmptyExprHList[F[_], V, M[_], L <: HList, P] {
+sealed trait NonEmptyExprHList[V, M[_], L <: HList, P] {
 
   /**
     * Prepends an expression that accepts the same input and outputs a value wrapped in the same effect as
     * all the other expressions.
     */
-  def ::[H](other: Expr[F, V, M[H], P]): NonEmptyExprHList[F, V, M, H :: L, P] =
-    new ExprHCons[F, V, M, H, L, P](other, this)
+  def ::[H](other: Expr[V, M[H], P]): NonEmptyExprHList[V, M, H :: L, P] =
+    new ExprHCons[V, M, H, L, P](other, this)
 
   /**
     * Visits each expression in the HList, applies the given visitor, and combines the results by applying a
@@ -40,7 +40,7 @@ sealed trait NonEmptyExprHList[F[_], V, M[_], L <: HList, P] {
     * @example NonEmptyExprHList.of(const(List("A")), const(Nil)).visitProduct(g) == const(Nil).visit(g)
     */
   def visitProduct[G[_] : Functor : Semigroupal](
-    v: Expr.Visitor[F, V, P, G],
+    v: Expr.Visitor[V, P, G],
   )(implicit
     functorM: Functor[M],
     semigroupalM: Semigroupal[M],
@@ -58,7 +58,7 @@ sealed trait NonEmptyExprHList[F[_], V, M[_], L <: HList, P] {
     *            const(Nil).visit(g)
     */
   def visitZippedToShortest[G[_] : Functor : Semigroupal](
-    v: Expr.Visitor[F, V, P, G],
+    v: Expr.Visitor[V, P, G],
   )(implicit
     alignM: Align[M],
     filterM: FunctorFilter[M],
@@ -67,20 +67,20 @@ sealed trait NonEmptyExprHList[F[_], V, M[_], L <: HList, P] {
 
 object NonEmptyExprHList {
 
-  def tail[F[_], V, R, P](expr: Expr[F, V, R, P]): ExprLast[F, V, Id, R, P] =
-    ExprLast[F, V, Id, R, P](expr)
+  def tail[V, R, P](expr: Expr[V, R, P]): ExprLast[V, Id, R, P] =
+    ExprLast[V, Id, R, P](expr)
 
-  def tailK[F[_], V, M[_], R, P](expr: Expr[F, V, M[R], P]): ExprLast[F, V, M, R, P] =
+  def tailK[V, M[_], R, P](expr: Expr[V, M[R], P]): ExprLast[V, M, R, P] =
     ExprLast(expr)
 }
 
-final case class ExprHCons[F[_], V, M[_], H, T <: HList, P](
-  head: Expr[F, V, M[H], P],
-  tail: NonEmptyExprHList[F, V, M, T, P],
-) extends NonEmptyExprHList[F, V, M, H :: T, P] {
+final case class ExprHCons[V, M[_], H, T <: HList, P](
+  head: Expr[V, M[H], P],
+  tail: NonEmptyExprHList[V, M, T, P],
+) extends NonEmptyExprHList[V, M, H :: T, P] {
 
   override def visitProduct[G[_] : Functor : Semigroupal](
-    v: Expr.Visitor[F, V, P, G],
+    v: Expr.Visitor[V, P, G],
   )(implicit
     functorM: Functor[M],
     semigroupalM: Semigroupal[M],
@@ -91,7 +91,7 @@ final case class ExprHCons[F[_], V, M[_], H, T <: HList, P](
   }
 
   override def visitZippedToShortest[G[_] : Functor : Semigroupal](
-    v: Expr.Visitor[F, V, P, G],
+    v: Expr.Visitor[V, P, G],
   )(implicit
     alignM: Align[M],
     filterM: FunctorFilter[M],
@@ -110,11 +110,10 @@ final case class ExprHCons[F[_], V, M[_], H, T <: HList, P](
   }
 }
 
-final case class ExprLast[F[_], V, M[_], H, P](last: Expr[F, V, M[H], P])
-  extends NonEmptyExprHList[F, V, M, H :: HNil, P] {
+final case class ExprLast[V, M[_], H, P](last: Expr[V, M[H], P]) extends NonEmptyExprHList[V, M, H :: HNil, P] {
 
   override def visitProduct[G[_] : Functor : Semigroupal](
-    v: Expr.Visitor[F, V, P, G],
+    v: Expr.Visitor[V, P, G],
   )(implicit
     functorM: Functor[M],
     semigroupalM: Semigroupal[M],
@@ -123,7 +122,7 @@ final case class ExprLast[F[_], V, M[_], H, P](last: Expr[F, V, M[H], P])
   }
 
   override def visitZippedToShortest[G[_] : Functor : Semigroupal](
-    v: Expr.Visitor[F, V, P, G],
+    v: Expr.Visitor[V, P, G],
   )(implicit
     alignM: Align[M],
     filterM: FunctorFilter[M],

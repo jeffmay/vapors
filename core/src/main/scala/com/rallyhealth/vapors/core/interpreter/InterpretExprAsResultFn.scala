@@ -11,30 +11,28 @@ import shapeless.HList
 
 import scala.collection.immutable.BitSet
 
-final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
-  extends Expr.Visitor[F, V, P, Lambda[r => ExprInput[F, V] => ExprResult[F, V, r, P]]] {
+final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r => ExprInput[V] => ExprResult[V, r, P]]] {
 
   import cats.syntax.all._
   import com.rallyhealth.vapors.core.syntax.math._
 
-  override def visitAddOutputs[R : Addition](
-    expr: Expr.AddOutputs[F, V, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
-    val inputResults = expr.inputExprList.map { inputExpr =>
-      inputExpr.visit(this)(input)
-    }
-    val inputResultList = inputResults.toList
-    val outputValue = inputResultList.map(_.output.value).reduceLeft(_ + _)
-    val allEvidence = inputResultList.foldMap(_.output.evidence)
-    val allParams = inputResultList.map(_.param)
-    resultOfManySubExpr(expr, input, outputValue, allEvidence, allParams) {
-      ExprResult.AddOutputs(_, _, inputResultList)
-    }
+  override def visitAddOutputs[R : Addition](expr: Expr.AddOutputs[V, R, P]): ExprInput[V] => ExprResult[V, R, P] = {
+    input =>
+      val inputResults = expr.inputExprList.map { inputExpr =>
+        inputExpr.visit(this)(input)
+      }
+      val inputResultList = inputResults.toList
+      val outputValue = inputResultList.map(_.output.value).reduceLeft(_ + _)
+      val allEvidence = inputResultList.foldMap(_.output.evidence)
+      val allParams = inputResultList.map(_.param)
+      resultOfManySubExpr(expr, input, outputValue, allEvidence, allParams) {
+        ExprResult.AddOutputs(_, _, inputResultList)
+      }
   }
 
   override def visitAnd[R : Conjunction : ExtractBoolean](
-    expr: Expr.And[F, V, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
+    expr: Expr.And[V, R, P],
+  ): ExprInput[V] => ExprResult[V, R, P] = { input =>
     val inputResults = expr.inputExprList.map { inputExpr =>
       inputExpr.visit(this)(input)
     }
@@ -47,8 +45,8 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   }
 
   override def visitCollectSomeOutput[M[_] : Foldable, U, R : Monoid](
-    expr: Expr.CollectFromOutput[F, V, M, U, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
+    expr: Expr.CollectFromOutput[V, M, U, R, P],
+  ): ExprInput[V] => ExprResult[V, R, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val collectFn = expr.collectExpr.visit(InterpretExprAsResultFn())
     val (combinedResult, combinedEvidence, allParams) = inputResult.output.value.collectFoldSome { elem =>
@@ -70,16 +68,15 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     }
   }
 
-  override def visitConstOutput[R](expr: Expr.ConstOutput[F, V, R, P]): ExprInput[F, V] => ExprResult[F, V, R, P] = {
-    input =>
-      resultOfPureExpr(expr, input, expr.value, input.evidence) {
-        ExprResult.ConstOutput(_, _)
-      }
+  override def visitConstOutput[R](expr: Expr.ConstOutput[V, R, P]): ExprInput[V] => ExprResult[V, R, P] = { input =>
+    resultOfPureExpr(expr, input, expr.value, input.evidence) {
+      ExprResult.ConstOutput(_, _)
+    }
   }
 
   override def visitDefine[M[_] : Foldable, T](
     expr: Expr.Define[M, T, P],
-  ): ExprInput[F, V] => ExprResult[F, V, FactSet, P] = { input =>
+  ): ExprInput[V] => ExprResult[V, FactSet, P] = { input =>
     val definitionFn = expr.definitionExpr.visit(InterpretExprAsResultFn())
     val definitionContext = input.withValue(input.factTable)
     val definitionResult = definitionFn(definitionContext)
@@ -91,7 +88,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     ExprResult.Define(expr, ExprResult.Context(input, output, postParam), definitionResult)
   }
 
-  override def visitEmbed[R](expr: Expr.Embed[F, V, R, P]): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
+  override def visitEmbed[R](expr: Expr.Embed[V, R, P]): ExprInput[V] => ExprResult[V, R, P] = { input =>
     val embeddedFn = expr.embeddedExpr.visit(InterpretExprAsResultFn())
     val embeddedInput = input.withValue(input.factTable)
     val embeddedResult = embeddedFn(embeddedInput)
@@ -103,8 +100,8 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   }
 
   override def visitExistsInOutput[M[_] : Foldable, U](
-    expr: Expr.ExistsInOutput[F, V, M, U, P],
-  ): ExprInput[F, V] => ExprResult[F, V, Boolean, P] = { input =>
+    expr: Expr.ExistsInOutput[V, M, U, P],
+  ): ExprInput[V] => ExprResult[V, Boolean, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val conditionFn = expr.conditionExpr.visit(InterpretExprAsResultFn())
     val (allMatchedIndexes, allEvidence, allCondResults) = inputResult.output.value.toList.zipWithIndex.collectFold {
@@ -130,8 +127,8 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   }
 
   override def visitFilterOutput[M[_] : Foldable : FunctorFilter, U](
-    expr: Expr.FilterOutput[F, V, M, U, P],
-  ): ExprInput[F, V] => ExprResult[F, V, M[U], P] = { input =>
+    expr: Expr.FilterOutput[V, M, U, P],
+  ): ExprInput[V] => ExprResult[V, M[U], P] = { input =>
     implicit val functorM: Functor[M] = FunctorFilter[M].functor
     val inputResult = expr.inputExpr.visit(this)(input)
     val condFn = expr.condExpr.visit(InterpretExprAsResultFn())
@@ -156,8 +153,8 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   }
 
   override def visitFlatMapOutput[M[_] : Foldable : FlatMap, U, X](
-    expr: Expr.FlatMapOutput[F, V, M, U, X, P],
-  ): ExprInput[F, V] => ExprResult[F, V, M[X], P] = { input =>
+    expr: Expr.FlatMapOutput[V, M, U, X, P],
+  ): ExprInput[V] => ExprResult[V, M[X], P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val flatMapFn = expr.flatMapExpr.visit(InterpretExprAsResultFn())
     val allResults = inputResult.output.value.map { elem =>
@@ -178,8 +175,8 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   }
 
   override def visitMapOutput[M[_] : Foldable : Functor, U, R](
-    expr: Expr.MapOutput[F, V, M, U, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, M[R], P] = { input =>
+    expr: Expr.MapOutput[V, M, U, R, P],
+  ): ExprInput[V] => ExprResult[V, M[R], P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val mapFn = expr.mapExpr.visit(InterpretExprAsResultFn())
     val allResults = inputResult.output.value.map { elem =>
@@ -199,8 +196,8 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   }
 
   override def visitNegativeOutput[R : Negative](
-    expr: Expr.NegativeOutput[F, V, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
+    expr: Expr.NegativeOutput[V, R, P],
+  ): ExprInput[V] => ExprResult[V, R, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val outputValue = Negative[R].negative(inputResult.output.value)
     resultOfManySubExpr(expr, input, outputValue, inputResult.output.evidence, inputResult.param :: Nil) {
@@ -208,18 +205,17 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     }
   }
 
-  override def visitNot[R : Negation](expr: Expr.Not[F, V, R, P]): ExprInput[F, V] => ExprResult[F, V, R, P] = {
-    input =>
-      val inputResult = expr.inputExpr.visit(this)(input)
-      val outputValue = Negation[R].negation(inputResult.output.value)
-      resultOfManySubExpr(expr, input, outputValue, inputResult.output.evidence, inputResult.param :: Nil) {
-        ExprResult.Not(_, _, inputResult)
-      }
+  override def visitNot[R : Negation](expr: Expr.Not[V, R, P]): ExprInput[V] => ExprResult[V, R, P] = { input =>
+    val inputResult = expr.inputExpr.visit(this)(input)
+    val outputValue = Negation[R].negation(inputResult.output.value)
+    resultOfManySubExpr(expr, input, outputValue, inputResult.output.evidence, inputResult.param :: Nil) {
+      ExprResult.Not(_, _, inputResult)
+    }
   }
 
   override def visitOr[R : Disjunction : ExtractBoolean](
-    expr: Expr.Or[F, V, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
+    expr: Expr.Or[V, R, P],
+  ): ExprInput[V] => ExprResult[V, R, P] = { input =>
     val inputResults = expr.inputExprList.map { inputExpr =>
       inputExpr.visit(this)(input)
     }
@@ -232,8 +228,8 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   }
 
   override def visitOutputIsEmpty[M[_] : Foldable, R](
-    expr: Expr.OutputIsEmpty[F, V, M, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, Boolean, P] = { input =>
+    expr: Expr.OutputIsEmpty[V, M, R, P],
+  ): ExprInput[V] => ExprResult[V, Boolean, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val isEmpty = inputResult.output.value.isEmpty
     resultOfPureExpr(expr, input, isEmpty, inputResult.output.evidence) {
@@ -242,8 +238,8 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   }
 
   override def visitOutputWithinSet[R](
-    expr: Expr.OutputWithinSet[F, V, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, Boolean, P] = { input =>
+    expr: Expr.OutputWithinSet[V, R, P],
+  ): ExprInput[V] => ExprResult[V, Boolean, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val isWithinSet = expr.accepted.contains(inputResult.output.value)
     resultOfPureExpr(expr, input, isWithinSet, inputResult.output.evidence) {
@@ -252,8 +248,8 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   }
 
   override def visitOutputWithinWindow[R](
-    expr: Expr.OutputWithinWindow[F, V, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, Boolean, P] = { input =>
+    expr: Expr.OutputWithinWindow[V, R, P],
+  ): ExprInput[V] => ExprResult[V, Boolean, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val isWithinWindow = expr.window.contains(inputResult.output.value)
     resultOfPureExpr(expr, input, isWithinWindow, inputResult.output.evidence) {
@@ -261,16 +257,15 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     }
   }
 
-  override def visitReturnInput(expr: Expr.ReturnInput[F, V, P]): ExprInput[F, V] => ExprResult[F, V, F[V], P] = {
-    input =>
-      resultOfPureExpr(expr, input, input.value, input.evidence ++ Evidence.fromAnyOrNone(input.value)) {
-        ExprResult.ReturnInput(_, _)
-      }
+  override def visitReturnInput(expr: Expr.ReturnInput[V, P]): ExprInput[V] => ExprResult[V, V, P] = { input =>
+    resultOfPureExpr(expr, input, input.value, input.evidence ++ Evidence.fromAnyOrNone(input.value)) {
+      ExprResult.ReturnInput(_, _)
+    }
   }
 
   override def visitSelectFromOutput[S, R](
-    expr: Expr.SelectFromOutput[F, V, S, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
+    expr: Expr.SelectFromOutput[V, S, R, P],
+  ): ExprInput[V] => ExprResult[V, R, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val selected = expr.lens.get(inputResult.output.value)
     resultOfManySubExpr(expr, input, selected, inputResult.output.evidence, inputResult.param :: Nil) {
@@ -278,20 +273,19 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     }
   }
 
-  override def visitSortOutput[M[_], R](
-    expr: Expr.SortOutput[F, V, M, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, M[R], P] = { input =>
-    val inputResult = expr.inputExpr.visit(this)(input)
-    val unsorted = inputResult.output.value
-    val sorted = expr.sorter(unsorted)
-    resultOfManySubExpr(expr, input, sorted, inputResult.output.evidence, inputResult.param :: Nil) {
-      ExprResult.SortOutput(_, _, inputResult)
-    }
+  override def visitSortOutput[M[_], R](expr: Expr.SortOutput[V, M, R, P]): ExprInput[V] => ExprResult[V, M[R], P] = {
+    input =>
+      val inputResult = expr.inputExpr.visit(this)(input)
+      val unsorted = inputResult.output.value
+      val sorted = expr.sorter(unsorted)
+      resultOfManySubExpr(expr, input, sorted, inputResult.output.evidence, inputResult.param :: Nil) {
+        ExprResult.SortOutput(_, _, inputResult)
+      }
   }
 
   override def visitSubtractOutputs[R : Subtraction](
-    expr: Expr.SubtractOutputs[F, V, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
+    expr: Expr.SubtractOutputs[V, R, P],
+  ): ExprInput[V] => ExprResult[V, R, P] = { input =>
     val allResults = expr.inputExprList.map(_.visit(this)(input))
     val allResultsList = allResults.toList
     val addResult = allResultsList.map(_.output.value).reduceLeft(_ - _)
@@ -303,8 +297,8 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   }
 
   override def visitTakeFromOutput[M[_] : Traverse : TraverseFilter, R](
-    expr: Expr.TakeFromOutput[F, V, M, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, M[R], P] = { input =>
+    expr: Expr.TakeFromOutput[V, M, R, P],
+  ): ExprInput[V] => ExprResult[V, M[R], P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val values = inputResult.output.value
     val takeWindow: Window[Int] = expr.take match {
@@ -324,8 +318,8 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   }
 
   override def visitWrapOutput[T <: HList, R](
-    expr: Expr.WrapOutput[F, V, T, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
+    expr: Expr.WrapOutput[V, T, R, P],
+  ): ExprInput[V] => ExprResult[V, R, P] = { input =>
     val (tupleOutput, allParams) = visitHListOfScalarExprAndCombineOutput(expr.inputExprHList, input)
     val value = expr.converter(tupleOutput.value)
     resultOfManySubExpr(expr, input, value, tupleOutput.evidence, allParams) {
@@ -333,29 +327,28 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     }
   }
 
-  override def visitUsingDefinitions[R](
-    expr: Expr.UsingDefinitions[F, V, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
-    val definitionVisitor = new InterpretExprAsResultFn[Id, FactTable, P]
-    val definitionInput = input.withValue(input.factTable)
-    val (declaredFacts, evidence, declaredParams) = expr.definitions.foldMap { defExpr =>
-      val definitionFn = defExpr.visit(definitionVisitor)
-      val definitionResult = definitionFn(definitionInput)
-      (definitionResult.output.value, definitionResult.output.evidence, definitionResult.param :: Nil)
-    }
-    val subInput = input.copy(factTable = input.factTable.addAll(declaredFacts))
-    val subFn = expr.subExpr.visit(this)
-    val subResult = subFn(subInput)
-    // TODO: Come up with a better way to combine the CaptureP params from expressions that have multiple
-    //       sub expressions with different meanings.
-    val allParams = subResult.param :: declaredParams
-    val postParam = expr.capture.foldToParam(expr, input, subResult.output, allParams)
-    ExprResult.UsingDefinitions(expr, ExprResult.Context(input, subResult.output, postParam), subResult)
+  override def visitUsingDefinitions[R](expr: Expr.UsingDefinitions[V, R, P]): ExprInput[V] => ExprResult[V, R, P] = {
+    input =>
+      val definitionVisitor = new InterpretExprAsResultFn[FactTable, P]
+      val definitionInput = input.withValue(input.factTable)
+      val (declaredFacts, evidence, declaredParams) = expr.definitions.foldMap { defExpr =>
+        val definitionFn = defExpr.visit(definitionVisitor)
+        val definitionResult = definitionFn(definitionInput)
+        (definitionResult.output.value, definitionResult.output.evidence, definitionResult.param :: Nil)
+      }
+      val subInput = input.copy(factTable = input.factTable.addAll(declaredFacts))
+      val subFn = expr.subExpr.visit(this)
+      val subResult = subFn(subInput)
+      // TODO: Come up with a better way to combine the CaptureP params from expressions that have multiple
+      //       sub expressions with different meanings.
+      val allParams = subResult.param :: declaredParams
+      val postParam = expr.capture.foldToParam(expr, input, subResult.output, allParams)
+      ExprResult.UsingDefinitions(expr, ExprResult.Context(input, subResult.output, postParam), subResult)
   }
 
-  override def visitWhen[R](expr: Expr.When[F, V, R, P]): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
+  override def visitWhen[R](expr: Expr.When[V, R, P]): ExprInput[V] => ExprResult[V, R, P] = { input =>
     val (maybeConditionResult, condParams) = {
-      expr.conditionBranches.foldLeft((None, Nil): (Option[(ConditionBranch[F, V, R, P], Evidence)], List[Eval[P]])) {
+      expr.conditionBranches.foldLeft((None, Nil): (Option[(ConditionBranch[V, R, P], Evidence)], List[Eval[P]])) {
         case (acc @ (Some(_), _), _) => acc
         case ((None, params), cond) =>
           val whenResult = cond.whenExpr.visit(this)(input)
@@ -382,7 +375,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   override def visitWithFactsOfType[T, R](
     expr: Expr.WithFactsOfType[T, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
+  ): ExprInput[V] => ExprResult[V, R, P] = { input =>
     val inputFactTable = input.withValue(input.factTable)
     val withMatchingFactsFn = expr.subExpr.visit(InterpretExprAsResultFn())
     val matchingFacts = input.factTable.getSortedSeq(expr.factTypeSet)
@@ -398,8 +391,8 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   }
 
   override def visitZipOutput[M[_] : Align : FunctorFilter, L <: HList, R](
-    expr: Expr.ZipOutput[F, V, M, L, R, P],
-  ): ExprInput[F, V] => ExprResult[F, V, M[R], P] = { input =>
+    expr: Expr.ZipOutput[V, M, L, R, P],
+  ): ExprInput[V] => ExprResult[V, M[R], P] = { input =>
     val (tupleOutput, allParams) =
       visitHListOfHigherKindedExprAndZipCombinedToShortestOutput(expr.inputExprHList, input)
     val outputValues = FunctorFilter[M].functor.map(tupleOutput.value)(expr.converter)
@@ -409,25 +402,25 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   }
 
   @inline private def resultOfPureExpr[R](
-    expr: Expr[F, V, R, P],
-    input: ExprInput[F, V],
+    expr: Expr[V, R, P],
+    input: ExprInput[V],
     result: R,
     evidence: Evidence,
   )(
-    buildPostOp: (expr.type, ExprResult.Context[F, V, R, P]) => ExprResult[F, V, R, P],
-  ): ExprResult[F, V, R, P] = {
+    buildPostOp: (expr.type, ExprResult.Context[V, R, P]) => ExprResult[V, R, P],
+  ): ExprResult[V, R, P] = {
     resultOfManySubExpr(expr, input, result, evidence, Nil)(buildPostOp)
   }
 
   @inline private def resultOfManySubExpr[R](
-    expr: Expr[F, V, R, P],
-    input: ExprInput[F, V],
+    expr: Expr[V, R, P],
+    input: ExprInput[V],
     result: R,
     evidence: Evidence,
     capturedParams: List[Eval[P]],
   )(
-    buildResult: (expr.type, ExprResult.Context[F, V, R, P]) => ExprResult[F, V, R, P],
-  ): ExprResult[F, V, R, P] = {
+    buildResult: (expr.type, ExprResult.Context[V, R, P]) => ExprResult[V, R, P],
+  ): ExprResult[V, R, P] = {
     val output = ExprOutput(result, evidence)
     val param = expr.capture.foldToParam(expr, input, output, capturedParams)
     buildResult(expr, ExprResult.Context(input, output, param))
@@ -435,13 +428,13 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
   // This takes a higher-kinded parameter G[_] because there isn't a good way to use a wild-card
   // See https://github.com/scala/bug/issues/8039 for more details
-  @inline private def resultOfSingleSubExpr[G[_], R](
-    expr: Expr[F, V, R, P],
-    input: ExprInput[F, V],
-    subResult: ExprResult[G, _, R, P],
+  @inline private def resultOfSingleSubExpr[R](
+    expr: Expr[V, R, P],
+    input: ExprInput[V],
+    subResult: ExprResult[_, R, P],
   )(
-    buildPostOp: (expr.type, ExprResult.Context[F, V, R, P]) => ExprResult[F, V, R, P],
-  ): ExprResult[F, V, R, P] = {
+    buildPostOp: (expr.type, ExprResult.Context[V, R, P]) => ExprResult[V, R, P],
+  ): ExprResult[V, R, P] = {
     resultOfManySubExpr(expr, input, subResult.output.value, subResult.output.evidence, subResult.param :: Nil) {
       buildPostOp
     }
@@ -450,7 +443,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   /**
     * This type and functor are used for HList operations that require the [[InterpretExprAsSimpleOutputFn]] interpreter
     */
-  private object SimpleOutputFnFunctorBuilder extends SimpleOutputFnFunctorBuilder[F, V, P]
+  private object SimpleOutputFnFunctorBuilder extends SimpleOutputFnFunctorBuilder[V, P]
   import SimpleOutputFnFunctorBuilder._
 
   /**
@@ -463,8 +456,8 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     * @see [[NonEmptyExprHList.visitProduct]] for more details and examples
     */
   private def visitHListOfScalarExprAndCombineOutput[L <: HList](
-    exprHList: NonEmptyExprHList[F, V, Id, L, P],
-    input: ExprInput[F, V],
+    exprHList: NonEmptyExprHList[V, Id, L, P],
+    input: ExprInput[V],
   ): SimpleOutput[L] = {
     exprHList.visitProduct(new InterpretExprAsSimpleOutputFn).apply(input)
   }
@@ -479,8 +472,8 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     * @see [[NonEmptyExprHList.visitZippedToShortest]] for more details and examples.
     */
   private def visitHListOfHigherKindedExprAndZipCombinedToShortestOutput[M[_] : Align : FunctorFilter, L <: HList](
-    exprHList: NonEmptyExprHList[F, V, M, L, P],
-    input: ExprInput[F, V],
+    exprHList: NonEmptyExprHList[V, M, L, P],
+    input: ExprInput[V],
   ): SimpleOutput[M[L]] = {
     exprHList.visitZippedToShortest(new InterpretExprAsSimpleOutputFn).apply(input)
   }
@@ -488,9 +481,9 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
 
 object InterpretExprAsResultFn {
 
-  final def apply[F[_] : Foldable, V, P](): InterpretExprAsResultFn[F, V, P] = new InterpretExprAsResultFn
+  final def apply[V, P](): InterpretExprAsResultFn[V, P] = new InterpretExprAsResultFn
 
-  final def apply[F[_] : Foldable, V, R, P](expr: Expr[F, V, R, P])(input: ExprInput[F, V]): ExprResult[F, V, R, P] = {
+  final def apply[V, R, P](expr: Expr[V, R, P])(input: ExprInput[V]): ExprResult[V, R, P] = {
     expr.visit(InterpretExprAsResultFn())(input)
   }
 }

@@ -8,7 +8,7 @@ import scala.annotation.implicitNotFound
 
 @implicitNotFound(
   """
-Missing implicit CaptureP[${F}, ${V}, ${R}, P] (where P is some arbitrary type of parameter).
+Missing implicit CaptureP[${V}, ${R}, P] (where P is some arbitrary type of parameter).
 
 If you do not plan to do post-processing, you can import CaptureP.unit._
 
@@ -19,11 +19,11 @@ It will need to combine, return, or ignore the parameters from its child nodes. 
 The expression node that failed to find a post processor is:
 """,
 )
-trait CaptureP[F[_], V, R, P] {
+trait CaptureP[V, R, P] {
 
   def foldToParam(
-    expr: Expr[F, V, R, P],
-    input: ExprInput[F, V],
+    expr: Expr[V, R, P],
+    input: ExprInput[V],
     output: ExprOutput[R],
     subExprParams: List[Eval[P]],
   ): Eval[P]
@@ -34,7 +34,7 @@ object CaptureP extends CaptureUnitLowPriorityImplicit {
   /**
     * Captures the type parameter from facts with a value of type [[T]].
     */
-  trait FromFactsOfType[T, R, P] extends CaptureP[Seq, TypedFact[T], R, P]
+  trait FromFactsOfType[T, R, P] extends CaptureP[Seq[TypedFact[T]], R, P]
 
   /**
     * Captures the type parameter from facts with a value of type [[T]] (assuming [[P]] is a [[Monoid]])
@@ -42,7 +42,7 @@ object CaptureP extends CaptureUnitLowPriorityImplicit {
     * @see [[AsMonoid]]
     */
   abstract class AsMonoidFromFactsOfType[T, R, P : Monoid]
-    extends AsMonoid[Seq, TypedFact[T], R, P] // TODO: Use Iterable instead of Seq?
+    extends AsMonoid[Seq[TypedFact[T]], R, P] // TODO: Use Iterable instead of Seq?
     with FromFactsOfType[T, R, P]
 
   // TODO: This is not very safe. Nodes will often combine the params of their input expressions and sub expressions.
@@ -60,13 +60,13 @@ object CaptureP extends CaptureUnitLowPriorityImplicit {
     * @note this can be used in conjunction with extending [[AsMonoidCompanion]] in the surrounding object
     *       to define a standard fallback for unmatched types (assuming your parameter is a [[Monoid]]).
     */
-  abstract class AsMonoid[F[_], V, R, P : Monoid] extends CaptureP[F, V, R, P] {
+  abstract class AsMonoid[V, R, P : Monoid] extends CaptureP[V, R, P] {
 
     protected val empty: P = Monoid[P].empty
 
     override def foldToParam(
-      expr: Expr[F, V, R, P],
-      input: ExprInput[F, V],
+      expr: Expr[V, R, P],
+      input: ExprInput[V],
       output: ExprOutput[R],
       subExprParams: List[Eval[P]],
     ): Eval[P] = {
@@ -75,8 +75,8 @@ object CaptureP extends CaptureUnitLowPriorityImplicit {
     }
 
     protected def foldWithParentParam(
-      expr: Expr[F, V, R, P],
-      input: ExprInput[F, V],
+      expr: Expr[V, R, P],
+      input: ExprInput[V],
       output: ExprOutput[R],
       processedChildren: P,
     ): Eval[P]
@@ -89,11 +89,11 @@ object CaptureP extends CaptureUnitLowPriorityImplicit {
     *       for having no definition of how to capture a parameter with the given types, but needing
     *       to pass the captured params from this node's children up to the next parent.
     */
-  final class AsMonoidAndPass[F[_], V, R, P : Monoid] extends AsMonoid[F, V, R, P] {
+  final class AsMonoidAndPass[V, R, P : Monoid] extends AsMonoid[V, R, P] {
 
     override protected def foldWithParentParam(
-      expr: Expr[F, V, R, P],
-      input: ExprInput[F, V],
+      expr: Expr[V, R, P],
+      input: ExprInput[V],
       output: ExprOutput[R],
       processedChildren: P,
     ): Eval[P] = Eval.now(processedChildren)
@@ -106,17 +106,17 @@ object CaptureP extends CaptureUnitLowPriorityImplicit {
     * for types that you don't specifically select.
     */
   abstract class AsMonoidCompanion[P](protected implicit final val P: Monoid[P]) {
-    implicit def captureParamAndPass[F[_], V, R]: CaptureP[F, V, R, P] = new AsMonoidAndPass[F, V, R, P]
+    implicit def captureParamAndPass[V, R]: CaptureP[V, R, P] = new AsMonoidAndPass[V, R, P]
   }
 }
 
 sealed trait CaptureUnitLowPriorityImplicit {
 
-  implicit def captureUnit[F[_], V, R]: CaptureP[F, V, R, Unit] = new CaptureP[F, V, R, Unit] {
+  implicit def captureUnit[V, R]: CaptureP[V, R, Unit] = new CaptureP[V, R, Unit] {
 
     override final def foldToParam(
-      expr: Expr[F, V, R, Unit],
-      input: ExprInput[F, V],
+      expr: Expr[V, R, Unit],
+      input: ExprInput[V],
       output: ExprOutput[R],
       subExprParams: List[Eval[Unit]],
     ): Eval[Unit] = Eval.Unit
