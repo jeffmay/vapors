@@ -132,28 +132,18 @@ trait WrapExprSyntax {
 
 }
 
-final class ExprHListWrapper[F[_], V, L <: HList, P](private val exprHList: NonEmptyExprHList[F, V, Id, L, P])
-  extends AnyVal {
+final class ExprHListWrapper[F[_], V, L <: HList, P](
+  override protected val exprHList: NonEmptyExprHList[F, V, Id, L, P],
+) extends AnyVal
+  with HListOperationWrapper[F, V, Id, L, P] {
 
-  def as[R](
-    implicit
-    gen: Generic.Aux[R, L],
-    captureResult: CaptureP[F, V, R, P],
+  override type Op[R] = Expr.WrapOutput[F, V, L, R, P]
+
+  override protected def buildOp[R](
+    converter: ExprConverter[L, R],
+    captureResult: CaptureP[F, V, Id[R], P],
   ): Expr.WrapOutput[F, V, L, R, P] =
-    Expr.WrapOutput(exprHList, ExprConverter.asProductType, captureResult)
-
-  def asHList(
-    implicit
-    captureResult: CaptureP[F, V, L, P],
-  ): Expr.WrapOutput[F, V, L, L, P] =
-    Expr.WrapOutput(exprHList, ExprConverter.asHListIdentity, captureResult)
-
-  def asTuple[T](
-    implicit
-    tupler: Tupler.Aux[L, T],
-    captureResult: CaptureP[F, V, T, P],
-  ): Expr.WrapOutput[F, V, L, T, P] =
-    Expr.WrapOutput(exprHList, ExprConverter.asTuple, captureResult)
+    Expr.WrapOutput(exprHList, converter, captureResult)
 }
 
 final class GenericIdentity[R] extends Generic[R] {

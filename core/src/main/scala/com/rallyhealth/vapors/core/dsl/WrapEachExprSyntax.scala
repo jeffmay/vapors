@@ -143,51 +143,22 @@ final class WrapEachExprHListWrapper[F[_], V, M[_], L <: HList, P](
   private val exprHList: NonEmptyExprHList[F, V, M, L, P],
 ) extends AnyVal {
 
-  def zippedToShortest: ZippedToShortestExprWrapper[F, V, M, L, P] = new ZippedToShortestExprWrapper(exprHList)
+  def zippedToShortest(
+    implicit
+    alignM: Align[M],
+    filterM: FunctorFilter[M],
+  ): ZippedToShortestExprWrapper[F, V, M, L, P] = new ZippedToShortestExprWrapper(exprHList)
 }
 
-final class ZippedToShortestExprWrapper[F[_], V, M[_], L <: HList, P](
-  private val exprHList: NonEmptyExprHList[F, V, M, L, P],
-) {
+final class ZippedToShortestExprWrapper[F[_], V, M[_] : Align : FunctorFilter, L <: HList, P](
+  override protected val exprHList: NonEmptyExprHList[F, V, M, L, P],
+) extends HListOperationWrapper[F, V, M, L, P] {
 
-  // TODO: Maybe a good way to make these methods generic by carrying typeclasses and the function to apply?
-  //       This would avoid the naming repetition and capture / converter logic more consistent.
+  override type Op[R] = Expr.ZipOutput[F, V, M, L, R, P]
 
-  def asTuple[T](
-    implicit
-    tupler: Tupler.Aux[L, T],
-    alignM: Align[M],
-    filterM: FunctorFilter[M],
-    captureAllResults: CaptureP[F, V, M[T], P],
-  ): Expr.ZipOutput[F, V, M, L, T, P] =
-    Expr.ZipOutput(
-      exprHList,
-      ExprConverter.asTuple,
-      captureAllResults,
-    )
-
-  def asHList(
-    implicit
-    alignM: Align[M],
-    filterM: FunctorFilter[M],
-    captureAllResults: CaptureP[F, V, M[L], P],
-  ): Expr.ZipOutput[F, V, M, L, L, P] =
-    Expr.ZipOutput(
-      exprHList,
-      ExprConverter.asHListIdentity,
-      captureAllResults,
-    )
-
-  def as[R](
-    implicit
-    gen: Generic.Aux[R, L],
-    alignM: Align[M],
-    filterM: FunctorFilter[M],
-    captureAllResults: CaptureP[F, V, M[R], P],
+  override protected def buildOp[R](
+    converter: ExprConverter[L, R],
+    captureResult: CaptureP[F, V, M[R], P],
   ): Expr.ZipOutput[F, V, M, L, R, P] =
-    Expr.ZipOutput(
-      exprHList,
-      ExprConverter.asProductType,
-      captureAllResults,
-    )
+    Expr.ZipOutput(exprHList, converter, captureResult)
 }
