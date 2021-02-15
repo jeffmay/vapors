@@ -380,7 +380,7 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     val withMatchingFactsFn = expr.subExpr.visit(InterpretExprAsResultFn())
     val matchingFacts = input.factTable.getSortedSeq(expr.factTypeSet)
     // facts will always be added as their own evidence when used, so we do not need to add them to the evidence here
-    val subInput = input.withFoldableValue[Seq, TypedFact[T]](matchingFacts)
+    val subInput = input.withValue[Seq[TypedFact[T]]](matchingFacts)
     val subResult = withMatchingFactsFn(subInput)
     val postParam = expr.capture.foldToParam(expr, inputFactTable, subResult.output, subResult.param :: Nil)
     ExprResult.WithFactsOfType(
@@ -426,8 +426,6 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     buildResult(expr, ExprResult.Context(input, output, param))
   }
 
-  // This takes a higher-kinded parameter G[_] because there isn't a good way to use a wild-card
-  // See https://github.com/scala/bug/issues/8039 for more details
   @inline private def resultOfSingleSubExpr[R](
     expr: Expr[V, R, P],
     input: ExprInput[V],
