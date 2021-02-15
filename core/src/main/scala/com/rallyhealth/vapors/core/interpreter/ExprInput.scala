@@ -8,7 +8,7 @@ final case class ExprInput[V](
   factTable: FactTable,
 ) {
 
-  // TODO: Remove
+  @deprecated("Use withValue instead.", "0.10.0")
   @inline def withFoldableValue[G[_], U](
     value: G[U],
     evidence: Evidence = this.evidence,
