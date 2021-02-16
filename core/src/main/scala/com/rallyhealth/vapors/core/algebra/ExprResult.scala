@@ -62,6 +62,7 @@ object ExprResult {
     def visitWhen[R](result: When[F, V, R, P]): G[R]
     def visitWrapOutput[T <: HList, R](result: WrapOutput[F, V, T, R, P]): G[R]
     def visitWithFactsOfType[T, R](result: WithFactsOfType[F, V, T, R, P]): G[R]
+    def visitZipOutput[M[_] : Align : FunctorFilter, L <: HList, R](result: ZipOutput[F, V, M, L, R, P]): G[M[R]]
   }
 
   /*
@@ -247,6 +248,13 @@ object ExprResult {
     context: Context[F, V, R, P],
   ) extends ExprResult[F, V, R, P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitWrapOutput(this)
+  }
+
+  final case class ZipOutput[F[_], V, M[_] : Align : FunctorFilter, L <: HList, R, P](
+    expr: Expr.ZipOutput[F, V, M, L, R, P],
+    context: Context[F, V, M[R], P],
+  ) extends ExprResult[F, V, M[R], P] {
+    override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitZipOutput(this)
   }
 
   final case class NegativeOutput[F[_], V, R, P](

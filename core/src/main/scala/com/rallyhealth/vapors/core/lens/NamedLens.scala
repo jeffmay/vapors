@@ -2,6 +2,9 @@ package com.rallyhealth.vapors.core.lens
 
 import cats.data.NonEmptySet
 import cats.kernel.Semigroup
+import shapeless.{HList, Nat}
+import shapeless.ops.hlist.{At, Tupler}
+import shapeless.ops.nat.ToInt
 
 import scala.collection.Factory
 
@@ -23,6 +26,26 @@ object NamedLens {
 
     def to[C](factory: Factory[V, C]): NamedLens[A, C] =
       lens.copy(get = lens.get.andThen(_.iterator.to(factory)))
+  }
+
+  implicit final class AsHListBuilder[A, L <: HList](private val lens: NamedLens[A, L]) extends AnyVal {
+
+    def tupled[T](implicit tupler: Tupler.Aux[L, T]): NamedLens[A, T] =
+      lens.copy(
+        path = lens.path,
+        get = lens.get.andThen(tupler.apply),
+      )
+
+    def at[R](
+      n: Nat,
+    )(implicit
+      at: At.Aux[L, n.N, R],
+      toInt: ToInt[n.N],
+    ): NamedLens[A, R] =
+      lens.copy(
+        path = lens.path.atKey(Nat.toInt[n.N]),
+        get = lens.get.andThen(at.apply(_)),
+      )
   }
 
 }
@@ -81,6 +104,8 @@ final case class NamedLens[A, B](
       get = get.andThen(b => ev(b).headOption),
     )
   }
+
+  def asHList[L <: HList](implicit ev: B <:< L): NamedLens[A, L] = copy(get = get.andThen(ev))
 
   def asIterable[V](implicit ev: B <:< IterableOnce[V]): NamedLens.AsIterableBuilder[A, IterableOnce, V] =
     new NamedLens.AsIterableBuilder(this.copy(get = this.get.andThen(ev)))

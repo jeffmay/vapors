@@ -2,15 +2,13 @@ package com.rallyhealth.vapors.core.algebra
 
 import cats.data.NonEmptyList
 import cats.kernel.Monoid
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse, TraverseFilter}
+import cats.{Align, FlatMap, Foldable, Functor, FunctorFilter, Traverse, TraverseFilter}
 import com.rallyhealth.vapors.core.data._
-import com.rallyhealth.vapors.core.interpreter
-import com.rallyhealth.vapors.core.interpreter.InterpretExprAsResultFn
+import com.rallyhealth.vapors.core.interpreter.{ExprOutput, InterpretExprAsResultFn}
 import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
-import shapeless.ops.hlist.Tupler
-import shapeless.{Generic, HList}
+import shapeless.HList
 
 /**
   * The core expression algebra.
@@ -66,6 +64,7 @@ object Expr {
     def visitWhen[R](expr: When[F, V, R, P]): G[R]
     def visitWrapOutput[T <: HList, R](expr: WrapOutput[F, V, T, R, P]): G[R]
     def visitWithFactsOfType[T, R](expr: WithFactsOfType[T, R, P]): G[R]
+    def visitZipOutput[M[_] : Align : FunctorFilter, L <: HList, R](expr: ZipOutput[F, V, M, L, R, P]): G[M[R]]
   }
 
   /*
@@ -188,8 +187,7 @@ object Expr {
   /**
     * Returns the [[Conjunction]] of all results of the given input expressions.
     *
-    * All evidence is tracked using the logic defined in
-    * [[interpreter.InterpretExprAsResultFn.Output.conjunction]]
+    * All evidence is tracked using the logic defined in [[ExprOutput.conjunction]]
     *
     * @note this <i>does not</i> short-circuit.
     *       [[Evidence]] for all input values are used in deciding the evidence for the result.
@@ -207,8 +205,7 @@ object Expr {
   /**
     * Returns the [[Disjunction]] of all results of the given input expressions.
     *
-    * All evidence is tracked using the logic defined in
-    * [[interpreter.InterpretExprAsResultFn.Output.disjunction]]
+    * All evidence is tracked using the logic defined in [[ExprOutput.disjunction]]
     *
     * @note this <i>does not</i> short-circuit.
     *       [[Evidence]] for all input values are used in deciding the evidence for the result.
@@ -308,38 +305,36 @@ object Expr {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitMapOutput(this)
   }
 
+  /**
+    * Convert a non-empty HList of expressions into an expression of HList, then map a [[converter]] function.
+    *
+    * This is very similar to [[ZipOutput]], except that for concrete types, there is no possibility of having
+    * anything other than a single instance of the expected type, so you don't need any type-classes for the
+    * return type.
+    */
   final case class WrapOutput[F[_], V, L <: HList, R, P](
-    inputExprHList: NonEmptyExprHList[F, V, L, P],
-    converter: WrapOutput.Converter[L, R],
+    inputExprHList: NonEmptyExprHList[F, V, Id, L, P],
+    converter: ExprConverter[L, R],
     capture: CaptureP[F, V, R, P],
   ) extends Expr[F, V, R, P] {
     override def visit[G[_]](v: Visitor[F, V, P, G]): G[R] = v.visitWrapOutput(this)
   }
 
-  final object WrapOutput {
-
-    sealed trait Converter[L, R] {
-      def conversionType: String
-      def apply(in: L): R
-    }
-
-    // TODO: Capture type information about R for debugging?
-    private final class ConverterImpl[L, R](
-      convert: L => R,
-      override val conversionType: String,
-    ) extends Converter[L, R] {
-      override def apply(in: L): R = convert(in)
-    }
-
-    def asHListIdentity[R <: HList]: Converter[R, R] = new ConverterImpl(identity, "asHList")
-
-    def asProductType[L <: HList, R](implicit gen: Generic.Aux[R, L]): Converter[L, R] =
-      new ConverterImpl(gen.from, "asProduct")
-
-    def asTuple[L <: HList, R](implicit tupler: Tupler.Aux[L, R]): Converter[L, R] =
-      new ConverterImpl(tupler.apply, "asTuple")
+  /**
+    * Apply a given [[converter]] to every HList produced by zipping the outputs of expressions that return the
+    * same higher-kinded sequence, stopping at the shortest sequence.
+    */
+  final case class ZipOutput[F[_], V, M[_] : Align : FunctorFilter, L <: HList, R, P](
+    inputExprHList: NonEmptyExprHList[F, V, M, L, P],
+    converter: ExprConverter[L, R],
+    capture: CaptureP[F, V, M[R], P],
+  ) extends Expr[F, V, M[R], P] {
+    override def visit[G[_]](v: Visitor[F, V, P, G]): G[M[R]] = v.visitZipOutput(this)
   }
 
+  /**
+    * Return true if the output of the given [[inputExpr]] is an empty collection.
+    */
   final case class OutputIsEmpty[F[_], V, M[_] : Foldable, R, P](
     inputExpr: Expr[F, V, M[R], P],
     capture: CaptureP[F, V, Boolean, P],

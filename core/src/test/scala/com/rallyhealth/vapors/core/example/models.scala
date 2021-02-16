@@ -82,6 +82,7 @@ final case class GenericMeasurement(
 ) extends Measurement
 
 final case class TagsUpdate(
+  source: String,
   tags: Set[String],
   timestamp: Instant,
 ) extends HasTimestamp

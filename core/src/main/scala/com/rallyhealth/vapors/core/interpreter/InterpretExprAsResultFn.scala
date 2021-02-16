@@ -315,7 +315,7 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
   override def visitWrapOutput[T <: HList, R](
     expr: Expr.WrapOutput[F, V, T, R, P],
   ): ExprInput[F, V] => ExprResult[F, V, R, P] = { input =>
-    val (tupleOutput, allParams) = visitHListSimpleOutput(expr.inputExprHList, input)
+    val (tupleOutput, allParams) = visitHListOfScalarExprAndCombineOutput(expr.inputExprHList, input)
     val value = expr.converter(tupleOutput.value)
     resultOfManySubExpr(expr, input, value, tupleOutput.evidence, allParams) {
       ExprResult.WrapOutput(_, _)
@@ -386,6 +386,17 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     )
   }
 
+  override def visitZipOutput[M[_] : Align : FunctorFilter, L <: HList, R](
+    expr: Expr.ZipOutput[F, V, M, L, R, P],
+  ): ExprInput[F, V] => ExprResult[F, V, M[R], P] = { input =>
+    val (tupleOutput, allParams) =
+      visitHListOfHigherKindedExprAndZipCombinedToShortestOutput(expr.inputExprHList, input)
+    val outputValues = FunctorFilter[M].functor.map(tupleOutput.value)(expr.converter)
+    resultOfManySubExpr(expr, input, outputValues, tupleOutput.evidence, allParams) {
+      ExprResult.ZipOutput(_, _)
+    }
+  }
+
   @inline private def resultOfPureExpr[R](
     expr: Expr[F, V, R, P],
     input: ExprInput[F, V],
@@ -437,12 +448,30 @@ final class InterpretExprAsResultFn[F[_] : Foldable, V, P]
     *
     * The evidence sets are unioned together, the params are combined in a list, and the values are mapped into
     * an [[HList]] of the given type.
+    *
+    * @see [[NonEmptyExprHList.visitProduct]] for more details and examples
     */
-  private def visitHListSimpleOutput[L <: HList](
-    exprHList: NonEmptyExprHList[F, V, L, P],
+  private def visitHListOfScalarExprAndCombineOutput[L <: HList](
+    exprHList: NonEmptyExprHList[F, V, Id, L, P],
     input: ExprInput[F, V],
   ): SimpleOutput[L] = {
-    exprHList.visit(new InterpretExprAsSimpleOutputFn).apply(input)
+    exprHList.visitProduct(new InterpretExprAsSimpleOutputFn).apply(input)
+  }
+
+  /**
+    * Similar to [[visitHListOfScalarExprAndCombineOutput]] except that it handles an HList of expressions that return
+    * higher-kinded functor wrapped values by aligning and zipping the values as HList values of each element
+    * inside the wrapper.
+    *
+    * In other words, it only returns a wrapped HList for each element of the shortest-length output value.
+    *
+    * @see [[NonEmptyExprHList.visitZippedToShortest]] for more details and examples.
+    */
+  private def visitHListOfHigherKindedExprAndZipCombinedToShortestOutput[M[_] : Align : FunctorFilter, L <: HList](
+    exprHList: NonEmptyExprHList[F, V, M, L, P],
+    input: ExprInput[F, V],
+  ): SimpleOutput[M[L]] = {
+    exprHList.visitZippedToShortest(new InterpretExprAsSimpleOutputFn).apply(input)
   }
 }
 
