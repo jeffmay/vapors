@@ -176,17 +176,25 @@ trait ExprDsl extends WrapExprSyntax with WrapEachExprSyntax {
   ): Expr.ExistsInOutput[V, M, U, P] =
     Expr.ExistsInOutput(inputExpr, condExpr, capture)
 
+  def returnInput[V, P](
+    implicit
+    capture: CaptureP[V, V, P],
+  ): Expr.ReturnInput[V, P] =
+    Expr.ReturnInput(capture)
+
+  @deprecated("Use returnInput instead", "0.10.0")
   def returnInputFoldable[V, P](
     implicit
     capture: CaptureP[V, V, P],
   ): Expr.ReturnInput[V, P] =
     Expr.ReturnInput(capture)
 
+  @deprecated("Use returnInput instead", "0.10.0")
   def returnInputValue[V, P](
     implicit
     capture: CaptureP[V, V, P],
   ): Expr.ReturnInput[V, P] =
-    Expr.ReturnInput[V, P](capture)
+    Expr.ReturnInput(capture)
 
   def within[V, R, P](
     inputExpr: Expr[V, R, P],
