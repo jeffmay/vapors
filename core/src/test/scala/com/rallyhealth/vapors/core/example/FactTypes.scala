@@ -14,6 +14,7 @@ object FactTypes {
   val Role = FactType[Role]("role")
   val BirthYear = FactType[Int]("year_of_birth")
   val DateOfBirth = FactType[LocalDate]("date_of_birth")
+  val AddressUpdate = FactType[AddressUpdate]("address_update")
   val GenericMeasurement = FactType[GenericMeasurement]("generic_measurement")
   val WeightMeasurement = FactType[WeightMeasurementLbs]("weight_measurement")
   val WeightSelfReported = FactType[WeightMeasurementLbs]("weight_self_reported")

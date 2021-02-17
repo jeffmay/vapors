@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.core.example
 
 import com.rallyhealth.vapors.core.data.{FactSet, FactTable}
 
-import java.time.{LocalDate, ZoneOffset}
+import java.time.{Instant, LocalDate, ZoneOffset}
 
 object JoeSchmoe {
   val name = FactTypes.Name("Joe Schmoe")
@@ -10,6 +10,13 @@ object JoeSchmoe {
   val userRole = FactTypes.Role(Role.User)
   val adminRole = FactTypes.Role(Role.Admin)
   val dateOfBirth = FactTypes.DateOfBirth(LocalDate.of(1987, 1, 1))
+
+  val lastAddressUpdate = FactTypes.AddressUpdate(
+    AddressUpdate(
+      Address("123 elm", "", "Springfield", "CO", "81073"),
+      Instant.from(LocalDate.of(2018, 3, 12).atStartOfDay(ZoneOffset.UTC)),
+    ),
+  )
 
   val weight = FactTypes.WeightMeasurement(
     WeightMeasurementLbs(250.0, LocalDate.of(2020, 5, 1).atStartOfDay().toInstant(ZoneOffset.UTC)),

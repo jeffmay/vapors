@@ -26,7 +26,6 @@ object NamedLens {
   }
 
   implicit final class Selector[A, B](val lens: NamedLens[A, B]) extends AnyVal {
-    // TODO: Rename downField?
     def select[C](getter: B => C): NamedLens[A, C] = macro NamedLensMacros.selectImpl[A, B, C]
   }
 
