@@ -11,7 +11,7 @@ import scala.collection.Factory
 object NamedLens {
 
   type Id[A] = NamedLens[A, A]
-  val Id: NamedLens[Any, Any] = NamedLens(DataPath(Nil), identity[Any])
+  val Id: NamedLens[Any, Any] = NamedLens(DataPath.empty, identity[Any])
   def id[A]: NamedLens[A, A] = Id.asInstanceOf[Id[A]]
 
   type Fn[A, B] = NamedLens.Id[A] => NamedLens[A, B]
@@ -57,7 +57,7 @@ final case class NamedLens[A, B](
 
   def andThen[C](lens: NamedLens[B, C]): NamedLens[A, C] = {
     copy(
-      path = this.path ::: lens.path,
+      path = this.path ++ lens.path,
       get = get.andThen(lens.get),
     )
   }

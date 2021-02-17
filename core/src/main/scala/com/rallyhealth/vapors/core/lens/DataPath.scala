@@ -1,13 +1,12 @@
 package com.rallyhealth.vapors.core.lens
 
 import cats.Show
-import cats.data.NonEmptySet
+import cats.data.{Chain, NonEmptySet}
 
 import scala.annotation.tailrec
 import scala.collection.{immutable, BitSet, SortedSet}
 
-// TODO: Better data structure for appending?
-final case class DataPath(nodes: List[DataPath.Node]) extends AnyVal {
+final case class DataPath(nodes: Chain[DataPath.Node]) extends AnyVal {
   import DataPath._
 
   def apply(idx: Int): DataPath = atIndex(idx)
@@ -19,35 +18,40 @@ final case class DataPath(nodes: List[DataPath.Node]) extends AnyVal {
 
   def isEmpty: Boolean = nodes.isEmpty
 
-  def indexes(at: NonEmptySet[Int]): DataPath = DataPath(nodes ::: IdxSet(BitSet.fromSpecific(at.toSortedSet)) :: Nil)
+  def indexes(at: NonEmptySet[Int]): DataPath = DataPath(nodes :+ IdxSet(BitSet.fromSpecific(at.toSortedSet)))
 
   def slice(
     startIdx: Int,
     endIdx: Int,
-  ): DataPath = DataPath(nodes ::: IdxSlice(startIdx, endIdx) :: Nil)
+  ): DataPath = DataPath(nodes :+ IdxSlice(startIdx, endIdx))
 
-  def between(idxRange: Range): DataPath = DataPath(nodes ::: IdxRange(idxRange) :: Nil)
+  def between(idxRange: Range): DataPath = DataPath(nodes :+ IdxRange(idxRange))
 
-  def atIndex(idx: Int): DataPath = DataPath(nodes ::: Idx(idx) :: Nil)
+  def atIndex(idx: Int): DataPath = DataPath(nodes :+ Idx(idx))
 
-  def atHead: DataPath = DataPath(nodes ::: Head :: Nil)
+  def atHead: DataPath = DataPath(nodes :+ Head)
 
-  def atLast: DataPath = DataPath(nodes ::: Last :: Nil)
+  def atLast: DataPath = DataPath(nodes :+ Last)
 
   def atKey[K : ValidDataPathKey](key: K): DataPath =
-    DataPath(nodes ::: MapKey(ValidDataPathKey[K].stringify(key)) :: Nil)
+    DataPath(nodes :+ MapKey(ValidDataPathKey[K].stringify(key)))
 
   def filterKeys[K : ValidDataPathKey](keys: NonEmptySet[K]): DataPath =
-    DataPath(nodes ::: FilterKeys(keys.map(ValidDataPathKey[K].stringify).toSortedSet) :: Nil)
+    DataPath(nodes :+ FilterKeys(keys.map(ValidDataPathKey[K].stringify).toSortedSet))
 
-  def atField(name: String): DataPath = DataPath(nodes ::: Field(name) :: Nil)
+  def atField(name: String): DataPath = DataPath(nodes :+ Field(name))
 
-  def :::(that: DataPath): DataPath = DataPath(that.nodes ::: this.nodes)
+  @deprecated("Use ++ instead", "0.11.0")
+  def :::(that: DataPath): DataPath = DataPath(that.nodes ++ this.nodes)
+
+  def ++(that: DataPath): DataPath = DataPath(this.nodes ++ that.nodes)
 }
 
 object DataPath {
 
-  val empty: DataPath = DataPath(Nil)
+  def apply(nodes: Seq[Node]): DataPath = new DataPath(Chain.fromSeq(nodes))
+
+  val empty: DataPath = DataPath(Chain.nil)
 
   sealed trait Node
 
@@ -91,11 +95,10 @@ object DataPath {
 
   @tailrec private def writeToBuilder(
     buffer: StringBuilder,
-    path: List[DataPath.Node],
-  ): StringBuilder = path match {
-    case Nil => buffer
-    case head :: tail =>
-      var remaining: List[DataPath.Node] = tail
+    path: Chain[DataPath.Node],
+  ): StringBuilder = path.uncons match {
+    case Some((head, tail)) =>
+      var remaining: Chain[DataPath.Node] = tail
       head match {
         case MapKey(key) =>
           buffer.append("['").append(key).append("']")
@@ -106,23 +109,24 @@ object DataPath {
         case Field(name) =>
           buffer.append('.').append(name)
         case Head =>
-          remaining ::= Idx(0)
+          remaining :+= Idx(0)
         case Last =>
-          remaining ::= Idx(-1)
+          remaining :+= Idx(-1)
         case Idx(idx) =>
           buffer.append('[').append(idx).append(']')
         case IdxSlice(startIdx, endIdx) =>
           buffer.append('[').append(startIdx).append(':').append(endIdx).append(']')
         case IdxRange(range) if range.step == 1 =>
-          remaining ::= IdxSlice(range.start, range.end)
+          remaining +:= IdxSlice(range.start, range.end)
         case IdxRange(range) =>
-          remaining ::= IdxSet(BitSet.fromSpecific(range))
+          remaining +:= IdxSet(BitSet.fromSpecific(range))
         case IdxSet(idxSet) =>
           buffer.append('[')
           joinKeys(buffer, idxSet, ",")
           buffer.append(']')
       }
       writeToBuilder(buffer, remaining)
+    case _ => buffer
   }
 
   private def joinKeys[T](
