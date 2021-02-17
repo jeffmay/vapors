@@ -1,5 +1,6 @@
 package com.rallyhealth.vapors.core.lens
 
+import cats.arrow.Compose
 import cats.data.NonEmptySet
 import cats.kernel.Semigroup
 import shapeless.{HList, Nat}
@@ -15,6 +16,14 @@ object NamedLens {
   def id[A]: NamedLens[A, A] = Id.asInstanceOf[Id[A]]
 
   type Fn[A, B] = NamedLens.Id[A] => NamedLens[A, B]
+
+  implicit object ComposeInstance extends Compose[NamedLens] {
+    override def compose[A, B, C](
+      f: NamedLens[B, C],
+      g: NamedLens[A, B],
+    ): NamedLens[A, C] =
+      g.andThen(f)
+  }
 
   implicit final class Selector[A, B](val lens: NamedLens[A, B]) extends AnyVal {
     // TODO: Rename downField?
@@ -55,6 +64,7 @@ final case class NamedLens[A, B](
   get: A => B,
 ) { outer =>
 
+  // Because extension methods don't retain type information well, this is still useful despite the Compose instance
   def andThen[C](lens: NamedLens[B, C]): NamedLens[A, C] = {
     copy(
       path = this.path ++ lens.path,
