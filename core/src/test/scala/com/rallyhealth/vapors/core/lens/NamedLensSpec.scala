@@ -1,11 +1,12 @@
 package com.rallyhealth.vapors.core.lens
 
 import cats.data.Chain
-import com.rallyhealth.vapors.core.example.{BloodPressure, JoeSchmoe}
+import com.rallyhealth.vapors.core.data.TypedFact
+import com.rallyhealth.vapors.core.example.{Address, AddressUpdate, BloodPressure, JoeSchmoe}
 import org.scalatest.wordspec.AnyWordSpec
 import shapeless.{::, HNil, Nat}
 
-import java.time.LocalDate
+import java.time.{Instant, LocalDate}
 
 class NamedLensSpec extends AnyWordSpec {
 
@@ -28,7 +29,7 @@ class NamedLensSpec extends AnyWordSpec {
 
   "NamedLens.select" should {
 
-    "select a case class field" in {
+    "select a field of a case class" in {
       val lens = NamedLens.id[BloodPressure].select(_.diastolic)
       assertResult(DataPath(Chain(DataPath.Field("diastolic"))))(lens.path)
       assertResult(JoeSchmoe.bloodPressure.value.diastolic) {
@@ -36,11 +37,44 @@ class NamedLensSpec extends AnyWordSpec {
       }
     }
 
-    "select a Java bean style getter method" in {
-      val lens = NamedLens.id[LocalDate].select(_.getYear)
-      // TODO: Should this remove the "get" and lowercase the first letter?
-      assertResult(DataPath(Chain(DataPath.Field("getYear"))))(lens.path)
+    "select a field of a case class within another case class" in {
+      val lens = NamedLens.id[AddressUpdate].select(_.address.zip)
+      assertResult(DataPath(Chain(DataPath.Field("address"), DataPath.Field("zip"))))(lens.path)
+      assertResult(JoeSchmoe.lastAddressUpdate.value.address.zip) {
+        lens.get(JoeSchmoe.lastAddressUpdate.value)
+      }
+    }
+
+    "select a field of a case class inside of a Fact" in {
+      val lens = NamedLens.id[TypedFact[BloodPressure]].select(_.value.diastolic)
+      assertResult(DataPath(Chain(DataPath.Field("value"), DataPath.Field("diastolic"))))(lens.path)
+      assertResult(JoeSchmoe.bloodPressure.value.diastolic) {
+        lens.get(JoeSchmoe.bloodPressure)
+      }
+    }
+
+    "select a field of a case class within another case class inside of a fact" in {
+      val lens = NamedLens.id[TypedFact[AddressUpdate]].select(_.value.address.zip)
+      assertResult(DataPath(Chain(DataPath.Field("value"), DataPath.Field("address"), DataPath.Field("zip"))))(
+        lens.path,
+      )
+      assertResult(JoeSchmoe.lastAddressUpdate.value.address.zip) {
+        lens.get(JoeSchmoe.lastAddressUpdate)
+      }
+    }
+
+    "select a Java bean style 'get' method with the prefix removed" in {
+      val lens = NamedLens.id[LocalDate].select(_.getYear())
+      assertResult(DataPath(Chain(DataPath.Field("year"))))(lens.path)
       assertResult(JoeSchmoe.dateOfBirth.value.getYear) {
+        lens.get(JoeSchmoe.dateOfBirth.value)
+      }
+    }
+
+    "select a Java bean style 'is' method without removing the prefix" in {
+      val lens = NamedLens.id[LocalDate].select(_.isLeapYear())
+      assertResult(DataPath(Chain(DataPath.Field("isLeapYear"))))(lens.path)
+      assertResult(JoeSchmoe.dateOfBirth.value.isLeapYear) {
         lens.get(JoeSchmoe.dateOfBirth.value)
       }
     }

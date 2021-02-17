@@ -1,5 +1,6 @@
 package com.rallyhealth.vapors.core.lens
 
+import scala.annotation.tailrec
 import scala.reflect.macros.blackbox
 
 object NamedLensMacros {
@@ -10,25 +11,58 @@ object NamedLensMacros {
     getter: c.Expr[B => C],
   ): c.Expr[NamedLens[A, C]] = {
     import c.universe._
-    // TODO: Handle nested fields better
-    // TODO: Better error message for invalid function types and call patterns
-//    println(s"SHOWING THIS PREFIX RAW: ${showRaw(c.prefix)}")
-//    println(s"SHOWING THIS PREFIX CODE: ${showCode(c.prefix.tree)}")
-//    println(s"SHOWING GETTER RAW: ${showRaw(getter)}")
-//    val selectorCls = weakTypeTag[NamedLens.Selector[A, B]]
-//    val q"$selector($lens)" = c.prefix.tree
-//    if (!(selector.tpe =:= selectorCls.tpe)) {
-//      c.error(c.enclosingPosition, "Can only call .select from NamedLens")
-//    }
-//    c.Expr[NamedLens[A, C]](q"$lens.field($fieldName, $getter)")
-    val fieldName = getter.tree match {
-      case q"(..$_) => $_.${TermName(value)}" => value
-      case q"(..$_) => $_.${TermName(getMethod)}()" => getMethod
+    val selectChain = getter.tree match {
+      case Function(_, rhs) => rhs
     }
-    val fieldNameExp = c.Expr[String](q"$fieldName")
+    val fieldNames = selectTermNameList(c)(selectChain).map(JavaBeanCompat.unbeanify)
+    val fieldNameLiterals = c.Expr[List[String]](q"$fieldNames")
+    val dataPathToAppend = reify {
+      DataPath(fieldNameLiterals.splice.map(DataPath.Field))
+    }
+    val lensToAppend = reify {
+      NamedLens[B, C](dataPathToAppend.splice, getter.splice)
+    }
     reify {
-      c.prefix.splice.asInstanceOf[NamedLens.Selector[A, B]].lens.field(fieldNameExp.splice, getter.splice)
+      c.prefix.splice.asInstanceOf[NamedLens.Selector[A, B]].lens.andThen(lensToAppend.splice)
     }
   }
 
+  def selectTermNameList(c: blackbox.Context)(tree: c.mirror.universe.Tree): List[String] = {
+    import c.universe._
+    @tailrec def loop(
+      remaining: Tree,
+      fields: List[String],
+    ): List[String] = remaining match {
+      // once we have figured out the target of all of the select operations,
+      // ignore the name (probably anonymous anyway) and return the field names
+      case Ident(_) => fields
+      // strip parameterless method application for Java compat
+      case Apply(sub: Select, Nil) => loop(sub, fields)
+      // recursive case: selects the term from the result of the given expression
+      case Select(init, TermName(last)) => loop(init, last :: fields)
+      // if the expression does more than just select or apply zero parameter methods, then stop
+      case _ => c.abort(remaining.pos, "Can only extract term names from a chain of vals or parameterless methods")
+    }
+    loop(tree, Nil)
+  }
+
+}
+
+object JavaBeanCompat {
+
+  // originally this contained both "is" and "get", but I think x.isEmpty reads better than x.empty
+  private final val GETTER_PREFIXES = Set("get")
+
+  def unbeanify(name: String): String = {
+    for (prefix <- GETTER_PREFIXES) {
+      if (name.startsWith(prefix) && name.length > prefix.length) {
+        val firstChar = name.charAt(prefix.length)
+        if (firstChar.isUpper) {
+          val restOfName = name.substring(prefix.length + 1)
+          return s"${firstChar.toLower}$restOfName"
+        }
+      }
+    }
+    name
+  }
 }

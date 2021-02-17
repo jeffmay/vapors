@@ -43,14 +43,11 @@ trait HasTimestamp {
 
 object HasTimestamp {
   implicit val extractTimestamp: ExtractInstant[HasTimestamp] = _.timestamp
+  implicit def orderByTimestampLatestFirst[T <: HasTimestamp]: Order[T] = Order.by(_.timestamp)
 }
 
 sealed trait Measurement extends HasTimestamp {
   def name: String
-}
-
-object Measurement {
-  implicit def orderByLatestTimestamp[M <: Measurement]: Order[M] = Order.by(_.timestamp)
 }
 
 sealed trait NumericMeasurement extends Measurement {
@@ -87,6 +84,15 @@ final case class TagsUpdate(
   timestamp: Instant,
 ) extends HasTimestamp
 
-object TagsUpdate {
-  implicit val orderByLatestTimestamp: Order[TagsUpdate] = Order.by(_.timestamp)
-}
+final case class Address(
+  street1: String,
+  street2: String,
+  city: String,
+  state: String,
+  zip: String,
+)
+
+final case class AddressUpdate(
+  address: Address,
+  timestamp: Instant,
+) extends HasTimestamp
