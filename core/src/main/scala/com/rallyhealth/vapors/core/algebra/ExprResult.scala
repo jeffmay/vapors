@@ -62,7 +62,7 @@ object ExprResult {
     def visitTakeFromOutput[M[_] : Traverse : TraverseFilter, R](result: TakeFromOutput[V, M, R, P]): G[M[R]]
     def visitUsingDefinitions[R](result: UsingDefinitions[V, R, P]): G[R]
     def visitWhen[R](result: When[V, R, P]): G[R]
-    def visitWrapOutput[T <: HList, R](result: WrapOutput[V, T, R, P]): G[R]
+    def visitWrapOutputHList[T <: HList, R](result: WrapOutputHList[V, T, R, P]): G[R]
     def visitWithFactsOfType[T, R](result: WithFactsOfType[V, T, R, P]): G[R]
     def visitZipOutput[M[_] : Align : FunctorFilter, L <: HList, R](result: ZipOutput[V, M, L, R, P]): G[M[R]]
   }
@@ -261,11 +261,11 @@ object ExprResult {
     override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitSubtractOutputs(this)
   }
 
-  final case class WrapOutput[V, T <: HList, R, P](
-    expr: Expr.WrapOutput[V, T, R, P],
+  final case class WrapOutputHList[V, T <: HList, R, P](
+    expr: Expr.WrapOutputHList[V, T, R, P],
     context: Context[V, R, P],
   ) extends ExprResult[V, R, P] {
-    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitWrapOutput(this)
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitWrapOutputHList(this)
   }
 
   final case class ZipOutput[V, M[_] : Align : FunctorFilter, L <: HList, R, P](

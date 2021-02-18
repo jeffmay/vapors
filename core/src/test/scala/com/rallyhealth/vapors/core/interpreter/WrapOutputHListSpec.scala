@@ -6,7 +6,7 @@ import com.rallyhealth.vapors.core.example.{ColorCoding, FactTypes, JoeSchmoe, T
 import org.scalatest.freespec.AnyFreeSpec
 import shapeless.HNil
 
-class WrapOutputSpec extends AnyFreeSpec {
+class WrapOutputHListSpec extends AnyFreeSpec {
 
   import com.rallyhealth.vapors.core.example.SimpleTagUpdates._
 
