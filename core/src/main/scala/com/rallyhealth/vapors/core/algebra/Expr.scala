@@ -63,7 +63,7 @@ object Expr {
     def visitTakeFromOutput[M[_] : Traverse : TraverseFilter, R](expr: TakeFromOutput[V, M, R, P]): G[M[R]]
     def visitUsingDefinitions[R](expr: UsingDefinitions[V, R, P]): G[R]
     def visitWhen[R](expr: When[V, R, P]): G[R]
-    def visitWrapOutput[T <: HList, R](expr: WrapOutput[V, T, R, P]): G[R]
+    def visitWrapOutputHList[T <: HList, R](expr: WrapOutputHList[V, T, R, P]): G[R]
     def visitWithFactsOfType[T, R](expr: WithFactsOfType[T, R, P]): G[R]
     def visitZipOutput[M[_] : Align : FunctorFilter, L <: HList, R](expr: ZipOutput[V, M, L, R, P]): G[M[R]]
   }
@@ -339,12 +339,12 @@ object Expr {
     * anything other than a single instance of the expected type, so you don't need any type-classes for the
     * return type.
     */
-  final case class WrapOutput[V, L <: HList, R, P](
+  final case class WrapOutputHList[V, L <: HList, R, P](
     inputExprHList: NonEmptyExprHList[V, Id, L, P],
     converter: ExprConverter[L, R],
     capture: CaptureP[V, R, P],
   ) extends Expr[V, R, P] {
-    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitWrapOutput(this)
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitWrapOutputHList(this)
   }
 
   /**

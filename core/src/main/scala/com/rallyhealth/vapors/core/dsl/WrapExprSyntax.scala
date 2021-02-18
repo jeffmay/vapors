@@ -136,13 +136,13 @@ final class ExprHListWrapper[V, L <: HList, P](override protected val exprHList:
   extends AnyVal
   with HListOperationWrapper[V, Id, L, P] {
 
-  override type Op[R] = Expr.WrapOutput[V, L, R, P]
+  override type Op[R] = Expr.WrapOutputHList[V, L, R, P]
 
   override protected def buildOp[R](
     converter: ExprConverter[L, R],
     captureResult: CaptureP[V, Id[R], P],
-  ): Expr.WrapOutput[V, L, R, P] =
-    Expr.WrapOutput(exprHList, converter, captureResult)
+  ): Expr.WrapOutputHList[V, L, R, P] =
+    Expr.WrapOutputHList(exprHList, converter, captureResult)
 }
 
 final class GenericIdentity[R] extends Generic[R] {

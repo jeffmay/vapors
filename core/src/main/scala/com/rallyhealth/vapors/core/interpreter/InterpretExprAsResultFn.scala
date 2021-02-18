@@ -330,13 +330,13 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     }
   }
 
-  override def visitWrapOutput[T <: HList, R](
-    expr: Expr.WrapOutput[V, T, R, P],
+  override def visitWrapOutputHList[T <: HList, R](
+    expr: Expr.WrapOutputHList[V, T, R, P],
   ): ExprInput[V] => ExprResult[V, R, P] = { input =>
     val (tupleOutput, allParams) = visitHListOfScalarExprAndCombineOutput(expr.inputExprHList, input)
     val value = expr.converter(tupleOutput.value)
     resultOfManySubExpr(expr, input, value, tupleOutput.evidence, allParams) {
-      ExprResult.WrapOutput(_, _)
+      ExprResult.WrapOutputHList(_, _)
     }
   }
 
