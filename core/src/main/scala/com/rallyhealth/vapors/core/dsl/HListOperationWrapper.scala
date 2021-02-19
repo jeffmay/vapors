@@ -1,7 +1,7 @@
 package com.rallyhealth.vapors.core.dsl
 
 import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, ExprConverter, NonEmptyExprHList}
-import shapeless.ops.hlist.Tupler
+import shapeless.ops.hlist.{ToTraversable, Tupler}
 import shapeless.{Generic, HList}
 
 trait HListOperationWrapper[V, M[_], L <: HList, P] extends Any {

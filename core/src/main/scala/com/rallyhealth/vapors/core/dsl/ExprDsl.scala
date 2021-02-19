@@ -125,6 +125,31 @@ trait ExprDsl extends WrapExprSyntax with WrapEachExprSyntax {
       ),
     )
 
+  /**
+    * Takes a sequence of expressions and produces an expression of sequence of all the items.
+    *
+    * @see [[wrapSeq]] for varargs syntactic sugar.
+    *
+    *      If you would like to put the results into a heterogeneous sequence, then you should use the [[wrap]] method.
+    */
+  def sequence[V, R, P](
+    expressions: Seq[Expr[V, R, P]],
+  )(implicit
+    captureResult: CaptureP[V, Seq[R], P],
+  ): Expr.WrapOutputSeq[V, R, P] = Expr.WrapOutputSeq(expressions, captureResult)
+
+  /**
+    * Syntactic sugar for [[sequence]].
+    *
+    * You should use this method over [[sequence]] when you are writing your expression in the embedded DSL.
+    * If you are abstracting over a sequence of expressions, then you should use [[sequence]].
+    */
+  @inline final def wrapSeq[V, R, P](
+    expressions: Expr[V, R, P]*,
+  )(implicit
+    captureResult: CaptureP[V, Seq[R], P],
+  ): Expr.WrapOutputSeq[V, R, P] = sequence(expressions)
+
   def withFactsOfType[T, P](
     factTypeSet: FactTypeSet[T],
   )(implicit

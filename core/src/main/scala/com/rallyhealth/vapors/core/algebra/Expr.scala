@@ -64,6 +64,7 @@ object Expr {
     def visitUsingDefinitions[R](expr: UsingDefinitions[V, R, P]): G[R]
     def visitWhen[R](expr: When[V, R, P]): G[R]
     def visitWrapOutputHList[T <: HList, R](expr: WrapOutputHList[V, T, R, P]): G[R]
+    def visitWrapOutputSeq[R](expr: WrapOutputSeq[V, R, P]): G[Seq[R]]
     def visitWithFactsOfType[T, R](expr: WithFactsOfType[T, R, P]): G[R]
     def visitZipOutput[M[_] : Align : FunctorFilter, L <: HList, R](expr: ZipOutput[V, M, L, R, P]): G[M[R]]
   }
@@ -330,6 +331,17 @@ object Expr {
     capture: CaptureP[V, M[R], P],
   ) extends Expr[V, M[R], P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[M[R]] = v.visitConcatOutput(this)
+  }
+
+  /**
+    * Wrap a sequence of expressions into a single expression of a lazy sequence that evaluates only the
+    * expressions needed to produce the values used in subsequent expression nodes.
+    */
+  final case class WrapOutputSeq[V, R, P](
+    inputExprList: Seq[Expr[V, R, P]],
+    capture: CaptureP[V, Seq[R], P],
+  ) extends Expr[V, Seq[R], P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[Seq[R]] = v.visitWrapOutputSeq(this)
   }
 
   /**

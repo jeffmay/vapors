@@ -330,6 +330,17 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     }
   }
 
+  override def visitWrapOutputSeq[R](expr: Expr.WrapOutputSeq[V, R, P]): ExprInput[V] => ExprResult[V, Seq[R], P] = {
+    input =>
+      val inputResultList = expr.inputExprList.to(LazyList).map(_.visit(this)(input))
+      val allEvidence = inputResultList.foldMap(_.output.evidence)
+      val allParams = inputResultList.foldMap(_.param :: Nil)
+      val outputValues = inputResultList.map(_.output.value)
+      resultOfManySubExpr(expr, input, outputValues, allEvidence, allParams) {
+        ExprResult.WrapOutputSeq(_, _, inputResultList)
+      }
+  }
+
   override def visitWrapOutputHList[T <: HList, R](
     expr: Expr.WrapOutputHList[V, T, R, P],
   ): ExprInput[V] => ExprResult[V, R, P] = { input =>
