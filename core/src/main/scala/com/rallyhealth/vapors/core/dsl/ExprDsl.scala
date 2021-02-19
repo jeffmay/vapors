@@ -77,6 +77,9 @@ trait ExprDsl extends WrapExprSyntax with WrapEachExprSyntax {
   ): Expr.Embed[V, R, P] =
     Expr.Embed(expr, captureResult)
 
+  def concat[V, M[_], R, P](expressions: Expr[V, M[R], P]*): ConcatOutputExprBuilder[V, M, R, P] =
+    new ConcatOutputExprBuilder(expressions.to(LazyList))
+
   def and[V, R : Conjunction : ExtractBoolean, P](
     first: Expr[V, R, P],
     second: Expr[V, R, P],

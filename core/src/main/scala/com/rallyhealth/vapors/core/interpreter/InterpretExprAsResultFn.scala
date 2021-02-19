@@ -68,6 +68,19 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     }
   }
 
+  override def visitConcatOutput[M[_] : MonoidK, R](
+    expr: Expr.ConcatOutput[V, M, R, P],
+  ): ExprInput[V] => ExprResult[V, M[R], P] = { input =>
+    implicit val monoidMR: Monoid[M[R]] = MonoidK[M].algebra[R]
+    val inputResults = expr.inputExprList.map(_.visit(this)(input))
+    val allParams = inputResults.map(_.param).toList
+    val allEvidence = inputResults.foldMap(_.output.evidence)
+    val outputValues = inputResults.foldMap(_.output.value)
+    resultOfManySubExpr(expr, input, outputValues, allEvidence, allParams) {
+      ExprResult.ConcatOutput(_, _, inputResults)
+    }
+  }
+
   override def visitConstOutput[R](expr: Expr.ConstOutput[V, R, P]): ExprInput[V] => ExprResult[V, R, P] = { input =>
     resultOfPureExpr(expr, input, expr.value, input.evidence) {
       ExprResult.ConstOutput(_, _)

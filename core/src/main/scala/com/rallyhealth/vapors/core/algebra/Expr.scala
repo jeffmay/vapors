@@ -42,6 +42,7 @@ object Expr {
     def visitAddOutputs[R : Addition](expr: AddOutputs[V, R, P]): G[R]
     def visitAnd[R : Conjunction : ExtractBoolean](expr: And[V, R, P]): G[R]
     def visitCollectSomeOutput[M[_] : Foldable, U, R : Monoid](expr: CollectFromOutput[V, M, U, R, P]): G[R]
+    def visitConcatOutput[M[_] : MonoidK, R](expr: ConcatOutput[V, M, R, P]): G[M[R]]
     def visitConstOutput[R](expr: ConstOutput[V, R, P]): G[R]
     def visitDefine[M[_] : Foldable, T](expr: Define[M, T, P]): G[FactSet]
     def visitEmbed[R](expr: Embed[V, R, P]): G[R]
@@ -316,6 +317,19 @@ object Expr {
     capture: CaptureP[V, M[R], P],
   ) extends Expr[V, M[R], P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[M[R]] = v.visitSortOutput(this)
+  }
+
+  /**
+    * Concatenate the outputs of all the given expressions into a single expression of the concatenated monoid.
+    *
+    * @note if you want the output to be evaluated only as needed, then you should use a LazyList for the
+    *       [[inputExprList]] param sequence type.
+    */
+  final case class ConcatOutput[V, M[_] : MonoidK, R, P](
+    inputExprList: Seq[Expr[V, M[R], P]],
+    capture: CaptureP[V, M[R], P],
+  ) extends Expr[V, M[R], P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[M[R]] = v.visitConcatOutput(this)
   }
 
   /**

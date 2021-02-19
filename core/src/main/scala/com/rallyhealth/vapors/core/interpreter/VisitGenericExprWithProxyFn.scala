@@ -1,7 +1,7 @@
 package com.rallyhealth.vapors.core.interpreter
 
 import cats.kernel.Monoid
-import cats.{Align, FlatMap, Foldable, Functor, FunctorFilter, Traverse, TraverseFilter}
+import cats._
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.{ExtractBoolean, FactSet}
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
@@ -32,6 +32,9 @@ abstract class VisitGenericExprWithProxyFn[V, P, G[_]] extends Expr.Visitor[V, P
   override def visitCollectSomeOutput[M[_] : Foldable, U, R : Monoid](
     expr: Expr.CollectFromOutput[V, M, U, R, P],
   ): ExprInput[V] => G[R] = visitGeneric(expr, _)
+
+  override def visitConcatOutput[M[_] : MonoidK, R](expr: Expr.ConcatOutput[V, M, R, P]): ExprInput[V] => G[M[R]] =
+    visitGeneric(expr, _)
 
   override def visitConstOutput[R](expr: Expr.ConstOutput[V, R, P]): ExprInput[V] => G[R] =
     visitGeneric(expr, _)

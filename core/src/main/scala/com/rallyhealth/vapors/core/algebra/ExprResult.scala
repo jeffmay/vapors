@@ -41,6 +41,7 @@ object ExprResult {
     def visitAddOutputs[R](result: AddOutputs[V, R, P]): G[R]
     def visitAnd[R](result: And[V, R, P]): G[R]
     def visitCollectFromOutput[M[_] : Foldable, U, R : Monoid](result: CollectFromOutput[V, M, U, R, P]): G[R]
+    def visitConcatOutput[M[_] : MonoidK, R](result: ConcatOutput[V, M, R, P]): G[M[R]]
     def visitConstOutput[R](result: ConstOutput[V, R, P]): G[R]
     def visitDeclare[M[_], T](result: Define[V, M, T, P]): G[FactSet]
     def visitEmbed[R](result: Embed[V, R, P]): G[R]
@@ -208,6 +209,14 @@ object ExprResult {
     inputResult: ExprResult[V, M[R], P],
   ) extends ExprResult[V, M[R], P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[M[R]] = v.visitSortOutput(this)
+  }
+
+  final case class ConcatOutput[V, M[_] : MonoidK, R, P](
+    expr: Expr.ConcatOutput[V, M, R, P],
+    context: Context[V, M[R], P],
+    inputResultList: Seq[ExprResult[V, M[R], P]],
+  ) extends ExprResult[V, M[R], P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[M[R]] = v.visitConcatOutput(this)
   }
 
   final case class OutputIsEmpty[V, M[_] : Foldable, R, P](
