@@ -97,6 +97,9 @@ abstract class VisitGenericExprWithProxyFn[V, P, G[_]] extends Expr.Visitor[V, P
     expr: Expr.TakeFromOutput[V, M, R, P],
   ): ExprInput[V] => G[M[R]] = visitGeneric(expr, _)
 
+  override def visitWrapOutputSeq[R](expr: Expr.WrapOutputSeq[V, R, P]): ExprInput[V] => G[Seq[R]] =
+    visitGeneric(expr, _)
+
   override def visitUsingDefinitions[R](expr: Expr.UsingDefinitions[V, R, P]): ExprInput[V] => G[R] =
     visitGeneric(expr, _)
 

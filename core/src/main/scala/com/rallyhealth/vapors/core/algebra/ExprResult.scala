@@ -63,6 +63,7 @@ object ExprResult {
     def visitUsingDefinitions[R](result: UsingDefinitions[V, R, P]): G[R]
     def visitWhen[R](result: When[V, R, P]): G[R]
     def visitWrapOutputHList[T <: HList, R](result: WrapOutputHList[V, T, R, P]): G[R]
+    def visitWrapOutputSeq[R](result: WrapOutputSeq[V, R, P]): G[Seq[R]]
     def visitWithFactsOfType[T, R](result: WithFactsOfType[V, T, R, P]): G[R]
     def visitZipOutput[M[_] : Align : FunctorFilter, L <: HList, R](result: ZipOutput[V, M, L, R, P]): G[M[R]]
   }
@@ -259,6 +260,14 @@ object ExprResult {
     subResultList: List[ExprResult[V, R, P]],
   ) extends ExprResult[V, R, P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitSubtractOutputs(this)
+  }
+
+  final case class WrapOutputSeq[V, R, P](
+    expr: Expr.WrapOutputSeq[V, R, P],
+    context: Context[V, Seq[R], P],
+    inputResultList: Seq[ExprResult[V, R, P]],
+  ) extends ExprResult[V, Seq[R], P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[Seq[R]] = v.visitWrapOutputSeq(this)
   }
 
   final case class WrapOutputHList[V, T <: HList, R, P](
