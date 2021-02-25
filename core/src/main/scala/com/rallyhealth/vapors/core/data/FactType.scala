@@ -9,7 +9,7 @@ import scala.reflect.runtime.universe.TypeTag
 /**
   * Type information required to construct a [[Fact]].
   */
-trait FactType[T] {
+trait FactType[T] extends (T => TypedFact[T]) {
 
   /**
     * The unique name for this fact type.
@@ -37,7 +37,7 @@ trait FactType[T] {
     * If you need the specific type of fact for some reason, you can use the standard [[TypedFact]]
     * factory method and supply this fact type as the first parameter.
     */
-  def apply(value: T): TypedFact[T] = TypedFact(this, value)
+  override def apply(value: T): TypedFact[T] = TypedFact(this, value)
 
   def unapply(value: Fact): Option[TypedFact[T]] = cast(value)
 
