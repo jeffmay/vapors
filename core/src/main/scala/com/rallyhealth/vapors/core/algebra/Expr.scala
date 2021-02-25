@@ -1,13 +1,15 @@
 package com.rallyhealth.vapors.core.algebra
 
-import cats.data.NonEmptyList
 import cats._
+import cats.data.NonEmptyList
 import com.rallyhealth.vapors.core.data._
 import com.rallyhealth.vapors.core.interpreter.{ExprOutput, InterpretExprAsResultFn}
 import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import shapeless.HList
+
+import scala.collection.MapView
 
 /**
   * The core expression algebra.
@@ -49,6 +51,7 @@ object Expr {
     def visitExistsInOutput[M[_] : Foldable, U](expr: ExistsInOutput[V, M, U, P]): G[Boolean]
     def visitFilterOutput[M[_] : Foldable : FunctorFilter, R](expr: FilterOutput[V, M, R, P]): G[M[R]]
     def visitFlatMapOutput[M[_] : Foldable : FlatMap, U, X](expr: FlatMapOutput[V, M, U, X, P]): G[M[X]]
+    def visitGroupOutput[M[_] : Foldable, U : Order, K](expr: GroupOutput[V, M, U, K, P]): G[MapView[K, Seq[U]]]
     def visitMapOutput[M[_] : Foldable : Functor, U, R](expr: MapOutput[V, M, U, R, P]): G[M[R]]
     def visitNegativeOutput[R : Negative](expr: NegativeOutput[V, R, P]): G[R]
     def visitNot[R : Negation](expr: Not[V, R, P]): G[R]
@@ -305,6 +308,19 @@ object Expr {
     capture: CaptureP[V, M[R], P],
   ) extends Expr[V, M[R], P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[M[R]] = v.visitMapOutput(this)
+  }
+
+  /**
+    * Group the output of a given expression into a Map of some hashable key type.
+    *
+    * @note this uses the default (_: K).## method for hashing because it uses the standard Scala Map collection.
+    */
+  final case class GroupOutput[V, M[_] : Foldable, U : Order, K, P](
+    inputExpr: Expr[V, M[U], P],
+    groupByLens: NamedLens[U, K],
+    capture: CaptureP[V, MapView[K, Seq[U]], P],
+  ) extends Expr[V, MapView[K, Seq[U]], P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[MapView[K, Seq[U]]] = v.visitGroupOutput(this)
   }
 
   /**

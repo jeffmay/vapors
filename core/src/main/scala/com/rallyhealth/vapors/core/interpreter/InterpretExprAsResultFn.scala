@@ -9,6 +9,7 @@ import com.rallyhealth.vapors.core.logic._
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import shapeless.HList
 
+import scala.collection.MapView
 import scala.collection.immutable.BitSet
 
 final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r => ExprInput[V] => ExprResult[V, r, P]]] {
@@ -184,6 +185,17 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     val subOps = allResults.toList
     resultOfManySubExpr(expr, input, allValues, allEvidence, allParams) {
       ExprResult.FlatMapOutput(_, _, inputResult, subOps)
+    }
+  }
+
+  override def visitGroupOutput[M[_] : Foldable, U : Order, K](
+    expr: Expr.GroupOutput[V, M, U, K, P],
+  ): ExprInput[V] => ExprResult[V, MapView[K, Seq[U]], P] = { input =>
+    val inputResult = expr.inputExpr.visit(this)(input)
+    val values = inputResult.output.value
+    val grouped = values.toIterable.groupBy(expr.groupByLens.get).view.mapValues(_.to(LazyList))
+    resultOfManySubExpr(expr, input, grouped, inputResult.output.evidence, inputResult.param :: Nil) {
+      ExprResult.GroupOutput(_, _, inputResult)
     }
   }
 

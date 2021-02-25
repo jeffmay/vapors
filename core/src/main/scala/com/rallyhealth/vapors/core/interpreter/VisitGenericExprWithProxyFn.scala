@@ -8,6 +8,8 @@ import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import shapeless.HList
 
+import scala.collection.MapView
+
 /**
   * A function interpreter from [[ExprInput]] to any output type constructor that passes all expressions nodes into
   * a single common [[visitGeneric]] function.
@@ -57,6 +59,10 @@ abstract class VisitGenericExprWithProxyFn[V, P, G[_]] extends Expr.Visitor[V, P
   override def visitFlatMapOutput[M[_] : Foldable : FlatMap, U, X](
     expr: Expr.FlatMapOutput[V, M, U, X, P],
   ): ExprInput[V] => G[M[X]] = visitGeneric(expr, _)
+
+  override def visitGroupOutput[M[_] : Foldable, U : Order, K](
+    expr: Expr.GroupOutput[V, M, U, K, P],
+  ): ExprInput[V] => G[MapView[K, Seq[U]]] = visitGeneric(expr, _)
 
   override def visitMapOutput[M[_] : Foldable : Functor, U, R](
     expr: Expr.MapOutput[V, M, U, R, P],

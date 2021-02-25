@@ -2,7 +2,6 @@ package com.rallyhealth.vapors.core.dsl
 
 import cats.Id
 import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, ExprConverter, NonEmptyExprHList}
-import shapeless.ops.hlist.Tupler
 import shapeless.{::, Generic, HList, HNil}
 
 trait WrapExprSyntax {
