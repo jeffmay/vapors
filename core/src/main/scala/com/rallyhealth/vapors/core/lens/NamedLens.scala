@@ -3,13 +3,13 @@ package com.rallyhealth.vapors.core.lens
 import cats.arrow.Compose
 import cats.data.NonEmptySet
 import cats.kernel.Semigroup
-import shapeless.{HList, Nat}
-import shapeless.ops.hlist.{At, Tupler}
-import shapeless.ops.nat.ToInt
+import com.rallyhealth.vapors.core.lens.NamedLens.AsIterableBuilder
+import shapeless.ops.hlist
+import shapeless.{Generic, HList}
 
-import scala.collection.Factory
+import scala.collection.{Factory, MapView, View}
 
-object NamedLens {
+object NamedLens extends NamedLensLowPriorityImplicits {
 
   type Id[A] = NamedLens[A, A]
   val Id: NamedLens[Any, Any] = NamedLens(DataPath.empty, identity[Any])
@@ -29,33 +29,66 @@ object NamedLens {
     def select[C](getter: B => C): NamedLens[A, C] = macro NamedLensMacros.selectImpl[A, B, C]
   }
 
-  implicit final class AsIterableBuilder[A, B[x] <: IterableOnce[x], V](private val lens: NamedLens[A, B[V]])
-    extends AnyVal {
+  implicit def asMap[A, B, C[x] <: IterableOnce[x], K, E](
+    lens: NamedLens[A, B],
+  )(implicit
+    ev: B <:< C[(K, E)],
+  ): AsMapBuilder[A, C, K, E] =
+    new AsMapBuilder[A, C, K, E](lens.as[C[(K, E)]])
 
-    def to[C](factory: Factory[V, C]): NamedLens[A, C] =
-      lens.copy(get = lens.get.andThen(_.iterator.to(factory)))
+  final class AsMapBuilder[A, C[x] <: IterableOnce[x], K, V](private val lens: NamedLens[A, C[(K, V)]]) extends AnyVal {
+
+    def values: NamedLens[A, Iterable[V]] = lens.copy(
+      get = lens.get.andThen(_.iterator.to(View).map(_._2)),
+    )
+
+    // For some reason AsIterableBuilder does not pick up a MapBuilder as an IterableBuilder
+
+    def to[B](factory: Factory[(K, V), B]): NamedLens[A, B] =
+      lens.copy(get = lens.get.andThen(factory.fromSpecific(_)))
+
+    def toMap: NamedLens[A, Map[K, V]] = lens.copy(
+      get = lens.get.andThen(Map.from(_)),
+    )
+
+    def toMapView: NamedLens[A, MapView[K, V]] = lens.copy(
+      get = lens.get.andThen(Map.from(_).view),
+    )
+  }
+
+  // TODO: Make this more generally useful and convert back to a NamedLens implicitly
+  final class AsIterableBuilder[A, C[x] <: IterableOnce[x], E](private val lens: NamedLens[A, C[E]]) extends AnyVal {
+
+    // TODO: Should there be any path information for conversion?
+    //       List => Map seems important information as values with duplicate keys could be dropped
+    def to[B](factory: Factory[E, B]): NamedLens[A, B] =
+      lens.copy(get = lens.get.andThen(factory.fromSpecific(_)))
+
+    def headOption: NamedLens[A, Option[E]] =
+      lens.copy(
+        path = lens.path.atHead,
+        get = lens.get.andThen(b => Iterable.from[E](b).headOption),
+      )
   }
 
   implicit final class AsHListBuilder[A, L <: HList](private val lens: NamedLens[A, L]) extends AnyVal {
 
-    def tupled[T](implicit tupler: Tupler.Aux[L, T]): NamedLens[A, T] =
+    def tupled[T](implicit tupler: hlist.Tupler.Aux[L, T]): NamedLens[A, T] =
       lens.copy(
         path = lens.path,
         get = lens.get.andThen(tupler.apply),
       )
-
-    def at[R](
-      n: Nat,
-    )(implicit
-      at: At.Aux[L, n.N, R],
-      toInt: ToInt[n.N],
-    ): NamedLens[A, R] =
-      lens.copy(
-        path = lens.path.atKey(Nat.toInt[n.N]),
-        get = lens.get.andThen(at.apply(_)),
-      )
   }
+}
 
+sealed trait NamedLensLowPriorityImplicits {
+
+  implicit def asIterable[A, B, C[x] <: IterableOnce[x], E](
+    lens: NamedLens[A, B],
+  )(implicit
+    ev: B <:< C[E],
+  ): AsIterableBuilder[A, C, E] =
+    new AsIterableBuilder(lens.as[C[E]])
 }
 
 final case class NamedLens[A, B](
@@ -74,6 +107,7 @@ final case class NamedLens[A, B](
   // Helpful for building a tuple with the lens itself. Identical to identity, but you don't have to specify the type.
   def self: NamedLens[A, B] = this
 
+  // TODO: Use HList to make this more safe, instead of relying on the macro to use this properly.
   def field[C](
     name: String,
     getter: B => C,
@@ -84,11 +118,23 @@ final case class NamedLens[A, B](
     )
   }
 
+  def at[K : ValidDataPathKey, V](
+    key: K,
+  )(implicit
+    CI: Indexed[B, K, V],
+  ): NamedLens[A, V] = {
+    copy(
+      path = path.atKey(key),
+      get = get.andThen(b => CI.get(b)(key)),
+    )
+  }
+
+  @deprecated("Use .at instead", "0.12.0")
   def atKey[K : ValidDataPathKey, V](
     key: K,
   )(implicit
-    CI: Indexed[B, K, Option[V]],
-  ): NamedLens[A, Option[V]] = {
+    CI: Indexed[B, K, V],
+  ): NamedLens[A, V] = {
     copy(
       path = path.atKey(key),
       get = get.andThen(b => CI.get(b)(key)),
@@ -107,16 +153,17 @@ final case class NamedLens[A, B](
     )
   }
 
-  def headOption[C[x] <: Iterable[x], V](implicit ev: B <:< C[V]): NamedLens[A, Option[V]] = {
-    copy(
-      path = path.atHead,
-      get = get.andThen(b => ev(b).headOption),
-    )
-  }
+  def as[V](implicit ev: B <:< V): NamedLens[A, V] =
+    this.copy(get = this.get.andThen(ev))
 
-  def asHList[L <: HList](implicit ev: B <:< L): NamedLens[A, L] = copy(get = get.andThen(ev))
+  // TODO: Are these runtime down casts needed? Why not just use .asInstanceOf (with a safe wrapper)
 
   def asIterable[V](implicit ev: B <:< IterableOnce[V]): NamedLens.AsIterableBuilder[A, IterableOnce, V] =
     new NamedLens.AsIterableBuilder(this.copy(get = this.get.andThen(ev)))
+
+  def asMap[K, V](implicit ev: B <:< IterableOnce[(K, V)]): NamedLens.AsMapBuilder[A, IterableOnce, K, V] =
+    new NamedLens.AsMapBuilder(this.copy(get = this.get.andThen(ev)))
+
+  def asHList[L <: HList](implicit gen: Generic.Aux[B, L]): NamedLens[A, L] = copy(get = this.get.andThen(gen.to))
 
 }
