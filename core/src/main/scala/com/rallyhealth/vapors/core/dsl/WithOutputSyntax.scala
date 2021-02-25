@@ -13,6 +13,7 @@ trait WithOutputSyntax {
 
 }
 
+// TODO: These classes would not be needed if everything returned builders
 final class WithOutputValueExprBuilder[V, R, P](private val expr: Expr[V, R, P]) extends AnyVal {
 
   def withOutputValue: ValExprBuilder[V, R, P] = new ValExprBuilder(expr)

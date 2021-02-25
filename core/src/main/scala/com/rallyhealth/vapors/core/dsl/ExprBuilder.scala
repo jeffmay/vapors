@@ -9,6 +9,7 @@ import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import scala.collection.{Factory, MapView, View}
 import scala.reflect.runtime.universe.TypeTag
 
+// TODO: Make this more reusable for MapViewExprBuilder
 sealed class ExprBuilder[V, M[_], U, P](val returnOutput: Expr[V, M[U], P]) {
 
   type CaptureResult[R] = CaptureP[V, R, P]
@@ -99,7 +100,19 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
     captureResult: CaptureResult[Set[U]],
   ): FoldableExprBuilder[V, Set, U, P] =
     to(Set)
-  }
+
+  def toMap[K, X](
+    implicit
+    ev: M[U] <:< IterableOnce[(K, X)],
+    captureResult: CaptureResult[MapView[K, X]],
+  ): MapViewExprBuilder[V, K, X, P] =
+    new MapViewExprBuilder(
+      Expr.SelectFromOutput[V, M[U], MapView[K, X], P](
+        returnOutput,
+        NamedLens.id[M[U]].toMapView,
+        captureResult,
+      ),
+    )
 
   def to[N[_] : Foldable](
     factory: Factory[U, N[U]],
@@ -135,6 +148,18 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
   ): FoldableExprBuilder[V, M, U, P] = {
     val lens = buildLens(NamedLens.id[U])
     new FoldableExprBuilder(Expr.SortOutput(returnOutput, ExprSorter.byField[M, U, R](lens), captureResult))
+  }
+
+  def groupBy[K](
+    buildKeyLens: NamedLens.Fn[U, K],
+  )(implicit
+    foldableM: Foldable[M],
+    orderU: Order[U],
+    captureSelect: CaptureResult[View[(K, Seq[U])]],
+    captureResult: CaptureResult[MapView[K, Seq[U]]],
+  ): MapViewExprBuilder[V, K, Seq[U], P] = {
+    val keyLens = buildKeyLens(NamedLens.id[U])
+    new MapViewExprBuilder(Expr.GroupOutput(returnOutput, keyLens, captureResult))
   }
 
   def take(

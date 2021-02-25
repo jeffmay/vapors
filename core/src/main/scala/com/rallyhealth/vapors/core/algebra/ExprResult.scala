@@ -6,7 +6,7 @@ import com.rallyhealth.vapors.core.data.{FactSet, FactTable, TypedFact}
 import com.rallyhealth.vapors.core.interpreter.{ExprInput, ExprOutput}
 import shapeless.HList
 
-import scala.collection.BitSet
+import scala.collection.{BitSet, MapView}
 
 /**
   * The result of evaluating an [[Expr]] with some given [[ExprInput]].
@@ -23,6 +23,8 @@ sealed trait ExprResult[V, R, P] {
   @inline final def output: ExprOutput[R] = context.output
 
   @inline final def param: Eval[P] = context.param
+
+  def convertOutputToInput: ExprInput[R] = input.withValue(output.value, output.evidence)
 
   def visit[G[_]](v: ExprResult.Visitor[V, P, G]): G[R]
 }
@@ -48,6 +50,7 @@ object ExprResult {
     def visitExistsInOutput[M[_] : Foldable, U](result: ExistsInOutput[V, M, U, P]): G[Boolean]
     def visitFilterOutput[M[_] : Foldable : FunctorFilter, R](result: FilterOutput[V, M, R, P]): G[M[R]]
     def visitFlatMapOutput[M[_], U, R](result: FlatMapOutput[V, M, U, R, P]): G[M[R]]
+    def visitGroupOutput[M[_] : Foldable, U : Order, K](result: GroupOutput[V, M, U, K, P]): G[MapView[K, Seq[U]]]
     def visitMapOutput[M[_], U, R](result: MapOutput[V, M, U, R, P]): G[M[R]]
     def visitNegativeOutput[R](result: NegativeOutput[V, R, P]): G[R]
     def visitNot[R](result: Not[V, R, P]): G[R]
@@ -201,6 +204,14 @@ object ExprResult {
     subResultList: List[ExprResult[U, R, P]],
   ) extends ExprResult[V, M[R], P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[M[R]] = v.visitMapOutput(this)
+  }
+
+  final case class GroupOutput[V, M[_] : Foldable, U : Order, K, P](
+    expr: Expr.GroupOutput[V, M, U, K, P],
+    context: Context[V, MapView[K, Seq[U]], P],
+    inputResult: ExprResult[V, M[U], P],
+  ) extends ExprResult[V, MapView[K, Seq[U]], P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[MapView[K, Seq[U]]] = v.visitGroupOutput(this)
   }
 
   final case class SortOutput[V, M[_], R, P](
