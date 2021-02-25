@@ -1,12 +1,12 @@
 package com.rallyhealth.vapors.core.dsl
 
 import cats._
-import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, ExprSorter}
+import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, ExprSorter, NonEmptyExprHList}
 import com.rallyhealth.vapors.core.data.{Evidence, TypedFact, Window}
 import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 
-import scala.collection.Factory
+import scala.collection.{Factory, MapView, View}
 import scala.reflect.runtime.universe.TypeTag
 
 sealed class ExprBuilder[V, M[_], U, P](val returnOutput: Expr[V, M[U], P]) {
@@ -88,32 +88,32 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
 
   def toList(
     implicit
-    ev: M[U] <:< Iterable[U],
+    ev: M[U] <:< IterableOnce[U],
     captureResult: CaptureResult[List[U]],
   ): FoldableExprBuilder[V, List, U, P] =
     to(List)
 
   def toSet(
     implicit
-    ev: M[U] <:< Iterable[U],
+    ev: M[U] <:< IterableOnce[U],
     captureResult: CaptureResult[Set[U]],
-  ): FoldableExprBuilder[V, Set, U, P] = {
+  ): FoldableExprBuilder[V, Set, U, P] =
     to(Set)
   }
 
   def to[N[_] : Foldable](
     factory: Factory[U, N[U]],
   )(implicit
-    ev: M[U] <:< Iterable[U],
+    ev: M[U] <:< IterableOnce[U],
     captureResult: CaptureResult[N[U]],
   ): FoldableExprBuilder[V, N, U, P] =
-    new FoldableExprBuilder({
+    new FoldableExprBuilder(
       Expr.SelectFromOutput[V, M[U], N[U], P](
         returnOutput,
         NamedLens.id[M[U]].asIterable.to(factory),
         captureResult,
-      )
-    })
+      ),
+    )
 
   def sorted(
     implicit
@@ -240,7 +240,8 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
 }
 
 // TODO: Share any methods with FoldableExprBuilder?
-final class ValExprBuilder[V, R, P](returnOutput: Expr[V, R, P]) extends ExprBuilder[V, Id, R, P](returnOutput) {
+final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
+  extends ExprBuilder[V, Id, R, P](returnOutput) {
 
   @inline private def buildGetExpr[N[_], X](
     buildLens: NamedLens.Fn[R, N[X]],
