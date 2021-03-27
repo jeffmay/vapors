@@ -282,6 +282,16 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     }
   }
 
+  override def visitFoldOutput[M[_] : Foldable, R : Monoid](
+    expr: Expr.FoldOutput[V, M, R, P],
+  ): ExprInput[V] => ExprResult[V, R, P] = { input =>
+    val inputResult = expr.inputExpr.visit(this)(input)
+    val resultValue = inputResult.output.value.fold
+    resultOfPureExpr(expr, input, resultValue, inputResult.output.evidence) {
+      ExprResult.FoldOutput(_, _, inputResult)
+    }
+  }
+
   override def visitReturnInput(expr: Expr.ReturnInput[V, P]): ExprInput[V] => ExprResult[V, V, P] = { input =>
     resultOfPureExpr(expr, input, input.value, input.evidence ++ Evidence.fromAnyOrNone(input.value)) {
       ExprResult.ReturnInput(_, _)

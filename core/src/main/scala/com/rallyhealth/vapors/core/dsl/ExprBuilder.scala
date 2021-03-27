@@ -1,10 +1,11 @@
 package com.rallyhealth.vapors.core.dsl
 
 import cats._
-import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, ExprSorter, NonEmptyExprHList}
+import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, ExprConverter, ExprSorter, NonEmptyExprHList}
 import com.rallyhealth.vapors.core.data.{Evidence, TypedFact, Window}
 import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
+import shapeless.{::, HNil}
 
 import scala.collection.{Factory, MapView, View}
 import scala.reflect.runtime.universe.TypeTag
@@ -211,6 +212,15 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
     )
     val next = Expr.FlatMapOutput(returnOutput, flatMapExpr.returnOutput, postFlatMap)
     new FoldableExprBuilder(next)
+  }
+
+  def fold(
+    implicit
+    foldableM: Foldable[M],
+    monoidU: Monoid[U],
+    captureResult: CaptureResult[U],
+  ): ValExprBuilder[V, U, P] = {
+    new ValExprBuilder(Expr.FoldOutput(returnOutput, captureResult))
   }
 
   def isEmpty(
