@@ -59,6 +59,7 @@ object Expr {
     def visitOutputIsEmpty[M[_] : Foldable, R](expr: OutputIsEmpty[V, M, R, P]): G[Boolean]
     def visitOutputWithinSet[R](expr: OutputWithinSet[V, R, P]): G[Boolean]
     def visitOutputWithinWindow[R](expr: OutputWithinWindow[V, R, P]): G[Boolean]
+    def visitFoldOutput[M[_] : Foldable, R : Monoid](expr: FoldOutput[V, M, R, P]): G[R]
     def visitReturnInput(expr: ReturnInput[V, P]): G[V]
     def visitSelectFromOutput[S, R](expr: SelectFromOutput[V, S, R, P]): G[R]
     def visitSortOutput[M[_], R](expr: SortOutput[V, M, R, P]): G[M[R]]
@@ -347,6 +348,17 @@ object Expr {
     capture: CaptureP[V, M[R], P],
   ) extends Expr[V, M[R], P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[M[R]] = v.visitConcatOutput(this)
+  }
+
+  /**
+    * Fold the output of the input expression by combining all the elements as pairs or with
+    * the empty result value.
+    */
+  final case class FoldOutput[V, M[_] : Foldable, R : Monoid, P](
+    inputExpr: Expr[V, M[R], P],
+    capture: CaptureP[V, R, P],
+  ) extends Expr[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitFoldOutput(this)
   }
 
   /**

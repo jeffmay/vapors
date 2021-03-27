@@ -87,6 +87,9 @@ abstract class VisitGenericExprWithProxyFn[V, P, G[_]] extends Expr.Visitor[V, P
   override def visitOutputWithinWindow[R](expr: Expr.OutputWithinWindow[V, R, P]): ExprInput[V] => G[Boolean] =
     visitGeneric(expr, _)
 
+  override def visitFoldOutput[M[_] : Foldable, R : Monoid](expr: Expr.FoldOutput[V, M, R, P]): ExprInput[V] => G[R] =
+    visitGeneric(expr, _)
+
   override def visitReturnInput(expr: Expr.ReturnInput[V, P]): ExprInput[V] => G[V] =
     visitGeneric(expr, _)
 
