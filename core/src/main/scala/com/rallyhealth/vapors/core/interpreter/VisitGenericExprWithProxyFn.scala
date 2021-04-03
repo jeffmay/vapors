@@ -1,11 +1,11 @@
 package com.rallyhealth.vapors.core.interpreter
 
-import cats.kernel.Monoid
 import cats._
+import cats.kernel.Monoid
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.{ExtractBoolean, FactSet}
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
-import com.rallyhealth.vapors.core.math.{Addition, Division, Negative, Subtraction}
+import com.rallyhealth.vapors.core.math._
 import shapeless.HList
 
 import scala.collection.MapView
@@ -73,6 +73,9 @@ abstract class VisitGenericExprWithProxyFn[V, P, G[_]] extends Expr.Visitor[V, P
   override def visitMapOutput[M[_] : Foldable : Functor, U, R](
     expr: Expr.MapOutput[V, M, U, R, P],
   ): ExprInput[V] => G[M[R]] = visitGeneric(expr, _)
+
+  override def visitMultiplyOutputs[R : Multiplication](expr: Expr.MultiplyOutputs[V, R, P]): ExprInput[V] => G[R] =
+    visitGeneric(expr, _)
 
   override def visitNegativeOutput[R : Negative](expr: Expr.NegativeOutput[V, R, P]): ExprInput[V] => G[R] =
     visitGeneric(expr, _)

@@ -7,6 +7,7 @@ import com.rallyhealth.vapors.core.data._
 import com.rallyhealth.vapors.core.interpreter.InterpretExprAsSimpleOutputFn.SimpleOutputFnFunctorBuilder
 import com.rallyhealth.vapors.core.logic._
 import com.rallyhealth.vapors.core.math.{Addition, Division, Negative, Subtraction}
+import com.rallyhealth.vapors.core.math.{Addition, Multiplication, Negative, Subtraction}
 import shapeless.HList
 
 import scala.collection.MapView
@@ -227,6 +228,21 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     val subOps = allResults.toList
     resultOfManySubExpr(expr, input, allValues, allEvidence, allParams) {
       ExprResult.MapOutput(_, _, inputResult, subOps)
+    }
+  }
+
+  override def visitMultiplyOutputs[R : Multiplication](
+    expr: Expr.MultiplyOutputs[V, R, P],
+  ): ExprInput[V] => ExprResult[V, R, P] = { input =>
+    val inputResults = expr.inputExprList.map { inputExpr =>
+      inputExpr.visit(this)(input)
+    }
+    val inputResultList = inputResults.toList
+    val outputValue = inputResultList.map(_.output.value).reduceLeft(_ * _)
+    val allEvidence = inputResultList.foldMap(_.output.evidence)
+    val allParams = inputResultList.map(_.param)
+    resultOfManySubExpr(expr, input, outputValue, allEvidence, allParams) {
+      ExprResult.MultiplyOutputs(_, _, inputResultList)
     }
   }
 

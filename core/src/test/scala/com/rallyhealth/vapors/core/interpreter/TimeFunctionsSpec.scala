@@ -1,57 +1,27 @@
 package com.rallyhealth.vapors.core.interpreter
 
-import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.FactTable
 import com.rallyhealth.vapors.core.dsl._
 import com.rallyhealth.vapors.core.example.{FactTypes, Snippets}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.ops._
 import org.scalacheck.{Arbitrary, Gen}
-import org.scalatest.Assertion
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks._
 
-import java.time.temporal.{ChronoUnit, Temporal, TemporalAmount}
 import java.time._
-import scala.util.Try
+import java.time.temporal.ChronoUnit
 
 class TimeFunctionsSpec extends AnyFreeSpec {
   import TimeFunctionsSpec._
-
-  private def testProducesTheSameResult[T <: Temporal : Arbitrary, D <: TemporalAmount : Arbitrary](
-    evaluateDirectly: (T, D) => T,
-    buildQuery: (RootExpr[T, Unit], RootExpr[D, Unit]) => RootExpr[T, Unit],
-  ): Assertion = {
-    forAll { (temporal: T, amount: D) =>
-      val query = buildQuery(const(temporal), const(amount))
-      Try(evaluateDirectly(temporal, amount)).fold(
-        expectedErr => {
-          val err = intercept[DateTimeException] {
-            eval(FactTable.empty)(query)
-          }
-          assertResult(expectedErr.getMessage) {
-            err.getMessage
-          }
-        },
-        expectedValue => {
-          val result = eval(FactTable.empty)(query)
-          assertResult(expectedValue) {
-            result.output.value
-          }
-        },
-      )
-    }
-  }
 
   "dateAdd" - {
 
     "Instant with" - {
 
       "Duration works the same as .plus" in {
-        testProducesTheSameResult[Instant, Duration](
+        VaporsEvalTestHelpers.producesTheSameResultOrException[Instant, Duration, Instant, DateTimeException](
           _.plus(_),
-          dateAdd(_, _),
+          (t, d) => dateAdd(const(t), const(d)),
         )
       }
 
@@ -81,9 +51,9 @@ class TimeFunctionsSpec extends AnyFreeSpec {
       }
 
       "Period works the same as .plus" in {
-        testProducesTheSameResult[LocalDate, Period](
+        VaporsEvalTestHelpers.producesTheSameResultOrException[LocalDate, Period, LocalDate, DateTimeException](
           _.plus(_),
-          dateAdd(_, _),
+          (t, d) => dateAdd(const(t), const(d)),
         )
       }
     }
@@ -91,34 +61,38 @@ class TimeFunctionsSpec extends AnyFreeSpec {
     "LocalDateTime with" - {
 
       "Duration works the same as .plus" in {
-        testProducesTheSameResult[LocalDateTime, Duration](
-          _.plus(_),
-          dateAdd(_, _),
-        )
+        VaporsEvalTestHelpers
+          .producesTheSameResultOrException[LocalDateTime, Duration, LocalDateTime, DateTimeException](
+            _.plus(_),
+            (t, d) => dateAdd(const(t), const(d)),
+          )
       }
 
       "Period works the same as .plus" in {
-        testProducesTheSameResult[LocalDateTime, Period](
-          _.plus(_),
-          dateAdd(_, _),
-        )
+        VaporsEvalTestHelpers
+          .producesTheSameResultOrException[LocalDateTime, Period, LocalDateTime, DateTimeException](
+            _.plus(_),
+            (t, d) => dateAdd(const(t), const(d)),
+          )
       }
     }
 
     "ZonedDateTime with" - {
 
       "Duration works the same as .plus" in {
-        testProducesTheSameResult[ZonedDateTime, Duration](
-          _.plus(_),
-          dateAdd(_, _),
-        )
+        VaporsEvalTestHelpers
+          .producesTheSameResultOrException[ZonedDateTime, Duration, ZonedDateTime, DateTimeException](
+            _.plus(_),
+            (t, d) => dateAdd(const(t), const(d)),
+          )
       }
 
       "Period works the same as .plus" in {
-        testProducesTheSameResult[ZonedDateTime, Period](
-          _.plus(_),
-          dateAdd(_, _),
-        )
+        VaporsEvalTestHelpers
+          .producesTheSameResultOrException[ZonedDateTime, Period, ZonedDateTime, DateTimeException](
+            _.plus(_),
+            (t, d) => dateAdd(const(t), const(d)),
+          )
       }
     }
   }
