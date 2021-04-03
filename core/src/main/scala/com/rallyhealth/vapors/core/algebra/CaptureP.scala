@@ -8,15 +8,17 @@ import scala.annotation.implicitNotFound
 
 @implicitNotFound(
   """
-Missing implicit CaptureP[${V}, ${R}, P] (where P is some arbitrary type of parameter).
+Missing implicit CaptureP[${V}, ${R}, P] (where P is a custom parameter type that you choose via implicit).
+Currently, P is inferred as ${P}.
 
-If you do not plan to do post-processing, you can import CaptureP.unit._
+Expression builders rely on the implicit CaptureP in scope to determine the concrete type of P.
+CaptureP.unit will be used by default unless another implicit is in scope and P will be inferred as Unit.
+However, if the compiler has trouble inferring other arguments, such as V or R, then it may also fail to infer P.
 
-Alternatively, you can import or define a CaptureP that matches the type of this expression node and extracts some type parameter P.
-If you decide to define it, remember to define one implicit where all of the types, aside from P, are abstract use a low priority implicit trait.
-It will need to combine, return, or ignore the parameters from its child nodes. If P is a Monoid, you can just define it using CaptureP.AsMonoid.
+Is the compiler is unable to infer either V (${V}) or R (${R})?
+If so, you may need to check the types of your expression and make sure they match.
 
-The expression node that failed to find a post processor is:
+Failed to find a CaptureP for the following expression:
 """,
 )
 trait CaptureP[V, R, P] {
