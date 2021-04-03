@@ -45,6 +45,7 @@ object ExprResult {
     def visitCollectFromOutput[M[_] : Foldable, U, R : Monoid](result: CollectFromOutput[V, M, U, R, P]): G[R]
     def visitConcatOutput[M[_] : MonoidK, R](result: ConcatOutput[V, M, R, P]): G[M[R]]
     def visitConstOutput[R](result: ConstOutput[V, R, P]): G[R]
+    def visitCustomFunction[A, R](result: CustomFunction[V, A, R, P]): G[R]
     def visitDeclare[M[_], T](result: Define[V, M, T, P]): G[FactSet]
     def visitEmbed[R](result: Embed[V, R, P]): G[R]
     def visitExistsInOutput[M[_] : Foldable, U](result: ExistsInOutput[V, M, U, P]): G[Boolean]
@@ -105,6 +106,14 @@ object ExprResult {
     embeddedResult: ExprResult[FactTable, R, P],
   ) extends ExprResult[V, R, P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitEmbed(this)
+  }
+
+  final case class CustomFunction[V, A, R, P](
+    expr: Expr.CustomFunction[V, A, R, P],
+    context: Context[V, R, P],
+    argResult: ExprResult[V, A, P],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitCustomFunction(this)
   }
 
   final case class WithFactsOfType[V, T, R, P](

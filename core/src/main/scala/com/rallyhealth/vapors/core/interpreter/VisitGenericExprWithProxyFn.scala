@@ -41,6 +41,9 @@ abstract class VisitGenericExprWithProxyFn[V, P, G[_]] extends Expr.Visitor[V, P
   override def visitConstOutput[R](expr: Expr.ConstOutput[V, R, P]): ExprInput[V] => G[R] =
     visitGeneric(expr, _)
 
+  override def visitCustomFunction[A, R](expr: Expr.CustomFunction[V, A, R, P]): ExprInput[V] => G[R] =
+    visitGeneric(expr, _)
+
   override def visitDefine[M[_] : Foldable, T](expr: Expr.Define[M, T, P]): ExprInput[V] => G[FactSet] = { input =>
     visitGeneric(expr, input.withValue(input.factTable))
   }

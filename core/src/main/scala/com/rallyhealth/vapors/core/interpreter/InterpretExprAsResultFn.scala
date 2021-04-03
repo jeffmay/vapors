@@ -88,6 +88,16 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     }
   }
 
+  override def visitCustomFunction[A, R](
+    expr: Expr.CustomFunction[V, A, R, P],
+  ): ExprInput[V] => ExprResult[V, R, P] = { input =>
+    val argResult = InterpretExprAsResultFn(expr.inputExpr)(input)
+    val value = expr.evaluate(argResult.output.value)
+    resultOfPureExpr(expr, input, value, argResult.output.evidence) {
+      ExprResult.CustomFunction(_, _, argResult)
+    }
+  }
+
   override def visitDefine[M[_] : Foldable, T](
     expr: Expr.Define[M, T, P],
   ): ExprInput[V] => ExprResult[V, FactSet, P] = { input =>
