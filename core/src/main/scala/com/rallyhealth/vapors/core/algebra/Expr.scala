@@ -6,9 +6,7 @@ import com.rallyhealth.vapors.core.data._
 import com.rallyhealth.vapors.core.interpreter.{ExprOutput, InterpretExprAsResultFn}
 import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
-import com.rallyhealth.vapors.core.math.{Addition, Division, Negative, Subtraction}
-import shapeless.HList
-import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
+import com.rallyhealth.vapors.core.math._
 import shapeless.{HList, Typeable}
 
 import scala.collection.MapView
@@ -57,6 +55,7 @@ object Expr {
     def visitFlatMapOutput[M[_] : Foldable : FlatMap, U, X](expr: FlatMapOutput[V, M, U, X, P]): G[M[X]]
     def visitGroupOutput[M[_] : Foldable, U : Order, K](expr: GroupOutput[V, M, U, K, P]): G[MapView[K, Seq[U]]]
     def visitMapOutput[M[_] : Foldable : Functor, U, R](expr: MapOutput[V, M, U, R, P]): G[M[R]]
+    def visitMultiplyOutputs[R : Multiplication](expr: MultiplyOutputs[V, R, P]): G[R]
     def visitNegativeOutput[R : Negative](expr: NegativeOutput[V, R, P]): G[R]
     def visitNot[R : Negation](expr: Not[V, R, P]): G[R]
     def visitOr[R : Disjunction : ExtractBoolean](expr: Or[V, R, P]): G[R]
@@ -484,6 +483,16 @@ object Expr {
     capture: CaptureP[V, R, P],
   ) extends Expr[V, R, P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitSubtractOutputs(this)
+  }
+
+  /**
+    * Multiply the results of all expressions in [[inputExprList]] using the provided definition for [[Addition]].
+    */
+  final case class MultiplyOutputs[V, R : Multiplication, P](
+    inputExprList: NonEmptyList[Expr[V, R, P]],
+    capture: CaptureP[V, R, P],
+  ) extends Expr[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitMultiplyOutputs(this)
   }
 
   /**

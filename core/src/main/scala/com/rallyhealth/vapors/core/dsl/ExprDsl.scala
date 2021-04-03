@@ -1,14 +1,14 @@
 package com.rallyhealth.vapors.core.dsl
 
 import cats.data.NonEmptyList
-import cats.{Foldable, Id, Monoid}
-import com.rallyhealth.vapors.core.algebra.{CaptureP, ConditionBranch, Expr, ExprResult}
+import cats.{Foldable, Monoid}
+import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, ExprResult}
 import com.rallyhealth.vapors.core.data._
 import com.rallyhealth.vapors.core.dsl
 import com.rallyhealth.vapors.core.interpreter.{ExprInput, InterpretExprAsResultFn}
 import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
-import com.rallyhealth.vapors.core.math.{Addition, Division, Negative, Subtraction}
+import com.rallyhealth.vapors.core.math._
 
 object ExprDsl extends ExprDsl {
 
@@ -180,6 +180,14 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
     capture: CaptureP[V, R, P],
   ): Expr.AddOutputs[V, R, P] =
     Expr.AddOutputs(NonEmptyList.of(lhs, rhs), capture)
+
+  def multiply[V, R : Multiplication, P](
+    lhs: Expr[V, R, P],
+    rhs: Expr[V, R, P],
+  )(implicit
+    capture: CaptureP[V, R, P],
+  ): Expr.MultiplyOutputs[V, R, P] =
+    Expr.MultiplyOutputs(NonEmptyList.of(lhs, rhs), capture)
 
   def subtract[V, R : Subtraction, P](
     lhs: Expr[V, R, P],

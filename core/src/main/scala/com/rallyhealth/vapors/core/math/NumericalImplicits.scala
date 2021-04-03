@@ -9,7 +9,14 @@ private[math] trait NumericalImplicits {
   implicit def fractional[A : Fractional]: FromFractional[A] = new FromFractional[A]
 }
 
-abstract class FromNumeric[A : Numeric] extends Addition[A] with Subtraction[A] with Negative[A] {
+/**
+  * Defines all arithmetic type-classes from Scala's [[Numeric]] definition.
+  */
+abstract class FromNumeric[A : Numeric]
+  extends Addition[A]
+  with Subtraction[A]
+  with Negative[A]
+  with Multiplication[A] {
   import Numeric.Implicits._
 
   override def add(
@@ -23,6 +30,11 @@ abstract class FromNumeric[A : Numeric] extends Addition[A] with Subtraction[A] 
   ): A = lhs - rhs
 
   override def negative(value: A): A = -value
+
+  override def multiply(
+    lhs: A,
+    rhs: A,
+  ): A = lhs * rhs
 }
 
 /**

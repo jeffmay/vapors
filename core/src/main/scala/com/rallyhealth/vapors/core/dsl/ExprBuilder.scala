@@ -4,9 +4,7 @@ import cats._
 import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, ExprSorter}
 import com.rallyhealth.vapors.core.data.{Evidence, TypedFact, Window}
 import com.rallyhealth.vapors.core.lens.NamedLens
-import com.rallyhealth.vapors.core.math.{Addition, Division, Negative, Subtraction}
-import shapeless.{::, HNil}
-import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
+import com.rallyhealth.vapors.core.math._
 
 import scala.collection.{Factory, MapView, View}
 import scala.reflect.runtime.universe.TypeTag
@@ -110,6 +108,17 @@ final class SubtractBuilderOps[R : Subtraction](number: R) {
     captureResult: builder.CaptureResult[R],
   ): ValExprBuilder[V, R, P] = {
     builder.subtractFrom(number)
+  }
+}
+
+final class MultiplicationBuilderOps[R : Multiplication](number: R) {
+
+  def *[V, P](
+    builder: ValExprBuilder[V, R, P],
+  )(implicit
+    captureResult: builder.CaptureResult[R],
+  ): ValExprBuilder[V, R, P] = {
+    builder.multiply(number)
   }
 }
 
@@ -384,6 +393,46 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
     new ValExprBuilder(ExprDsl.add(Expr.ConstOutput(lhs, Evidence.none, captureResult), returnOutput))
+
+  def *(
+    rhs: Expr[V, R, P],
+  )(implicit
+    R: Multiplication[R],
+    captureResult: CaptureResult[R],
+  ): ValExprBuilder[V, R, P] =
+    new ValExprBuilder(ExprDsl.multiply(returnOutput, rhs))
+
+  def *(
+    rhs: R,
+  )(implicit
+    R: Multiplication[R],
+    captureResult: CaptureResult[R],
+  ): ValExprBuilder[V, R, P] =
+    new ValExprBuilder(ExprDsl.multiply(returnOutput, Expr.ConstOutput(rhs, Evidence.none, captureResult)))
+
+  def multiply(
+    rhs: Expr[V, R, P],
+  )(implicit
+    R: Multiplication[R],
+    captureResult: CaptureResult[R],
+  ): ValExprBuilder[V, R, P] =
+    this * rhs
+
+  def multiply(
+    rhs: R,
+  )(implicit
+    R: Multiplication[R],
+    captureResult: CaptureResult[R],
+  ): ValExprBuilder[V, R, P] =
+    this * rhs
+
+  def multiplyTo(
+    lhs: R,
+  )(implicit
+    R: Multiplication[R],
+    captureResult: CaptureResult[R],
+  ): ValExprBuilder[V, R, P] =
+    new ValExprBuilder(ExprDsl.multiply(Expr.ConstOutput(lhs, Evidence.none, captureResult), returnOutput))
 
   def subtract(
     rhs: R,

@@ -54,6 +54,7 @@ object ExprResult {
     def visitFlatMapOutput[M[_], U, R](result: FlatMapOutput[V, M, U, R, P]): G[M[R]]
     def visitGroupOutput[M[_] : Foldable, U : Order, K](result: GroupOutput[V, M, U, K, P]): G[MapView[K, Seq[U]]]
     def visitMapOutput[M[_], U, R](result: MapOutput[V, M, U, R, P]): G[M[R]]
+    def visitMultiplyOutputs[R](result: MultiplyOutputs[V, R, P]): G[R]
     def visitNegativeOutput[R](result: NegativeOutput[V, R, P]): G[R]
     def visitNot[R](result: Not[V, R, P]): G[R]
     def visitOr[R](result: Or[V, R, P]): G[R]
@@ -290,6 +291,14 @@ object ExprResult {
     subResultList: List[ExprResult[V, R, P]],
   ) extends ExprResult[V, R, P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitSubtractOutputs(this)
+  }
+
+  final case class MultiplyOutputs[V, R, P](
+    expr: Expr.MultiplyOutputs[V, R, P],
+    context: Context[V, R, P],
+    subResultList: List[ExprResult[V, R, P]],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitMultiplyOutputs(this)
   }
 
   final case class DivideOutputs[V, R, P](
