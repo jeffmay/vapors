@@ -9,7 +9,7 @@ object JoeSchmoe {
   val age = FactTypes.Age(32)
   val userRole = FactTypes.Role(Role.User)
   val adminRole = FactTypes.Role(Role.Admin)
-  val dateOfBirth = FactTypes.DateOfBirth(LocalDate.of(1987, 1, 1))
+  val dateOfBirth = FactTypes.DateOfBirth(LocalDate.of(1988, 8, 8))
 
   val lastAddressUpdate = FactTypes.AddressUpdate(
     AddressUpdate(

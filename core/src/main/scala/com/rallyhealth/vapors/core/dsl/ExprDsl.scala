@@ -26,7 +26,7 @@ object ExprDsl extends ExprDsl {
 }
 
 // TODO: Remove methods that are not useful anymore and move less-useful methods to a separate object
-trait ExprDsl extends WrapExprSyntax with WrapEachExprSyntax {
+trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax {
 
   def eval[R, P](facts: FactTable)(query: RootExpr[R, P]): ExprResult[FactTable, R, P] = {
     InterpretExprAsResultFn(query)(ExprInput.fromFactTable(facts))

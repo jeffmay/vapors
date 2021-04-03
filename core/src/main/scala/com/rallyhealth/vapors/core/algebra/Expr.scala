@@ -7,7 +7,7 @@ import com.rallyhealth.vapors.core.interpreter.{ExprOutput, InterpretExprAsResul
 import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
-import shapeless.HList
+import shapeless.{HList, Typeable}
 
 import scala.collection.MapView
 
@@ -46,6 +46,7 @@ object Expr {
     def visitCollectSomeOutput[M[_] : Foldable, U, R : Monoid](expr: CollectFromOutput[V, M, U, R, P]): G[R]
     def visitConcatOutput[M[_] : MonoidK, R](expr: ConcatOutput[V, M, R, P]): G[M[R]]
     def visitConstOutput[R](expr: ConstOutput[V, R, P]): G[R]
+    def visitCustomFunction[A, R](expr: CustomFunction[V, A, R, P]): G[R]
     def visitDefine[M[_] : Foldable, T](expr: Define[M, T, P]): G[FactSet]
     def visitEmbed[R](expr: Embed[V, R, P]): G[R]
     def visitExistsInOutput[M[_] : Foldable, U](expr: ExistsInOutput[V, M, U, P]): G[Boolean]
@@ -188,6 +189,26 @@ object Expr {
     capture: CaptureP[V, R, P],
   ) extends Expr[V, R, P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitUsingDefinitions(this)
+  }
+
+  /**
+    * A custom (ideally) pure total function.
+    *
+    * In practice, it is possible for custom functions to throw exceptions. This is something
+    * I hope to address in the future, but it will be up to convention to handle exceptions
+    * by lifting them into the expression language. It is always possible to define them wrong.
+    *
+    * @param inputExpr an expression that produces the argument value
+    * @param name the name of the expression for debugging purposes
+    * @param evaluate an (ideally) pure total function to apply to the argument type
+    */
+  final case class CustomFunction[V, A : Typeable, R, P](
+    inputExpr: Expr[V, A, P],
+    name: String,
+    evaluate: A => R,
+    capture: CaptureP[V, R, P],
+  ) extends Expr[V, R, P] { // TODO: Should this return a Try[R]? Either[Failure, R]?
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitCustomFunction(this)
   }
 
   /**
