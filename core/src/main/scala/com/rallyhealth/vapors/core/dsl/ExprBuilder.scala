@@ -4,6 +4,8 @@ import cats._
 import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, ExprSorter}
 import com.rallyhealth.vapors.core.data.{Evidence, TypedFact, Window}
 import com.rallyhealth.vapors.core.lens.NamedLens
+import com.rallyhealth.vapors.core.math.{Addition, Division, Negative, Subtraction}
+import shapeless.{::, HNil}
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 
 import scala.collection.{Factory, MapView, View}
@@ -84,6 +86,9 @@ trait ExprBuilderSyntax {
   implicit def addTo[R : Addition](lhs: R): AdditionBuilderOps[R] = new AdditionBuilderOps(lhs)
 
   implicit def subtractFrom[R : Subtraction](lhs: R): SubtractBuilderOps[R] = new SubtractBuilderOps(lhs)
+
+  implicit def divideFrom[R : Division](lhs: R): DivisionBuilderOps[R] = new DivisionBuilderOps(lhs)
+
 }
 
 final class AdditionBuilderOps[R : Addition](number: R) {
@@ -105,6 +110,17 @@ final class SubtractBuilderOps[R : Subtraction](number: R) {
     captureResult: builder.CaptureResult[R],
   ): ValExprBuilder[V, R, P] = {
     builder.subtractFrom(number)
+  }
+}
+
+final class DivisionBuilderOps[R : Division](number: R) {
+
+  def /[V, P](
+    builder: ValExprBuilder[V, R, P],
+  )(implicit
+    captureResult: builder.CaptureResult[R],
+  ): ValExprBuilder[V, R, P] = {
+    builder.divideFrom(number)
   }
 }
 
@@ -392,6 +408,30 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
     new ValExprBuilder(ExprDsl.subtract(Expr.ConstOutput(lhs, Evidence.none, captureResult), returnOutput))
+
+  def divide(
+    rhs: R,
+  )(implicit
+    R: Division[R],
+    captureResult: CaptureResult[R],
+  ): ValExprBuilder[V, R, P] =
+    this / rhs
+
+  def /(
+    rhs: R,
+  )(implicit
+    R: Division[R],
+    captureResult: CaptureResult[R],
+  ): ValExprBuilder[V, R, P] =
+    new ValExprBuilder(ExprDsl.divide(returnOutput, Expr.ConstOutput(rhs, Evidence.none, captureResult)))
+
+  def divideFrom(
+    lhs: R,
+  )(implicit
+    R: Division[R],
+    captureResult: CaptureResult[R],
+  ): ValExprBuilder[V, R, P] =
+    new ValExprBuilder(ExprDsl.divide(Expr.ConstOutput(lhs, Evidence.none, captureResult), returnOutput))
 
   def unary_-(
     implicit

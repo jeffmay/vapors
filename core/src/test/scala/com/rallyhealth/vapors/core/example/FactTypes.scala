@@ -22,6 +22,8 @@ object FactTypes {
   val Tag = FactType[String]("tag")
   val TagsUpdate = FactType[TagsUpdate]("tags_update")
   val ProbabilityToUse = FactType[Probs]("probability_to_use")
+  val TempFahrenheit = FactType[Double]("temp_fahrenheit")
+  val TempCelcius = FactType[Double]("temp_celcius")
 }
 
 object FactTypeSets {

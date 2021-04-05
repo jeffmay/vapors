@@ -6,6 +6,8 @@ import com.rallyhealth.vapors.core.data._
 import com.rallyhealth.vapors.core.interpreter.{ExprOutput, InterpretExprAsResultFn}
 import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
+import com.rallyhealth.vapors.core.math.{Addition, Division, Negative, Subtraction}
+import shapeless.HList
 import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
 import shapeless.{HList, Typeable}
 
@@ -48,6 +50,7 @@ object Expr {
     def visitConstOutput[R](expr: ConstOutput[V, R, P]): G[R]
     def visitCustomFunction[A, R](expr: CustomFunction[V, A, R, P]): G[R]
     def visitDefine[M[_] : Foldable, T](expr: Define[M, T, P]): G[FactSet]
+    def visitDivideOutputs[R : Division](expr: DivideOutputs[V, R, P]): G[R]
     def visitEmbed[R](expr: Embed[V, R, P]): G[R]
     def visitExistsInOutput[M[_] : Foldable, U](expr: ExistsInOutput[V, M, U, P]): G[Boolean]
     def visitFilterOutput[M[_] : Foldable : FunctorFilter, R](expr: FilterOutput[V, M, R, P]): G[M[R]]
@@ -481,6 +484,18 @@ object Expr {
     capture: CaptureP[V, R, P],
   ) extends Expr[V, R, P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitSubtractOutputs(this)
+  }
+
+  /**
+    * Divides the results of all expressions in [[inputExprList]] using the provided definition for [[Division]].
+    *
+    * @note the order of expressions matters for division, so all division is applied left-to-right.
+    */
+  final case class DivideOutputs[V, R : Division, P](
+    inputExprList: NonEmptyList[Expr[V, R, P]],
+    capture: CaptureP[V, R, P],
+  ) extends Expr[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitDivideOutputs(this)
   }
 
   /**

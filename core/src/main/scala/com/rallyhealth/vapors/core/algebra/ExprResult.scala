@@ -47,6 +47,7 @@ object ExprResult {
     def visitConstOutput[R](result: ConstOutput[V, R, P]): G[R]
     def visitCustomFunction[A, R](result: CustomFunction[V, A, R, P]): G[R]
     def visitDeclare[M[_], T](result: Define[V, M, T, P]): G[FactSet]
+    def visitDivideOutputs[R](result: DivideOutputs[V, R, P]): G[R]
     def visitEmbed[R](result: Embed[V, R, P]): G[R]
     def visitExistsInOutput[M[_] : Foldable, U](result: ExistsInOutput[V, M, U, P]): G[Boolean]
     def visitFilterOutput[M[_] : Foldable : FunctorFilter, R](result: FilterOutput[V, M, R, P]): G[M[R]]
@@ -289,6 +290,14 @@ object ExprResult {
     subResultList: List[ExprResult[V, R, P]],
   ) extends ExprResult[V, R, P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitSubtractOutputs(this)
+  }
+
+  final case class DivideOutputs[V, R, P](
+    expr: Expr.DivideOutputs[V, R, P],
+    context: Context[V, R, P],
+    subResultList: List[ExprResult[V, R, P]],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitDivideOutputs(this)
   }
 
   final case class WrapOutputSeq[V, R, P](

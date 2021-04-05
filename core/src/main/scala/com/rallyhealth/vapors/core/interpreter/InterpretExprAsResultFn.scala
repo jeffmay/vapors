@@ -6,7 +6,7 @@ import com.rallyhealth.vapors.core.algebra.{ConditionBranch, Expr, ExprResult, N
 import com.rallyhealth.vapors.core.data._
 import com.rallyhealth.vapors.core.interpreter.InterpretExprAsSimpleOutputFn.SimpleOutputFnFunctorBuilder
 import com.rallyhealth.vapors.core.logic._
-import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
+import com.rallyhealth.vapors.core.math.{Addition, Division, Negative, Subtraction}
 import shapeless.HList
 
 import scala.collection.MapView
@@ -338,6 +338,19 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     val allParams = allResultsList.map(_.param)
     resultOfManySubExpr(expr, input, addResult, allEvidence, allParams) {
       ExprResult.SubtractOutputs(_, _, allResultsList)
+    }
+  }
+
+  override def visitDivideOutputs[R : Division](
+    expr: Expr.DivideOutputs[V, R, P],
+  ): ExprInput[V] => ExprResult[V, R, P] = { input =>
+    val allResults = expr.inputExprList.map(_.visit(this)(input))
+    val allResultsList = allResults.toList
+    val addResult = allResultsList.map(_.output.value).reduceLeft(_ / _)
+    val allEvidence = allResultsList.foldMap(_.output.evidence)
+    val allParams = allResultsList.map(_.param)
+    resultOfManySubExpr(expr, input, addResult, allEvidence, allParams) {
+      ExprResult.DivideOutputs(_, _, allResultsList)
     }
   }
 
