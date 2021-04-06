@@ -62,40 +62,5 @@ class UsingDefinitionsExprSpec extends AnyWordSpec {
       assertResult(Evidence(dob, userRole))(result.output.evidence.derivedFromSources)
     }
 
-    lazy val celciusFromFahrenheit: Expr.WithFactsOfType[Double, Seq[Double], Unit] = {
-      withFactsOfType(FactTypes.TempFahrenheit).where { facts =>
-        facts.map { fact =>
-          (fact.get(_.select(_.value)) - 32.0) / 1.8
-        }
-      }
-    }
-
-    "is 32F === 0C (shorter form)" in {
-      val tempZeroF = FactTypes.TempFahrenheit(32.0)
-      val facts = FactTable(tempZeroF)
-      val result = eval(facts) {
-        celciusFromFahrenheit.withOutputFoldable.exists { v =>
-          // TODO Support tolerance here
-          // === 0.0 works here, too
-          val matchVal = 0.0
-          dsl.not(and(v > matchVal, v < matchVal))
-        }
-      }
-      assert(result.output.value)
-    }
-
-    "is 50F === 10C (shorter form)" in {
-      val tempZeroF = FactTypes.TempFahrenheit(50.0)
-      val facts = FactTable(tempZeroF)
-      val result = eval(facts) {
-        celciusFromFahrenheit.withOutputFoldable.exists { v =>
-          // TODO support tolerance here
-          // === 10.0 works here, too
-          val matchVal = 10.0
-          dsl.not(and(v > matchVal, v < matchVal))
-        }
-      }
-      assert(result.output.value)
-    }
   }
 }
