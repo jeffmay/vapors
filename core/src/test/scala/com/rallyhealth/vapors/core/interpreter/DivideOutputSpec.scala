@@ -60,9 +60,7 @@ class DivideOutputSpec extends AnyWordSpec {
     }
 
     "is 32F === 0C (shorter form)" in {
-      val tempZeroF = FactTypes.TempFahrenheit(32.0)
-      val facts = FactTable(tempZeroF)
-      val result = eval(facts) {
+      val result = eval(FactTable(FactTypes.TempFahrenheit(32.0))) {
         celciusFromFahrenheit.withOutputFoldable.exists { v =>
           // TODO Support tolerance here
           // === 0.0 works here, too
@@ -74,9 +72,7 @@ class DivideOutputSpec extends AnyWordSpec {
     }
 
     "is 50F === 10C (shorter form)" in {
-      val tempZeroF = FactTypes.TempFahrenheit(50.0)
-      val facts = FactTable(tempZeroF)
-      val result = eval(facts) {
+      val result = eval(FactTable(FactTypes.TempFahrenheit(50.0))) {
         celciusFromFahrenheit.withOutputFoldable.exists { v =>
           // TODO support tolerance here
           // === 10.0 works here, too
