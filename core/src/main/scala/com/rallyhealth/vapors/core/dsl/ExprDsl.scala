@@ -8,7 +8,7 @@ import com.rallyhealth.vapors.core.dsl
 import com.rallyhealth.vapors.core.interpreter.{ExprInput, InterpretExprAsResultFn}
 import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
-import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
+import com.rallyhealth.vapors.core.math.{Addition, Division, Negative, Subtraction}
 
 object ExprDsl extends ExprDsl {
 
@@ -188,6 +188,14 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
     capture: CaptureP[V, R, P],
   ): Expr.SubtractOutputs[V, R, P] =
     Expr.SubtractOutputs(NonEmptyList.of(lhs, rhs), capture)
+
+  def divide[V, R : Division, P](
+    lhs: Expr[V, R, P],
+    rhs: Expr[V, R, P],
+  )(implicit
+    capture: CaptureP[V, R, P],
+  ): Expr.DivideOutputs[V, R, P] =
+    Expr.DivideOutputs(NonEmptyList.of(lhs, rhs), capture)
 
   def negative[V, R : Negative, P](
     inputExpr: Expr[V, R, P],

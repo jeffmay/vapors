@@ -1,6 +1,10 @@
 package com.rallyhealth.vapors.core.interpreter
 
 import com.rallyhealth.vapors.core.data.{DerivedFactOfType, Evidence, FactTable}
+import cats.Id
+import com.rallyhealth.vapors.core.algebra.Expr
+import com.rallyhealth.vapors.core.data.{DerivedFactOfType, Evidence, FactTable, FactType}
+import com.rallyhealth.vapors.core.dsl
 import com.rallyhealth.vapors.core.dsl._
 import com.rallyhealth.vapors.core.example.{FactTypes, JoeSchmoe, Role, Snippets}
 import org.scalatest.matchers.should.Matchers._

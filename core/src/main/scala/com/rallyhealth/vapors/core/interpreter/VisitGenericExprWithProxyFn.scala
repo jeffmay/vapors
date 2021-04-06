@@ -5,7 +5,7 @@ import cats._
 import com.rallyhealth.vapors.core.algebra.Expr
 import com.rallyhealth.vapors.core.data.{ExtractBoolean, FactSet}
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
-import com.rallyhealth.vapors.core.math.{Addition, Negative, Subtraction}
+import com.rallyhealth.vapors.core.math.{Addition, Division, Negative, Subtraction}
 import shapeless.HList
 
 import scala.collection.MapView
@@ -47,6 +47,9 @@ abstract class VisitGenericExprWithProxyFn[V, P, G[_]] extends Expr.Visitor[V, P
   override def visitDefine[M[_] : Foldable, T](expr: Expr.Define[M, T, P]): ExprInput[V] => G[FactSet] = { input =>
     visitGeneric(expr, input.withValue(input.factTable))
   }
+
+  override def visitDivideOutputs[R : Division](expr: Expr.DivideOutputs[V, R, P]): ExprInput[V] => G[R] =
+    visitGeneric(expr, _)
 
   override def visitEmbed[R](expr: Expr.Embed[V, R, P]): ExprInput[V] => G[R] =
     visitGeneric(expr, _)
