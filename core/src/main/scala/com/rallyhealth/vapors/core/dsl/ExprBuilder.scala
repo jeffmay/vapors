@@ -458,13 +458,13 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
   ): ValExprBuilder[V, R, P] =
     new ValExprBuilder(ExprDsl.subtract(Expr.ConstOutput(lhs, Evidence.none, captureResult), returnOutput))
 
-  def divide(
-    rhs: R,
+  def /(
+    rhs: Expr[V, R, P],
   )(implicit
     R: Division[R],
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
-    this / rhs
+    new ValExprBuilder(ExprDsl.divide(returnOutput, rhs))
 
   def /(
     rhs: R,
@@ -473,6 +473,22 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
     new ValExprBuilder(ExprDsl.divide(returnOutput, Expr.ConstOutput(rhs, Evidence.none, captureResult)))
+
+  def divide(
+    rhs: Expr[V, R, P],
+  )(implicit
+    R: Division[R],
+    captureResult: CaptureResult[R],
+  ): ValExprBuilder[V, R, P] =
+    this / rhs
+
+  def divide(
+    rhs: R,
+  )(implicit
+    R: Division[R],
+    captureResult: CaptureResult[R],
+  ): ValExprBuilder[V, R, P] =
+    this / rhs
 
   def divideFrom(
     lhs: R,
