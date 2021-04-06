@@ -11,6 +11,44 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class DivideOutputSpec extends AnyWordSpec {
 
+  s"${classOf[Division[Int]].getSimpleName}[Int]" should {
+
+    lazy val humanAgeFromDogYears: Expr.WithFactsOfType[Int, Seq[Int], Unit] = {
+      withFactsOfType(FactTypes.Age).where { facts =>
+        facts.map { fact =>
+          fact.get(_.select(_.value)) / 7
+        }
+      }
+    }
+
+    "How old is 48 dog years in Human years" in {
+      val result = eval(FactTable(FactTypes.Age(48))) {
+        humanAgeFromDogYears.withOutputFoldable.exists {
+          _ === 6
+        }
+      }
+      assert(result.output.value)
+    }
+
+    "How old is 49 dog years in Human years" in {
+      val result = eval(FactTable(FactTypes.Age(49))) {
+        humanAgeFromDogYears.withOutputFoldable.exists {
+          _ === 7
+        }
+      }
+      assert(result.output.value)
+    }
+
+    "How old is 50 dog years in Human years" in {
+      val result = eval(FactTable(FactTypes.Age(50))) {
+        humanAgeFromDogYears.withOutputFoldable.exists {
+          _ === 7
+        }
+      }
+      assert(result.output.value)
+    }
+  }
+
   s"${classOf[Division[Double]].getSimpleName}[Double]" should {
 
     lazy val celciusFromFahrenheit: Expr.WithFactsOfType[Double, Seq[Double], Unit] = {
