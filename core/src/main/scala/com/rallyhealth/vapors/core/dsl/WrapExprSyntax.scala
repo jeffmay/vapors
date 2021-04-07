@@ -6,6 +6,9 @@ import shapeless.{::, Generic, HList, HNil}
 
 trait WrapExprSyntax {
 
+  def wrap[V, E1, P](e1: Expr[V, E1, P]): ExprHListWrapper[V, E1 :: HNil, P] =
+    new ExprHListWrapper(NonEmptyExprHList.tail(e1))
+
   def wrap[V, E1, E2, P](
     e1: Expr[V, E1, P],
     e2: Expr[V, E2, P],
