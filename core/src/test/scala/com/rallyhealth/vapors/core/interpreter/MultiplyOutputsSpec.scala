@@ -3,9 +3,9 @@ package com.rallyhealth.vapors.core.interpreter
 import com.rallyhealth.vapors.core.dsl._
 import org.scalatest.freespec.AnyFreeSpec
 
-class MultiplyOutputSpec extends AnyFreeSpec {
+class MultiplyOutputsSpec extends AnyFreeSpec {
 
-  "Expr.MultiplyOutput" - {
+  "Expr.MultiplyOutputs" - {
 
     "Int" - {
 

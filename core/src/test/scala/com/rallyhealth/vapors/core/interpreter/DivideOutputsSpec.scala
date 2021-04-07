@@ -7,9 +7,9 @@ import com.rallyhealth.vapors.core.dsl._
 import com.rallyhealth.vapors.core.example.FactTypes
 import org.scalatest.freespec.AnyFreeSpec
 
-class DivideOutputSpec extends AnyFreeSpec {
+class DivideOutputsSpec extends AnyFreeSpec {
 
-  "Expr.DivideOutput" - {
+  "Expr.DivideOutputs" - {
 
     "Int" - {
 
