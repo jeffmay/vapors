@@ -34,11 +34,9 @@ class DivideOutputsSpec extends AnyFreeSpec {
         )
       }
 
-      lazy val humanAgeFromDogYears: Expr.WithFactsOfType[Int, Seq[Int], Unit] = {
-        withFactsOfType(FactTypes.Age).where { facts =>
-          facts.map { fact =>
-            fact.get(_.select(_.value)) / 7
-          }
+      lazy val humanAgeFromDogYears: Expr[FactTable, Seq[Int], Unit] = {
+        factsOfType(FactTypes.Age).map { fact =>
+          fact.get(_.select(_.value)) / 7
         }
       }
 
@@ -93,11 +91,9 @@ class DivideOutputsSpec extends AnyFreeSpec {
         )
       }
 
-      lazy val celciusFromFahrenheit: Expr.WithFactsOfType[Double, Seq[Double], Unit] = {
-        withFactsOfType(FactTypes.TempFahrenheit).where { facts =>
-          facts.map { fact =>
-            (fact.get(_.select(_.value)) - 32.0) / 1.8
-          }
+      lazy val celciusFromFahrenheit: Expr[FactTable, Seq[Double], Unit] = {
+        factsOfType(FactTypes.TempFahrenheit).map { fact =>
+          (fact.get(_.select(_.value)) - 32.0) / 1.8
         }
       }
 

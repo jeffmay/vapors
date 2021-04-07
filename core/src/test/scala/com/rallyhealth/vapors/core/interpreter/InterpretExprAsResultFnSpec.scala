@@ -12,10 +12,8 @@ class InterpretExprAsResultFnSpec extends AnyWordSpec {
     "using no post processing" should {
 
       "find a single fact from a query" in {
-        val q = withFactsOfType(FactTypes.Age).where {
-          _.exists {
-            _.get(_.select(_.value)) >= 18
-          }
+        val q = factsOfType(FactTypes.Age).exists {
+          _.get(_.select(_.value)) >= 18
         }
         val result = eval(JoeSchmoe.factTable)(q)
         assert(result.param.value === ())
@@ -25,11 +23,9 @@ class InterpretExprAsResultFnSpec extends AnyWordSpec {
       }
 
       "find a complex fact from a query" in {
-        val q = withFactsOfType(FactTypes.ProbabilityToUse).where {
-          _.exists {
-            _.getFoldable(_.select(_.value).select(_.scores).atKey("weightloss")).exists {
-              _ > 0.5
-            }
+        val q = factsOfType(FactTypes.ProbabilityToUse).exists {
+          _.getFoldable(_.select(_.value).select(_.scores).at("weightloss")).exists {
+            _ > 0.5
           }
         }
         val result = eval(JoeSchmoe.factTable)(q)
@@ -37,11 +33,9 @@ class InterpretExprAsResultFnSpec extends AnyWordSpec {
       }
 
       "define a fact expression" in {
-        val likelyToJoinWeightloss = withFactsOfType(FactTypes.ProbabilityToUse).where {
-          _.exists {
-            _.getFoldable(_.select(_.value).select(_.scores).atKey("weightloss")).exists {
-              _ > 0.5
-            }
+        val likelyToJoinWeightloss = factsOfType(FactTypes.ProbabilityToUse).exists {
+          _.getFoldable(_.select(_.value).select(_.scores).at("weightloss")).exists {
+            _ > 0.5
           }
         }
         val result = eval(JoeSchmoe.factTable)(likelyToJoinWeightloss)

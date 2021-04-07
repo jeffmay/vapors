@@ -34,7 +34,7 @@ class SelectFromOutputSpec extends AnyFreeSpec {
     val query = factsOfType(FactTypes.TagsUpdate)
       .groupBy(_.select(_.value.source))
       .flatMap { sourceAndFacts =>
-        val facts = sourceAndFacts.getFoldable(_.atKey(Nat._1))
+        val facts = sourceAndFacts.getFoldable(_.at(Nat._1))
         val latestFactTags = facts.sorted.headOption.toSet.flatMap(_.getFoldable(_.select(_.value.tags)))
         latestFactTags.to(View)
       }

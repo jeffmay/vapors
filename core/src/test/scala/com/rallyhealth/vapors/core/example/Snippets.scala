@@ -41,10 +41,8 @@ class Snippets(val clock: Clock) {
   }
 
   lazy val isUser: RootExpr[Boolean, Unit] = {
-    withFactsOfType(FactTypes.Role).where {
-      _.exists {
-        _.get(_.select(_.value)) >= Role.User
-      }
+    factsOfType(FactTypes.Role).exists {
+      _.get(_.select(_.value)) >= Role.User
     }
   }
 

@@ -27,9 +27,7 @@ class SortOutputSpec extends AnyFreeSpec {
     )
 
     "sorted using natural ordering" in {
-      val query = withFactsOfType(FactTypes.BloodPressureMeasurement).where { facts =>
-        facts.map(_.value.get(_.select(_.diastolic))).sorted
-      }
+      val query = factsOfType(FactTypes.BloodPressureMeasurement).map(_.value.get(_.select(_.diastolic))).sorted
       assertResult(Some(highDiastolic)) {
         bpFacts.getSortedSeq(FactTypes.BloodPressureMeasurement).headOption.map(_.value)
       }
@@ -40,9 +38,7 @@ class SortOutputSpec extends AnyFreeSpec {
     }
 
     "sortBy ordered field" in {
-      val query = withFactsOfType(FactTypes.BloodPressureMeasurement).where { facts =>
-        facts.map(_.value).sortBy(_.select(_.diastolic))
-      }
+      val query = factsOfType(FactTypes.BloodPressureMeasurement).map(_.value).sortBy(_.select(_.diastolic))
       assertResult(Some(highDiastolic)) {
         bpFacts.getSortedSeq(FactTypes.BloodPressureMeasurement).headOption.map(_.value)
       }

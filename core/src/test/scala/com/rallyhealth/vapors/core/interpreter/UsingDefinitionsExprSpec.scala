@@ -19,7 +19,7 @@ class UsingDefinitionsExprSpec extends AnyWordSpec {
     "add the defined facts to the fact table" in {
       val result = eval(JoeSchmoe.factTable) {
         usingDefinitions(Snippets.ageFromDateOfBirthDef) {
-          withFactsOfType(FactTypes.Age).returnInput
+          factsOfType(FactTypes.Age)
         }
       }
       val ages = result.output.value.map(_.value)
@@ -48,8 +48,8 @@ class UsingDefinitionsExprSpec extends AnyWordSpec {
       val definition = Snippets.isEligibleDef
       val result = eval(facts) {
         usingDefinitions(definition) {
-          withFactsOfType(definition.factType).where {
-            _.exists(_.get(_.select(_.value)))
+          factsOfType(definition.factType).exists {
+            _.get(_.select(_.value))
           }
         }
       }
