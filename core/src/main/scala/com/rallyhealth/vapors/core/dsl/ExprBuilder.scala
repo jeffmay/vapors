@@ -22,12 +22,6 @@ sealed class ExprBuilder[V, M[_], U, P](val returnOutput: Expr[V, M[U], P]) {
 
   def returnInput(implicit captureResult: CaptureResult[V]): Expr[V, V, P] = Expr.ReturnInput(captureResult)
 
-  @deprecated(
-    "Use embedExpr, embedConst, or embedFoldableConst. This does not work properly and will be removed",
-    "0.13.2",
-  )
-  def embed[R](expr: Expr[M[U], R, P]): ExprBuilder[M[U], Id, R, P] = new ExprBuilder[M[U], Id, R, P](expr)
-
   /**
     * Embed the result of an expression with the input of the current builder.
     */
