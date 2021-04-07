@@ -11,26 +11,22 @@ class EmbedExprSpec extends AnyWordSpec {
   "embedding an expression inside a logical operator inside a 'withFactsOfType'" when {
 
     def insideProbOfWeightloss(cond: ValCondExpr[Double, Unit]): RootExpr[Boolean, Unit] = {
-      withFactsOfType(FactTypes.ProbabilityToUse).where {
-        _.toList
-          .flatMap {
-            _.getFoldable {
-              _.select(_.value).select(_.scores).atKey("weightloss").to(List)
-            }
+      factsOfType(FactTypes.ProbabilityToUse)
+        .flatMap {
+          _.getFoldable {
+            _.select(_.value).select(_.scores).at("weightloss").to(Seq)
           }
-          .exists { _ =>
-            cond
-          }
-      }
+        }
+        .exists { _ =>
+          cond
+        }
     }
 
     def weightMeasuredWithin(window: Window[Int]): RootExpr[Boolean, Unit] = {
       import cats.syntax.invariant._
       val doubleWindow = window.imap(_.toDouble)(_.toInt)
-      withFactsOfType(FactTypes.WeightMeasurement).where {
-        _.exists {
-          _.get(_.select(_.value).select(_.value)).within(doubleWindow)
-        }
+      factsOfType(FactTypes.WeightMeasurement).exists {
+        _.get(_.select(_.value).select(_.value)).within(doubleWindow)
       }
     }
 
@@ -107,10 +103,8 @@ class EmbedExprSpec extends AnyWordSpec {
       }
 
       "disallows embedding an invalid return type" in {
-        val listOfNumberExpr = withFactsOfType(FactTypes.ProbabilityToUse).where {
-          _.toList.flatMap {
-            _.getFoldable(_.select(_.value).select(_.scores).atKey("weightloss").to(List))
-          }
+        val listOfNumberExpr = factsOfType(FactTypes.ProbabilityToUse).flatMap {
+          _.getFoldable(_.select(_.value).select(_.scores).at("weightloss").to(Seq))
         }
         assertDoesNotCompile {
           """insideProbOfWeightloss(or(trueLiteral, listOfNumberExpr))"""
@@ -177,10 +171,8 @@ class EmbedExprSpec extends AnyWordSpec {
       }
 
       "disallows embedding an invalid return type" in {
-        val listOfNumberExpr = withFactsOfType(FactTypes.ProbabilityToUse).where {
-          _.toList.flatMap {
-            _.getFoldable(_.select(_.value).select(_.scores).atKey("weightloss").asIterable.to(List))
-          }
+        val listOfNumberExpr = factsOfType(FactTypes.ProbabilityToUse).flatMap {
+          _.getFoldable(_.select(_.value).select(_.scores).at("weightloss").asIterable.to(Seq))
         }
         assertDoesNotCompile {
           """insideProbOfWeightloss(and(trueLiteral, listOfNumberExpr))"""

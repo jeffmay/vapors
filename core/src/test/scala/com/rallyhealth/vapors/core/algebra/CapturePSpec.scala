@@ -15,10 +15,8 @@ class CapturePSpec extends AnyWordSpec with TypeCheckedTripleEquals {
       import com.rallyhealth.vapors.core.example.CaptureTimeRange._
 
       "find a single fact from a query" in {
-        val q = withFactsOfType(FactTypes.WeightMeasurement).where {
-          _.exists {
-            _.get(_.select(_.value).select(_.value)) > 18
-          }
+        val q = factsOfType(FactTypes.WeightMeasurement).exists {
+          _.get(_.select(_.value).select(_.value)) > 18
         }
         val result = eval(JoeSchmoe.factTable)(q)
         assert(result.param.value === TimeRange(JoeSchmoe.weight.value.timestamp))

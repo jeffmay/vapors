@@ -14,13 +14,11 @@ class ExprBuilderSpec extends AnyWordSpec {
   "ValExprBuilder" should {
 
     "combine lenses from chained .get() methods" in {
-      val q = withFactsOfType(FactTypes.GenericMeasurement).where {
-        _.exists {
-          _.get(_.select(_.value)).get(_.select(_.value)) > 0.0
-        }
-      }
+      val q = factsOfType(FactTypes.GenericMeasurement).exists {
+        _.get(_.select(_.value)).get(_.select(_.value)) > 0.0
+      }.returnOutput
       inside(q) {
-        case Expr.WithFactsOfType(_, Expr.ExistsInOutput(_, condExpr, _), _) =>
+        case Expr.ExistsInOutput(_, condExpr, _) =>
           inside(condExpr) {
             case Expr.OutputWithinWindow(Expr.SelectFromOutput(_, valueLens, _), _, _) =>
               assertResult(DataPath.empty.atField("value").atField("value")) {
@@ -35,13 +33,11 @@ class ExprBuilderSpec extends AnyWordSpec {
     }
 
     "combine lenses from .get() and .getFoldable() methods" in {
-      val q = withFactsOfType(FactTypes.ProbabilityToUse).where {
-        _.exists {
-          _.get(_.select(_.value)).getFoldable(_.select(_.scores)).isEmpty
-        }
-      }
+      val q = factsOfType(FactTypes.ProbabilityToUse).exists {
+        _.get(_.select(_.value)).getFoldable(_.select(_.scores)).isEmpty
+      }.returnOutput
       inside(q) {
-        case Expr.WithFactsOfType(_, Expr.ExistsInOutput(_, condExpr, _), _) =>
+        case Expr.ExistsInOutput(_, condExpr, _) =>
           inside(condExpr) {
             case Expr.OutputIsEmpty(Expr.SelectFromOutput(_, valueLens, _), _) =>
               assertResult(DataPath.empty.atField("value").atField("scores")) {

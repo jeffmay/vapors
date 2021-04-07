@@ -150,6 +150,7 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
     captureResult: CaptureP[V, Seq[R], P],
   ): Expr.WrapOutputSeq[V, R, P] = sequence(expressions)
 
+  @deprecated("Use factsOfType() instead", "0.14.0")
   def withFactsOfType[T, P](
     factTypeSet: FactTypeSet[T],
   )(implicit
