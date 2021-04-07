@@ -118,7 +118,7 @@ final class MultiplicationBuilderOps[R : Multiplication](number: R) {
   )(implicit
     captureResult: builder.CaptureResult[R],
   ): ValExprBuilder[V, R, P] = {
-    builder.multiply(number)
+    builder.multiplyTo(number)
   }
 }
 
@@ -370,13 +370,13 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
   def in(accepted: Set[R])(implicit captureCond: CaptureCondResult): ValExprBuilder[V, Boolean, P] =
     new ValExprBuilder(Expr.OutputWithinSet(returnOutput, accepted, captureCond))
 
-  def add(
-    rhs: R,
+  def +(
+    rhs: Expr[V, R, P],
   )(implicit
     R: Addition[R],
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
-    this + rhs
+    new ValExprBuilder(ExprDsl.add(returnOutput, rhs))
 
   def +(
     rhs: R,
@@ -410,22 +410,6 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
   ): ValExprBuilder[V, R, P] =
     new ValExprBuilder(ExprDsl.multiply(returnOutput, Expr.ConstOutput(rhs, Evidence.none, captureResult)))
 
-  def multiply(
-    rhs: Expr[V, R, P],
-  )(implicit
-    R: Multiplication[R],
-    captureResult: CaptureResult[R],
-  ): ValExprBuilder[V, R, P] =
-    this * rhs
-
-  def multiply(
-    rhs: R,
-  )(implicit
-    R: Multiplication[R],
-    captureResult: CaptureResult[R],
-  ): ValExprBuilder[V, R, P] =
-    this * rhs
-
   def multiplyTo(
     lhs: R,
   )(implicit
@@ -434,13 +418,13 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
   ): ValExprBuilder[V, R, P] =
     new ValExprBuilder(ExprDsl.multiply(Expr.ConstOutput(lhs, Evidence.none, captureResult), returnOutput))
 
-  def subtract(
-    rhs: R,
+  def -(
+    rhs: Expr[V, R, P],
   )(implicit
     R: Subtraction[R],
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
-    this - rhs
+    new ValExprBuilder(ExprDsl.subtract(returnOutput, rhs))
 
   def -(
     rhs: R,
@@ -473,22 +457,6 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
     new ValExprBuilder(ExprDsl.divide(returnOutput, Expr.ConstOutput(rhs, Evidence.none, captureResult)))
-
-  def divide(
-    rhs: Expr[V, R, P],
-  )(implicit
-    R: Division[R],
-    captureResult: CaptureResult[R],
-  ): ValExprBuilder[V, R, P] =
-    this / rhs
-
-  def divide(
-    rhs: R,
-  )(implicit
-    R: Division[R],
-    captureResult: CaptureResult[R],
-  ): ValExprBuilder[V, R, P] =
-    this / rhs
 
   def divideFrom(
     lhs: R,
