@@ -18,8 +18,8 @@ class EmbedExprSpec extends AnyWordSpec {
               _.select(_.value).select(_.scores).atKey("weightloss").to(List)
             }
           }
-          .exists {
-            _.embed(cond)
+          .exists { _ =>
+            cond
           }
       }
     }
