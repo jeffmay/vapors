@@ -129,18 +129,6 @@ final case class NamedLens[A, B](
     )
   }
 
-  @deprecated("Use .at instead", "0.12.0")
-  def atKey[K : ValidDataPathKey, V](
-    key: K,
-  )(implicit
-    CI: Indexed[B, K, V],
-  ): NamedLens[A, V] = {
-    copy(
-      path = path.atKey(key),
-      get = get.andThen(b => CI.get(b)(key)),
-    )
-  }
-
   def filterKeys[K : ValidDataPathKey, V : Semigroup](
     keys: NonEmptySet[K],
   )(implicit
