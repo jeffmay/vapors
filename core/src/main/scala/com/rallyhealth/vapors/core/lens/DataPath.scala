@@ -41,9 +41,6 @@ final case class DataPath(nodes: Chain[DataPath.Node]) extends AnyVal {
 
   def atField(name: String): DataPath = DataPath(nodes :+ Field(name))
 
-  @deprecated("Use ++ instead", "0.11.0")
-  def :::(that: DataPath): DataPath = DataPath(that.nodes ++ this.nodes)
-
   def ++(that: DataPath): DataPath = DataPath(this.nodes ++ that.nodes)
 }
 

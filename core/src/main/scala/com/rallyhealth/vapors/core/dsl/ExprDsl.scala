@@ -4,26 +4,12 @@ import cats.data.NonEmptyList
 import cats.{Foldable, Monoid}
 import com.rallyhealth.vapors.core.algebra.{CaptureP, Expr, ExprResult}
 import com.rallyhealth.vapors.core.data._
-import com.rallyhealth.vapors.core.dsl
 import com.rallyhealth.vapors.core.interpreter.{ExprInput, InterpretExprAsResultFn}
 import com.rallyhealth.vapors.core.lens.NamedLens
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 import com.rallyhealth.vapors.core.math._
 
-object ExprDsl extends ExprDsl {
-
-  @deprecated("Use com.rallyhealth.vapors.core.dsl.CondExpr instead.", "0.8.0")
-  final type CondExpr[V, P] = Expr[V, Boolean, P]
-
-  @deprecated("Use com.rallyhealth.vapors.core.dsl.ValExpr instead.", "0.8.0")
-  final type ValExpr[V, R, P] = Expr[V, R, P]
-
-  @deprecated("Use com.rallyhealth.vapors.core.dsl.ValCondExpr instead.", "0.8.0")
-  final type ValCondExpr[V, P] = dsl.ValExpr[V, Boolean, P]
-
-  @deprecated("Use com.rallyhealth.vapors.core.dsl.RootExpr instead.", "0.8.0")
-  final type RootExpr[R, P] = Expr[FactTable, R, P]
-}
+object ExprDsl extends ExprDsl
 
 // TODO: Remove methods that are not useful anymore and move less-useful methods to a separate object
 trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax {
@@ -150,14 +136,6 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
     captureResult: CaptureP[V, Seq[R], P],
   ): Expr.WrapOutputSeq[V, R, P] = sequence(expressions)
 
-  @deprecated("Use factsOfType() instead", "0.14.0")
-  def withFactsOfType[T, P](
-    factTypeSet: FactTypeSet[T],
-  )(implicit
-    captureInput: CaptureFromFacts[T, P],
-  ): WithFactsOfTypeBuilder[T, P] =
-    new WithFactsOfTypeBuilder(factTypeSet)
-
   def collectSome[V, M[_] : Foldable, U, R : Monoid, P](
     inputExpr: Expr[V, M[U], P],
     collectExpr: ValExpr[U, Option[R], P],
@@ -222,20 +200,6 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
     Expr.ExistsInOutput(inputExpr, condExpr, capture)
 
   def returnInput[V, P](
-    implicit
-    capture: CaptureP[V, V, P],
-  ): Expr.ReturnInput[V, P] =
-    Expr.ReturnInput(capture)
-
-  @deprecated("Use returnInput instead", "0.10.0")
-  def returnInputFoldable[V, P](
-    implicit
-    capture: CaptureP[V, V, P],
-  ): Expr.ReturnInput[V, P] =
-    Expr.ReturnInput(capture)
-
-  @deprecated("Use returnInput instead", "0.10.0")
-  def returnInputValue[V, P](
     implicit
     capture: CaptureP[V, V, P],
   ): Expr.ReturnInput[V, P] =
