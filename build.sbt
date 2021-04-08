@@ -31,9 +31,14 @@ ThisBuild / packageDoc / publishArtifact := false
 // Disable publishing of the root project
 publish / skip := true
 
-def commonProject(dir: String): Project = {
+def commonProject(
+  dir: String,
+  projectPrefix: String = "",
+): Project = {
+  val packagePrefix = s"com.rallyhealth${if (projectPrefix.isEmpty) "" else s".$projectPrefix"}"
   Project(dir, file(dir)).settings(
     name := s"vapors-$dir",
+    idePackagePrefix := Some(packagePrefix),
   )
 }
 
