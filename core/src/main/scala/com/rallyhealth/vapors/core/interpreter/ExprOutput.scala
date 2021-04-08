@@ -1,7 +1,7 @@
 package com.rallyhealth.vapors.core.interpreter
 
 import cats.Monoid
-import com.rallyhealth.vapors.core.data.{Evidence, ExtractBoolean}
+import com.rallyhealth.vapors.core.data.{Evidence, ExtractBoolean, ExtractValue}
 import com.rallyhealth.vapors.core.logic.{Conjunction, Disjunction, Negation}
 
 final case class ExprOutput[R](
@@ -39,11 +39,10 @@ object ExprOutput {
   implicit def conjunction[R : Conjunction : ExtractBoolean]: Conjunction[ExprOutput[R]] =
     (lhs: ExprOutput[R], rhs: ExprOutput[R]) => {
       import cats.syntax.apply._
-      val R = ExtractBoolean[R]
-      @inline def isTrue(output: ExprOutput[R]): Boolean = R.isTrue(output.value)
+      @inline def isTrue(output: ExprOutput[R]): Boolean = ExtractValue[Boolean](output.value)
       val value = Conjunction[R].conjunction(lhs.value, rhs.value)
       val evidence = {
-        if (R.isTrue(value)) {
+        if (ExtractValue[Boolean](value)) {
           // only combine evidence of truthiness if both sides are true
           val evTrueL = Option.when(isTrue(lhs))(lhs.evidence)
           val evTrueR = Option.when(isTrue(rhs))(rhs.evidence)
@@ -86,11 +85,10 @@ object ExprOutput {
   implicit def disjunction[R : Disjunction : ExtractBoolean]: Disjunction[ExprOutput[R]] =
     (lhs: ExprOutput[R], rhs: ExprOutput[R]) => {
       import cats.syntax.apply._
-      val R = ExtractBoolean[R]
-      @inline def isTrue(output: ExprOutput[R]): Boolean = R.isTrue(output.value)
+      @inline def isTrue(output: ExprOutput[R]): Boolean = ExtractValue[Boolean](output.value)
       val value = Disjunction[R].disjunction(lhs.value, rhs.value)
       val evidence = {
-        if (R.isTrue(value)) {
+        if (ExtractValue[Boolean](value)) {
           // combine all evidence of truthiness from sides that are truthy
           val evTrueL = Option.when(isTrue(lhs))(lhs.evidence)
           val evTrueR = Option.when(isTrue(rhs))(rhs.evidence)
