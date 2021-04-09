@@ -2,9 +2,9 @@ name := "vapors-root"
 ThisBuild / organization := "com.rallyhealth"
 ThisBuild / organizationName := "Rally Health"
 
-ThisBuild / licenses := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
-
+ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / scalaVersion := Dependencies.Scala_2_13
+ThisBuild / licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT"))
 
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation:false",
@@ -16,19 +16,20 @@ ThisBuild / scalacOptions ++= Seq(
   "-Ymacro-annotations",
 )
 
-ThisBuild / bintrayOrganization := Some("rallyhealth")
-ThisBuild / bintrayRepository := "maven"
+// reload sbt when the build files change
+Global / onChangedBuildSource := ReloadOnSourceChanges
 
-ThisBuild / resolvers += Resolver.bintrayRepo("rallyhealth", "maven")
+//homepage := Some(url("https://(your project url)"))
+developers := List(
+  Developer(id = "jeffmay", name = "Jeff May", email = "jeff.n.may@gmail.com", url = url("https://github.com/jeffmay")),
+)
 
 // ScalaDoc generation is generally broken. It's really mostly useful from within the IDE anyway
 // so just disable generation to allow publishing without ScalaDoc errors.
-ThisBuild / Compile / packageDoc / publishArtifact := false
 ThisBuild / packageDoc / publishArtifact := false
 
 // Disable publishing of the root project
-publish := {}
-publishLocal := {}
+publish / skip := true
 
 def commonProject(dir: String): Project = {
   Project(dir, file(dir)).settings(
@@ -38,5 +39,6 @@ def commonProject(dir: String): Project = {
 
 lazy val core = commonProject("core")
   .settings(
+    resolvers += Resolver.bintrayRepo("rallyhealth", "maven"),
     libraryDependencies ++= Dependencies.CoreProject.all(scalaVersion.value),
   )
