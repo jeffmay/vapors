@@ -45,7 +45,7 @@ class WrapOutputSeqSpec extends AnyFreeSpec {
         FactTypes.TagsUpdate,
       )
       val subExpressions =
-        factTypes.map(t => factsOfType(t).map(_.value.get(_.select(_.timestamp))).returnOutput)
+        factTypes.map(t => valuesOfType(t).map(_.get(_.select(_.timestamp))).returnOutput)
       val query = sequence(subExpressions)
       val factsPerType = factTypes.map(JoeSchmoe.factTable.getSortedSeq(_))
       val expectedValues = factsPerType.map(_.map(_.value.timestamp))

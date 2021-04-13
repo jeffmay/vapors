@@ -11,8 +11,7 @@ import scala.collection.View
 class SelectFromOutputSpec extends AnyFreeSpec {
 
   "create a map from a converting a list of facts to tuples" in {
-    val query = factsOfType(FactTypes.TagsUpdate).map { fact =>
-      val update = fact.value
+    val query = valuesOfType(FactTypes.TagsUpdate).map { update =>
       wrap(
         update.get(_.select(_.source)).returnOutput,
         update.get(_.select(_.tags)).returnOutput,

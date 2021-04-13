@@ -11,10 +11,10 @@ class EmbedExprSpec extends AnyWordSpec {
   "embedding an expression inside a logical operator inside a 'withFactsOfType'" when {
 
     def insideProbOfWeightloss(cond: ValCondExpr[Double, Unit]): RootExpr[Boolean, Unit] = {
-      factsOfType(FactTypes.ProbabilityToUse)
+      valuesOfType(FactTypes.ProbabilityToUse)
         .flatMap {
           _.getFoldable {
-            _.select(_.value).select(_.scores).at("weightloss").to(Seq)
+            _.select(_.scores).at("weightloss").to(Seq)
           }
         }
         .exists { _ =>
@@ -25,8 +25,8 @@ class EmbedExprSpec extends AnyWordSpec {
     def weightMeasuredWithin(window: Window[Int]): RootExpr[Boolean, Unit] = {
       import cats.syntax.invariant._
       val doubleWindow = window.imap(_.toDouble)(_.toInt)
-      factsOfType(FactTypes.WeightMeasurement).exists {
-        _.get(_.select(_.value).select(_.value)).within(doubleWindow)
+      valuesOfType(FactTypes.WeightMeasurement).exists {
+        _.get(_.select(_.value)).within(doubleWindow)
       }
     }
 
@@ -103,8 +103,8 @@ class EmbedExprSpec extends AnyWordSpec {
       }
 
       "disallows embedding an invalid return type" in {
-        val listOfNumberExpr = factsOfType(FactTypes.ProbabilityToUse).flatMap {
-          _.getFoldable(_.select(_.value).select(_.scores).at("weightloss").to(Seq))
+        val listOfNumberExpr = valuesOfType(FactTypes.ProbabilityToUse).flatMap {
+          _.getFoldable(_.select(_.scores).at("weightloss").to(Seq))
         }
         assertDoesNotCompile {
           """insideProbOfWeightloss(or(trueLiteral, listOfNumberExpr))"""
@@ -171,8 +171,8 @@ class EmbedExprSpec extends AnyWordSpec {
       }
 
       "disallows embedding an invalid return type" in {
-        val listOfNumberExpr = factsOfType(FactTypes.ProbabilityToUse).flatMap {
-          _.getFoldable(_.select(_.value).select(_.scores).at("weightloss").asIterable.to(Seq))
+        val listOfNumberExpr = valuesOfType(FactTypes.ProbabilityToUse).flatMap {
+          _.getFoldable(_.select(_.scores).at("weightloss").asIterable.to(Seq))
         }
         assertDoesNotCompile {
           """insideProbOfWeightloss(and(trueLiteral, listOfNumberExpr))"""
