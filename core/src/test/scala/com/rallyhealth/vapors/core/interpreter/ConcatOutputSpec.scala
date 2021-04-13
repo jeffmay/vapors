@@ -14,7 +14,7 @@ class ConcatOutputSpec extends AnyFreeSpec {
       val factTypes = List(FactTypes.TagsUpdate, FactTypes.WeightMeasurement, FactTypes.WeightSelfReported)
       val expectedFacts = factTypes.flatMap(JoeSchmoe.factTable.getSortedSeq(_))
       val instantQueries = factTypes.map { factType =>
-        factsOfType(factType).map(_.value.get(_.select(_.timestamp))).returnOutput
+        valuesOfType(factType).map(_.get(_.select(_.timestamp))).returnOutput
       }
       val query = concat(instantQueries: _*).toOutputMonoid
       val result = eval(JoeSchmoe.factTable)(query)
@@ -49,7 +49,7 @@ class ConcatOutputSpec extends AnyFreeSpec {
       val factTypes = List(FactTypes.TagsUpdate, FactTypes.WeightMeasurement, FactTypes.WeightSelfReported)
       val expectedFacts = factTypes.flatMap(JoeSchmoe.factTable.getSortedSeq(_))
       val instantQueries = factTypes.map { factType =>
-        factsOfType(factType).map(_.value.get(_.select(_.timestamp))).returnOutput
+        valuesOfType(factType).map(_.get(_.select(_.timestamp))).returnOutput
       }
       val query = concat(instantQueries: _*).toLazyList
       val result = eval(JoeSchmoe.factTable)(query)
@@ -62,7 +62,7 @@ class ConcatOutputSpec extends AnyFreeSpec {
     "combined all elements into a LazyList without forcing the values" in {
       val factTypes = List(FactTypes.TagsUpdate, FactTypes.WeightMeasurement, FactTypes.WeightSelfReported)
       val instantQueries = factTypes.map { factType =>
-        factsOfType(factType).map(_.value.get(_.select(_.timestamp))).returnOutput
+        valuesOfType(factType).map(_.get(_.select(_.timestamp))).returnOutput
       }
       val query = concat(instantQueries: _*).toLazyList
       val result = eval(JoeSchmoe.factTable)(query)
