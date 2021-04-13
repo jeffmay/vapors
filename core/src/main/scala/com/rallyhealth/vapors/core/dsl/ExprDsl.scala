@@ -97,6 +97,10 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
 
   def when[V, R, P](condExpr: CondExpr[V, P]): WhenExprBuilder[V, P] = new WhenExprBuilder(condExpr)
 
+  /**
+    * Grabs all facts of a given set of types and returns them in order of fact type alphabetically,
+    * then by their natural ordering (as defined on the [[FactType]]).
+    */
   def factsOfType[T, P](
     factTypeSet: FactTypeSet[T],
   )(implicit
@@ -110,6 +114,20 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
         captureAllResults,
       ),
     )
+
+  /**
+    * Same as [[factsOfType]], but maps the facts into their values.
+    */
+  def valuesOfType[T, P](
+    factTypeSet: FactTypeSet[T],
+  )(implicit
+    captureInput: CaptureFromFacts[T, P],
+    captureAllFacts: CaptureRootExpr[Seq[TypedFact[T]], P],
+    captureEachResult: CaptureP[TypedFact[T], T, P],
+    captureEachInput: CaptureP[TypedFact[T], TypedFact[T], P],
+    captureAllResults: CaptureP[FactTable, Seq[T], P],
+  ): FoldableExprBuilder[FactTable, Seq, T, P] =
+    factsOfType(factTypeSet).map(_.value)
 
   /**
     * Takes a sequence of expressions and produces an expression of sequence of all the items.
