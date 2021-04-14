@@ -16,11 +16,11 @@ class Snippets(val clock: Clock) {
     this(Clock.fixed(fixedLocalDate.atStartOfDay(ZoneId.systemDefault()).toInstant, ZoneId.systemDefault()))
 
   val ageFromDateOfBirth: Expr[FactTable, Seq[Int], Unit] = {
-    valuesOfType(FactTypes.DateOfBirth).map { value =>
+    valuesOfType(FactTypes.DateOfBirth).map { dob =>
       val ageInYears = dateDiff(
-        value,
-        value.embedResult(today(clock)),
-        value.embedConst(ChronoUnit.YEARS),
+        dob,
+        dob.embedResult(today(clock)),
+        dob.embedConst(ChronoUnit.YEARS),
       )
       ageInYears.withOutputValue.get(_.select(_.toInt))
     }
@@ -34,15 +34,15 @@ class Snippets(val clock: Clock) {
 
   val isOver18: RootExpr[Boolean, Unit] = {
     usingDefinitions(ageFromDateOfBirthDef) {
-      valuesOfType(FactTypes.Age).exists {
-        _ >= 18
+      factsOfType(FactTypes.Age).exists {
+        _.value >= 18
       }
     }
   }
 
   lazy val isUser: RootExpr[Boolean, Unit] = {
-    valuesOfType(FactTypes.Role).exists {
-      _ >= Role.User
+    factsOfType(FactTypes.Role).exists {
+      _.value >= Role.User
     }
   }
 
