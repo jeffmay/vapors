@@ -48,7 +48,9 @@ class UsingDefinitionsExprSpec extends AnyWordSpec {
       val definition = Snippets.isEligibleDef
       val result = eval(facts) {
         usingDefinitions(definition) {
-          valuesOfType(definition.factType).exists(_ === true)
+          factsOfType(definition.factType).exists {
+            _.get(_.select(_.value))
+          }
         }
       }
       assert(result.output.value)

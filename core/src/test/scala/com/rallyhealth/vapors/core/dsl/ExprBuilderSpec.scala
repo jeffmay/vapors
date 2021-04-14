@@ -14,8 +14,8 @@ class ExprBuilderSpec extends AnyWordSpec {
   "ValExprBuilder" should {
 
     "combine lenses from chained .get() methods" in {
-      val q = valuesOfType(FactTypes.GenericMeasurement).exists {
-        _.get(_.select(_.value)) > 0.0
+      val q = factsOfType(FactTypes.GenericMeasurement).exists {
+        _.get(_.select(_.value)).get(_.select(_.value)) > 0.0
       }.returnOutput
       inside(q) {
         case Expr.ExistsInOutput(_, condExpr, _) =>
