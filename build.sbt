@@ -19,8 +19,8 @@ ThisBuild / scalacOptions ++= Seq(
 // reload sbt when the build files change
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-//homepage := Some(url("https://(your project url)"))
-developers := List(
+ThisBuild / homepage := Some(url("https://github.com/jeffmay/vapors"))
+ThisBuild / developers := List(
   Developer(id = "jeffmay", name = "Jeff May", email = "jeff.n.may@gmail.com", url = url("https://github.com/jeffmay")),
 )
 
