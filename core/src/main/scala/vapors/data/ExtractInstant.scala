@@ -7,7 +7,7 @@ import java.time._
 /**
   * Special case of [[ExtractValue]] that extracts an [[Instant]].
   *
-  * @see the example use case of [[CaptureTimeRange]].
+  * TODO: This should be replaced by a type alias to [[ExtractValue]] in the same way [[ExtractBoolean]] was.
   */
 trait ExtractInstant[-T] extends ExtractValue[T, Instant]
 

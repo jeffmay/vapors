@@ -7,6 +7,12 @@ import vapors.logic.{Conjunction, Disjunction, Negation}
 
 import cats.Monoid
 
+/**
+  * The result of a computation without any debugging information (i.e. captured parameter or result nodes)
+  *
+  * @param value the result of the computation
+  * @param evidence the facts used in the computation
+  */
 final case class ExprOutput[R](
   value: R,
   evidence: Evidence,
@@ -106,6 +112,9 @@ object ExprOutput {
       ExprOutput(value, evidence)
     }
 
+  /**
+    * Negates the result value without affecting the [[Evidence]].
+    */
   implicit def negation[R : Negation]: Negation[ExprOutput[R]] = { output =>
     val negatedValue = Negation[R].negation(output.value)
     output.copy(value = negatedValue)

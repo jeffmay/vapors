@@ -26,6 +26,16 @@ Failed to find a CaptureP for the following expression:
 )
 trait CaptureP[V, R, P] {
 
+  /**
+    * Folds the captured parameters of the sub-expressions with the captured parameter of this expression.
+    *
+    * @param expr the expression that is being evaluated
+    * @param input the input to the expression
+    * @param output the output of the expression given the input
+    * @param subExprParams the captured parameters of the sub-expressions.
+    *                      NOTE: This is not a good data structure for parameters because you cannot tell where they
+    *                      come from.
+    */
   def foldToParam(
     expr: Expr[V, R, P],
     input: ExprInput[V],

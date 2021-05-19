@@ -8,6 +8,12 @@ import cats.{Invariant, Order, Show}
 
 import scala.collection.immutable.NumericRange
 
+/**
+  * Represents an open or closed range with either 1 or 2 boundaries.
+  *
+  * A window can be bounded from below or above or both, and it can tell if a value is contained within
+  * those boundaries.
+  */
 trait Window[A] {
   def order: Order[A]
   def contains(value: A): Boolean

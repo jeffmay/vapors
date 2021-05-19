@@ -11,10 +11,21 @@ import cats.syntax.show._
 import scala.collection.Factory
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
 
+/**
+  * Defines a closed set of operations for sorting elements of the given arity-1 type constructor.
+  *
+  * This is basically like an [[Order]], except it exists only for serialization and debugging purposes.
+  */
 sealed trait ExprSorter[M[_], R] extends (M[R] => M[R]) {
 
+  /**
+    * A description of how the elements are sorted for serialization and debugging purposes.
+    */
   def sortDescription: String
 
+  /**
+    * Sort the given collection.
+    */
   override def apply(collection: M[R]): M[R]
 }
 
