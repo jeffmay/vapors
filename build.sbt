@@ -38,7 +38,7 @@ def commonProject(
   val packagePrefix = s"com.rallyhealth${if (projectPrefix.isEmpty) "" else s".$projectPrefix"}"
   Project(dir, file(dir)).settings(
     name := s"vapors-$dir",
-    idePackagePrefix := Some(packagePrefix),
+    idePackagePrefix.withRank(KeyRanks.Invisible) := Some(packagePrefix),
   )
 }
 
