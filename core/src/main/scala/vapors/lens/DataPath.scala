@@ -8,6 +8,13 @@ import cats.data.{Chain, NonEmptySet}
 import scala.annotation.tailrec
 import scala.collection.{immutable, BitSet, SortedSet}
 
+/**
+  * Describes a chain of selection operations that describes a getter lens.
+  *
+  * This is used for debugging, documentation, and serialization purposes.
+  *
+  * @param nodes the sequence of operations for this path.
+  */
 final case class DataPath(nodes: Chain[DataPath.Node]) extends AnyVal {
   import DataPath._
 

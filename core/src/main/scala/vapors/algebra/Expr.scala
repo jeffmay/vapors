@@ -23,9 +23,7 @@ import scala.collection.MapView
   *
   * @see [[InterpretExprAsResultFn]]
   *
-  * F = Foldable type constructor
-  * V = Value type
-  * F[V] = the input value type
+  * V = Input Value type
   * R = Return type
   * P = Captured param
   */
@@ -253,6 +251,12 @@ object Expr {
 
   /**
     * Negates the output from the given [[inputExpr]], but keeps the same evidence.
+    *
+    * Negation has no impact on the [[Evidence]]. Negation of a false value with evidence
+    * becomes a true value with the same evidence, and negation of a true value with no
+    * evidence becomes a false value with no evidence. How the [[Evidence.none]] is interpreted
+    * is up to the caller, but any boolean-like outcome with no Evidence should be treated
+    * identically.
     */
   final case class Not[V, R : Negation, P](
     inputExpr: Expr[V, R, P],

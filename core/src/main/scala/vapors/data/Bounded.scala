@@ -4,6 +4,11 @@ package vapors.data
 
 import cats.Functor
 
+/**
+  * Represents a boundary on a 1-dimensional line at a specific position.
+  *
+  * It has two directions: [[Bounded.Below]] and [[Bounded.Above]].
+  */
 sealed trait Bounded[A]
 
 object Bounded {

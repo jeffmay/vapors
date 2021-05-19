@@ -15,6 +15,20 @@ import shapeless.HList
 import scala.collection.MapView
 import scala.collection.immutable.BitSet
 
+/**
+  * This is the main interpreter for the [[Expr]] algebra. It recursively processes every node in the tree
+  * and combines the [[ExprResult]] in a symmetric fashion.
+  *
+  * The end result of interpreting an [[Expr]] is a function from [[ExprInput]] => [[ExprResult]] (which
+  * itself contains an [[ExprOutput]] and a captured [[P]] parameter inside of the [[ExprResult.Context]]).
+  *
+  * This interpreter calls itself recursively for every sub-expression node by calling the [[Expr.visit]]
+  * and passing the appropriate definition of [[Expr.Visitor]] (i.e. either `this` or some appropriately
+  * parameterized version of [[InterpretExprAsResultFn]]).
+  *
+  * In some cases, we cannot recursively handle [[ExprResult]]s, so we use the [[InterpretExprAsSimpleOutputFn]]
+  * to get a simplified output function that can be combined in a [[Semigroupal]] fashion.
+  */
 final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r => ExprInput[V] => ExprResult[V, r, P]]] {
 
   import cats.syntax.all._

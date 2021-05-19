@@ -12,7 +12,13 @@ import cats._
 import scala.collection.{Factory, MapView, View}
 import scala.reflect.runtime.universe.TypeTag
 
-// TODO: Make this more reusable for MapViewExprBuilder
+/**
+  * Chains algebraic operations into a single [[Expr]] node.
+  *
+  * @param returnOutput the head of the tree of expressions as built so far
+  *
+  * TODO: Make this more reusable for [[MapViewExprBuilder]]
+  */
 sealed class ExprBuilder[V, M[_], U, P](val returnOutput: Expr[V, M[U], P]) {
 
   type CaptureResult[R] = CaptureP[V, R, P]
@@ -130,10 +136,19 @@ final class DivisionBuilderOps[R : Division](number: R) {
   }
 }
 
-// TODO: Rename? Is this always foldable?
+/**
+  * Same as [[ExprBuilder]], but for arity-1 higher-kinded types
+  *
+  * @see [[ExprBuilder]]
+  *
+  * TODO: Rename? Is this always foldable?
+  */
 final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
   extends ExprBuilder[V, M, U, P](returnOutput) {
 
+  /**
+    * Same as [[to]](List).
+    */
   def toList(
     implicit
     ev: M[U] <:< IterableOnce[U],
@@ -141,6 +156,9 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
   ): FoldableExprBuilder[V, List, U, P] =
     to(List)
 
+  /**
+    * Same as [[to]](Set).
+    */
   def toSet(
     implicit
     ev: M[U] <:< IterableOnce[U],
@@ -148,6 +166,14 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
   ): FoldableExprBuilder[V, Set, U, P] =
     to(Set)
 
+  /**
+    * Converts the iterable of 2-tuples return value into a Map.
+    *
+    * @example
+    * {{{
+    *   assert(eval(const(Set("A" -> 1, "B" -> 2)).withOutputFoldable.toMap).output.value == Map("A" -> 1, "B" -> 2))
+    * }}}
+    */
   def toMap[K, X](
     implicit
     ev: M[U] <:< IterableOnce[(K, X)],
@@ -161,6 +187,14 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
       ),
     )
 
+  /**
+    * Converts the iterable return value into the specific Scala collection companion object.
+    *
+    * @example
+    * {{{
+    *   assert(eval(const(List(1, 2, 2, 3)).withOutputFoldable.to(Set)).output.value == Set(1, 2, 3))
+    * }}}
+    */
   def to[N[_] : Foldable](
     factory: Factory[U, N[U]],
   )(implicit
@@ -175,6 +209,9 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
       ),
     )
 
+  /**
+    * Sorts the sequence of values returned based on the given total ordering for the value type.
+    */
   def sorted(
     implicit
     orderU: Order[U],
@@ -185,6 +222,10 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
   ): FoldableExprBuilder[V, M, U, P] =
     new FoldableExprBuilder(Expr.SortOutput(returnOutput, ExprSorter.byNaturalOrder[M, U], captureResult))
 
+  /**
+    * Sorts the sequence of values returned based on the given total ordering for the type of the
+    * selected field of the values.
+    */
   def sortBy[R : Order](
     buildLens: NamedLens.Fn[U, R],
   )(implicit
@@ -197,6 +238,12 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
     new FoldableExprBuilder(Expr.SortOutput(returnOutput, ExprSorter.byField[M, U, R](lens), captureResult))
   }
 
+  /**
+    * Groups the [[Foldable]] return value by the selected field.
+    *
+    * The values of the map produced must have a total ordering so that they are retrieved from the map
+    * in a consistent and predictable way.
+    */
   def groupBy[K](
     buildKeyLens: NamedLens.Fn[U, K],
   )(implicit
@@ -209,6 +256,9 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
     new MapViewExprBuilder(Expr.GroupOutput(returnOutput, keyLens, captureResult))
   }
 
+  /**
+    * Takes a given number of elements from the start of the traversable return value.
+    */
   def take(
     n: Int,
   )(implicit
@@ -218,6 +268,9 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
   ): FoldableExprBuilder[V, M, U, P] =
     new FoldableExprBuilder(Expr.TakeFromOutput(returnOutput, n, captureResult))
 
+  /**
+    * Takes the first element from the start of the traversable return value or None, if the return value is empty.
+    */
   def headOption(
     implicit
     traverseM: Traverse[M],
@@ -230,6 +283,9 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
       Expr.SelectFromOutput(take(1), NamedLens.id[M[U]].headOption, captureHeadResult),
     )
 
+  /**
+    * Maps an expression over every element of the returned [[Functor]] and folds the evidence together.
+    */
   def map[R](
     buildFn: ValExprBuilder[U, U, P] => ExprBuilder[U, Id, R, P],
   )(implicit
@@ -245,6 +301,21 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
     new FoldableExprBuilder(next)
   }
 
+  /**
+    * Maps an expression that produces the same return type constructor and flattens all the returned
+    * elements together based on the definition of [[FlatMap]].
+    *
+    * This will also fold all the evidence together.
+    *
+    * @note there is no good definition of `flatMap` inside of an applicative data structure. The input
+    *       to any outer expression builder almost always not be the same type as the type of input to
+    *       the inner expression to be flattened. This means that you can't reference any expression outside
+    *       of the scope of the expression builder function given to `.flatMap`.
+    *
+    *       The only way to fix this would be to provide some way to carry the input from previous expressions
+    *       around in some kind of stack or grab bag, from which you could grab values for another expression.
+    *       Until then, this method is kind of useless.
+    */
   def flatMap[X](
     buildFn: ValExprBuilder[U, U, P] => ExprBuilder[U, M, X, P],
   )(implicit
@@ -260,6 +331,15 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
     new FoldableExprBuilder(next)
   }
 
+  /**
+    * Fold all the result values into a single result based on the definition of [[Monoid]].
+    *
+    * @example
+    * {{{
+    *   // for better or for worse, the default definition of Monoid[Int] is summation
+    *   assert(eval(const(List(1, 2, 3)).withOutputFoldable.fold).output.value == 6)
+    * }}}
+    */
   def fold(
     implicit
     foldableM: Foldable[M],
@@ -269,6 +349,9 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
     new ValExprBuilder(Expr.FoldOutput(returnOutput, captureResult))
   }
 
+  /**
+    * Returns true if the result value is an empty [[Foldable]].
+    */
   def isEmpty(
     implicit
     foldableM: Foldable[M],
@@ -276,6 +359,11 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
   ): ValExprBuilder[V, Boolean, P] =
     new ValExprBuilder(Expr.OutputIsEmpty(returnOutput, captureResult))
 
+  /**
+    * Computes the given condition expression for every element of the returned value until one returns true
+    * OR the returned value is empty. Otherwise -- if all elements of the non-empty returned value return false
+    * -- this expression will return false.
+    */
   def exists(
     buildFn: ValExprBuilder[U, U, P] => ExprBuilder[U, Id, Boolean, P],
   )(implicit
@@ -288,6 +376,12 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
     new ValExprBuilder(next)
   }
 
+  /**
+    * Filters out all elements of the returned [[Foldable]] for which the given conditional expression returns false.
+    *
+    * What's left is all the elements of this expression's returned [[Foldable]] for which the given condition
+    * returns true.
+    */
   def filter(
     buildFn: ValExprBuilder[U, U, P] => ExprBuilder[U, Id, Boolean, P],
   )(implicit
@@ -302,6 +396,9 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
     new FoldableExprBuilder(Expr.FilterOutput(returnOutput, condExpr.returnOutput, captureResult))
   }
 
+  /**
+    * Returns true if the returned [[Foldable]] shares any elements in common with the given set of valid values.
+    */
   def containsAny(
     validValues: Set[U],
   )(implicit
@@ -320,10 +417,18 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
     )
 }
 
-// TODO: Share any methods with FoldableExprBuilder?
+/**
+  * Same as [[ExprBuilder]], but for concrete types.
+  *
+  * @see [[ExprBuilder]]
+  *
+  * TODO: This should probably share some methods with [[FoldableExprBuilder]]... or at least
+  *       switching between builder types should be a lot easier.
+  */
 final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
   extends ExprBuilder[V, Id, R, P](returnOutput) {
 
+  // chains expression builder .get calls into a single select operation
   @inline private def buildGetExpr[N[_], X](
     buildLens: NamedLens.Fn[R, N[X]],
   )(implicit
@@ -342,6 +447,15 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     }
   }
 
+  /**
+    * Selects a field from the returned value using the given lens.
+    *
+    * @example
+    * {{{
+    *   // assuming you run this example in 2021...
+    *   assert(const(LocalDate.now()).withOutputValue.get(_.select(_.getYear)).output.value == 2021)
+    * }}}
+    */
   def get[X](
     buildLens: NamedLens.Fn[R, X],
   )(implicit
@@ -349,7 +463,20 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
   ): ValExprBuilder[V, X, P] =
     new ValExprBuilder(buildGetExpr[Id, X](buildLens))
 
-  // TODO: Rename? Is it always foldable?
+  /**
+    * Same as [[get]], except it expects the selected value to have a higher-kinded type and returns
+    * a [[FoldableExprBuilder]].
+    *
+    * @example
+    * {{{
+    *   // selecting a value from a Map returns an Option, which is foldable
+    *   assert(const(Map("A" -> 1)).withOutputValue.getFoldable(_.at("A")).isEmpty).output.value == false)
+    * }}}
+    *
+    * TODO: Rename? It only needs to be a higher-kinded type, but [[FoldableExprBuilder]] almost always
+    *       requires a [[Foldable]] definition for any chained operations. Ideally, we would be able
+    *       to avoid needing to distinguish the type of builder to use until after we have selected the field.
+    */
   def getFoldable[N[_], X](
     buildLens: NamedLens.Fn[R, N[X]],
   )(implicit

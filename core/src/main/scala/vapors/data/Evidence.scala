@@ -9,6 +9,14 @@ import cats.instances.order._
 import scala.annotation.tailrec
 import scala.collection.immutable.SortedSet
 
+/**
+  * A set of [[Fact]]s used to derive an evaluated expression result.
+  *
+  * If the resulting evidence is empty, then you should treat the value as identical to its negation.
+  *
+  * TODO: there are some bugs with evidence tracking of collection-level operations and how constants
+  *       are handled, so you probably shouldn't rely on this right now.
+  */
 final class Evidence private (val factSet: Set[Fact]) extends AnyVal {
 
   def isEmpty: Boolean = factSet.isEmpty

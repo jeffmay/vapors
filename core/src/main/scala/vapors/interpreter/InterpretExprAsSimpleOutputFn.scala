@@ -10,14 +10,15 @@ import cats.{Eval, Functor, Semigroupal}
 /**
   * Interprets an [[Expr]] as a function from [[ExprInput]] to a tuple of [[ExprOutput]] and a list of captured params.
   *
-  * @see [[GenSimpleOutput]] for the interpreted function return type.
-  *
   * This is necessary to define a [[Functor]] and [[Semigroupal]] for an expression, so that we can recursively map
-  * over the whole [[com.rallyhealth.vapors.core.algebra.NonEmptyExprHList]] to get an [[shapeless.HList]] result.
+  * over the whole [[com.rallyhealth.vapors.algebra.NonEmptyExprHList]] to get an [[shapeless.HList]] result.
   *
   * Since the [[InterpretExprAsResultFn]] return type is dependent on the input [[Expr]], it is impossible to define
   * these instances. By simplifying to the more generic return type of [[GenSimpleOutput]] we are able to leverage
   * the standard function, tuple, and list instances from cats over the well defined type constructor of [[ExprOutput]].
+  *
+  * @see [[GenSimpleOutput]] for the interpreted function return type.
+  * @see [[InterpretExprAsResultFn]] for the implementation details.
   */
 class InterpretExprAsSimpleOutputFn[V, P] extends VisitGenericExprWithProxyFn[V, P, GenSimpleOutput[*, P]] {
 
@@ -26,6 +27,7 @@ class InterpretExprAsSimpleOutputFn[V, P] extends VisitGenericExprWithProxyFn[V,
     input: ExprInput[U],
   ): GenSimpleOutput[R, P] = {
     val result = InterpretExprAsResultFn(expr)(input)
+    // strip the output and captured param from the full ExprResult
     (result.output, result.param :: Nil)
   }
 }

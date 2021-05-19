@@ -12,6 +12,13 @@ import scala.collection.{MapView, View}
 
 final class MapViewExprBuilder[V, K, U, P](private val inputExpr: Expr[V, MapView[K, U], P]) extends AnyVal {
 
+  /**
+    * Apply the given expression over every value of the Map, without affecting the keys.
+    *
+    * TODO: The signature of this method is difficult to work with because the definition of the
+    *       [[FoldableExprBuilder.groupBy]] method means every value is foldable. However, this
+    *       method assumes gives you a [[ValExprBuilder]] which is almost never helpful.
+    */
   def mapValues[R](
     buildExpr: ValExprBuilder[(K, U), U, P] => ExprBuilder[(K, U), Id, R, P],
   )(implicit
@@ -36,6 +43,9 @@ final class MapViewExprBuilder[V, K, U, P](private val inputExpr: Expr[V, MapVie
       }
       .toMap
 
+  /**
+    * Returns every entry of the returned Map as a lazy sequential [[View]] of 2-tuples.
+    */
   def values(
     implicit
     captureView: CaptureP[V, View[(K, U)], P],

@@ -7,6 +7,14 @@ import vapors.lens.{DataPath, NamedLens}
 import cats.Order
 import cats.syntax.all._
 
+/**
+  * An untyped fact for putting many different facts into collections without causing issues
+  * with variance.
+  *
+  * Typically, you will work with [[TypedFact]]s.
+  *
+  * The [[FactType]] and `value` inside share the same type member [[Value]].
+  */
 sealed abstract class Fact {
   type Value
 
@@ -16,6 +24,9 @@ sealed abstract class Fact {
 
 object Fact {
 
+  /**
+    * Builds a fact given a [[FactType]] and a `value` of the same type.
+    */
   def apply[T](
     factType: FactType[T],
     value: T,
@@ -54,6 +65,11 @@ object Fact {
   }
 }
 
+/**
+  * A typed [[Fact]], for when you know the type of fact or need to know it.
+  *
+  * @see [[Fact]]
+  */
 sealed trait TypedFact[A] extends Fact {
   type Value = A
 }
@@ -94,6 +110,11 @@ object TypedFact {
   }
 }
 
+/**
+  * A [[Fact]] this is derived from other [[Fact]]s via an expression.
+  *
+  * The [[Evidence]] is tracked from the original set of [[Fact]]s based on the expression.
+  */
 sealed trait DerivedFact extends Fact {
   def evidence: Evidence
 }
@@ -114,6 +135,9 @@ object DerivedFact {
   }
 }
 
+/**
+  * A [[TypedFact]] that is provided in the initial [[FactTable]] by the caller.
+  */
 final case class SourceFactOfType[A](
   typeInfo: FactType[A],
   value: A,
@@ -122,6 +146,11 @@ final case class SourceFactOfType[A](
   override def toString: String = s"SourceFact(${typeInfo.fullName} = $value)"
 }
 
+/**
+  * A [[TypedFact]] that is derived from the initial [[FactTable]] by some interpreted expression.
+  *
+  * @see [[DerivedFact]]
+  */
 final case class DerivedFactOfType[A](
   typeInfo: FactType[A],
   value: A,

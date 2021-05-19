@@ -7,6 +7,13 @@ import vapors.algebra.{CaptureP, Expr, ExprConverter, NonEmptyExprHList}
 import cats.Id
 import shapeless.{::, Generic, HList, HNil}
 
+/**
+  * Provides the ability to wrap expressions with the same input and captured parameter but different outputs,
+  * and then transform this [[HList]] of expressions into an [[Expr]] of an [[HList]] return type.
+  *
+  * @see similar to [[WrapEachExprSyntax]] except it does not require a shared higher-kinded type constructor
+  *      for the output value.
+  */
 trait WrapExprSyntax {
 
   def wrap[V, E1, P](e1: Expr[V, E1, P]): ExprHListWrapper[V, E1 :: HNil, P] =

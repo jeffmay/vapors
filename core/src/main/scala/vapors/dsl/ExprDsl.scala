@@ -17,12 +17,24 @@ object ExprDsl extends ExprDsl
 // TODO: Remove methods that are not useful anymore and move less-useful methods to a separate object
 trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax {
 
+  /**
+    * Evaluates the given [[RootExpr]] with the given [[FactTable]] to produce the [[ExprResult]].
+    *
+    * To access the value of the result, you can get the `result.output.value`. [[Evidence]] for the
+    * value can be accessed from `result.output.evidence`. Any parameter captured in [[CaptureP]] is
+    * accessible from `result.param`.
+    *
+    * You can also apply a post-processing [[ExprResult.Visitor]] to analyze the results in more depth
+    * in a recursive and type-safe way.
+    */
   def eval[R, P](facts: FactTable)(query: RootExpr[R, P]): ExprResult[FactTable, R, P] = {
     InterpretExprAsResultFn(query)(ExprInput.fromFactTable(facts))
   }
 
   /**
-    * Lifts the given value into the output of an expression with no evidence.
+    * Creates an embeddable [[RootExpr]] that always returns a given constant value.
+    *
+    * @see [[Expr.ConstOutput]]
     */
   def const[R, P](
     value: R,
@@ -42,14 +54,31 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
   ): Expr.ConstOutput[FactTable, R, P] =
     const(typedFact.value, Evidence(typedFact))
 
+  /**
+    * @note For better type inference, you should consider using [[ExprBuilder.returnInput]]
+    *
+    * This method may be deprecated in the future.
+    *
+    * @see [[Expr.ReturnInput]]
+    */
   def input[V, P](
     implicit
     capture: CaptureP[V, V, P],
   ): Expr.ReturnInput[V, P] =
     Expr.ReturnInput(capture)
 
+  /**
+    * Start the creation of an [[Expr.Define]] for a [[FactType]].
+    */
   def define[T](factType: FactType[T]): DefinitionExprBuilder[T] = new DefinitionExprBuilder(factType)
 
+  /**
+    * Apply the given definitions to add the produced [[Fact]]s to the [[FactTable]] for the life of the
+    * given `subExpr`.
+    *
+    * @param definitions a set of [[Expr.Definition]]s that will all be concatenated to the [[FactTable]]
+    * @param subExpr an expression that will see the defined [[Fact]]s in its [[FactTable]]
+    */
   def usingDefinitions[V, R, P](
     definitions: Expr.Definition[P]*,
   )(
@@ -59,6 +88,14 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
   ): Expr.UsingDefinitions[V, R, P] =
     Expr.UsingDefinitions(definitions.toVector, subExpr, captureResult)
 
+  /**
+    * Typically, this function will be applied implicitly by the DSL. If it doesn't you may have to explicitly
+    * choose the type to embed. For better type inference, you should use [[ExprBuilder.embedConst]].
+    *
+    * This method may be deprecated in the future.
+    *
+    * @see [[Expr.ConstOutput]]
+    */
   def embed[V, R, P](
     expr: RootExpr[R, P],
   )(implicit
@@ -66,9 +103,15 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
   ): Expr.Embed[V, R, P] =
     Expr.Embed(expr, captureResult)
 
+  /**
+    * Concatenates the outputs of the expressions given.
+    */
   def concat[V, M[_], R, P](expressions: Expr[V, M[R], P]*): ConcatOutputExprBuilder[V, M, R, P] =
     new ConcatOutputExprBuilder(expressions.to(LazyList))
 
+  /**
+    * @see [[Expr.And]] for more details of how [[Conjunction]] works during evaluation.
+    */
   def and[V, R : Conjunction : ExtractBoolean, P](
     first: Expr[V, R, P],
     second: Expr[V, R, P],
@@ -80,6 +123,9 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
     Expr.And(subExpressions, captureResult)
   }
 
+  /**
+    * @see [[Expr.Or]] for more details of how [[Disjunction]] works during evaluation.
+    */
   def or[V, R : Disjunction : ExtractBoolean, P](
     first: Expr[V, R, P],
     second: Expr[V, R, P],
@@ -91,6 +137,9 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
     Expr.Or(subExpressions, captureResult)
   }
 
+  /**
+    * @see [[Expr.Not]] for more details of how [[Negation]] works during evaluation.
+    */
   def not[V, R : Negation, P](
     sub: Expr[V, R, P],
   )(implicit
@@ -98,6 +147,9 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
   ): Expr.Not[V, R, P] =
     Expr.Not(sub, captureResult)
 
+  /**
+    * Builds an if / then / elif / else style conditional branching expression.
+    */
   def when[V, R, P](condExpr: CondExpr[V, P]): WhenExprBuilder[V, P] = new WhenExprBuilder(condExpr)
 
   /**
@@ -156,6 +208,10 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
   )(implicit
     captureResult: CaptureP[V, Seq[R], P],
   ): Expr.WrapOutputSeq[V, R, P] = sequence(expressions)
+
+  /*
+   * The following DSL functions will probably be deprecated in favor of their ExprBuilder equivalents
+   */
 
   def collectSome[V, M[_] : Foldable, U, R : Monoid, P](
     inputExpr: Expr[V, M[U], P],

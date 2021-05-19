@@ -2,6 +2,9 @@ package com.rallyhealth
 
 package vapors.data
 
+/**
+  * A magnet type for passing individual [[Fact]]s and collections of [[Fact]]s into the same variable argument list.
+  */
 final class FactOrFactSet private[FactOrFactSet] (val toSet: Set[Fact]) extends AnyVal
 
 object FactOrFactSet {

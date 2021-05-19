@@ -7,7 +7,6 @@ import vapors.interpreter.{ExprInput, ExprOutput}
 
 import cats._
 import cats.kernel.Monoid
-import com.rallyhealth.vapors.data.{FactTable, TypedFact}
 import shapeless.HList
 
 import scala.collection.{BitSet, MapView}

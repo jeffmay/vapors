@@ -5,8 +5,21 @@ package vapors.algebra
 import shapeless.ops.hlist.Tupler
 import shapeless.{Generic, HList}
 
+/**
+  * A serializable description of a total conversion function from one type to another.
+  */
 sealed trait ExprConverter[L, R] extends (L => R) {
+
+  /**
+    * The type of conversion applied.
+    */
   def conversionType: String
+
+  /**
+    * Apply the conversion.
+    *
+    * @note this should never throw an exception.
+    */
   override def apply(inputValue: L): R
 }
 
