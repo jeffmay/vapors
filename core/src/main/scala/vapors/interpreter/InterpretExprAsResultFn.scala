@@ -318,8 +318,9 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     expr: Expr.OutputWithinWindow[V, R, P],
   ): ExprInput[V] => ExprResult[V, Boolean, P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
-    val isWithinWindow = expr.window.contains(inputResult.output.value)
-    resultOfPureExpr(expr, input, isWithinWindow, inputResult.output.evidence) {
+    val windowResult = expr.windowExpr.visit(this)(input)
+    val isWithinWindow = windowResult.output.value.contains(inputResult.output.value)
+    resultOfPureExpr(expr, input, isWithinWindow, inputResult.output.evidence ++ windowResult.output.evidence) {
       ExprResult.OutputWithinWindow(_, _, inputResult)
     }
   }
@@ -415,6 +416,15 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
       val outputValues = inputResultList.map(_.output.value)
       resultOfManySubExpr(expr, input, outputValues, allEvidence, allParams) {
         ExprResult.WrapOutputSeq(_, _, inputResultList)
+      }
+  }
+
+  override def visitWrapOutput[L, R](expr: Expr.WrapOutput[V, L, R, P]): ExprInput[V] => ExprResult[V, R, P] = {
+    input =>
+      val inputResult = expr.inputExpr.visit(this)(input)
+      val convertedValue = expr.converter(inputResult.output.value)
+      resultOfManySubExpr(expr, input, convertedValue, inputResult.output.evidence, inputResult.param :: Nil) {
+        ExprResult.WrapOutput(_, _, inputResult)
       }
   }
 

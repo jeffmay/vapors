@@ -62,6 +62,8 @@ object Window {
 
   implicit def showWindow[A : Show]: Show[Window[A]] = showWindowWithTerm("x")
 
+  def fromBounds[A : Order](bounds: Ior[Bounded.Above[A], Bounded.Below[A]]): Window[A] = KnownWindow(bounds)
+
   def fromRange(range: Range): Window[Int] =
     Window.between(range.start, includeMin = true, range.end, includeMax = range.isInclusive)
 

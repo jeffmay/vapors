@@ -72,6 +72,7 @@ object ExprResult {
     def visitTakeFromOutput[M[_] : Traverse : TraverseFilter, R](result: TakeFromOutput[V, M, R, P]): G[M[R]]
     def visitUsingDefinitions[R](result: UsingDefinitions[V, R, P]): G[R]
     def visitWhen[R](result: When[V, R, P]): G[R]
+    def visitWrapOutput[L, R](result: WrapOutput[V, L, R, P]): G[R]
     def visitWrapOutputHList[T <: HList, R](result: WrapOutputHList[V, T, R, P]): G[R]
     def visitWrapOutputSeq[R](result: WrapOutputSeq[V, R, P]): G[Seq[R]]
     def visitWithFactsOfType[T, R](result: WithFactsOfType[V, T, R, P]): G[R]
@@ -312,6 +313,18 @@ object ExprResult {
     override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitDivideOutputs(this)
   }
 
+  final case class WrapOutput[V, L, R, P](
+    expr: Expr.WrapOutput[V, L, R, P],
+    context: Context[V, R, P],
+    inputResult: ExprResult[V, L, P],
+  ) extends ExprResult[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitWrapOutput(this)
+  }
+
+  // TODO: This seems redundant with WrapOutput... maybe we can boil these "wrap" operations into
+  //       a single operation... or a smaller subset. In essence these are all just a single function.
+  //       The only major difference is their typeclass dependencies and how we serialize them, which
+  //       could be baked into an operation metadata object to sit alongside a function.
   final case class WrapOutputSeq[V, R, P](
     expr: Expr.WrapOutputSeq[V, R, P],
     context: Context[V, Seq[R], P],

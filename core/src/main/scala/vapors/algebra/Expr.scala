@@ -2,13 +2,14 @@ package com.rallyhealth
 
 package vapors.algebra
 
-import cats._
-import cats.data.NonEmptyList
 import vapors.data._
 import vapors.interpreter.{ExprOutput, InterpretExprAsResultFn}
 import vapors.lens.NamedLens
 import vapors.logic.{Conjunction, Disjunction, Negation}
 import vapors.math._
+
+import cats._
+import cats.data.NonEmptyList
 import shapeless.{HList, Typeable}
 
 import scala.collection.MapView
@@ -70,6 +71,7 @@ object Expr {
     def visitTakeFromOutput[M[_] : Traverse : TraverseFilter, R](expr: TakeFromOutput[V, M, R, P]): G[M[R]]
     def visitUsingDefinitions[R](expr: UsingDefinitions[V, R, P]): G[R]
     def visitWhen[R](expr: When[V, R, P]): G[R]
+    def visitWrapOutput[L, R](expr: WrapOutput[V, L, R, P]): G[R]
     def visitWrapOutputHList[T <: HList, R](expr: WrapOutputHList[V, T, R, P]): G[R]
     def visitWrapOutputSeq[R](expr: WrapOutputSeq[V, R, P]): G[Seq[R]]
     def visitWithFactsOfType[T, R](expr: WithFactsOfType[T, R, P]): G[R]
@@ -102,7 +104,7 @@ object Expr {
   }
 
   /**
-    * Returns the input [[F]] of [[V]] values as the output of this expression node.
+    * Returns the input [[V]] values as the output of this expression node.
     *
     * Essentially, this is the [[identity]] function represented as an [[Expr]].
     *
@@ -282,7 +284,7 @@ object Expr {
   /**
     * Uses a [[NamedLens]] to select a value from the output of the given [[inputExpr]] and returns it as output.
     *
-    * @note if you want to select from the input [[F]] of [[V]], you can pass [[ReturnInput]] as the [[inputExpr]].
+    * @note if you want to select from the input [[V]], you can pass [[ReturnInput]] as the [[inputExpr]].
     */
   final case class SelectFromOutput[V, S, R, P](
     inputExpr: Expr[V, S, P],
@@ -388,6 +390,22 @@ object Expr {
     capture: CaptureP[V, R, P],
   ) extends Expr[V, R, P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitFoldOutput(this)
+  }
+
+  /**
+    * Apply an [[ExprConverter]] to the output of a single expression.
+    *
+    * This is a bit of an escape hatch for automatically converting one type to another in a manner that
+    * is restricted to what [[ExprConverter]] supports. In the future, I hope to come up with a more
+    * general purpose mechanism for doing this that works across all different types, including custom
+    * user-defined types.
+    */
+  final case class WrapOutput[V, L, R, P](
+    inputExpr: Expr[V, L, P],
+    converter: ExprConverter[L, R],
+    capture: CaptureP[V, R, P],
+  ) extends Expr[V, R, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitWrapOutput(this)
   }
 
   /**
@@ -535,7 +553,7 @@ object Expr {
   }
 
   /**
-    * Checks if the result of the [[inputExpr]] is contained within the given [[window]].
+    * Checks if the result of the [[inputExpr]] is contained within the given [[windowExpr]].
     *
     * This is effectively how comparison checks are made.
     *
@@ -543,7 +561,7 @@ object Expr {
     */
   final case class OutputWithinWindow[V, R, P](
     inputExpr: Expr[V, R, P],
-    window: Window[R],
+    windowExpr: Expr[V, Window[R], P],
     capture: CaptureP[V, Boolean, P],
   ) extends Expr[V, Boolean, P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[Boolean] = v.visitOutputWithinWindow(this)

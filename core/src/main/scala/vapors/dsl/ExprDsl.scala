@@ -284,9 +284,9 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
 
   def within[V, R, P](
     inputExpr: Expr[V, R, P],
-    window: Window[R],
+    windowExpr: Expr[V, Window[R], P],
   )(implicit
     capture: CaptureP[V, Boolean, P],
   ): Expr.OutputWithinWindow[V, R, P] =
-    Expr.OutputWithinWindow(inputExpr, window, capture)
+    Expr.OutputWithinWindow(inputExpr, windowExpr, capture)
 }
