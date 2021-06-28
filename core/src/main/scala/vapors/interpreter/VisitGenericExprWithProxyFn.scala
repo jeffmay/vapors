@@ -132,6 +132,9 @@ abstract class VisitGenericExprWithProxyFn[V, P, G[_]] extends Visitor[V, P, Lam
     visitGeneric(expr, input.withValue(input.factTable))
   }
 
+  override def visitWrapOutput[L, R](expr: Expr.WrapOutput[V, L, R, P]): ExprInput[V] => G[R] =
+    visitGeneric(expr, _)
+
   override def visitWrapOutputHList[T <: HList, R](expr: Expr.WrapOutputHList[V, T, R, P]): ExprInput[V] => G[R] =
     visitGeneric(expr, _)
 

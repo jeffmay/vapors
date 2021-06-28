@@ -38,11 +38,11 @@ class EmbedExprSpec extends AnyWordSpec {
     val embeddedFacts = FactSet(JoeSchmoe.weight)
 
     def trueLiteral: ValCondExpr[Double, Unit] = {
-      within(input, Window.greaterThan(0.7))
+      within(input, const(Window.greaterThan(0.7)))
     }
 
     def falseLiteral: ValCondExpr[Double, Unit] = {
-      within(input, Window.greaterThan(0.9))
+      within(input, const(Window.greaterThan(0.9)))
     }
 
     val literalFacts = FactSet(JoeSchmoe.probs)

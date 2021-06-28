@@ -2,6 +2,9 @@ package com.rallyhealth
 
 package vapors.algebra
 
+import vapors.data.Window
+
+import cats.Order
 import shapeless.ops.hlist.Tupler
 import shapeless.{Generic, HList}
 
@@ -41,4 +44,7 @@ object ExprConverter {
 
   def asTuple[L <: HList, R](implicit tupler: Tupler.Aux[L, R]): ExprConverter[L, R] =
     new Impl("asTuple", tupler.apply)
+
+  def asWindow[R : Order](buildWindow: R => Window[R]): ExprConverter[R, Window[R]] =
+    new Impl("asWindow", buildWindow)
 }

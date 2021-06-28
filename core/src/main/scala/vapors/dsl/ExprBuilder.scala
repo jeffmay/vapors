@@ -2,12 +2,14 @@ package com.rallyhealth
 
 package vapors.dsl
 
-import vapors.algebra.{CaptureP, Expr, ExprSorter}
-import vapors.data.{Evidence, TypedFact, Window}
+import vapors.algebra.{CaptureP, Expr, ExprConverter, ExprSorter, NonEmptyExprHList}
+import vapors.data.{Bounded, Evidence, FactTable, TypedFact, Window}
 import vapors.lens.NamedLens
 import vapors.math._
 
 import cats._
+import cats.data.Ior
+import shapeless.{::, HNil}
 
 import scala.collection.{Factory, MapView, View}
 import scala.reflect.runtime.universe.TypeTag
@@ -598,16 +600,29 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     new ValExprBuilder(ExprDsl.negative(returnOutput))
 
   def within(
-    window: Window[R],
+    windowExpr: Expr[V, Window[R], P],
   )(implicit
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
-    new ValExprBuilder(ExprDsl.within(returnOutput, window))
+    new ValExprBuilder(ExprDsl.within(returnOutput, windowExpr))
+
+  def within(
+    window: Window[R],
+  )(implicit
+    captureWindow: CaptureP[V, Window[R], P],
+    captureConst: CaptureP[FactTable, Window[R], P],
+    captureResult: CaptureCondResult,
+  ): ValExprBuilder[V, Boolean, P] =
+    new ValExprBuilder(
+      Expr.OutputWithinWindow(returnOutput, embed(const(window)(captureConst))(captureWindow), captureResult),
+    )
 
   def isEqualTo(
     value: R,
   )(implicit
     orderR: Order[R],
+    captureWindow: CaptureP[V, Window[R], P],
+    captureConst: CaptureP[FactTable, Window[R], P],
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
     within(Window.equalTo(value))
@@ -616,22 +631,55 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     value: R,
   )(implicit
     orderR: Order[R],
+    captureWindow: CaptureP[V, Window[R], P],
+    captureConst: CaptureP[FactTable, Window[R], P],
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
     within(Window.equalTo(value))
+
+  def ===(
+    valueExpr: Expr[V, R, P],
+  )(implicit
+    orderR: Order[R],
+    captureWindow: CaptureP[V, Window[R], P],
+    captureResult: CaptureCondResult,
+  ): ValExprBuilder[V, Boolean, P] =
+    within(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.equalTo(_)), captureWindow))
 
   def !==(
     value: R,
   )(implicit
     orderR: Order[R],
+    captureWindow: CaptureP[V, Window[R], P],
+    captureConst: CaptureP[FactTable, Window[R], P],
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
     Expr.Not(within(Window.equalTo(value)), captureResult)
+
+  def !==(
+    valueExpr: Expr[V, R, P],
+  )(implicit
+    orderR: Order[R],
+    captureWindow: CaptureP[V, Window[R], P],
+    captureResult: CaptureCondResult,
+  ): ValExprBuilder[V, Boolean, P] =
+    Expr.Not(this === valueExpr, captureResult)
+
+  def <(
+    valueExpr: Expr[V, R, P],
+  )(implicit
+    orderR: Order[R],
+    captureWindow: CaptureP[V, Window[R], P],
+    captureResult: CaptureCondResult,
+  ): ValExprBuilder[V, Boolean, P] =
+    within(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.lessThan(_)), captureWindow))
 
   def <(
     value: R,
   )(implicit
     orderR: Order[R],
+    captureWindow: CaptureP[V, Window[R], P],
+    captureConst: CaptureP[FactTable, Window[R], P],
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
     within(Window.lessThan(value))
@@ -640,23 +688,56 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     value: R,
   )(implicit
     orderR: Order[R],
+    captureWindow: CaptureP[V, Window[R], P],
+    captureConst: CaptureP[FactTable, Window[R], P],
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
     within(Window.lessThanOrEqual(value))
+
+  def <=(
+    valueExpr: Expr[V, R, P],
+  )(implicit
+    orderR: Order[R],
+    captureWindow: CaptureP[V, Window[R], P],
+    captureResult: CaptureCondResult,
+  ): ValExprBuilder[V, Boolean, P] =
+    within(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.lessThanOrEqual(_)), captureWindow))
 
   def >(
     value: R,
   )(implicit
     orderR: Order[R],
+    captureWindow: CaptureP[V, Window[R], P],
+    captureConst: CaptureP[FactTable, Window[R], P],
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
     within(Window.greaterThan(value))
+
+  def >(
+    valueExpr: Expr[V, R, P],
+  )(implicit
+    orderR: Order[R],
+    captureWindow: CaptureP[V, Window[R], P],
+    captureResult: CaptureCondResult,
+  ): ValExprBuilder[V, Boolean, P] =
+    within(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.greaterThan(_)), captureWindow))
 
   def >=(
     value: R,
   )(implicit
     orderR: Order[R],
+    captureWindow: CaptureP[V, Window[R], P],
+    captureConst: CaptureP[FactTable, Window[R], P],
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
     within(Window.greaterThanOrEqual(value))
+
+  def >=(
+    valueExpr: Expr[V, R, P],
+  )(implicit
+    orderR: Order[R],
+    captureWindow: CaptureP[V, Window[R], P],
+    captureResult: CaptureCondResult,
+  ): ValExprBuilder[V, Boolean, P] =
+    within(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.greaterThanOrEqual(_)), captureWindow))
 }
