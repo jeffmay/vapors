@@ -2,14 +2,12 @@ package com.rallyhealth
 
 package vapors.dsl
 
-import vapors.algebra.{CaptureP, Expr, ExprConverter, ExprSorter, NonEmptyExprHList}
-import vapors.data.{Bounded, Evidence, FactTable, TypedFact, Window}
+import vapors.algebra.{CaptureP, Expr, ExprConverter, ExprSorter}
+import vapors.data.{Evidence, FactTable, TypedFact, Window}
 import vapors.lens.NamedLens
 import vapors.math._
 
 import cats._
-import cats.data.Ior
-import shapeless.{::, HNil}
 
 import scala.collection.{Factory, MapView, View}
 import scala.reflect.runtime.universe.TypeTag
@@ -599,7 +597,7 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
   ): ValExprBuilder[V, R, P] =
     new ValExprBuilder(ExprDsl.negative(returnOutput))
 
-  def within(
+  def withinWindow(
     windowExpr: Expr[V, Window[R], P],
   )(implicit
     captureResult: CaptureCondResult,
@@ -644,7 +642,7 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     captureWindow: CaptureP[V, Window[R], P],
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
-    within(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.equalTo(_)), captureWindow))
+    withinWindow(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.equalTo(_)), captureWindow))
 
   def !==(
     value: R,
@@ -672,7 +670,7 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     captureWindow: CaptureP[V, Window[R], P],
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
-    within(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.lessThan(_)), captureWindow))
+    withinWindow(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.lessThan(_)), captureWindow))
 
   def <(
     value: R,
@@ -701,7 +699,7 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     captureWindow: CaptureP[V, Window[R], P],
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
-    within(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.lessThanOrEqual(_)), captureWindow))
+    withinWindow(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.lessThanOrEqual(_)), captureWindow))
 
   def >(
     value: R,
@@ -720,7 +718,7 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     captureWindow: CaptureP[V, Window[R], P],
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
-    within(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.greaterThan(_)), captureWindow))
+    withinWindow(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.greaterThan(_)), captureWindow))
 
   def >=(
     value: R,
@@ -739,5 +737,5 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     captureWindow: CaptureP[V, Window[R], P],
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
-    within(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.greaterThanOrEqual(_)), captureWindow))
+    withinWindow(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.greaterThanOrEqual(_)), captureWindow))
 }
