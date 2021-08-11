@@ -5,7 +5,7 @@ package vapors.interpreter
 import vapors.data.{Evidence, ExtractBoolean, ExtractValue}
 import vapors.logic.{Conjunction, Disjunction, Negation}
 
-import cats.Monoid
+import cats.{Monoid, Semigroup}
 
 /**
   * The result of a computation without any debugging information (i.e. captured parameter or result nodes)
@@ -18,7 +18,7 @@ final case class ExprOutput[R](
   evidence: Evidence,
 )
 
-object ExprOutput {
+object ExprOutput extends LowPriorityExprOutputInstances {
 
   /**
     * Logical Conjunction (aka AND)
@@ -121,6 +121,19 @@ object ExprOutput {
   }
 
   /**
+    * @see [[semigroup]] for more details. Adds definition for empty.
+    */
+  implicit def monoid[A : Monoid]: Monoid[ExprOutput[A]] = new MonoidExprOutput[A]
+
+  private class MonoidExprOutput[A : Monoid] extends SemigroupExprOutput[A] with Monoid[ExprOutput[A]] {
+    override final def empty: ExprOutput[A] =
+      ExprOutput(Monoid[A].empty, Evidence.none)
+  }
+}
+
+sealed class LowPriorityExprOutputInstances {
+
+  /**
     * Combine two monoidal values and union their evidence.
     *
     * @note This is not _always_ safe. There may be some combinations of values in which you must combine
@@ -131,22 +144,17 @@ object ExprOutput {
     *       not necessarily the same as evidence of true && true. Any definitions for which this distinction
     *       matters will typically use its own typeclasses, such as [[Conjunction]] or [[Disjunction]].
     */
-  implicit def monoid[A : Monoid]: Monoid[ExprOutput[A]] = {
-    new Monoid[ExprOutput[A]] {
+  implicit def semigroup[A : Semigroup]: Semigroup[ExprOutput[A]] = new SemigroupExprOutput[A]
 
-      override final def empty: ExprOutput[A] = {
-        ExprOutput(Monoid[A].empty, Evidence.none)
-      }
-
-      override final def combine(
-        x: ExprOutput[A],
-        y: ExprOutput[A],
-      ): ExprOutput[A] = {
-        ExprOutput(
-          Monoid[A].combine(x.value, y.value),
-          x.evidence ++ y.evidence,
-        )
-      }
+  protected class SemigroupExprOutput[A : Semigroup] extends Semigroup[ExprOutput[A]] {
+    override final def combine(
+      x: ExprOutput[A],
+      y: ExprOutput[A],
+    ): ExprOutput[A] = {
+      ExprOutput(
+        Semigroup[A].combine(x.value, y.value),
+        x.evidence ++ y.evidence,
+      )
     }
   }
 }
