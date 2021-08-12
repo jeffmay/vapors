@@ -289,8 +289,7 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
   def map[R](
     buildFn: ValExprBuilder[U, U, P] => ExprBuilder[U, Id, R, P],
   )(implicit
-    foldableM: Foldable[M],
-    functorM: Functor[M],
+    traverseM: Traverse[M],
     postEachOutput: CaptureInputAsResult,
     postMap: CaptureResult[M[R]],
   ): FoldableExprBuilder[V, M, R, P] = {
@@ -319,7 +318,7 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
   def flatMap[X](
     buildFn: ValExprBuilder[U, U, P] => ExprBuilder[U, M, X, P],
   )(implicit
-    foldableM: Foldable[M],
+    traverseM: Traverse[M],
     flatMapM: FlatMap[M],
     postEachInput: CaptureInputAsResult,
     postFlatMap: CaptureResult[M[X]],
@@ -385,8 +384,7 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
   def filter(
     buildFn: ValExprBuilder[U, U, P] => ExprBuilder[U, Id, Boolean, P],
   )(implicit
-    foldableM: Foldable[M],
-    filterM: FunctorFilter[M],
+    filterM: TraverseFilter[M],
     captureInput: CaptureInputResult[U],
     captureResult: CaptureResult[M[U]],
   ): FoldableExprBuilder[V, M, U, P] = {
@@ -403,7 +401,7 @@ final class FoldableExprBuilder[V, M[_], U, P](returnOutput: Expr[V, M[U], P])
     validValues: Set[U],
   )(implicit
     foldableM: Foldable[M],
-    filterM: FunctorFilter[M],
+    filterM: TraverseFilter[M],
     captureCond: CaptureCondResult,
     captureFilterCond: CaptureInputCondResult,
     captureFilterInput: CaptureInputResult[U],

@@ -53,7 +53,7 @@ object ExprResult {
     def visitDivideOutputs[R](result: DivideOutputs[V, R, P]): G[R]
     def visitEmbed[R](result: Embed[V, R, P]): G[R]
     def visitExistsInOutput[M[_] : Foldable, U](result: ExistsInOutput[V, M, U, P]): G[Boolean]
-    def visitFilterOutput[M[_] : Foldable : FunctorFilter, R](result: FilterOutput[V, M, R, P]): G[M[R]]
+    def visitFilterOutput[M[_] : TraverseFilter, R](result: FilterOutput[V, M, R, P]): G[M[R]]
     def visitFlatMapOutput[M[_], U, R](result: FlatMapOutput[V, M, U, R, P]): G[M[R]]
     def visitGroupOutput[M[_] : Foldable, U : Order, K](result: GroupOutput[V, M, U, K, P]): G[MapView[K, Seq[U]]]
     def visitMapOutput[M[_], U, R](result: MapOutput[V, M, U, R, P]): G[M[R]]
@@ -188,7 +188,7 @@ object ExprResult {
     override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitSelectFromOutput(this)
   }
 
-  final case class FilterOutput[V, M[_] : Foldable : FunctorFilter, R, P](
+  final case class FilterOutput[V, M[_] : TraverseFilter, R, P](
     expr: Expr.FilterOutput[V, M, R, P],
     context: Context[V, M[R], P],
     inputResult: ExprResult[V, M[R], P],

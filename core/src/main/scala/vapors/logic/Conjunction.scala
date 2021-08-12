@@ -2,8 +2,6 @@ package com.rallyhealth
 
 package vapors.logic
 
-import vapors.interpreter.InterpretExprAsResultFn
-
 import cats.{Invariant, Semigroupal}
 
 /**

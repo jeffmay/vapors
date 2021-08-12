@@ -4,12 +4,13 @@ package vapors.dsl
 
 import vapors.algebra.{CaptureP, Expr, ExprResult}
 import vapors.data._
-import vapors.interpreter.{ExprInput, InterpretExprAsResultFn}
+import vapors.interpreter.{ExprInput, InterpretExprAsResultFn, InterpretExprAsSimpleCatsEffectValue}
 import vapors.lens.NamedLens
 import vapors.logic.{Conjunction, Disjunction, Negation}
 import vapors.math._
 
 import cats.data.NonEmptyList
+import cats.effect.IO
 import cats.{Foldable, Monoid}
 
 object ExprDsl extends ExprDsl
@@ -29,6 +30,15 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
     */
   def eval[R, P](facts: FactTable)(query: RootExpr[R, P]): ExprResult[FactTable, R, P] = {
     InterpretExprAsResultFn(query)(ExprInput.fromFactTable(facts))
+  }
+
+  /**
+    * A simpler, more efficient evaluator that returns a stack-safe cats-effect [[IO]].
+    *
+    * This only returns the result without any concern for evidence tracking or post-processing.
+    */
+  def evalFastIO[R](facts: FactTable)(query: RootExpr[R, Unit]): IO[R] = {
+    query.visit(new InterpretExprAsSimpleCatsEffectValue(ExprInput.fromFactTable(facts)))
   }
 
   /**

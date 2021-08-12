@@ -4,7 +4,8 @@ package vapors.logic
 
 import vapors.interpreter.InterpretExprAsResultFn
 
-import cats.{Invariant, Semigroupal}
+import cats.syntax.apply._
+import cats.{Functor, Invariant, Semigroup, Semigroupal}
 
 /**
   * Defines logical disjunction (aka OR) for a specific type.

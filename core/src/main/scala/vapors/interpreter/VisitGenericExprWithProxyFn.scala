@@ -62,11 +62,11 @@ abstract class VisitGenericExprWithProxyFn[V, P, G[_]] extends Visitor[V, P, Lam
     expr: Expr.ExistsInOutput[V, M, U, P],
   ): ExprInput[V] => G[Boolean] = visitGeneric(expr, _)
 
-  override def visitFilterOutput[M[_] : Foldable : FunctorFilter, R](
+  override def visitFilterOutput[M[_] : TraverseFilter, R](
     expr: Expr.FilterOutput[V, M, R, P],
   ): ExprInput[V] => G[M[R]] = visitGeneric(expr, _)
 
-  override def visitFlatMapOutput[M[_] : Foldable : FlatMap, U, X](
+  override def visitFlatMapOutput[M[_] : FlatMap : Traverse, U, X](
     expr: Expr.FlatMapOutput[V, M, U, X, P],
   ): ExprInput[V] => G[M[X]] = visitGeneric(expr, _)
 
@@ -74,9 +74,8 @@ abstract class VisitGenericExprWithProxyFn[V, P, G[_]] extends Visitor[V, P, Lam
     expr: Expr.GroupOutput[V, M, U, K, P],
   ): ExprInput[V] => G[MapView[K, Seq[U]]] = visitGeneric(expr, _)
 
-  override def visitMapOutput[M[_] : Foldable : Functor, U, R](
-    expr: Expr.MapOutput[V, M, U, R, P],
-  ): ExprInput[V] => G[M[R]] = visitGeneric(expr, _)
+  override def visitMapOutput[M[_] : Traverse, U, R](expr: Expr.MapOutput[V, M, U, R, P]): ExprInput[V] => G[M[R]] =
+    visitGeneric(expr, _)
 
   override def visitMultiplyOutputs[R : Multiplication](expr: Expr.MultiplyOutputs[V, R, P]): ExprInput[V] => G[R] =
     visitGeneric(expr, _)

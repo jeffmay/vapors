@@ -6,7 +6,10 @@ object Dependencies {
 
   private val alleyCatsCore = "org.typelevel" %% "alleycats-core" % "2.6.1"
   private val catsCore = "org.typelevel" %% "cats-core" % "2.6.1"
+  private val catsEffect = "org.typelevel" %% "cats-effect" % "3.2.2"
   private val catsFree = "org.typelevel" %% "cats-free" % "2.6.1"
+  private val munit = "org.scalameta" %% "munit" % "0.7.28"
+  private val munitCatsEffect = "org.typelevel" %% "munit-cats-effect-3" % "1.0.5"
   private val scalaCheck = "org.scalacheck" %% "scalacheck" % "1.15.4"
   private val scalaCheckOps = "com.rallyhealth" %% "scalacheck-ops_1-15" % "2.7.1"
   private val scalaTest = "org.scalatest" %% "scalatest" % "3.2.9"
@@ -28,11 +31,14 @@ object Dependencies {
         Plugins.kindProjector,
         alleyCatsCore,
         catsCore,
+        catsEffect,
         catsFree,
         scalaReflect(scalaVersion),
         shapeless,
       ) ++ Seq(
         // Test-only dependencies
+        munit,
+        munitCatsEffect,
         scalaCheck,
         scalaCheckOps,
         scalaTest,

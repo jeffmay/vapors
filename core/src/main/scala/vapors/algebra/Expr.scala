@@ -52,10 +52,10 @@ object Expr {
     def visitDivideOutputs[R : Division](expr: DivideOutputs[V, R, P]): G[R]
     def visitEmbed[R](expr: Embed[V, R, P]): G[R]
     def visitExistsInOutput[M[_] : Foldable, U](expr: ExistsInOutput[V, M, U, P]): G[Boolean]
-    def visitFilterOutput[M[_] : Foldable : FunctorFilter, R](expr: FilterOutput[V, M, R, P]): G[M[R]]
-    def visitFlatMapOutput[M[_] : Foldable : FlatMap, U, X](expr: FlatMapOutput[V, M, U, X, P]): G[M[X]]
+    def visitFilterOutput[M[_] : TraverseFilter, R](expr: FilterOutput[V, M, R, P]): G[M[R]]
+    def visitFlatMapOutput[M[_] : FlatMap : Traverse, U, X](expr: FlatMapOutput[V, M, U, X, P]): G[M[X]]
     def visitGroupOutput[M[_] : Foldable, U : Order, K](expr: GroupOutput[V, M, U, K, P]): G[MapView[K, Seq[U]]]
-    def visitMapOutput[M[_] : Foldable : Functor, U, R](expr: MapOutput[V, M, U, R, P]): G[M[R]]
+    def visitMapOutput[M[_] : Traverse, U, R](expr: MapOutput[V, M, U, R, P]): G[M[R]]
     def visitMultiplyOutputs[R : Multiplication](expr: MultiplyOutputs[V, R, P]): G[R]
     def visitNegativeOutput[R : Negative](expr: NegativeOutput[V, R, P]): G[R]
     def visitNot[R : Negation](expr: Not[V, R, P]): G[R]
@@ -294,7 +294,7 @@ object Expr {
     override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitSelectFromOutput(this)
   }
 
-  final case class FilterOutput[V, M[_] : Foldable : FunctorFilter, R, P](
+  final case class FilterOutput[V, M[_] : TraverseFilter, R, P](
     inputExpr: Expr[V, M[R], P],
     condExpr: Expr[R, Boolean, P],
     capture: CaptureP[V, M[R], P],
@@ -321,7 +321,7 @@ object Expr {
     *
     * @note if you want to apply this to the input (i.e. `F[V]`), you can pass [[ReturnInput]] as the [[inputExpr]].
     */
-  final case class FlatMapOutput[V, M[_] : Foldable : FlatMap, U, R, P](
+  final case class FlatMapOutput[V, M[_] : FlatMap : Traverse, U, R, P](
     inputExpr: Expr[V, M[U], P],
     flatMapExpr: Expr[U, M[R], P],
     capture: CaptureP[V, M[R], P],
@@ -334,7 +334,7 @@ object Expr {
     *
     * @note if you want to apply this to the input (i.e. `F[V]`), you can pass [[ReturnInput]] as the [[inputExpr]].
     */
-  final case class MapOutput[V, M[_] : Foldable : Functor, U, R, P](
+  final case class MapOutput[V, M[_] : Traverse, U, R, P](
     inputExpr: Expr[V, M[U], P],
     mapExpr: Expr[U, R, P],
     capture: CaptureP[V, M[R], P],

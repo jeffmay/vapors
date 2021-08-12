@@ -16,5 +16,5 @@ trait Division[A] {
 }
 
 object Division extends NumericalImplicits {
-  def apply[A](implicit A: Division[A]): Division[A] = A
+  @inline final def apply[A](implicit A: Division[A]): Division[A] = A
 }

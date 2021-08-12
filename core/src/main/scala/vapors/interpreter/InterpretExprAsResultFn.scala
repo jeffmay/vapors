@@ -167,10 +167,10 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     }
   }
 
-  override def visitFilterOutput[M[_] : Foldable : FunctorFilter, U](
+  override def visitFilterOutput[M[_] : TraverseFilter, U](
     expr: Expr.FilterOutput[V, M, U, P],
   ): ExprInput[V] => ExprResult[V, M[U], P] = { input =>
-    implicit val functorM: Functor[M] = FunctorFilter[M].functor
+    implicit val traverseM: Traverse[M] = TraverseFilter[M].traverse
     val inputResult = expr.inputExpr.visit(this)(input)
     val condFn = expr.condExpr.visit(InterpretExprAsResultFn())
     val condResults = inputResult.output.value.map { elem =>
@@ -193,18 +193,18 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     }
   }
 
-  override def visitFlatMapOutput[M[_] : Foldable : FlatMap, U, X](
+  override def visitFlatMapOutput[M[_] : FlatMap : Traverse, U, X](
     expr: Expr.FlatMapOutput[V, M, U, X, P],
   ): ExprInput[V] => ExprResult[V, M[X], P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
     val flatMapFn = expr.flatMapExpr.visit(InterpretExprAsResultFn())
-    val allResults = inputResult.output.value.map { elem =>
+    val allResults = FlatMap[M].map(inputResult.output.value) { elem =>
       // If given a fact, use it as evidence, otherwise keep input evidence for this value of the collection
       val inputEvidence = Evidence.fromAny(elem).getOrElse(inputResult.output.evidence)
       val flatMapInput = input.withValue(elem, inputEvidence)
       flatMapFn(flatMapInput)
     }
-    val allValues = allResults.flatMap(_.output.value)
+    val allValues = FlatMap[M].flatMap(allResults)(_.output.value)
     // TODO: Shouldn't I only look at the evidence of results that aren't empty?
     val (allEvidence, allParams) = allResults.foldMap { elemResult =>
       (elemResult.output.evidence, elemResult.param :: Nil)
@@ -226,7 +226,7 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     }
   }
 
-  override def visitMapOutput[M[_] : Foldable : Functor, U, R](
+  override def visitMapOutput[M[_] : Traverse, U, R](
     expr: Expr.MapOutput[V, M, U, R, P],
   ): ExprInput[V] => ExprResult[V, M[R], P] = { input =>
     val inputResult = expr.inputExpr.visit(this)(input)
