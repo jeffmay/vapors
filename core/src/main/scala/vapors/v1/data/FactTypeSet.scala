@@ -1,13 +1,10 @@
 package com.rallyhealth
 
-package vapors.data
+package vapors.v1.data
 
 import cats.data.{NonEmptyList, NonEmptyMap, NonEmptySet}
 
 import scala.collection.immutable.{SortedMap, SortedSet}
-
-// TODO: Is there a better way to do this?
-//       Maybe we can use something like the Has[_] data type to combine multiple fact types?
 
 /**
   * A set of [[FactType]]s that all share a common Scala type.
@@ -37,7 +34,7 @@ final case class FactTypeSet[A] private (typeMap: NonEmptyMap[String, FactType[A
     */
   def collector: PartialFunction[Fact, TypedFact[A]] = {
     // Justification: This checks equality of the FactType at runtime, so it should be safe to cast
-    case fact @ TypedFact(factType, _) if typeMap(factType.fullName).contains(factType) =>
+    case fact @ TypedFact(factType, _) if typeMap(factType.nameAndFullType).contains(factType) =>
       fact.asInstanceOf[TypedFact[A]]
   }
 
@@ -53,7 +50,7 @@ object FactTypeSet {
     one: FactType[A],
     others: FactType[A]*,
   ): FactTypeSet[A] =
-    new FactTypeSet(NonEmptyMap.of(one.fullName -> one, others.map(a => (a.fullName, a)): _*))
+    new FactTypeSet(NonEmptyMap.of(one.nameAndFullType -> one, others.map(a => (a.nameAndFullType, a)): _*))
 
   def fromFactsNel[A](facts: NonEmptyList[TypedFact[A]]): FactTypeSet[A] = fromNel(facts.map(_.typeInfo))
 
@@ -64,7 +61,7 @@ object FactTypeSet {
   def validateSet[A](types: Set[FactType[A]]): Either[String, FactTypeSet[A]] = validateList(types.toList)
 
   def validateList[A](types: List[FactType[A]]): Either[String, FactTypeSet[A]] = {
-    val m = types.groupBy(_.fullName)
+    val m = types.groupBy(_.nameAndFullType)
     val (duplicates, uniqueTypes) = m.partitionMap {
       case (name, one :: Nil) => Right((name, one))
       case (name, tooMany) => Left((name, tooMany))
