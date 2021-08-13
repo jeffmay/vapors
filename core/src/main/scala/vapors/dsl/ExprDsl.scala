@@ -28,17 +28,12 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
     * You can also apply a post-processing [[ExprResult.Visitor]] to analyze the results in more depth
     * in a recursive and type-safe way.
     */
+  @deprecated(
+    "Use StandardVaporsEngine.eval(query, facts).result instead. Now that there are multiple engines, you should choose the one you want explicitly.",
+    "0.18.0",
+  )
   def eval[R, P](facts: FactTable)(query: RootExpr[R, P]): ExprResult[FactTable, R, P] = {
     InterpretExprAsResultFn(query)(ExprInput.fromFactTable(facts))
-  }
-
-  /**
-    * A simpler, more efficient evaluator that returns a stack-safe cats-effect [[IO]].
-    *
-    * This only returns the result without any concern for evidence tracking or post-processing.
-    */
-  def evalFastIO[R](facts: FactTable)(query: RootExpr[R, Unit]): IO[R] = {
-    query.visit(new InterpretExprAsSimpleCatsEffectValue(ExprInput.fromFactTable(facts)))
   }
 
   /**
