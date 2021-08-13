@@ -6,22 +6,38 @@ import vapors.data.{DerivedFactOfType, Evidence, FactTable}
 import vapors.dsl._
 import vapors.example.{FactTypes, JoeSchmoe, Role, Snippets}
 
+import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers._
-import org.scalatest.wordspec.AnyWordSpec
 
 import java.time.LocalDate
 
-class UsingDefinitionsExprSpec extends AnyWordSpec {
+class UsingDefinitionsExprSpec extends AnyFreeSpec {
 
-  "Expr.UsingDefinitions" should {
+  "Expr.UsingDefinitions" - {
+
+    "standard engine" - {
+      allTests(StandardVaporsEngine)
+    }
+
+    "cats effect engine" - {
+      import cats.effect.unsafe.implicits.global
+      allTests(CatsEffectSimpleVaporsEngine)
+    }
+  }
+
+  private def allTests[F[_]](
+    engine: VaporsEngine[F, Unit],
+  )(implicit
+    engineExtractParam: engine.ExtractParam,
+  ): Unit = {
 
     "add the defined facts to the fact table" in {
-      val result = eval(JoeSchmoe.factTable) {
+      val ages = engine.evalAndExtractValue(
         usingDefinitions(Snippets.ageFromDateOfBirthDef) {
           valuesOfType(FactTypes.Age)
-        }
-      }
-      val ages = result.output.value
+        },
+        JoeSchmoe.factTable,
+      )
       ages should contain only JoeSchmoe.age.value
     }
 
@@ -30,12 +46,16 @@ class UsingDefinitionsExprSpec extends AnyWordSpec {
       val expiredAge = FactTypes.Age(17)
       val dob = FactTypes.DateOfBirth(LocalDate.of(yearWhen19, 1, 1))
       val facts = FactTable(expiredAge, dob)
-      val result = eval(facts)(Snippets.isOver18)
-      assert(result.output.value)
-      val ageFromYear = LocalDate.now().getYear - dob.value.getYear
-      val expectedDerivedFact = DerivedFactOfType(FactTypes.Age, ageFromYear, Evidence(dob))
-      assertResult(Evidence(expectedDerivedFact))(result.output.evidence)
-      assertResult(Evidence(dob))(result.output.evidence.derivedFromSources)
+      val result = engine.eval(Snippets.isOver18, facts)
+      val resultValue = engine.extract(result.value)
+      assert(resultValue)
+      for (evidence <- result.maybeEvidence) {
+        val ageFromYear = LocalDate.now().getYear - dob.value.getYear
+        val expectedDerivedFact = DerivedFactOfType(FactTypes.Age, ageFromYear, Evidence(dob))
+        val resEvidence = engine.extract(evidence)
+        assertResult(Evidence(expectedDerivedFact))(resEvidence)
+        assertResult(Evidence(dob))(resEvidence.derivedFromSources)
+      }
     }
 
     "support nested fact definitions" in {
@@ -45,20 +65,25 @@ class UsingDefinitionsExprSpec extends AnyWordSpec {
       val dob = FactTypes.DateOfBirth(LocalDate.of(yearWhen19, 1, 1))
       val facts = FactTable(expiredAge, dob, userRole)
       val definition = Snippets.isEligibleDef
-      val result = eval(facts) {
+      val result = engine.eval(
         usingDefinitions(definition) {
           factsOfType(definition.factType).exists {
             _.get(_.select(_.value))
           }
-        }
-      }
-      assert(result.output.value)
-      val correctAge = DerivedFactOfType(FactTypes.Age, 19, Evidence(dob))
-      val evidenceOfEligibility = Evidence(
-        DerivedFactOfType(definition.factType, true, Evidence(correctAge, userRole)),
+        },
+        facts,
       )
-      assertResult(evidenceOfEligibility)(result.output.evidence)
-      assertResult(Evidence(dob, userRole))(result.output.evidence.derivedFromSources)
+      val resultValue = engine.extract(result.value)
+      assert(resultValue)
+      for (evidence <- result.maybeEvidence) {
+        val correctAge = DerivedFactOfType(FactTypes.Age, 19, Evidence(dob))
+        val evidenceOfEligibility = Evidence(
+          DerivedFactOfType(definition.factType, true, Evidence(correctAge, userRole)),
+        )
+        val resultEvidence = engine.extract(evidence)
+        assertResult(evidenceOfEligibility)(resultEvidence)
+        assertResult(Evidence(dob, userRole))(resultEvidence.derivedFromSources)
+      }
     }
 
   }

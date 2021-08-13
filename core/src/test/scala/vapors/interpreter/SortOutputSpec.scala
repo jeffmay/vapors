@@ -14,6 +14,22 @@ class SortOutputSpec extends AnyFreeSpec {
 
   "Expr.SortOutput" - {
 
+    "standard engine" - {
+      allTests(StandardVaporsEngine)
+    }
+
+    "cats effect engine" - {
+      import cats.effect.unsafe.implicits.global
+      allTests(CatsEffectSimpleVaporsEngine)
+    }
+  }
+
+  private def allTests[F[_]](
+    engine: VaporsEngine[F, Unit],
+  )(implicit
+    engineExtractParam: engine.ExtractParam,
+  ): Unit = {
+
     val bpNow = Instant.now()
     val bp5MinAgo = bpNow.minusSeconds(5 * 60)
     val bp15MinAgo = bpNow.minusSeconds(15 * 60)
@@ -34,9 +50,9 @@ class SortOutputSpec extends AnyFreeSpec {
       assertResult(Some(highDiastolic)) {
         bpFacts.getSortedSeq(FactTypes.BloodPressureMeasurement).headOption.map(_.value)
       }
-      val result = eval(bpFacts)(query)
+      val result = engine.evalAndExtractValue(query, bpFacts)
       assertResult(lowDiastolic.diastolic) {
-        result.output.value.head
+        result.head
       }
     }
 
@@ -45,9 +61,9 @@ class SortOutputSpec extends AnyFreeSpec {
       assertResult(Some(highDiastolic)) {
         bpFacts.getSortedSeq(FactTypes.BloodPressureMeasurement).headOption.map(_.value)
       }
-      val result = eval(bpFacts)(query)
+      val result = engine.evalAndExtractValue(query, bpFacts)
       assertResult(lowDiastolic) {
-        result.output.value.head
+        result.head
       }
     }
   }

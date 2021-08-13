@@ -2,37 +2,34 @@ package com.rallyhealth
 
 package vapors.interpreter
 
-import vapors.algebra.Expr
 import vapors.data.{Evidence, ExtractBoolean, FactSet, FactTable}
 import vapors.dsl._
 import vapors.example.JoeSchmoe
 import vapors.logic._
 
 import org.scalactic.source.Position
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.freespec.AnyFreeSpec
 
-class LogicalExprSpec extends AnyWordSpec {
+class LogicalExprSpec extends AnyFreeSpec {
 
-  private type LogicExpr[R] = Expr[Unit, R, Unit]
+  private type UExpr[R] = RootExpr[R, Unit]
 
   private type LogicOpBuilder[R] =
-    (LogicExpr[R], LogicExpr[R], Seq[LogicExpr[R]]) => LogicExpr[R]
+    (UExpr[R], UExpr[R], Seq[UExpr[R]]) => UExpr[R]
 
-  private type UnaryLogicOpBuilder[R] = LogicExpr[R] => LogicExpr[R]
+  private type UnaryLogicOpBuilder[R] = UExpr[R] => UExpr[R]
 
-  private def evalUnit[R](facts: FactSet)(expr: LogicExpr[R]): ExprOutput[R] = {
-    InterpretExprAsResultFn(expr)(ExprInput((), Evidence(facts), FactTable(facts))).output
-  }
-
-  private def validLogicalOperators[R](
+  private def validLogicalOperators[F[_], R](
+    engine: VaporsEngine[F, Unit],
     andBuilder: LogicOpBuilder[R],
     orBuilder: LogicOpBuilder[R],
     notBuilder: UnaryLogicOpBuilder[R],
-    trueBuilder: LogicExpr[R],
-    falseBuilder: LogicExpr[R],
-    facts: FactSet,
-    assertTrue: Position => ExprOutput[R] => Unit,
-    assertFalse: Position => ExprOutput[R] => Unit,
+    trueBuilder: UExpr[R],
+    falseBuilder: UExpr[R],
+    facts: FactTable,
+  )(
+    assertTrue: Position => engine.Result[R] => Unit,
+    assertFalse: Position => engine.Result[R] => Unit,
   ): Unit = {
 
     val T = trueBuilder
@@ -40,24 +37,24 @@ class LogicalExprSpec extends AnyWordSpec {
     val not = notBuilder
 
     def and(
-      one: LogicExpr[R],
-      two: LogicExpr[R],
-      tail: LogicExpr[R]*,
-    ): LogicExpr[R] = andBuilder(one, two, tail)
+      one: UExpr[R],
+      two: UExpr[R],
+      tail: UExpr[R]*,
+    ): UExpr[R] = andBuilder(one, two, tail)
 
     def or(
-      one: LogicExpr[R],
-      two: LogicExpr[R],
-      tail: LogicExpr[R]*,
-    ): LogicExpr[R] = orBuilder(one, two, tail)
+      one: UExpr[R],
+      two: UExpr[R],
+      tail: UExpr[R]*,
+    ): UExpr[R] = orBuilder(one, two, tail)
 
-    val evalOutput = evalUnit[R](facts)(_)
+    def evalOutput(expr: UExpr[R]): engine.Result[R] = engine.eval(expr, facts)
 
-    def shouldBeTrue(output: ExprOutput[R])(implicit pos: Position): Unit = {
+    def shouldBeTrue(output: engine.Result[R])(implicit pos: Position): Unit = {
       assertTrue(pos)(output)
     }
 
-    def shouldBeFalse(output: ExprOutput[R])(implicit pos: Position): Unit = {
+    def shouldBeFalse(output: engine.Result[R])(implicit pos: Position): Unit = {
       assertFalse(pos)(output)
     }
 
@@ -286,47 +283,69 @@ class LogicalExprSpec extends AnyWordSpec {
     def notBuilder[R : Negation]: UnaryLogicOpBuilder[R]
   }
 
-  def validDslLogicalOperators(builder: DslLogicOpBuilder): Unit = {
+  def validDslLogicalOperators[F[_]](
+    engine: VaporsEngine[F, Unit],
+    builder: DslLogicOpBuilder,
+  )(implicit
+    engineExtractParam: engine.ExtractParam,
+  ): Unit = {
 
-    "operating on boolean results" should {
-
-      behave like validLogicalOperators[Boolean](
-        builder.andBuilder,
-        builder.orBuilder,
-        builder.notBuilder,
-        trueBuilder = const(true),
-        falseBuilder = const(false),
-        facts = JoeSchmoe.facts,
-        assertTrue = { implicit pos => o =>
-          assert(o.value)
-          // TODO: Is is sufficient to only test all the facts or no facts?
-          assertResult(Evidence(JoeSchmoe.facts.toList))(o.evidence)
-        },
-        assertFalse = { implicit pos => o =>
-          assert(!o.value)
-          assertResult(Evidence(JoeSchmoe.facts.toList))(o.evidence)
-        },
-      )
-    }
+    behave like validLogicalOperators[F, Boolean](
+      engine,
+      builder.andBuilder,
+      builder.orBuilder,
+      builder.notBuilder,
+      trueBuilder = const(true),
+      falseBuilder = const(false),
+      JoeSchmoe.factTable,
+    )(
+      assertTrue = { implicit pos => o =>
+        val resultValue = engine.extract(o.value)
+        assert(resultValue)
+        for (evidence <- o.maybeEvidence) {
+          // TODO: How to test evidence tracking / justification when we don't use the FactTable?
+          assertResult(Evidence.none) {
+            engine.extract(evidence)
+          }
+        }
+      },
+      assertFalse = { implicit pos => o =>
+        val resultValue = engine.extract(o.value)
+        assert(!resultValue)
+        for (evidence <- o.maybeEvidence) {
+          // TODO: How to test evidence tracking / justification when we don't use the FactTable?
+          assertResult(Evidence.none) {
+            engine.extract(evidence)
+          }
+        }
+      },
+    )
   }
 
-  "and / or" should {
+  "and / or" - {
 
-    behave like validDslLogicalOperators {
-      new DslLogicOpBuilder {
+    val exprBuilder = new DslLogicOpBuilder {
 
-        override def andBuilder[R : Conjunction : ExtractBoolean]: LogicOpBuilder[R] = { (one, two, tail) =>
-          and(one, two, tail: _*)
-        }
-
-        override def orBuilder[R : Disjunction : ExtractBoolean]: LogicOpBuilder[R] = { (one, two, tail) =>
-          or(one, two, tail: _*)
-        }
-
-        override def notBuilder[R : Negation]: UnaryLogicOpBuilder[R] = {
-          not(_)
-        }
+      override def andBuilder[R : Conjunction : ExtractBoolean]: LogicOpBuilder[R] = { (one, two, tail) =>
+        and(one, two, tail: _*)
       }
+
+      override def orBuilder[R : Disjunction : ExtractBoolean]: LogicOpBuilder[R] = { (one, two, tail) =>
+        or(one, two, tail: _*)
+      }
+
+      override def notBuilder[R : Negation]: UnaryLogicOpBuilder[R] = {
+        not(_)
+      }
+    }
+
+    "standard engine" - {
+      validDslLogicalOperators(StandardVaporsEngine, exprBuilder)
+    }
+
+    "cats effect engine" - {
+      import cats.effect.unsafe.implicits.global
+      validDslLogicalOperators(CatsEffectSimpleVaporsEngine, exprBuilder)
     }
   }
 }

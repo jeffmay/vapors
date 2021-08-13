@@ -2,8 +2,7 @@ package com.rallyhealth
 
 package vapors.interpreter
 
-import vapors.data.FactTable
-import vapors.dsl.{eval, RootExpr}
+import vapors.dsl.RootExpr
 
 import org.scalacheck.Arbitrary
 import org.scalactic.Tolerance._
@@ -77,9 +76,12 @@ object VaporsEvalTestHelpers {
     }
   }
 
-  def producesTheSameResultOrException[A : Arbitrary, B : Arbitrary, R, E <: Throwable : ClassTag](
+  def producesTheSameResultOrException[F[_], A : Arbitrary, B : Arbitrary, R, E <: Throwable : ClassTag](
     evaluate: (A, B) => R,
     buildExpr: (A, B) => RootExpr[R, Unit],
+    engine: VaporsEngine[F, Unit],
+  )(implicit
+    engineExtractParam: engine.ExtractParam,
   ): Assertion = {
     forAll { (a: A, b: B) =>
       val query = buildExpr(a, b)
@@ -87,7 +89,7 @@ object VaporsEvalTestHelpers {
         {
           case expectedExc: E =>
             val exc = intercept[E] {
-              eval(FactTable.empty)(query)
+              engine.evalAndExtractValue(query)
             }
             assertResult(expectedExc.getMessage) {
               exc.getMessage
@@ -96,9 +98,9 @@ object VaporsEvalTestHelpers {
             fail("Unexpected exception", unexpected)
         },
         expectedValue => {
-          val result = eval(FactTable.empty)(query)
+          val result = engine.evalAndExtractValue(query)
           assertResult(expectedValue) {
-            result.output.value
+            result
           }
         },
       )

@@ -6,19 +6,19 @@ import vapors.data.Evidence
 import vapors.dsl._
 import vapors.example.{FactTypes, JoeSchmoe}
 
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.freespec.AnyFreeSpec
 
-class InterpretExprAsResultFnSpec extends AnyWordSpec {
+class StandardVaporsEngineSpec extends AnyFreeSpec {
 
-  "InterpretExprAsFunction" when {
+  "StandardVaporsEngine" - {
 
-    "using no post processing" should {
+    "using no post processing" - {
 
       "find a single fact from a query" in {
         val q = valuesOfType(FactTypes.Age).exists {
-          _ >= 18
+          _ >= const(18)
         }
-        val result = eval(JoeSchmoe.factTable)(q)
+        val result = StandardVaporsEngine.eval(q, JoeSchmoe.factTable).result
         assert(result.param.value === ())
         assert(result.output.value)
         assert(result.output.evidence.nonEmpty)
@@ -26,22 +26,12 @@ class InterpretExprAsResultFnSpec extends AnyWordSpec {
       }
 
       "find a complex fact from a query" in {
-        val q = valuesOfType(FactTypes.ProbabilityToUse).exists {
-          _.getFoldable(_.select(_.scores).at("weightloss")).exists {
-            _ > 0.5
-          }
-        }
-        val result = eval(JoeSchmoe.factTable)(q)
-        assertResult(Evidence(JoeSchmoe.probs))(result.output.evidence)
-      }
-
-      "define a fact expression" in {
         val likelyToJoinWeightloss = valuesOfType(FactTypes.ProbabilityToUse).exists {
           _.getFoldable(_.select(_.scores).at("weightloss")).exists {
-            _ > 0.5
+            _ > const(0.5)
           }
         }
-        val result = eval(JoeSchmoe.factTable)(likelyToJoinWeightloss)
+        val result = StandardVaporsEngine.eval(likelyToJoinWeightloss, JoeSchmoe.factTable).result
         assertResult(Evidence(JoeSchmoe.probs))(result.output.evidence)
       }
     }

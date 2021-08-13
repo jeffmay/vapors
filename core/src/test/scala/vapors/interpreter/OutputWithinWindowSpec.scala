@@ -5,39 +5,55 @@ package vapors.interpreter
 import vapors.data.FactTable
 import vapors.dsl._
 
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.freespec.AnyFreeSpec
 
-class OutputWithinWindowSpec extends AnyWordSpec {
+class OutputWithinWindowSpec extends AnyFreeSpec {
 
-  "Expr.OutputWithinWindow" when {
+  "Expr.OutputWithinWindow" - {
 
-    "using the === operator" should {
+    "standard engine" - {
+      allTests(StandardVaporsEngine)
+    }
+
+    "cats effect engine" - {
+      import cats.effect.unsafe.implicits.global
+      allTests(CatsEffectSimpleVaporsEngine)
+    }
+  }
+
+  private def allTests[F[_]](
+    engine: VaporsEngine[F, Unit],
+  )(implicit
+    engineExtractParam: engine.ExtractParam,
+  ): Unit = {
+
+    "using the === operator" - {
 
       "return 'true' when the values are equal" in {
-        val q = const(2 + 2) === 4
-        val result = eval(FactTable.empty)(q)
-        assert(result.output.value)
+        val q = const(2 + 2) === const(4)
+        val result = engine.evalAndExtractValue(q)
+        assert(result)
       }
 
       "return 'false' when the values are not equal" in {
-        val q = const(2 + 2) === 5
-        val result = eval(FactTable.empty)(q)
-        assert(!result.output.value)
+        val q = const(2 + 2) === const(5)
+        val result = engine.evalAndExtractValue(q)
+        assert(!result)
       }
     }
 
-    "using the !== operator" should {
+    "using the !== operator" - {
 
       "return 'false' when the values are equal" in {
-        val q = const(2 + 2) !== 4
-        val result = eval(FactTable.empty)(q)
-        assert(!result.output.value)
+        val q = const(2 + 2) !== const(4)
+        val result = engine.evalAndExtractValue(q)
+        assert(!result)
       }
 
       "return 'true' when the values are not equal" in {
-        val q = const(2 + 2) !== 5
-        val result = eval(FactTable.empty)(q)
-        assert(result.output.value)
+        val q = const(2 + 2) !== const(5)
+        val result = engine.evalAndExtractValue(q)
+        assert(result)
       }
     }
   }

@@ -57,7 +57,7 @@ class InterpretExprAsSimpleCatsEffectValue[V](state: ExprInput[V]) extends Expr.
       }
       .map { outputs =>
         val M = MonoidK[M].algebra[R]
-        outputs.reduce(M.combine)
+        outputs.reduceOption(M.combine).getOrElse(M.empty)
       }
   }
 

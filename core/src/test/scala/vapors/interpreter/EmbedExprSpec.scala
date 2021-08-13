@@ -7,11 +7,23 @@ import vapors.dsl._
 import vapors.example.{FactTypes, JoeSchmoe}
 
 import org.scalatest.matchers.should.Matchers._
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.freespec.AnyFreeSpec
 
-class EmbedExprSpec extends AnyWordSpec {
+class EmbedExprSpec extends AnyFreeSpec {
 
-  "embedding an expression inside a logical operator inside a 'withFactsOfType'" when {
+  "embedding an expression inside a logical operator inside a 'withFactsOfType'" - {
+
+    "standard engine" - {
+      allTests(StandardVaporsEngine)
+    }
+
+    "cats effect engine" - {
+      import cats.effect.unsafe.implicits.global
+      allTests(CatsEffectSimpleVaporsEngine)
+    }
+  }
+
+  def allTests[F[_]](engine: VaporsEngine[F, Unit])(implicit engineExtractParam: engine.ExtractParam): Unit = {
 
     def insideProbOfWeightloss(cond: ValCondExpr[Double, Unit]): RootExpr[Boolean, Unit] = {
       valuesOfType(FactTypes.ProbabilityToUse)
@@ -47,62 +59,102 @@ class EmbedExprSpec extends AnyWordSpec {
 
     val literalFacts = FactSet(JoeSchmoe.probs)
 
-    "inside an 'or'" should {
+    "inside an 'or'" - {
 
       "return 'true' when embedding a 'true' expression BEFORE a 'true' literal" in {
         val q = insideProbOfWeightloss(or(trueEmbedded, trueLiteral))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(result.output.value)
-        assertResult(Evidence(embeddedFacts | literalFacts))(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence(embeddedFacts | literalFacts)) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "return 'true' when embedding a 'true' expression BEFORE a 'false' literal" in {
         val q = insideProbOfWeightloss(or(trueEmbedded, falseLiteral))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(result.output.value)
-        assertResult(Evidence(embeddedFacts))(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence(embeddedFacts)) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "return 'true' when embedding a 'false' expression BEFORE a 'true' literal" in {
         val q = insideProbOfWeightloss(or(falseEmbedded, trueLiteral))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(result.output.value)
-        assertResult(Evidence(literalFacts))(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence(literalFacts)) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "return 'false' when embedding a 'false' expression BEFORE a 'false' literal" in {
         val q = insideProbOfWeightloss(or(falseEmbedded, falseLiteral))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(!result.output.value)
-        assertResult(Evidence.none)(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(!resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence.none) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "return 'true' when embedding a 'true' expression AFTER a 'true' literal" in {
         val q = insideProbOfWeightloss(or(trueLiteral, trueEmbedded))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(result.output.value)
-        assertResult(Evidence(literalFacts | embeddedFacts))(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence(literalFacts | embeddedFacts)) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "return 'true' when embedding a 'true' expression AFTER a 'false' literal" in {
         val q = insideProbOfWeightloss(or(falseLiteral, trueEmbedded))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(result.output.value)
-        assertResult(Evidence(embeddedFacts))(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence(embeddedFacts)) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "return 'true' when embedding a 'false' expression AFTER a 'true' literal" in {
         val q = insideProbOfWeightloss(or(trueLiteral, falseEmbedded))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(result.output.value)
-        assertResult(Evidence(literalFacts))(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence(literalFacts)) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "return 'false' when embedding a 'false' expression AFTER a 'false' literal" in {
         val q = insideProbOfWeightloss(or(falseLiteral, falseEmbedded))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(!result.output.value)
-        assertResult(Evidence.none)(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(!resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence.none) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "disallows embedding an invalid return type" in {
@@ -115,62 +167,102 @@ class EmbedExprSpec extends AnyWordSpec {
       }
     }
 
-    "inside an 'and'" should {
+    "inside an 'and'" - {
 
       "return 'true' when embedding a 'true' expression BEFORE a 'true' literal" in {
         val q = insideProbOfWeightloss(and(trueEmbedded, trueLiteral))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(result.output.value)
-        assertResult(Evidence(embeddedFacts | literalFacts))(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence(embeddedFacts | literalFacts)) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "return 'false' when embedding a 'true' expression BEFORE a 'false' literal" in {
         val q = insideProbOfWeightloss(and(trueEmbedded, falseLiteral))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(!result.output.value)
-        assertResult(Evidence.none)(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(!resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence.none) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "return 'false' when embedding a 'false' expression BEFORE a 'true' literal" in {
         val q = insideProbOfWeightloss(and(falseEmbedded, trueLiteral))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(!result.output.value)
-        assertResult(Evidence.none)(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(!resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence.none) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "return 'false' when embedding a 'false' expression BEFORE a 'false' literal" in {
         val q = insideProbOfWeightloss(and(falseEmbedded, falseLiteral))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(!result.output.value)
-        assertResult(Evidence.none)(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(!resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence.none) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "return 'true' when embedding a 'true' expression AFTER a 'true' literal" in {
         val q = insideProbOfWeightloss(and(trueLiteral, trueEmbedded))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(result.output.value)
-        assertResult(Evidence(literalFacts | embeddedFacts))(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence(literalFacts | embeddedFacts)) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "return 'false' when embedding a 'true' expression AFTER a 'false' literal" in {
         val q = insideProbOfWeightloss(and(falseLiteral, trueEmbedded))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(!result.output.value)
-        assertResult(Evidence.none)(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(!resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence.none) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "return 'false' when embedding a 'false' expression AFTER a 'true' literal" in {
         val q = insideProbOfWeightloss(and(trueLiteral, falseEmbedded))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(!result.output.value)
-        assertResult(Evidence.none)(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(!resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence.none) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "return 'false' when embedding a 'false' expression AFTER a 'false' literal" in {
         val q = insideProbOfWeightloss(and(falseLiteral, falseEmbedded))
-        val result = eval(JoeSchmoe.factTable)(q)
-        assert(!result.output.value)
-        assertResult(Evidence.none)(result.output.evidence)
+        val result = engine.eval(q, JoeSchmoe.factTable)
+        val resultValue = engine.extract(result.value)
+        assert(!resultValue)
+        for (evidence <- result.maybeEvidence) {
+          assertResult(Evidence.none) {
+            engine.extract(evidence)
+          }
+        }
       }
 
       "disallows embedding an invalid return type" in {

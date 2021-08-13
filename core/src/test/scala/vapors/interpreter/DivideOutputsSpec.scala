@@ -2,11 +2,7 @@ package com.rallyhealth
 
 package vapors.interpreter
 
-import vapors.algebra.Expr
-import vapors.data.FactTable
-import vapors.dsl
 import vapors.dsl._
-import vapors.example.FactTypes
 
 import org.scalatest.freespec.AnyFreeSpec
 
@@ -14,114 +10,106 @@ class DivideOutputsSpec extends AnyFreeSpec {
 
   "Expr.DivideOutputs" - {
 
+    "standard engine" - {
+      allTests(StandardVaporsEngine)
+    }
+
+    "cats effect engine" - {
+      import cats.effect.unsafe.implicits.global
+      allTests(CatsEffectSimpleVaporsEngine)
+    }
+  }
+
+  private def allTests[F[_]](
+    engine: VaporsEngine[F, Unit],
+  )(implicit
+    engineExtractParam: engine.ExtractParam,
+  ): Unit = {
+
     "Int" - {
 
       "expression divided by an expression" in {
-        VaporsEvalTestHelpers.producesTheSameResultOrException[Int, Int, Int, ArithmeticException](
+        VaporsEvalTestHelpers.producesTheSameResultOrException[F, Int, Int, Int, ArithmeticException](
           _ / _,
           const(_) / const(_),
+          engine,
         )
       }
 
       "expression divided by a value" in {
-        VaporsEvalTestHelpers.producesTheSameResultOrException[Int, Int, Int, ArithmeticException](
+        VaporsEvalTestHelpers.producesTheSameResultOrException[F, Int, Int, Int, ArithmeticException](
           _ / _,
           const(_) / _,
+          engine,
         )
       }
 
       "value divided from an expression" in {
-        VaporsEvalTestHelpers.producesTheSameResultOrException[Int, Int, Int, ArithmeticException](
+        VaporsEvalTestHelpers.producesTheSameResultOrException[F, Int, Int, Int, ArithmeticException](
           (a, b) => b / a,
           const(_).divideFrom(_),
+          engine,
         )
       }
 
-      lazy val humanAgeFromDogYears: Expr[FactTable, Seq[Int], Unit] = {
-        valuesOfType(FactTypes.Age).map {
-          _ / 7
-        }
+      def humanAgeFromDogYears(humanAge: Int): RootExpr[Int, Unit] = {
+        const(humanAge) / const(7)
       }
 
       "48 dog years is 6 human years" in {
-        val result = eval(FactTable(FactTypes.Age(48))) {
-          humanAgeFromDogYears.withOutputFoldable.exists {
-            _ === 6
-          }
-        }
-        assert(result.output.value)
+        val result = engine.evalAndExtractValue(humanAgeFromDogYears(48))
+        assertResult(6)(result)
       }
 
       "49 dog years is 7 human years" in {
-        val result = eval(FactTable(FactTypes.Age(49))) {
-          humanAgeFromDogYears.withOutputFoldable.exists {
-            _ === 7
-          }
-        }
-        assert(result.output.value)
+        val result = engine.evalAndExtractValue(humanAgeFromDogYears(49))
+        assertResult(7)(result)
       }
 
       "50 dog years is 7 human years" in {
-        val result = eval(FactTable(FactTypes.Age(50))) {
-          humanAgeFromDogYears.withOutputFoldable.exists {
-            _ === 7
-          }
-        }
-        assert(result.output.value)
+        val result = engine.evalAndExtractValue(humanAgeFromDogYears(50))
+        assertResult(7)(result)
       }
     }
 
     "Double" - {
 
       "expression divided by an expression" in {
-        VaporsEvalTestHelpers.producesTheSameResultOrException[Double, Double, Double, ArithmeticException](
+        VaporsEvalTestHelpers.producesTheSameResultOrException[F, Double, Double, Double, ArithmeticException](
           _ / _,
           const(_) / const(_),
+          engine,
         )
       }
 
       "expression divided by a value" in {
-        VaporsEvalTestHelpers.producesTheSameResultOrException[Double, Double, Double, ArithmeticException](
+        VaporsEvalTestHelpers.producesTheSameResultOrException[F, Double, Double, Double, ArithmeticException](
           _ / _,
           const(_) / _,
+          engine,
         )
       }
 
       "value divided from an expression" in {
-        VaporsEvalTestHelpers.producesTheSameResultOrException[Double, Double, Double, ArithmeticException](
+        VaporsEvalTestHelpers.producesTheSameResultOrException[F, Double, Double, Double, ArithmeticException](
           (a, b) => b / a,
           const(_).divideFrom(_),
+          engine,
         )
       }
 
-      lazy val celciusFromFahrenheit: Expr[FactTable, Seq[Double], Unit] = {
-        valuesOfType(FactTypes.TempFahrenheit).map { tempF =>
-          (tempF - 32.0) / 1.8
-        }
+      def celciusFromFahrenheit(degreesFahrenheit: Double): RootExpr[Double, Unit] = {
+        (const(degreesFahrenheit) - const(32.0)) / const(1.8)
       }
 
       "is 32F === 0C (shorter form)" in {
-        val result = eval(FactTable(FactTypes.TempFahrenheit(32.0))) {
-          celciusFromFahrenheit.withOutputFoldable.exists { v =>
-            // TODO Support tolerance here
-            // === 0.0 works here, too
-            val matchVal = 0.0
-            dsl.not(and(v > matchVal, v < matchVal))
-          }
-        }
-        assert(result.output.value)
+        val result = engine.evalAndExtractValue(celciusFromFahrenheit(32.0))
+        assertResult(0.0)(result)
       }
 
       "is 50F === 10C (shorter form)" in {
-        val result = eval(FactTable(FactTypes.TempFahrenheit(50.0))) {
-          celciusFromFahrenheit.withOutputFoldable.exists { v =>
-            // TODO support tolerance here
-            // === 10.0 works here, too
-            val matchVal = 10.0
-            dsl.not(and(v > matchVal, v < matchVal))
-          }
-        }
-        assert(result.output.value)
+        val result = engine.evalAndExtractValue(celciusFromFahrenheit(50.0))
+        assertResult(10.0)(result)
       }
     }
   }
