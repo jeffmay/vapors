@@ -91,6 +91,7 @@ object Window {
 
   def greaterThanOrEqual[A : Order](min: A): Window[A] = greaterThan(min, inclusive = true)
 
+  /** Generally defined bounded range with the ability to set open or closed at each end of the range.*/
   def between[A : Order](
     min: A,
     includeMin: Boolean,
@@ -99,11 +100,13 @@ object Window {
   ): Window[A] =
     KnownWindow(Ior.Both(Above(min, includeMin), Below(max, includeMax)))
 
+  /** [min,max) */
   def between[A : Order](
     min: A,
     max: A,
   ): Window[A] = between(min, includeMin = true, max, includeMax = false)
 
+  /** [min,max] */
   def betweenInclusive[A : Order](
     min: A,
     max: A,

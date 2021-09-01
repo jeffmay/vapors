@@ -28,7 +28,7 @@ import scala.collection.MapView
   * R = Return type
   * P = Captured param
   */
-sealed abstract class Expr[V, R, P] {
+sealed abstract class Expr[V, R, P] {Coursera
 
   def visit[G[_]](v: Expr.Visitor[V, P, G]): G[R]
 
