@@ -155,7 +155,7 @@ class FilterOutputSpec extends AnyWordSpec {
 
       "return all values that match the condition" in {
         val q = factsOfType(FactTypes.Age).map(_.value).filter {
-          _ >= middle.value
+          _ >= const(middle.value)
         }
         val res = eval(numericFacts)(q)
         res.output.value should contain theSameElementsAs Seq(middle, high).map(_.value)
@@ -163,7 +163,7 @@ class FilterOutputSpec extends AnyWordSpec {
 
       "return the correct evidence for the matching values from a given subset" in {
         val q = factsOfType(FactTypes.Age).map(_.value).filter {
-          _ >= middle.value
+          _ >= const(middle.value)
         }
         val res = eval(numericFacts)(q)
         pendingUntilFixed {
@@ -174,7 +174,7 @@ class FilterOutputSpec extends AnyWordSpec {
 
       "return all facts that match the condition" in {
         val q = factsOfType(FactTypes.Age).filter {
-          _.value >= middle.value
+          _.value >= const(middle.value)
         }
         val res = eval(numericFacts)(q)
         res.output.value should contain theSameElementsAs Seq(middle, high)
@@ -183,7 +183,7 @@ class FilterOutputSpec extends AnyWordSpec {
 
       "return an empty list of values when none of the elements meet the condition" in {
         val q = factsOfType(FactTypes.Age).map(_.value).filter {
-          _ > high.value
+          _ > const(high.value)
         }
         val res = eval(numericFacts)(q)
         assert(res.output.value.isEmpty)
@@ -192,7 +192,7 @@ class FilterOutputSpec extends AnyWordSpec {
 
       "return an empty list of facts when none meet the condition" in {
         val q = factsOfType(FactTypes.Age).filter {
-          _.value > high.value
+          _.value > const(high.value)
         }
         val res = eval(numericFacts)(q)
         assert(res.output.value.isEmpty)

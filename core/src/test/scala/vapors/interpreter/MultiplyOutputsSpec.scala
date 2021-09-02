@@ -19,13 +19,6 @@ class MultiplyOutputsSpec extends AnyFreeSpec {
         )
       }
 
-      "expression multiplied by a value" in {
-        VaporsEvalTestHelpers.producesTheSameResultOrException[Int, Int, Int, ArithmeticException](
-          _ * _,
-          const(_) * _,
-        )
-      }
-
       "value multiplied to an expression" in {
         VaporsEvalTestHelpers.producesTheSameResultOrException[Int, Int, Int, ArithmeticException](
           _ * _,
@@ -40,13 +33,6 @@ class MultiplyOutputsSpec extends AnyFreeSpec {
         VaporsEvalTestHelpers.producesTheSameResultOrException[Double, Double, Double, ArithmeticException](
           _ * _,
           const(_) * const(_),
-        )
-      }
-
-      "expression multiplied by a value" in {
-        VaporsEvalTestHelpers.producesTheSameResultOrException[Int, Int, Int, ArithmeticException](
-          _ * _,
-          const(_) * _,
         )
       }
 

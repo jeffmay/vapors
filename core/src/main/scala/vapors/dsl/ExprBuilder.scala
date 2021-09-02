@@ -506,18 +506,6 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
   ): ValExprBuilder[V, R, P] =
     new ValExprBuilder(ExprDsl.add(returnOutput, rhs))
 
-  @deprecated(
-    "Use + const(...) instead. This overloaded convenience method will be removed to support better type inference",
-    "0.17.0",
-  )
-  def +(
-    rhs: R,
-  )(implicit
-    R: Addition[R],
-    captureResult: CaptureResult[R],
-  ): ValExprBuilder[V, R, P] =
-    new ValExprBuilder(ExprDsl.add(returnOutput, Expr.ConstOutput(rhs, Evidence.none, captureResult)))
-
   def addTo(
     lhs: R,
   )(implicit
@@ -533,18 +521,6 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
     new ValExprBuilder(ExprDsl.multiply(returnOutput, rhs))
-
-  @deprecated(
-    "Use * const(...) instead. This overloaded convenience method will be removed to support better type inference",
-    "0.17.0",
-  )
-  def *(
-    rhs: R,
-  )(implicit
-    R: Multiplication[R],
-    captureResult: CaptureResult[R],
-  ): ValExprBuilder[V, R, P] =
-    new ValExprBuilder(ExprDsl.multiply(returnOutput, Expr.ConstOutput(rhs, Evidence.none, captureResult)))
 
   def multiplyTo(
     lhs: R,
@@ -562,18 +538,6 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
   ): ValExprBuilder[V, R, P] =
     new ValExprBuilder(ExprDsl.subtract(returnOutput, rhs))
 
-  @deprecated(
-    "Use - const(...) instead. This overloaded convenience method will be removed to support better type inference",
-    "0.17.0",
-  )
-  def -(
-    rhs: R,
-  )(implicit
-    R: Subtraction[R],
-    captureResult: CaptureResult[R],
-  ): ValExprBuilder[V, R, P] =
-    new ValExprBuilder(ExprDsl.subtract(returnOutput, Expr.ConstOutput(rhs, Evidence.none, captureResult)))
-
   def subtractFrom(
     lhs: R,
   )(implicit
@@ -589,18 +553,6 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     captureResult: CaptureResult[R],
   ): ValExprBuilder[V, R, P] =
     new ValExprBuilder(ExprDsl.divide(returnOutput, rhs))
-
-  @deprecated(
-    "Use / const(...) instead. This overloaded convenience method will be removed to support better type inference",
-    "0.17.0",
-  )
-  def /(
-    rhs: R,
-  )(implicit
-    R: Division[R],
-    captureResult: CaptureResult[R],
-  ): ValExprBuilder[V, R, P] =
-    new ValExprBuilder(ExprDsl.divide(returnOutput, Expr.ConstOutput(rhs, Evidence.none, captureResult)))
 
   def divideFrom(
     lhs: R,
@@ -635,31 +587,6 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
       Expr.OutputWithinWindow(returnOutput, embed(const(window)(captureConst))(captureWindow), captureResult),
     )
 
-  @deprecated("Use === const(...) instead. This method doesn't fit with the overall DSL.", "0.17.0")
-  def isEqualTo(
-    value: R,
-  )(implicit
-    orderR: Order[R],
-    captureWindow: CaptureP[V, Window[R], P],
-    captureConst: CaptureP[FactTable, Window[R], P],
-    captureResult: CaptureCondResult,
-  ): ValExprBuilder[V, Boolean, P] =
-    within(Window.equalTo(value))
-
-  @deprecated(
-    "Use === const(...) instead. This overloaded convenience method will be removed to support better type inference",
-    "0.17.0",
-  )
-  def ===(
-    value: R,
-  )(implicit
-    orderR: Order[R],
-    captureWindow: CaptureP[V, Window[R], P],
-    captureConst: CaptureP[FactTable, Window[R], P],
-    captureResult: CaptureCondResult,
-  ): ValExprBuilder[V, Boolean, P] =
-    within(Window.equalTo(value))
-
   def ===(
     valueExpr: Expr[V, R, P],
   )(implicit
@@ -668,20 +595,6 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
     withinWindow(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.equalTo(_)), captureWindow))
-
-  @deprecated(
-    "Use !== const(...) instead. This overloaded convenience method will be removed to support better type inference",
-    "0.17.0",
-  )
-  def !==(
-    value: R,
-  )(implicit
-    orderR: Order[R],
-    captureWindow: CaptureP[V, Window[R], P],
-    captureConst: CaptureP[FactTable, Window[R], P],
-    captureResult: CaptureCondResult,
-  ): ValExprBuilder[V, Boolean, P] =
-    Expr.Not(within(Window.equalTo(value)), captureResult)
 
   def !==(
     valueExpr: Expr[V, R, P],
@@ -692,20 +605,6 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
   ): ValExprBuilder[V, Boolean, P] =
     Expr.Not(this === valueExpr, captureResult)
 
-  @deprecated(
-    "Use < const(...) instead. This overloaded convenience method will be removed to support better type inference",
-    "0.17.0",
-  )
-  def <(
-    value: R,
-  )(implicit
-    orderR: Order[R],
-    captureWindow: CaptureP[V, Window[R], P],
-    captureConst: CaptureP[FactTable, Window[R], P],
-    captureResult: CaptureCondResult,
-  ): ValExprBuilder[V, Boolean, P] =
-    within(Window.lessThan(value))
-
   def <(
     valueExpr: Expr[V, R, P],
   )(implicit
@@ -714,20 +613,6 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
     withinWindow(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.lessThan(_)), captureWindow))
-
-  @deprecated(
-    "Use <= const(...) instead. This overloaded convenience method will be removed to support better type inference",
-    "0.17.0",
-  )
-  def <=(
-    value: R,
-  )(implicit
-    orderR: Order[R],
-    captureWindow: CaptureP[V, Window[R], P],
-    captureConst: CaptureP[FactTable, Window[R], P],
-    captureResult: CaptureCondResult,
-  ): ValExprBuilder[V, Boolean, P] =
-    within(Window.lessThanOrEqual(value))
 
   def <=(
     valueExpr: Expr[V, R, P],
@@ -738,20 +623,6 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
   ): ValExprBuilder[V, Boolean, P] =
     withinWindow(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.lessThanOrEqual(_)), captureWindow))
 
-  @deprecated(
-    "Use > const(...) instead. This overloaded convenience method will be removed to support better type inference",
-    "0.17.0",
-  )
-  def >(
-    value: R,
-  )(implicit
-    orderR: Order[R],
-    captureWindow: CaptureP[V, Window[R], P],
-    captureConst: CaptureP[FactTable, Window[R], P],
-    captureResult: CaptureCondResult,
-  ): ValExprBuilder[V, Boolean, P] =
-    within(Window.greaterThan(value))
-
   def >(
     valueExpr: Expr[V, R, P],
   )(implicit
@@ -760,20 +631,6 @@ final class ValExprBuilder[V, R, P](override val returnOutput: Expr[V, R, P])
     captureResult: CaptureCondResult,
   ): ValExprBuilder[V, Boolean, P] =
     withinWindow(Expr.WrapOutput(valueExpr, ExprConverter.asWindow[R](Window.greaterThan(_)), captureWindow))
-
-  @deprecated(
-    "Use >= const(...) instead. This overloaded convenience method will be removed to support better type inference",
-    "0.17.0",
-  )
-  def >=(
-    value: R,
-  )(implicit
-    orderR: Order[R],
-    captureWindow: CaptureP[V, Window[R], P],
-    captureConst: CaptureP[FactTable, Window[R], P],
-    captureResult: CaptureCondResult,
-  ): ValExprBuilder[V, Boolean, P] =
-    within(Window.greaterThanOrEqual(value))
 
   def >=(
     valueExpr: Expr[V, R, P],

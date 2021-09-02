@@ -19,7 +19,7 @@ class CapturePSpec extends AnyWordSpec with TypeCheckedTripleEquals {
 
       "find a single fact from a query" in {
         val q = factsOfType(FactTypes.WeightMeasurement).exists {
-          _.get(_.select(_.value.value)) > 18.0
+          _.get(_.select(_.value.value)) > const(18.0)
         }
         val result = eval(JoeSchmoe.factTable)(q)
         assert(result.param.value === TimeRange(JoeSchmoe.weight.value.timestamp))

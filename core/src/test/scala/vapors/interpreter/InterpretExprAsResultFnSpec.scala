@@ -16,7 +16,7 @@ class InterpretExprAsResultFnSpec extends AnyWordSpec {
 
       "find a single fact from a query" in {
         val q = valuesOfType(FactTypes.Age).exists {
-          _ >= 18
+          _ >= const(18)
         }
         val result = eval(JoeSchmoe.factTable)(q)
         assert(result.param.value === ())
@@ -28,7 +28,7 @@ class InterpretExprAsResultFnSpec extends AnyWordSpec {
       "find a complex fact from a query" in {
         val q = valuesOfType(FactTypes.ProbabilityToUse).exists {
           _.getFoldable(_.select(_.scores).at("weightloss")).exists {
-            _ > 0.5
+            _ > const(0.5)
           }
         }
         val result = eval(JoeSchmoe.factTable)(q)
@@ -38,7 +38,7 @@ class InterpretExprAsResultFnSpec extends AnyWordSpec {
       "define a fact expression" in {
         val likelyToJoinWeightloss = valuesOfType(FactTypes.ProbabilityToUse).exists {
           _.getFoldable(_.select(_.scores).at("weightloss")).exists {
-            _ > 0.5
+            _ > const(0.5)
           }
         }
         val result = eval(JoeSchmoe.factTable)(likelyToJoinWeightloss)

@@ -19,13 +19,6 @@ class AddOutputsSpec extends AnyFreeSpec {
         )
       }
 
-      "value added to an expression" in {
-        VaporsEvalTestHelpers.producesTheSameResultOrException[Int, Int, Int, ArithmeticException](
-          _ + _,
-          const(_) + _,
-        )
-      }
-
       "expression added to a value" in {
         VaporsEvalTestHelpers.producesTheSameResultOrException[Int, Int, Int, ArithmeticException](
           _ + _,
@@ -40,13 +33,6 @@ class AddOutputsSpec extends AnyFreeSpec {
         VaporsEvalTestHelpers.producesTheSameResultOrException[Double, Double, Double, ArithmeticException](
           _ + _,
           const(_) + const(_),
-        )
-      }
-
-      "value added to an expression" in {
-        VaporsEvalTestHelpers.producesTheSameResultOrException[Double, Double, Double, ArithmeticException](
-          _ + _,
-          const(_) + _,
         )
       }
 

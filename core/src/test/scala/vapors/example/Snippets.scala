@@ -38,14 +38,14 @@ class Snippets(val clock: Clock) {
   val isOver18: RootExpr[Boolean, Unit] = {
     usingDefinitions(ageFromDateOfBirthDef) {
       factsOfType(FactTypes.Age).exists {
-        _.value >= 18
+        _.value >= const(18)
       }
     }
   }
 
   lazy val isUser: RootExpr[Boolean, Unit] = {
     factsOfType(FactTypes.Role).exists {
-      _.value >= Role.User
+      _.value >= const(Role.User: Role)
     }
   }
 
