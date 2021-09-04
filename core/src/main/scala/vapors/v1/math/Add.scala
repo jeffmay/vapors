@@ -3,7 +3,11 @@ package com.rallyhealth
 package vapors.v1.math
 
 import java.time.{Duration, Instant, LocalDate, Period}
+import scala.annotation.implicitNotFound
 
+@implicitNotFound(
+  "Cannot add ${R} to ${L} with the + operator. If this is incorrect, please define an implicit Add[${L}, ${R}].",
+)
 trait Add[-L, -R] {
   type Out
 

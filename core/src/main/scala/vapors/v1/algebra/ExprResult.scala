@@ -62,8 +62,8 @@ object ExprResult {
   final case class Combine[+PO, -I, +LO : OP, +RO : OP, -LI, -RI, +O : OP, OP[_]](
     expr: Expr.Combine[I, LO, RO, LI, RI, O, OP],
     state: ExprState[PO, O],
-    leftResult: ExprResult[Any, I, LO, OP],
-    rightResult: ExprResult[Any, I, RO, OP],
+    leftResult: ExprResult[PO, I, LO, OP],
+    rightResult: ExprResult[PO, I, RO, OP],
   ) extends ExprResult[PO, I, O, OP] {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitCombine(this)
   }

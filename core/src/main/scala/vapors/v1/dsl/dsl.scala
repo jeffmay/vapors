@@ -11,10 +11,10 @@ package object dsl {
   // TODO: Use nicer syntax for this
 
   def evalWithFactTable[O, OP[_]](expr: Expr[Any, O, OP])(factTable: FactTable): ExprResult[Unit, Nothing, O, OP] = {
-    expr.visit(InterpretExprAsFn.Visitor[OP](ExprState.Output((), factTable)))(())
+    expr.visit(InterpretExprAsFn.Visitor[OP](ExprState.Output((), factTable)))(implicitly)
   }
 
   def evalWithState[I, O, OP[_]](expr: Expr[I, O, OP])(state: ExprState[I, Nothing]): ExprResult[Unit, I, O, OP] = {
-    expr.visit(InterpretExprAsFn.Visitor[OP](state))(state.input)
+    expr.visit(InterpretExprAsFn.Visitor[OP](state))(implicitly)
   }
 }

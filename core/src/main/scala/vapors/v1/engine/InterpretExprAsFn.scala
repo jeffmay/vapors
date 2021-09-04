@@ -18,8 +18,13 @@ object InterpretExprAsFn {
     }
   }
 
+  /**
+    *
+    * @note In Scala 3, this could just become a context function, which would simplify all the places
+    *       where I am using `implicitly`.
+    */
   class Visitor[PO, OP[_]](state: ExprState[Any, PO])
-    extends Expr.Visitor[Lambda[(`-I`, `+O`) => I => ExprResult[PO, I, O, OP]], OP] {
+    extends Expr.Visitor[Lambda[(`-I`, `+O`) => PO <:< I => ExprResult[PO, I, O, OP]], OP] {
 
     import cats.implicits._
 
@@ -28,16 +33,14 @@ object InterpretExprAsFn {
     )(implicit
       evL: LO <:< LI,
       evR: RO <:< RI,
-    ): I => ExprResult[PO, I, O, OP] = { input =>
-      val subState = state.swapAndReplaceOutput(input)
-      val subVisitor = Visitor[OP](subState)
-      val left = expr.leftExpr.visit(subVisitor)(input)
-      val right = expr.rightExpr.visit(subVisitor)(input)
+    ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evI =>
+      val left = expr.leftExpr.visit(this)(implicitly)
+      val right = expr.rightExpr.visit(this)(implicitly)
       val output = expr.operation(left.state.output, right.state.output)
-      ExprResult.Combine(expr, subState.withOutput(output), left, right)
+      ExprResult.Combine(expr, state.swapAndReplaceOutput(output), left, right)
     }
 
-    override def visitConst[O : OP](expr: Expr.Const[O, OP]): Any => ExprResult[PO, Any, O, OP] = { _ =>
+    override def visitConst[O : OP](expr: Expr.Const[O, OP]): PO <:< Any => ExprResult[PO, Any, O, OP] = { _ =>
       ExprResult.Const(expr, state.swapAndReplaceOutput(expr.value))
     }
 
@@ -46,12 +49,12 @@ object InterpretExprAsFn {
     )(implicit
       opC: OP[C[E]],
       opO: OP[Boolean],
-    ): I => ExprResult[PO, I, Boolean, OP] = { input =>
-      val inputResult = expr.inputExpr.visit(this)(input)
+    ): PO <:< I => ExprResult[PO, I, Boolean, OP] = { implicit evI =>
+      val inputResult = expr.inputExpr.visit(this)(implicitly)
       // TODO: Apply justification logic here
       val output = inputResult.state.output.exists { e =>
         val conditionState = Visitor[OP](state.withOutput(e))
-        expr.conditionExpr.visit(conditionState)(e).state.output
+        expr.conditionExpr.visit(conditionState)(implicitly).state.output
       }
       ExprResult.Exists(expr, state.swapAndReplaceOutput(output), inputResult)
     }
@@ -61,12 +64,12 @@ object InterpretExprAsFn {
     )(implicit
       opC: OP[C[E]],
       opO: OP[Boolean],
-    ): I => ExprResult[PO, I, Boolean, OP] = { input =>
-      val inputResult = expr.inputExpr.visit(this)(input)
+    ): PO <:< I => ExprResult[PO, I, Boolean, OP] = { implicit evI =>
+      val inputResult = expr.inputExpr.visit(this)(implicitly)
       // TODO: Apply justification logic here
       val output = inputResult.state.output.forall { e =>
         val conditionVisitor = Visitor[OP](state.withOutput(e))
-        expr.conditionExpr.visit(conditionVisitor)(e).state.output
+        expr.conditionExpr.visit(conditionVisitor)(implicitly).state.output
       }
       ExprResult.ForAll(expr, state.swapAndReplaceOutput(output))
     }
@@ -75,20 +78,19 @@ object InterpretExprAsFn {
       expr: Expr.Identity[I, O, OP],
     )(implicit
       ev: I <:< O,
-    ): I => ExprResult[PO, I, O, OP] = { input =>
+    ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evI =>
+      val input = evI(state.output)
       ExprResult.Identity(state.swapAndReplaceOutput(input))
     }
 
     override def visitWithFactValues[T, O : OP](
       expr: Expr.WithFactValues[T, O, OP],
-    ): Any => ExprResult[PO, Any, O, OP] = { _ =>
+    ): PO <:< Any => ExprResult[PO, Any, O, OP] = { implicit evI =>
       val matchingFactValues = state.factTable.getSortedSeq(expr.factTypeSet).map(_.value)
       val subState = state.withOutput[Seq[T]](matchingFactValues)
       val subVisitor = Visitor[OP](subState)
-      val resultFn = expr.outputExpr.visit(subVisitor)
-      val result = resultFn(subState.output)
+      val result = expr.outputExpr.visit(subVisitor)(implicitly)
       ExprResult.WithFactValues(expr, state.swapAndReplaceOutput(result.state.output))
     }
-
   }
 }
