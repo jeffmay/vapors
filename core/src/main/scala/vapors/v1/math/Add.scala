@@ -4,43 +4,57 @@ package vapors.v1.math
 
 import java.time.{Duration, Instant, LocalDate, Period}
 
-trait Add[-L, -R, +O] {
+trait Add[-L, -R] {
+  type Out
 
   def combine(
     left: L,
     right: R,
-  ): O
+  ): Out
 
-  final def swapArgs: Add[R, L, O] = { (r, l) =>
+  final def swapArgs: Add.Aux[R, L, Out] = Add { (r, l) =>
     combine(l, r)
   }
 }
 
 object Add extends NumericAddImplicits with JavaTimeAddImplicits {
-  @inline def apply[L, R, O](implicit add: Add[L, R, O]): Add[L, R, O] = add
+  type Aux[-L, -R, O] = Add[L, R] { type Out = O }
 
-  @inline def id[N](implicit add: Add[N, N, N]): Add[N, N, N] = add
+//  @inline def apply[L, R](implicit add: Add[L, R]): Add[L, R] = add
+
+  def apply[L, R, O](fn: (L, R) => O): Add.Aux[L, R, O] = new Add[L, R] {
+    override type Out = O
+    override def combine(
+      left: L,
+      right: R,
+    ): Out = fn(left, right)
+  }
+
+  @inline def id[N](implicit add: Add.Aux[N, N, N]): Aux[N, N, N] = add
+
 }
 
 trait NumericAddImplicits extends LowPriorityNumericAddImplicits {
 
-  implicit def numeric[I : Numeric]: Add[I, I, I] = Numeric[I].plus(_, _)
+  implicit def numeric[I : Numeric]: Add.Aux[I, I, I] = Add(Numeric[I].plus)
 }
 
 trait LowPriorityNumericAddImplicits {
 
-  implicit def numericCoerceLeft[L : Numeric, R : Numeric](implicit ev: R => L): Add[L, R, L] = Numeric[L].plus(_, _)
+  implicit def numericCoerceLeft[L : Numeric, R : Numeric](implicit ev: R => L): Add.Aux[L, R, L] =
+    Add(Numeric[L].plus(_, _))
 
-  implicit def numericCoerceRight[L : Numeric, R : Numeric](implicit ev: L => R): Add[L, R, R] = Numeric[R].plus(_, _)
+  implicit def numericCoerceRight[L : Numeric, R : Numeric](implicit ev: L => R): Add.Aux[L, R, R] =
+    Add(Numeric[R].plus(_, _))
 }
 
 trait JavaTimeAddImplicits {
 
-  implicit val addDurationToInstant: Add[Instant, Duration, Instant] = _.plus(_)
+  implicit val addDurationToInstant: Add.Aux[Instant, Duration, Instant] = Add(_.plus(_))
 
-  implicit val addInstantToDuration: Add[Duration, Instant, Instant] = addDurationToInstant.swapArgs
+  implicit val addInstantToDuration: Add.Aux[Duration, Instant, Instant] = addDurationToInstant.swapArgs
 
-  implicit val addPeriodToLocalDate: Add[LocalDate, Period, LocalDate] = _.plus(_)
+  implicit val addPeriodToLocalDate: Add.Aux[LocalDate, Period, LocalDate] = Add(_.plus(_))
 
-  implicit val addLocalDateToPeriod: Add[Period, LocalDate, LocalDate] = addPeriodToLocalDate.swapArgs
+  implicit val addLocalDateToPeriod: Add.Aux[Period, LocalDate, LocalDate] = addPeriodToLocalDate.swapArgs
 }

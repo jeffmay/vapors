@@ -19,68 +19,116 @@ import cats.Foldable
   * @tparam I the input value type
   * @tparam O the output value type
   */
-sealed trait Expr[-I, +O] {
+sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
 
-  def visit[G[-_, +_]](v: Expr.Visitor[G]): G[I, O]
+  def visit[G[-_, +_]](v: Expr.Visitor[G, OP]): G[I, O]
 
-  def +[RI <: I, RO, R](that: Expr[RI, RO])(implicit add: Add[O, RO, R]): Expr[RI, R] =
-    Expr.Combine(this, that, (l, r) => add.combine(l, r))
+  def ++[CI <: I, LI >: O, RI >: RO, RO : OP](
+    that: Expr[CI, RO, OP],
+  )(implicit
+    add: Add[LI, RI],
+  ): CombineHolder[CI, LI, O, RI, RO, add.Out, OP] = {
+    // can't eta-expand a dependent object function, the (_, _) is required
+    new CombineHolder[CI, LI, O, RI, RO, add.Out, OP](this, that, add.combine(_, _))
+  }
+}
+
+final class CombineHolder[-I, -LI, +LO : OP, -RI, +RO : OP, O, OP[_]](
+  val left: Expr[I, LO, OP],
+  val right: Expr[I, RO, OP],
+  val combine: (LI, RI) => O,
+)(implicit
+  evL: LO <:< LI,
+  evR: RO <:< RI,
+) {
+
+  def toExpr(implicit opO: OP[O]): Expr[I, O, OP] = Expr.Combine(left, right, combine)
+}
+
+object CombineHolder {
+
+  implicit def asExpr[I, O, OP[_]](
+    holder: CombineHolder[I, Nothing, Any, Nothing, Any, O, OP],
+  )(implicit
+    opO: OP[O],
+  ): Expr[I, O, OP] = holder.toExpr
 }
 
 object Expr {
 
-  trait Visitor[~>[-_, +_]] {
+  trait Visitor[~>[-_, +_], OP[_]] {
 
-    def visitCombine[I, LO, RO, LI, RI, O](
-      expr: Combine[I, LO, RO, LI, RI, O],
+    def visitCombine[I, LO : OP, RO : OP, LI, RI, O : OP](
+      expr: Combine[I, LO, RO, LI, RI, O, OP],
     )(implicit
       evL: LO <:< LI,
       evR: RO <:< RI,
     ): I ~> O
-    def visitConst[O](expr: Const[O]): Any ~> O
-    def visitExists[I, C[_] : Foldable, E](expr: Exists[I, C, E]): I ~> Boolean
-    def visitForAll[I, C[_] : Foldable, E](expr: ForAll[I, C, E]): I ~> Boolean
-    def visitIdentity[I, O](expr: Identity[I, O])(implicit ev: I <:< O): I ~> O
-    def visitWithFactValues[T, O](expr: WithFactValues[T, O]): Any ~> O
+
+    def visitConst[O : OP](expr: Const[O, OP]): Any ~> O
+
+    def visitExists[I, C[_] : Foldable, E](
+      expr: Exists[I, C, E, OP],
+    )(implicit
+      opC: OP[C[E]],
+      opO: OP[Boolean],
+    ): I ~> Boolean
+
+    def visitForAll[I, C[_] : Foldable, E](
+      expr: ForAll[I, C, E, OP],
+    )(implicit
+      opC: OP[C[E]],
+      opO: OP[Boolean],
+    ): I ~> Boolean
+
+    def visitIdentity[I, O : OP](expr: Identity[I, O, OP])(implicit ev: I <:< O): I ~> O
+
+    def visitWithFactValues[T, O : OP](expr: WithFactValues[T, O, OP]): Any ~> O
   }
 
-  final case class Identity[-I, +O]()(implicit ev: I <:< O) extends Expr[I, O] {
-    override def visit[G[-_, +_]](v: Visitor[G]): G[I, O] = v.visitIdentity(this)
+  final case class Identity[-I, +O : OP, OP[_]]()(implicit ev: I <:< O) extends Expr[I, O, OP]("identity") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitIdentity(this)
   }
 
-  final case class Const[+O](value: O) extends Expr[Any, O] {
-    override def visit[G[-_, +_]](v: Visitor[G]): G[Any, O] = v.visitConst(this)
+  final case class Const[+O : OP, OP[_]](value: O) extends Expr[Any, O, OP]("const") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[Any, O] = v.visitConst(this)
   }
 
-  final case class Combine[-I, +LO, +RO, -LI, -RI, +O](
-    leftExpr: Expr[I, LO],
-    rightExpr: Expr[I, RO],
+  final case class Combine[-I, +LO : OP, +RO : OP, -LI, -RI, +O : OP, OP[_]](
+    leftExpr: Expr[I, LO, OP],
+    rightExpr: Expr[I, RO, OP],
     operation: (LI, RI) => O,
   )(implicit
     evL: LO <:< LI,
     evR: RO <:< RI,
-  ) extends Expr[I, O] {
-    override def visit[G[-_, +_]](v: Visitor[G]): G[I, O] = v.visitCombine(this)
+  ) extends Expr[I, O, OP]("combine") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitCombine(this)
   }
 
-  final case class Exists[-I, C[_] : Foldable, E](
-    inputExpr: Expr[I, C[E]],
-    conditionExpr: Expr[E, Boolean],
-  ) extends Expr[I, Boolean] {
-    override def visit[G[-_, +_]](v: Visitor[G]): G[I, Boolean] = v.visitExists(this)
+  final case class Exists[-I, C[_] : Foldable, E, OP[_]](
+    inputExpr: Expr[I, C[E], OP],
+    conditionExpr: Expr[E, Boolean, OP],
+  )(implicit
+    opC: OP[C[E]],
+    opO: OP[Boolean],
+  ) extends Expr[I, Boolean, OP]("exists") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Boolean] = v.visitExists(this)
   }
 
-  final case class ForAll[-I, C[_] : Foldable, E](
-    inputExpr: Expr[I, C[E]],
-    conditionExpr: Expr[E, Boolean],
-  ) extends Expr[I, Boolean] {
-    override def visit[G[-_, +_]](v: Visitor[G]): G[I, Boolean] = v.visitForAll(this)
+  final case class ForAll[-I, C[_] : Foldable, E, OP[_]](
+    inputExpr: Expr[I, C[E], OP],
+    conditionExpr: Expr[E, Boolean, OP],
+  )(implicit
+    opC: OP[C[E]],
+    opO: OP[Boolean],
+  ) extends Expr[I, Boolean, OP]("forall") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Boolean] = v.visitForAll(this)
   }
 
-  final case class WithFactValues[T, +O](
+  final case class WithFactValues[T, +O : OP, OP[_]](
     factTypeSet: FactTypeSet[T],
-    outputExpr: Expr[Seq[T], O],
-  ) extends Expr[Any, O] {
-    override def visit[G[-_, +_]](v: Visitor[G]): G[Any, O] = v.visitWithFactValues(this)
+    outputExpr: Expr[Seq[T], O, OP],
+  ) extends Expr[Any, O, OP]("withFactValues") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[Any, O] = v.visitWithFactValues(this)
   }
 }
