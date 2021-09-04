@@ -23,7 +23,7 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
 
   def visit[G[-_, +_]](v: Expr.Visitor[G, OP]): G[I, O]
 
-  def ++[CI <: I, LI >: O, RI >: RO, RO : OP](
+  def +[CI <: I, LI >: O, RI >: RO, RO : OP](
     that: Expr[CI, RO, OP],
   )(implicit
     add: Add[LI, RI],
@@ -33,6 +33,17 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
   }
 }
 
+/**
+  * This class only exists because attempting to require an implicit `PO[AO]` on the [[Expr.+]] method
+  * conflicts with the implicit search for [[Add]]. It results in diverging implicit expansion because
+  * it can't decide whether to use the implicit `PO[O]` to determine the `AO` type or to use the
+  * implicit `Add.Aux[?, ?, O]` to determine the `O` type. This separation ensures that `Add.Aux` is
+  * used first to fix the type of `O`, and only afterwards will the compiler search for an implicit
+  * `OP[O]` to use when converting this back to an [[Expr]].
+  *
+  * @note there is an edge case for the `+` method because of the [[any2stringadd]] implicit conversion.
+  *       This can go away after this is removed in Scala 3 (and possibly this whole class too!)
+  */
 final class CombineHolder[-I, -LI, +LO : OP, -RI, +RO : OP, O, OP[_]](
   val left: Expr[I, LO, OP],
   val right: Expr[I, RO, OP],
@@ -41,6 +52,22 @@ final class CombineHolder[-I, -LI, +LO : OP, -RI, +RO : OP, O, OP[_]](
   evL: LO <:< LI,
   evR: RO <:< RI,
 ) {
+
+  /**
+    * This only exists because + is implicitly defined on `Any` and requires a `String`, which prevents
+    * chaining multiple `+` operators.
+    *
+    * @see [[Expr.+]] for documentation of functionality.
+    */
+  def +[CI <: I, NLI >: O, NRI >: NRO, NRO : OP](
+    that: Expr[CI, NRO, OP],
+  )(implicit
+    opO: OP[O],
+    add: Add[NLI, NRI],
+  ): CombineHolder[CI, NLI, O, NRI, NRO, add.Out, OP] = {
+    // can't eta-expand a dependent object function, the (_, _) is required
+    new CombineHolder(toExpr, that, add.combine(_, _))
+  }
 
   def toExpr(implicit opO: OP[O]): Expr[I, O, OP] = Expr.Combine(left, right, combine)
 }
