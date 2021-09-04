@@ -35,8 +35,8 @@ object InterpretExprResultAsJson {
       result: ExprResult.Combine[PO, I, LO, RO, LI, RI, O, Encoder],
     ): Serialize[I, O] = {
       encodeExprResult(result)
-      // TODO: I need the PO type here to do this... but PO is covariant
-//        .add("left", result.leftResult.visit(Visitor[LO]))
+        .add("left", result.leftResult.visit(Visitor[PO]).asJson)
+        .add("right", result.rightResult.visit(Visitor[PO]).asJson)
     }
 
     override def visitConst[O : Encoder](result: ExprResult.Const[PO, O, Encoder]): Serialize[Any, O] =
