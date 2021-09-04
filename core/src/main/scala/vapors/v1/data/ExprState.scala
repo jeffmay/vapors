@@ -12,13 +12,12 @@ final case class ExprState[+I, +O](
   def input(implicit hasInput: HasInput[I, O]): I = maybeInput.get
   def output(implicit hasOutput: HasOutput[I, O]): O = maybeOutput.get
 
-  def withOutputAs[A](implicit ev: O <:< A): ExprState[I, A] = copy(maybeOutput = maybeOutput.map(ev))
-
   def withFactTable(factTable: FactTable): ExprState[I, O] = copy(factTable = factTable)
   def withOutput[A](output: A): ExprState[I, A] = copy(maybeOutput = Some(output))
   def withInput[A](input: A): ExprState[A, O] = copy(maybeInput = Some(input))
 
-  def swapAndReplaceOutput[A](output: A): ExprState[O, A] = copy(maybeInput = maybeOutput, maybeOutput = Some(output))
+  def swapAndReplaceOutput[A](output: A): ExprState[O, A] =
+    copy(maybeInput = maybeOutput, maybeOutput = Some(output))
 }
 
 object ExprState {
