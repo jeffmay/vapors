@@ -24,8 +24,6 @@ trait Add[-L, -R] {
 object Add extends NumericAddImplicits with JavaTimeAddImplicits {
   type Aux[-L, -R, O] = Add[L, R] { type Out = O }
 
-//  @inline def apply[L, R](implicit add: Add[L, R]): Add[L, R] = add
-
   def apply[L, R, O](fn: (L, R) => O): Add.Aux[L, R, O] = new Add[L, R] {
     override type Out = O
     override def combine(

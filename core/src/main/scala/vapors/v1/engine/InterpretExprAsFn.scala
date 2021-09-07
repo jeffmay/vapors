@@ -9,66 +9,84 @@ import cats.Foldable
 
 object InterpretExprAsFn {
 
-  final object Visitor {
+  @inline def apply[OP[_]]: Applied[OP] = new Applied[OP]
 
-    @inline def apply[OP[_]]: Using[OP] = new Using[OP]
-
-    final class Using[OP[_]](private val dummy: Boolean = true) extends AnyVal {
-      def apply[PO](state: ExprState[Any, PO]): Visitor[PO, OP] = new Visitor(state)
-    }
+  final class Applied[OP[_]](private val dummy: Boolean = true) extends AnyVal {
+    def apply[PO](state: ExprState[Any, PO]): Visitor[PO, OP] = new Visitor(state)
   }
 
   /**
     *
-    * @note In Scala 3, this could just become a context function, which would simplify all the places
-    *       where I am using `implicitly`.
+    * @note In Scala 3, this might be able to just become a visitor over a context function,
+    *       which would simplify all the places where I am using `implicitly`.
     */
-  class Visitor[PO, OP[_]](state: ExprState[Any, PO])
+  class Visitor[PO, OP[_]](val state: ExprState[Any, PO])
     extends Expr.Visitor[Lambda[(`-I`, `+O`) => PO <:< I => ExprResult[PO, I, O, OP]], OP] {
 
     import cats.implicits._
 
-    override def visitCombine[I, LO : OP, RO : OP, LI, RI, O : OP](
-      expr: Expr.Combine[I, LO, RO, LI, RI, O, OP],
+    protected def withState[O](state: ExprState[Any, O]): Visitor[O, OP] = new Visitor(state)
+
+    override def visitAndThen[II, IO : OP, OI, OO : OP](
+      expr: Expr.AndThen[II, IO, OI, OO, OP],
     )(implicit
-      evL: LO <:< LI,
-      evR: RO <:< RI,
-    ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evI =>
+      evAOisBI: IO <:< OI,
+    ): PO <:< II => ExprResult[PO, II, OO, OP] = { implicit evPOisI =>
+      val inputResult = expr.inputExpr.visit(this)(implicitly)
+      val outputResult = expr.outputExpr.visit(withState(inputResult.state))(implicitly)
+      val newState = state.swapAndReplaceOutput(outputResult.state.output)
+      expr.debugging.attach(
+        newState.withBoth(
+          (inputResult.state.input, outputResult.state.input),
+          inputResult.state.output,
+        ),
+      )
+      ExprResult.AndThen(expr, newState, inputResult, outputResult)
+    }
+
+    override def visitCombine[I, LI, LO : OP, RI, RO : OP, O : OP](
+      expr: Expr.Combine[I, LI, LO, RI, RO, O, OP],
+    )(implicit
+      evLOisLI: LO <:< LI,
+      evROisRI: RO <:< RI,
+    ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evPOisI =>
       val left = expr.leftExpr.visit(this)(implicitly)
       val right = expr.rightExpr.visit(this)(implicitly)
       val output = expr.operation(left.state.output, right.state.output)
-      ExprResult.Combine(expr, state.swapAndReplaceOutput(output), left, right)
+      // TODO: Apply justification union here
+      val newState = state.swapAndReplaceOutput(output)
+      expr.debugging.attach(newState.withInput((state.output, left.state.output, right.state.output)))
+      ExprResult.Combine(expr, newState, left, right)
     }
 
     override def visitConst[O : OP](expr: Expr.Const[O, OP]): PO <:< Any => ExprResult[PO, Any, O, OP] = { _ =>
+      expr.debugging.attach(state.withOutput(expr.value))
       ExprResult.Const(expr, state.swapAndReplaceOutput(expr.value))
     }
 
-    override def visitExists[I, C[_] : Foldable, E](
-      expr: Expr.Exists[I, C, E, OP],
+    override def visitExists[C[_] : Foldable, E](
+      expr: Expr.Exists[C, E, OP],
     )(implicit
-      opC: OP[C[E]],
       opO: OP[Boolean],
-    ): PO <:< I => ExprResult[PO, I, Boolean, OP] = { implicit evI =>
-      val inputResult = expr.inputExpr.visit(this)(implicitly)
+    ): PO <:< C[E] => ExprResult[PO, C[E], Boolean, OP] = { implicit evPOisI =>
       // TODO: Apply justification logic here
-      val output = inputResult.state.output.exists { e =>
-        val conditionState = Visitor[OP](state.withOutput(e))
+      val output = evPOisI(state.output).exists { e =>
+        val conditionState = withState(state.withOutput(e))
         expr.conditionExpr.visit(conditionState)(implicitly).state.output
       }
-      ExprResult.Exists(expr, state.swapAndReplaceOutput(output), inputResult)
+      val newState = state.swapAndReplaceOutput(output)
+      expr.debugging.attach(newState)
+      ExprResult.Exists(expr, newState)
     }
 
-    override def visitForAll[I, C[_] : Foldable, E](
-      expr: Expr.ForAll[I, C, E, OP],
+    override def visitForAll[C[_] : Foldable, E](
+      expr: Expr.ForAll[C, E, OP],
     )(implicit
-      opC: OP[C[E]],
       opO: OP[Boolean],
-    ): PO <:< I => ExprResult[PO, I, Boolean, OP] = { implicit evI =>
-      val inputResult = expr.inputExpr.visit(this)(implicitly)
+    ): PO <:< C[E] => ExprResult[PO, C[E], Boolean, OP] = { implicit evPOisI =>
       // TODO: Apply justification logic here
-      val output = inputResult.state.output.forall { e =>
-        val conditionVisitor = Visitor[OP](state.withOutput(e))
+      val output = evPOisI(state.output).forall { e =>
+        val conditionVisitor = withState(state.withOutput(e))
         expr.conditionExpr.visit(conditionVisitor)(implicitly).state.output
       }
       ExprResult.ForAll(expr, state.swapAndReplaceOutput(output))
@@ -77,20 +95,22 @@ object InterpretExprAsFn {
     override def visitIdentity[I, O : OP](
       expr: Expr.Identity[I, O, OP],
     )(implicit
-      ev: I <:< O,
-    ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evI =>
-      val input = evI(state.output)
-      ExprResult.Identity(state.swapAndReplaceOutput(input))
+      evIisO: I <:< O,
+    ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evPOisI =>
+      val input = evPOisI(state.output)
+      expr.debugging.attach(state.withBoth(input, input))
+      ExprResult.Identity(expr, state.swapAndReplaceOutput(input))
     }
 
-    override def visitWithFactValues[T, O : OP](
-      expr: Expr.WithFactValues[T, O, OP],
-    ): PO <:< Any => ExprResult[PO, Any, O, OP] = { implicit evI =>
+    override def visitValuesOfType[T](
+      expr: Expr.ValuesOfType[T, OP],
+    )(implicit
+      opTs: OP[Seq[T]],
+    ): PO <:< Any => ExprResult[PO, Any, Seq[T], OP] = { implicit evPOisI =>
       val matchingFactValues = state.factTable.getSortedSeq(expr.factTypeSet).map(_.value)
-      val subState = state.withOutput[Seq[T]](matchingFactValues)
-      val subVisitor = Visitor[OP](subState)
-      val result = expr.outputExpr.visit(subVisitor)(implicitly)
-      ExprResult.WithFactValues(expr, state.swapAndReplaceOutput(result.state.output))
+      val newState = state.swapAndReplaceOutput(matchingFactValues)
+      expr.debugging.attach(newState)
+      ExprResult.ValuesOfType(expr, newState)
     }
   }
 }

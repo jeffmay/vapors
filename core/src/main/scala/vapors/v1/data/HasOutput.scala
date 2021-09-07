@@ -18,7 +18,7 @@ object HasOutput extends HasOutput[Any, Any] {
 
   // Provide multiple ambiguous values so an implicit HasInput[Nothing] cannot be found.
   @implicitAmbiguous(
-    "This ExprState[${I}, Nothing] object has no output (hence the 'Nothing' on the right). This method cannot be called.",
+    "This ExprState[${I}, Nothing] object has no output yet (hence the 'Nothing' on the right). This method cannot be called.",
   )
   implicit def hasOutputAmbiguous1[I]: HasOutput[I, Nothing] = HasOutput
   implicit def hasOutputAmbiguous2[I]: HasOutput[I, Nothing] = HasOutput
