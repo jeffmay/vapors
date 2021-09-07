@@ -20,6 +20,6 @@ object HasInput extends HasInput[Any, Any] {
   @implicitAmbiguous(
     "This ExprState[Nothing, ${O}] object has no input (hence the 'Nothing' on the left). This method cannot be called.",
   )
-  implicit def hasInputAmbiguous1[O]: HasInput[Nothing, O] = HasInput
-  implicit def hasInputAmbiguous2[O]: HasInput[Nothing, O] = HasInput
+  implicit def hasInputNothing1[O]: HasInput[Nothing, O] = HasInput
+  implicit def hasInputNothing2[O]: HasInput[Nothing, O] = HasInput
 }

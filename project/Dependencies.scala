@@ -11,11 +11,13 @@ object Dependencies {
   private final val kindProjectorVersion = "0.13.0"
   private final val munitVersion = "0.7.28"
   private final val munitCatsEffectVersion = "1.0.0"
+  private final val scalacticVersion = "3.2.9"
   private final val scalaCheckVersion = "1.15.4"
   private final val scalaCheckOpsVersion = "2.6.0"
   private final val scalaTestVersion = "3.2.9"
   private final val scalaTestPlusScalaCheckVersion = "3.2.9.0"
   private final val shapelessVersion = "2.3.7"
+  private final val sourcecodeVersion = "0.2.7"
   private final val zioVersion = "1.0.10"
 
   private val alleyCatsCore = "org.typelevel" %% "alleycats-core" % catsVersion
@@ -23,6 +25,7 @@ object Dependencies {
   private val catsEffect = "org.typelevel" %% "cats-effect" % catsEffectVersion
   private val catsFree = "org.typelevel" %% "cats-free" % catsVersion
   private val circeCore = "io.circe" %% "circe-core" % circeVersion
+  private val circeLiteral = "io.circe" %% "circe-literal" % circeVersion
   private val circeGeneric = "io.circe" %% "circe-generic" % circeVersion
   private val circeParser = "io.circe" %% "circe-parser" % circeVersion
   private val izumiReflect = "dev.zio" %% "izumi-reflect" % izumiReflectVersion
@@ -30,10 +33,12 @@ object Dependencies {
   private val munitCatsEffect = "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion
   private val scalaCheck = "org.scalacheck" %% "scalacheck" % scalaCheckVersion
   private val scalaCheckOps = "com.rallyhealth" %% "scalacheck-ops_1-15" % scalaCheckOpsVersion
+  private val scalactic = "org.scalactic" %% "scalactic" % scalacticVersion
   private val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion
   private val scalaTestPlusScalaCheck = "org.scalatestplus" %% "scalacheck-1-15" % scalaTestPlusScalaCheckVersion
   private def scalaReflect(scalacVersion: String): ModuleID = "org.scala-lang" % "scala-reflect" % scalacVersion
   private val shapeless = "com.chuusai" %% "shapeless" % shapelessVersion
+  private val sourcecode = "com.lihaoyi" %% "sourcecode" % sourcecodeVersion
   private val zio = "dev.zio" %% "zio" % zioVersion
 
   final object Plugins {
@@ -56,11 +61,14 @@ object Dependencies {
         circeGeneric,
         circeParser,
         izumiReflect,
+        scalactic,
         scalaReflect(scalaVersion),
         shapeless,
+        sourcecode,
         zio, // used for Has[_] data type for now
       ) ++ Seq(
         // Test-only dependencies
+        circeLiteral,
         munit,
         munitCatsEffect,
         scalaCheck,

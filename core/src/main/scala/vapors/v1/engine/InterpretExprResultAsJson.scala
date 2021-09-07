@@ -7,21 +7,10 @@ import vapors.v1.data.ExprState
 
 import cats.Foldable
 import io.circe.syntax._
-import io.circe.{Encoder, Json, JsonObject}
+import io.circe.{Encoder, JsonObject}
 
 object InterpretExprResultAsJson {
   type Serialize[-I, +O] = JsonObject
-
-  def encodeExprResult[PO, O, OP[_]](
-    result: ExprResult[PO, Nothing, O, OP],
-  )(implicit
-    encodeState: Encoder[ExprState[PO, O]],
-  ): JsonObject = {
-    JsonObject(
-      "expr" -> result.expr.name.asJson,
-      "state" -> result.state.asJson,
-    )
-  }
 
   final object Visitor {
 
@@ -32,24 +21,42 @@ object InterpretExprResultAsJson {
     @inline def apply[PO, O](
       previousState: ExprState[PO, O],
     )(implicit
-      encodeState: Encoder[ExprState[PO, O]],
-    ): Visitor[PO] = new Visitor[PO](Some(previousState.asJson))
+      encodeState: Encoder.AsObject[ExprState[PO, O]],
+    ): Visitor[PO] = new Visitor[PO](Some(previousState.asJsonObject))
   }
 
-  final class Visitor[-PO](prevStateJson: Option[Json]) extends ExprResult.Visitor[PO, Serialize, Encoder] {
+  final class Visitor[-PO](prevStateJson: Option[JsonObject]) extends ExprResult.Visitor[PO, Serialize, Encoder] {
 
-    private[this] implicit def encodeState[O : Encoder]: Encoder[ExprState[PO, O]] = Encoder.AsObject.instance {
-      state =>
+    private[this] implicit def encodeState[O : Encoder]: Encoder.AsObject[ExprState[PO, O]] =
+      Encoder.AsObject.instance { state =>
         prevStateJson
-          .flatMap(_.asObject) // TODO: Use JsonObject in constructor
           .getOrElse(JsonObject.empty)
           .add("output", state.output.asJson)
+      }
+
+    private[this] def encodeExprResult[O, OP[_]](
+      result: ExprResult[PO, Nothing, O, OP],
+    )(implicit
+      encodeState: Encoder.AsObject[ExprState[PO, O]],
+    ): JsonObject = {
+      result.state.asJsonObject.deepMerge(
+        JsonObject(
+          "expr" -> result.expr.name.asJson,
+        ),
+      )
     }
 
-    override def visitCombine[I, LO : Encoder, RO : Encoder, LI, RI, O : Encoder](
-      result: ExprResult.Combine[PO, I, LO, RO, LI, RI, O, Encoder],
+    override def visitAndThen[AI, AO : Encoder, BI, BO : Encoder](
+      result: ExprResult.AndThen[PO, AI, AO, BI, BO, Encoder],
+    )(implicit
+      ev: AO <:< BI,
+    ): Serialize[AI, BO] = encodeExprResult(result)
+
+    override def visitCombine[I, LI, LO : Encoder, RI, RO : Encoder, O : Encoder](
+      result: ExprResult.Combine[PO, I, LI, LO, RI, RO, O, Encoder],
     ): Serialize[I, O] = {
       encodeExprResult(result)
+        .add("operation", result.expr.operationName.asJson)
         .add("left", result.leftResult.visit(this).asJson)
         .add("right", result.rightResult.visit(this).asJson)
     }
@@ -57,19 +64,17 @@ object InterpretExprResultAsJson {
     override def visitConst[O : Encoder](result: ExprResult.Const[PO, O, Encoder]): Serialize[Any, O] =
       encodeExprResult(result)
 
-    override def visitExists[I, C[_] : Foldable, E](
-      result: ExprResult.Exists[PO, I, C, E, Encoder],
+    override def visitExists[C[_] : Foldable, E](
+      result: ExprResult.Exists[PO, C, E, Encoder],
     )(implicit
-      opC: Encoder[C[E]],
       opO: Encoder[Boolean],
-    ): Serialize[I, Boolean] = encodeExprResult(result)
+    ): Serialize[C[E], Boolean] = encodeExprResult(result)
 
-    override def visitForAll[I, C[_] : Foldable, E](
-      result: ExprResult.ForAll[PO, I, C, E, Encoder],
+    override def visitForAll[C[_] : Foldable, E](
+      result: ExprResult.ForAll[PO, C, E, Encoder],
     )(implicit
-      opC: Encoder[C[E]],
       opO: Encoder[Boolean],
-    ): Serialize[I, Boolean] = encodeExprResult(result)
+    ): Serialize[C[E], Boolean] = encodeExprResult(result)
 
     override def visitIdentity[I, O : Encoder](
       result: ExprResult.Identity[PO, I, O, Encoder],
@@ -77,8 +82,10 @@ object InterpretExprResultAsJson {
       ev: I <:< O,
     ): Serialize[I, O] = encodeExprResult(result)
 
-    override def visitWithFactValues[T, O : Encoder](
-      result: ExprResult.WithFactValues[PO, T, O, Encoder],
-    ): Serialize[Any, O] = encodeExprResult(result)
+    override def visitValuesOfType[T](
+      result: ExprResult.ValuesOfType[PO, T, Encoder],
+    )(implicit
+      opTs: Encoder[Seq[T]],
+    ): Serialize[Any, Seq[T]] = encodeExprResult(result)
   }
 }
