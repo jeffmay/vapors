@@ -60,8 +60,9 @@ object InterpretExprAsFn {
     }
 
     override def visitConst[O : OP](expr: Expr.Const[O, OP]): PO <:< Any => ExprResult[PO, Any, O, OP] = { _ =>
-      expr.debugging.attach(state.withOutput(expr.value))
-      ExprResult.Const(expr, state.swapAndReplaceOutput(expr.value))
+      val newState = state.swapAndReplaceOutput(expr.value)
+      expr.debugging.attach(newState)
+      ExprResult.Const(expr, newState)
     }
 
     override def visitExists[C[_] : Foldable, E](
