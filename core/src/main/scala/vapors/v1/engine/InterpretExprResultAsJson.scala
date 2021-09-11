@@ -86,6 +86,8 @@ object InterpretExprResultAsJson {
       result: ExprResult.ValuesOfType[PO, T, Encoder],
     )(implicit
       opTs: Encoder[Seq[T]],
-    ): Serialize[Any, Seq[T]] = encodeExprResult(result)
+    ): Serialize[Any, Seq[T]] =
+      encodeExprResult(result)
+        .add("factTypes", result.expr.factTypeSet.typeList.toList.map(_.name).asJson)
   }
 }
