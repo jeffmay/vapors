@@ -5,20 +5,20 @@ object Dependencies {
   final val Scala_2_13 = "2.13.6"
 
   private final val catsVersion = "2.6.1"
-  private final val catsEffectVersion = "3.2.2"
+  private final val catsEffectVersion = "3.2.7"
   private final val circeVersion = "0.14.1"
   private final val izumiReflectVersion = "1.1.3"
   private final val kindProjectorVersion = "0.13.0"
   private final val munitVersion = "0.7.28"
-  private final val munitCatsEffectVersion = "1.0.0"
+  private final val munitCatsEffectVersion = "1.0.5"
   private final val scalacticVersion = "3.2.9"
   private final val scalaCheckVersion = "1.15.4"
-  private final val scalaCheckOpsVersion = "2.6.0"
+  private final val scalaCheckOpsVersion = "2.7.1"
   private final val scalaTestVersion = "3.2.9"
   private final val scalaTestPlusScalaCheckVersion = "3.2.9.0"
   private final val shapelessVersion = "2.3.7"
   private final val sourcecodeVersion = "0.2.7"
-  private final val zioVersion = "1.0.10"
+  private final val zioVersion = "1.0.11"
 
   private val alleyCatsCore = "org.typelevel" %% "alleycats-core" % catsVersion
   private val catsCore = "org.typelevel" %% "cats-core" % catsVersion
@@ -57,9 +57,6 @@ object Dependencies {
         catsCore,
         catsEffect,
         catsFree,
-        circeCore,
-        circeGeneric,
-        circeParser,
         izumiReflect,
         scalactic,
         scalaReflect(scalaVersion),
@@ -68,13 +65,25 @@ object Dependencies {
         zio, // used for Has[_] data type for now
       ) ++ Seq(
         // Test-only dependencies
-        circeLiteral,
         munit,
         munitCatsEffect,
         scalaCheck,
         scalaCheckOps,
         scalaTest,
         scalaTestPlusScalaCheck,
+      ).map(_ % Test)
+  }
+
+  final object CirceProject {
+
+    def all(scalaVersion: String): Seq[ModuleID] =
+      CoreProject.all(scalaVersion) ++ Seq(
+        circeCore,
+        circeGeneric,
+        circeParser,
+      ) ++ Seq(
+        // Test-only dependencies
+        circeLiteral,
       ).map(_ % Test)
   }
 

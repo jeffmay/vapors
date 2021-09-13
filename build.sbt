@@ -44,6 +44,11 @@ def commonProject(
 
 lazy val core = commonProject("core")
   .settings(
-    resolvers += Resolver.bintrayRepo("rallyhealth", "maven"),
     libraryDependencies ++= Dependencies.CoreProject.all(scalaVersion.value),
+  )
+
+lazy val circe = commonProject("circe")
+  .dependsOn(core % "compile;test->test")
+  .settings(
+    libraryDependencies ++= Dependencies.CirceProject.all(scalaVersion.value),
   )
