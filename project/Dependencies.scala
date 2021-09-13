@@ -74,10 +74,10 @@ object Dependencies {
       ).map(_ % Test)
   }
 
-  final object CirceProject {
+  final object CirceV1Project {
 
     def all(scalaVersion: String): Seq[ModuleID] =
-      CoreProject.all(scalaVersion) ++ Seq(
+      CoreV1Project.all(scalaVersion) ++ Seq(
         circeCore,
         circeGeneric,
         circeParser,
