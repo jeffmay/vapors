@@ -50,7 +50,7 @@ lazy val core = commonProject("core")
 
 lazy val `core-v1` = commonProject("core-v1", "vapors.v1")
   .settings(
-    libraryDependencies ++= Dependencies.CoreProject.all(scalaVersion.value),
+    libraryDependencies ++= Dependencies.CoreV1Project.all(scalaVersion.value),
   )
 
 lazy val `circe-v1` = commonProject("circe-v1", "vapors.v1")

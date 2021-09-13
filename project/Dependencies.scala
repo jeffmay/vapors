@@ -57,9 +57,28 @@ object Dependencies {
         catsCore,
         catsEffect,
         catsFree,
-        izumiReflect,
         scalactic,
         scalaReflect(scalaVersion),
+        shapeless,
+      ) ++ Seq(
+        // Test-only dependencies
+        munit,
+        munitCatsEffect,
+        scalaCheck,
+        scalaCheckOps,
+        scalaTest,
+        scalaTestPlusScalaCheck,
+      ).map(_ % Test)
+  }
+
+  final object CoreV1Project {
+
+    def all(scalaVersion: String): Seq[ModuleID] =
+      Seq(
+        Plugins.kindProjector,
+        catsCore,
+        izumiReflect,
+        scalactic,
         shapeless,
         sourcecode,
         zio, // used for Has[_] data type for now
