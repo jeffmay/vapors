@@ -1,15 +1,12 @@
-package com.rallyhealth
-
-package vapors.v1.engine
-
-import vapors.v1.algebra.ExprResult
-import vapors.v1.data.ExprState
-import vapors.v1.debug.HasSourceCodeInfo
-import vapors.v1.dsl.circe.HasEncoder
+package com.rallyhealth.vapors.v1.engine
 
 import cats.Foldable
+import com.rallyhealth.vapors.v1.algebra.ExprResult
+import com.rallyhealth.vapors.v1.data.ExprState
+import com.rallyhealth.vapors.v1.debug.HasSourceCodeInfo
+import com.rallyhealth.vapors.v1.dsl.circe.HasEncoder
 import io.circe.syntax._
-import io.circe.{Encoder, Json, JsonObject}
+import io.circe.{Encoder, JsonObject}
 
 object InterpretExprResultAsJson {
   type ToJsonObject[-I, +O] = JsonObject
@@ -126,7 +123,7 @@ object InterpretExprResultAsJson {
     extends Visitor[PO, OP](prevStateJson) {
 
     private[this] def sourceInfo[O : OP]: JsonObject = {
-      import vapors.v1.dsl.circe._
+      import com.rallyhealth.vapors.v1.dsl.circe._
       HasSourceCodeInfo.fromContext[OP, O].asJsonObject
     }
 
