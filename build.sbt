@@ -56,5 +56,5 @@ lazy val `core-v1` = commonProject("core-v1", "vapors.v1")
 lazy val `circe-v1` = commonProject("circe-v1", "vapors.v1")
   .dependsOn(`core-v1` % "compile;test->test")
   .settings(
-    libraryDependencies ++= Dependencies.CirceProject.all(scalaVersion.value),
+    libraryDependencies ++= Dependencies.CirceV1Project.all(scalaVersion.value),
   )
