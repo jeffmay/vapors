@@ -7,7 +7,6 @@ import vapors.v1.example.FactTypes
 
 import io.circe.literal._
 import io.circe.syntax._
-
 import munit._
 
 class InterpretExprResultAsJsonSpec extends FunSuite {
