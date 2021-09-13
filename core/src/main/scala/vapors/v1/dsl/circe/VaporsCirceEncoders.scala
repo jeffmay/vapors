@@ -4,23 +4,21 @@ package vapors.v1.dsl.circe
 
 import vapors.v1.algebra.ExprResult
 import vapors.v1.data.ExprState
+import vapors.v1.debug.{HasSourceCodeInfo, SourceCodeInfo}
 import vapors.v1.engine.InterpretExprResultAsJson
 
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
+import sourcecode.{File, Line}
 
-trait VaporsCirceEncoders {
+trait VaporsCirceEncoders extends MidPriorityDebuggingResultEncoders {
 
-  // TODO: Support other OP[_] types that include or extend an Encoder
-  implicit def encodeExprResult[PO, I, O](
-    implicit
-    encodeState: Encoder.AsObject[ExprState[PO, O]],
-  ): Encoder.AsObject[ExprResult[PO, I, O, Encoder]] = Encoder.AsObject.instance { result =>
-    result.visit(InterpretExprResultAsJson.Visitor(result.state))
+  implicit val encodeHasSourceCodeInfo: Encoder.AsObject[HasSourceCodeInfo] = Encoder.AsObject.instance { ctx =>
+    val SourceCodeInfo(File(file), Line(line)) = ctx.debugSource
+    JsonObject(
+      "source" -> s"$file:$line".asJson,
+    )
   }
-
-  implicit def encodeExprResultNoInput[O : Encoder]: Encoder.AsObject[ExprResult[Nothing, Nothing, O, Encoder]] =
-    encodeExprResult[Nothing, Nothing, O]
 
   implicit def encodeExprState[I : Encoder, O : Encoder]: Encoder.AsObject[ExprState[I, O]] =
     Encoder.AsObject.instance { state =>
@@ -46,5 +44,45 @@ trait VaporsCirceEncoders {
         "input" -> state.input.asJson,
       )
     }
+}
 
+/**
+  * If you have a debugging result, we should encode the debugging details before falling back on the simple
+  * result encoders from [[LowPrioritySimpleResultEncoders]].
+  */
+trait MidPriorityDebuggingResultEncoders extends LowPrioritySimpleResultEncoders {
+
+  implicit def encodeDebugExprResultWithDebugInfo[PO, I, O, OP[a] <: HasEncoder[a] with HasSourceCodeInfo](
+    implicit
+    encodeState: Encoder.AsObject[ExprState[PO, O]],
+  ): Encoder.AsObject[ExprResult[PO, I, O, OP]] = Encoder.AsObject.instance { result =>
+    result.visit(InterpretExprResultAsJson.DebugVisitor[OP](result.state))
+  }
+
+  implicit def encodeExprResultNoInputWithDebugInfo[
+    O : OP,
+    OP[a] <: HasEncoder[a] with HasSourceCodeInfo,
+  ]: Encoder.AsObject[ExprResult[Nothing, Nothing, O, OP]] =
+    encodeDebugExprResultWithDebugInfo[Nothing, Nothing, O, OP]
+}
+
+/**
+  * When you don't have a debugging result, we should encode the expression results without them.
+  */
+trait LowPrioritySimpleResultEncoders {
+
+  implicit def encodeExprResult[PO, I, O, OP[a] <: HasEncoder[a]](
+    implicit
+    encodeState: Encoder.AsObject[ExprState[PO, O]],
+  ): Encoder.AsObject[ExprResult[PO, I, O, OP]] = Encoder.AsObject.instance { result =>
+    result.visit(InterpretExprResultAsJson.Visitor[OP](result.state))
+  }
+
+  implicit def encodeExprResultNoInput[
+    O : OP,
+    OP[a] <: HasEncoder[a],
+  ]: Encoder.AsObject[ExprResult[Nothing, Nothing, O, OP]] =
+    encodeExprResult[Nothing, Nothing, O, OP]
+
+  implicit def encodeOutput[O : HasEncoder]: Encoder[O] = HasEncoder[O].encodeOutput
 }
