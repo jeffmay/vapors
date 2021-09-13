@@ -1,11 +1,11 @@
-package com.rallyhealth
+package com.rallyhealth.vapors.v1
 
-package vapors.v1.dsl.circe
+package dsl.circe
 
-import vapors.v1.algebra.ExprResult
-import vapors.v1.data.ExprState
-import vapors.v1.debug.{HasSourceCodeInfo, SourceCodeInfo}
-import vapors.v1.engine.InterpretExprResultAsJson
+import algebra.ExprResult
+import data.ExprState
+import debug.{HasSourceCodeInfo, SourceCodeInfo}
+import engine.InterpretExprResultAsJson
 
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}

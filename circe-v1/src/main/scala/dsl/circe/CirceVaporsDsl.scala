@@ -1,7 +1,7 @@
-package com.rallyhealth
+package com.rallyhealth.vapors.v1
 
-package vapors.v1.dsl.circe
+package dsl.circe
 
-import vapors.v1.dsl.VaporsDsl
+import dsl.VaporsDsl
 
 trait CirceVaporsDsl[OP[a] <: HasEncoder[a]] extends VaporsDsl[OP] with VaporsCirceEncoders

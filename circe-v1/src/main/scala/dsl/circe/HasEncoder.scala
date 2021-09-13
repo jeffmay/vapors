@@ -1,6 +1,6 @@
-package com.rallyhealth
+package com.rallyhealth.vapors.v1
 
-package vapors.v1.dsl.circe
+package dsl.circe
 
 import io.circe.Encoder
 

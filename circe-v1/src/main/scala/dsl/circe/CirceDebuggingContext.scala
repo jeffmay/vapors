@@ -1,8 +1,8 @@
-package com.rallyhealth
+package com.rallyhealth.vapors.v1
 
-package vapors.v1.dsl.circe
+package dsl.circe
 
-import vapors.v1.debug.{HasSourceCodeInfo, SourceCodeInfo}
+import debug.{HasSourceCodeInfo, SourceCodeInfo}
 
 import io.circe.Encoder
 
