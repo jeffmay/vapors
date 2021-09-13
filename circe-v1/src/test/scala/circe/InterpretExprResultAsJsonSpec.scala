@@ -1,9 +1,9 @@
-package com.rallyhealth
+package com.rallyhealth.vapors.v1
 
-package vapors.v1.circe
+package circe
 
-import vapors.v1.data.FactTable
-import vapors.v1.example.FactTypes
+import data.FactTable
+import example.FactTypes
 
 import io.circe.literal._
 import io.circe.syntax._
@@ -11,7 +11,7 @@ import munit._
 
 class InterpretExprResultAsJsonSpec extends FunSuite {
 
-  import vapors.v1.dsl.circe._
+  import dsl.circe._
 
   test("serialize an expression state without input") {
     val expr = const("World")

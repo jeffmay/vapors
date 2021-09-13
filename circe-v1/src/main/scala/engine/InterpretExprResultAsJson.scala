@@ -1,10 +1,13 @@
-package com.rallyhealth.vapors.v1.engine
+package com.rallyhealth.vapors.v1
+
+package engine
+
+import algebra.ExprResult
+import data.ExprState
+import debug.HasSourceCodeInfo
+import dsl.circe.HasEncoder
 
 import cats.Foldable
-import com.rallyhealth.vapors.v1.algebra.ExprResult
-import com.rallyhealth.vapors.v1.data.ExprState
-import com.rallyhealth.vapors.v1.debug.HasSourceCodeInfo
-import com.rallyhealth.vapors.v1.dsl.circe.HasEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
