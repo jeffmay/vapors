@@ -11,6 +11,8 @@ import cats.Foldable
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
+import scala.annotation.nowarn
+
 object InterpretExprResultAsJson {
   type ToJsonObject[-I, +O] = JsonObject
 
@@ -22,7 +24,7 @@ object InterpretExprResultAsJson {
 
     @inline def apply[OP[a] <: HasEncoder[a]]: WithParam[OP] = new WithParam
 
-    final class WithParam[OP[a] <: HasEncoder[a]](private val dummy: Boolean = true) extends AnyVal {
+    final class WithParam[OP[a] <: HasEncoder[a]](@nowarn private val dummy: Boolean = true) extends AnyVal {
 
       def apply[PO, O](
         previousState: ExprState[PO, O],
@@ -117,7 +119,7 @@ object InterpretExprResultAsJson {
 
     @inline def apply[OP[a] <: HasEncoder[a] with HasSourceCodeInfo]: WithParam[OP] = new WithParam
 
-    final class WithParam[OP[a] <: HasEncoder[a] with HasSourceCodeInfo](private val dummy: Boolean = true)
+    final class WithParam[OP[a] <: HasEncoder[a] with HasSourceCodeInfo](@nowarn private val dummy: Boolean = true)
       extends AnyVal {
 
       def apply[PO, O](

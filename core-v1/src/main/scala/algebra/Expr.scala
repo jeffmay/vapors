@@ -7,7 +7,8 @@ import debug.{DebugArgs, Debugging, NoDebugging}
 import math.Add
 
 import cats.Foldable
-import cats.data.NonEmptyList
+
+import scala.annotation.nowarn
 
 /**
   * Required features:
@@ -74,7 +75,7 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
     add: Add[LI, RI],
   ): CombineHolder[CI, LI, O, RI, RO, add.Out, OP] = {
     // can't eta-expand a dependent object function, the (_, _) is required
-    new CombineHolder(this, that, "add", add.combine(_, _))
+    new CombineHolder(this, that, "add", add.combine(_, _): @nowarn)
   }
 
   // TODO: Match on self and convert to string recursively as lazy val

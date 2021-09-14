@@ -103,23 +103,4 @@ object Evidence {
     if (iter.isEmpty) None
     else Some(Evidence(FactSet.from(iter.collect { case fact: Fact => fact })))
   }
-
-  /**
-    * Unions evidence as a standard definition for monoid.
-    *
-    * This is the right behavior to satify [[Monoid]], however if you need to do evidence tracking,
-    * you wlil probably want to be more specific if you need to represent the behavior of merging
-    * evidence from the output of various expressions (or their input).
-    *
-    * @see [[InterpretExprAsResultFn.Output.monoid]]
-    */
-  implicit val monoid: Monoid[Evidence] = {
-    new Monoid[Evidence] {
-      override def empty: Evidence = Evidence.none
-      override def combine(
-        x: Evidence,
-        y: Evidence,
-      ): Evidence = x.union(y)
-    }
-  }
 }

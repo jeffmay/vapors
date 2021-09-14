@@ -7,11 +7,13 @@ import data.ExprState
 
 import cats.Foldable
 
+import scala.annotation.nowarn
+
 object StandardEngine {
 
   @inline def apply[OP[_]]: Applied[OP] = new Applied[OP]
 
-  final class Applied[OP[_]](private val dummy: Boolean = true) extends AnyVal {
+  final class Applied[OP[_]](@nowarn private val dummy: Boolean = true) extends AnyVal {
     def apply[PO](state: ExprState[Any, PO]): Visitor[PO, OP] = new Visitor(state)
   }
 

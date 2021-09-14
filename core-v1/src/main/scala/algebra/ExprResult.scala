@@ -46,7 +46,7 @@ object ExprResult {
   /**
     * Similar to the [[Expr.Visitor]], this trait represents the ability to traverse all of the metadata, inputs,
     * outputs, and local state of every expression node that was computed by the
-    * [[com.rallyhealth.vapors.interpreter.InterpretExprAsResultFn]] visitor.
+    * [[com.rallyhealth.vapors.v1.engine.StandardEngine]] visitor.
     *
     * If you only care about the final result, you probably don't need to use this visitor. However, if you want
     * to serialize, interpret, or debug how the result was achieved, you can inspect this tree for visibility.
