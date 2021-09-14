@@ -7,7 +7,7 @@ import data.ExprState
 
 import cats.Foldable
 
-object InterpretExprAsFn {
+object StandardEngine {
 
   @inline def apply[OP[_]]: Applied[OP] = new Applied[OP]
 

@@ -126,7 +126,7 @@ object InterpretExprResultAsJson {
     extends Visitor[PO, OP](prevStateJson) {
 
     private[this] def sourceInfo[O : OP]: JsonObject = {
-      import com.rallyhealth.vapors.v1.dsl.circe._
+      import dsl.circe.encoders.encodeHasSourceCodeInfo
       HasSourceCodeInfo.fromContext[OP, O].asJsonObject
     }
 
