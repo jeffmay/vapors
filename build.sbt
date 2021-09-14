@@ -1,3 +1,5 @@
+import Dependencies._
+
 name := "vapors-root"
 ThisBuild / organization := "com.rallyhealth"
 ThisBuild / organizationName := "Rally Health"
@@ -36,25 +38,27 @@ def commonProject(
   projectPrefix: String = "",
 ): Project = {
   val packagePrefix = s"com.rallyhealth${if (projectPrefix.isEmpty) "" else s".$projectPrefix"}"
-  Project(dir, file(dir)).settings(
-    name := s"vapors-$dir",
-    idePackagePrefix.withRank(KeyRanks.Invisible) := Some(packagePrefix),
-  )
+  Project(dir, file(dir))
+    .settings(
+      name := s"vapors-$dir",
+      idePackagePrefix.withRank(KeyRanks.Invisible) := Some(packagePrefix),
+      addCompilerPlugin(("org.typelevel" % "kind-projector" % "0.13.0").cross(CrossVersion.full)),
+    )
 }
 
 lazy val core = commonProject("core")
   .dependsOn(`core-v1`)
   .settings(
-    libraryDependencies ++= Dependencies.CoreProject.all(scalaVersion.value),
+    libraryDependencies ++= CoreProject.all(scalaVersion.value),
   )
 
 lazy val `core-v1` = commonProject("core-v1", "vapors.v1")
   .settings(
-    libraryDependencies ++= Dependencies.CoreV1Project.all(scalaVersion.value),
+    libraryDependencies ++= CoreV1Project.all,
   )
 
 lazy val `circe-v1` = commonProject("circe-v1", "vapors.v1")
   .dependsOn(`core-v1` % "compile;test->test")
   .settings(
-    libraryDependencies ++= Dependencies.CirceV1Project.all(scalaVersion.value),
+    libraryDependencies ++= CirceV1Project.all,
   )
