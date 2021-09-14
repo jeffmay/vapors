@@ -11,7 +11,7 @@ import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 import sourcecode.{File, Line}
 
-trait VaporsCirceEncoders extends MidPriorityDebuggingResultEncoders {
+trait CirceVaporsEncoders extends MidPrioritySourceInfoEncoders {
 
   implicit val encodeHasSourceCodeInfo: Encoder.AsObject[HasSourceCodeInfo] = Encoder.AsObject.instance { ctx =>
     val SourceCodeInfo(File(file), Line(line)) = ctx.debugSource
@@ -50,7 +50,7 @@ trait VaporsCirceEncoders extends MidPriorityDebuggingResultEncoders {
   * If you have a debugging result, we should encode the debugging details before falling back on the simple
   * result encoders from [[LowPrioritySimpleResultEncoders]].
   */
-trait MidPriorityDebuggingResultEncoders extends LowPrioritySimpleResultEncoders {
+trait MidPrioritySourceInfoEncoders extends LowPrioritySimpleResultEncoders {
 
   implicit def encodeDebugExprResultWithDebugInfo[PO, I, O, OP[a] <: HasEncoder[a] with HasSourceCodeInfo](
     implicit
@@ -62,8 +62,10 @@ trait MidPriorityDebuggingResultEncoders extends LowPrioritySimpleResultEncoders
   implicit def encodeExprResultNoInputWithDebugInfo[
     O : OP,
     OP[a] <: HasEncoder[a] with HasSourceCodeInfo,
-  ]: Encoder.AsObject[ExprResult[Nothing, Nothing, O, OP]] =
+  ]: Encoder.AsObject[ExprResult[Nothing, Nothing, O, OP]] = {
+    import encoders.encodeExprStateNoInput
     encodeDebugExprResultWithDebugInfo[Nothing, Nothing, O, OP]
+  }
 }
 
 /**
@@ -81,8 +83,10 @@ trait LowPrioritySimpleResultEncoders {
   implicit def encodeExprResultNoInput[
     O : OP,
     OP[a] <: HasEncoder[a],
-  ]: Encoder.AsObject[ExprResult[Nothing, Nothing, O, OP]] =
+  ]: Encoder.AsObject[ExprResult[Nothing, Nothing, O, OP]] = {
+    import encoders.encodeExprStateNoInput
     encodeExprResult[Nothing, Nothing, O, OP]
+  }
 
   implicit def encodeOutput[O : HasEncoder]: Encoder[O] = HasEncoder[O].encodeOutput
 }

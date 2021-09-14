@@ -6,9 +6,9 @@ import io.circe.literal._
 import io.circe.syntax._
 import munit.FunSuite
 
-class InterpretExprResultAsJsonWithDebuggingSpec extends FunSuite {
+class StandardResultAsJsonWithSourceInfoSpec extends FunSuite {
 
-  import dsl.circe.debugging._
+  import dsl.circe.standard.withSourceInfo._
 
   private val thisFileName: String = implicitly[sourcecode.File].value
   private def thisFileAt(line: Int): String = s"$thisFileName:$line"

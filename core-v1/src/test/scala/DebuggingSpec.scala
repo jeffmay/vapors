@@ -32,8 +32,8 @@ class DebuggingSpec extends FunSuite {
       case Some(expectedValue) => assertEquals(debugInput, expectedValue)
       case None => assertEquals(debugInput, ExprState.Nothing)
     }
-    def testExpr(
-      expr: I ~> Any,
+    def testExpr[PO >: I](
+      expr: PO ~> Any,
       factTable: FactTable = FactTable.empty,
     ): Unit = expectInput match {
       case Some(expectedValue) => expr.runWith(expectedValue, factTable)

@@ -9,9 +9,9 @@ import io.circe.literal._
 import io.circe.syntax._
 import munit._
 
-class InterpretExprResultAsJsonSpec extends FunSuite {
+class StandardResultAsJsonSpec extends FunSuite {
 
-  import dsl.circe._
+  import dsl.circe.standard._
 
   test("serialize an expression state without input") {
     val expr = const("World")
