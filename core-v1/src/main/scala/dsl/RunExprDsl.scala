@@ -5,7 +5,7 @@ package dsl
 import algebra.CombineHolder
 import data.{ExprState, FactTable}
 
-trait RunExprDsl[OP[_]] extends CommonDsl[OP] {
+trait RunExprDsl extends CommonDsl {
 
   type Result[+PO, -I, +O]
 

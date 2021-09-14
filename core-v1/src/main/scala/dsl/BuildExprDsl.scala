@@ -7,7 +7,7 @@ import data.FactTypeSet
 
 import cats.Foldable
 
-trait BuildExprDsl[OP[_]] extends CommonDsl[OP] {
+trait BuildExprDsl extends CommonDsl {
 
   final def apply[AI, AO <: BI : OP, BI >: AO, BO : OP](
     inputExpr: AI ~> AO,
@@ -24,9 +24,9 @@ trait BuildExprDsl[OP[_]] extends CommonDsl[OP] {
   implicit final def hk[I, C[_], E](expr: I ~> C[E]): HKExprBuilder[I, C, E, OP] = new HKExprBuilder(expr)
 }
 
-final class HKExprBuilder[I, C[_], E, OP[_]](private val inputExpr: Expr[I, C[E], OP])
-  extends AnyVal
-  with CommonDsl[OP] {
+final class HKExprBuilder[I, C[_], E, P[_]](private val inputExpr: Expr[I, C[E], P]) extends AnyVal with CommonDsl {
+
+  override type OP[a] = P[a]
 
   def exists(
     conditionExpr: E ~> Boolean,

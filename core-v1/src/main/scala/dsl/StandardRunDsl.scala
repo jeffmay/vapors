@@ -6,7 +6,7 @@ import algebra.ExprResult
 import data.ExprState
 import engine.StandardEngine
 
-trait StandardRunDsl[OP[_]] extends RunExprDsl[OP] {
+trait StandardRunDsl extends RunExprDsl {
 
   override final type Result[+PO, -I, +O] = ExprResult[PO, I, O, OP]
 

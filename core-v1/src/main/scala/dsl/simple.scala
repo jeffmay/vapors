@@ -2,7 +2,14 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-object simple extends BuildExprDsl[NoOP] with SimpleRunDsl[NoOP] {
+import debug.HasSourceCodeInfo
 
-  final object withSourceInfo
+object simple extends BuildExprDsl with SimpleRunDsl {
+
+  override type OP[_] = DummyImplicit
+
+  final object withSourceInfo extends BuildExprDsl with SimpleRunDsl {
+
+    override type OP[_] = HasSourceCodeInfo
+  }
 }
