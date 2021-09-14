@@ -4,9 +4,11 @@ package dsl.circe
 
 import dsl.StandardRunDsl
 
-object standard extends CirceBuildExprDsl[HasEncoder] with StandardRunDsl[HasEncoder] {
+object standard extends CirceBuildExprDsl with StandardRunDsl {
 
-  final object withSourceInfo
-    extends CirceBuildExprDsl[CirceDebuggingContext]
-    with StandardRunDsl[CirceDebuggingContext]
+  override type OP[a] = HasEncoder[a]
+
+  final object withSourceInfo extends CirceBuildExprDsl with StandardRunDsl {
+    override type OP[a] = CirceDebuggingContext[a]
+  }
 }

@@ -5,7 +5,8 @@ package dsl
 import data.ExprState
 import engine.SimpleEngine
 
-trait SimpleRunDsl[OP[_]] extends RunExprDsl[OP] {
+trait SimpleRunDsl extends RunExprDsl {
+
   override type Result[+PO, -I, +O] = O
 
   override protected def visitExpr[PO <: I, I, O](

@@ -4,4 +4,7 @@ package dsl.circe
 
 import dsl.BuildExprDsl
 
-trait CirceBuildExprDsl[OP[a] <: HasEncoder[a]] extends BuildExprDsl[OP] with CirceVaporsEncoders
+trait CirceBuildExprDsl extends BuildExprDsl with CirceVaporsEncoders {
+
+  override type OP[a] <: HasEncoder[a]
+}
