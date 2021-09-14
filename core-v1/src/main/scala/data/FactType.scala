@@ -7,7 +7,7 @@ import lens.{NamedLens, ValidDataPathKey}
 import cats.Order
 import izumi.reflect.Tag
 
-import scala.annotation.switch
+import scala.annotation.{nowarn, switch}
 import scala.reflect.ClassTag
 
 /**
@@ -106,7 +106,7 @@ object FactType {
     }
   }
 
-  implicit class ToLens[T](private val ft: FactType[T]) extends AnyVal {
+  implicit class ToLens[T](@nowarn private val ft: FactType[T]) extends AnyVal {
     def lens: NamedLens[TypedFact[T], T] = TypedFact.value[T]
   }
 
