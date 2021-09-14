@@ -8,7 +8,6 @@ object Dependencies {
   private final val catsEffectVersion = "3.2.7"
   private final val circeVersion = "0.14.1"
   private final val izumiReflectVersion = "1.1.3"
-  private final val kindProjectorVersion = "0.13.0"
   private final val munitVersion = "0.7.28"
   private final val munitCatsEffectVersion = "1.0.5"
   private final val scalacticVersion = "3.2.9"
@@ -41,18 +40,10 @@ object Dependencies {
   private val sourcecode = "com.lihaoyi" %% "sourcecode" % sourcecodeVersion
   private val zio = "dev.zio" %% "zio" % zioVersion
 
-  final object Plugins {
-
-    val kindProjector = {
-      compilerPlugin("org.typelevel" %% "kind-projector" % kindProjectorVersion).cross(CrossVersion.full)
-    }
-  }
-
   final object CoreProject {
 
     def all(scalaVersion: String): Seq[ModuleID] =
       Seq(
-        Plugins.kindProjector,
         alleyCatsCore,
         catsCore,
         catsEffect,
@@ -73,9 +64,8 @@ object Dependencies {
 
   final object CoreV1Project {
 
-    def all(scalaVersion: String): Seq[ModuleID] =
+    val all: Seq[ModuleID] =
       Seq(
-        Plugins.kindProjector,
         catsCore,
         izumiReflect,
         scalactic,
@@ -95,8 +85,8 @@ object Dependencies {
 
   final object CirceV1Project {
 
-    def all(scalaVersion: String): Seq[ModuleID] =
-      CoreV1Project.all(scalaVersion) ++ Seq(
+    val all: Seq[ModuleID] =
+      CoreV1Project.all ++ Seq(
         circeCore,
         circeGeneric,
         circeParser,
