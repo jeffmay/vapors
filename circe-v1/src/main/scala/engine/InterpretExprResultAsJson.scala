@@ -55,6 +55,9 @@ object InterpretExprResultAsJson {
       )
     }
 
+    override def visitAnd[I](result: ExprResult.And[PO, I, OP])(implicit opO: OP[Boolean]): ToJsonObject[I, Boolean] =
+      encodeExprResult(result)
+
     override def visitAndThen[II, IO : OP, OI, OO : OP](
       result: ExprResult.AndThen[PO, II, IO, OI, OO, OP],
     )(implicit
@@ -98,6 +101,9 @@ object InterpretExprResultAsJson {
       ev: I <:< O,
     ): ToJsonObject[I, O] = encodeExprResult(result)
 
+    override def visitOr[I](result: ExprResult.Or[PO, I, OP])(implicit opO: OP[Boolean]): ToJsonObject[I, Boolean] =
+      encodeExprResult(result)
+
     override def visitValuesOfType[T](
       result: ExprResult.ValuesOfType[PO, T, OP],
     )(implicit
@@ -129,6 +135,9 @@ object InterpretExprResultAsJson {
       import dsl.circe.encoders.encodeHasSourceCodeInfo
       HasSourceCodeInfo.fromContext[OP, O].asJsonObject
     }
+
+    override def visitAnd[I](result: ExprResult.And[PO, I, OP])(implicit opO: OP[Boolean]): ToJsonObject[I, Boolean] =
+      super.visitAnd(result).deepMerge(sourceInfo[Boolean])
 
     override def visitAndThen[II, IO : OP, OI, OO : OP](
       result: ExprResult.AndThen[PO, II, IO, OI, OO, OP],
@@ -170,6 +179,9 @@ object InterpretExprResultAsJson {
     )(implicit
       ev: I <:< O,
     ): ToJsonObject[I, O] = super.visitIdentity(result).deepMerge(sourceInfo[O])
+
+    override def visitOr[I](result: ExprResult.Or[PO, I, OP])(implicit opO: OP[Boolean]): ToJsonObject[I, Boolean] =
+      super.visitOr(result).deepMerge(sourceInfo[Boolean])
 
     override def visitValuesOfType[T](
       result: ExprResult.ValuesOfType[PO, T, OP],

@@ -21,6 +21,10 @@ object SimpleEngine {
 
     import cats.implicits._
 
+    override def visitAnd[I](expr: Expr.And[I, OP])(implicit opO: OP[Boolean]): I => Boolean = { i =>
+      expr.leftExpr.visit(this)(i) && expr.rightExpr.visit(this)(i)
+    }
+
     override def visitAndThen[II, IO : OP, OI, OO : OP](
       expr: Expr.AndThen[II, IO, OI, OO, OP],
     )(implicit
@@ -66,6 +70,10 @@ object SimpleEngine {
     }
 
     override def visitIdentity[I, O : OP](expr: Expr.Identity[I, O, OP])(implicit evO: I <:< O): I => O = i => i
+
+    override def visitOr[I](expr: Expr.Or[I, OP])(implicit opO: OP[Boolean]): I => Boolean = { i =>
+      expr.leftExpr.visit(this)(i) || expr.rightExpr.visit(this)(i)
+    }
 
     override def visitValuesOfType[T](expr: Expr.ValuesOfType[T, OP])(implicit opTs: OP[Seq[T]]): Any => Seq[T] = { _ =>
       val matchingFacts = factTable.getSortedSeq(expr.factTypeSet)

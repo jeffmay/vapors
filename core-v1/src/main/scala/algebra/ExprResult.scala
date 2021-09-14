@@ -57,6 +57,8 @@ object ExprResult {
     */
   trait Visitor[-PO, ~>[-_, +_], OP[_]] {
 
+    def visitAnd[I](result: And[PO, I, OP])(implicit opO: OP[Boolean]): I ~> Boolean
+
     def visitAndThen[AI, AO : OP, BI, BO : OP](
       result: AndThen[PO, AI, AO, BI, BO, OP],
     )(implicit
@@ -81,7 +83,37 @@ object ExprResult {
 
     def visitIdentity[I, O : OP](result: Identity[PO, I, O, OP])(implicit ev: I <:< O): I ~> O
 
+    def visitOr[I](result: Or[PO, I, OP])(implicit opO: OP[Boolean]): I ~> Boolean
+
     def visitValuesOfType[T](result: ValuesOfType[PO, T, OP])(implicit opTs: OP[Seq[T]]): Any ~> Seq[T]
+  }
+
+  /**
+    * The result of running [[Expr.Or]]
+    */
+  final case class And[+PO, -I, OP[_]](
+    expr: Expr.And[I, OP],
+    state: ExprState[PO, Boolean],
+    leftResult: ExprResult[PO, I, Boolean, OP],
+    rightResult: ExprResult[PO, I, Boolean, OP],
+  )(implicit
+    opO: OP[Boolean],
+  ) extends ExprResult[PO, I, Boolean, OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, Boolean] = v.visitAnd(this)
+  }
+
+  /**
+    * The result of running [[Expr.Or]]
+    */
+  final case class Or[+PO, -I, OP[_]](
+    expr: Expr.Or[I, OP],
+    state: ExprState[PO, Boolean],
+    leftResult: ExprResult[PO, I, Boolean, OP],
+    rightResult: ExprResult[PO, I, Boolean, OP], // TODO: Should I force this to be strict or allow short-circuiting?
+  )(implicit
+    opO: OP[Boolean],
+  ) extends ExprResult[PO, I, Boolean, OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, Boolean] = v.visitOr(this)
   }
 
   /**

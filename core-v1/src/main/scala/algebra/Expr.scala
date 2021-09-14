@@ -7,6 +7,7 @@ import debug.{DebugArgs, Debugging, NoDebugging}
 import math.Add
 
 import cats.Foldable
+import cats.data.NonEmptyList
 
 /**
   * Required features:
@@ -138,6 +139,8 @@ object Expr {
     */
   trait Visitor[~>[-_, +_], OP[_]] {
 
+    def visitAnd[I](expr: And[I, OP])(implicit opO: OP[Boolean]): I ~> Boolean
+
     def visitAndThen[II, IO : OP, OI, OO : OP](expr: AndThen[II, IO, OI, OO, OP])(implicit evBI: IO <:< OI): II ~> OO
 
     def visitCombine[I, LI, LO : OP, RI, RO : OP, O : OP](
@@ -163,7 +166,31 @@ object Expr {
 
     def visitIdentity[I, O : OP](expr: Identity[I, O, OP])(implicit evO: I <:< O): I ~> O
 
+    def visitOr[I](expr: Or[I, OP])(implicit evO: OP[Boolean]): I ~> Boolean
+
     def visitValuesOfType[T](expr: ValuesOfType[T, OP])(implicit opTs: OP[Seq[T]]): Any ~> Seq[T]
+  }
+
+  final case class And[-I, OP[_]](
+    leftExpr: Expr[I, Boolean, OP],
+    rightExpr: Expr[I, Boolean, OP],
+    debugging: Debugging[I, Boolean] = NoDebugging,
+  )(implicit
+    opO: OP[Boolean],
+  ) extends Expr[I, Boolean, OP]("and") {
+    override def withDebugging(debugging: Debugging[Any, Any]): Expr[I, Boolean, OP] = copy(debugging = debugging)
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Boolean] = v.visitAnd(this)
+  }
+
+  final case class Or[-I, OP[_]](
+    leftExpr: Expr[I, Boolean, OP],
+    rightExpr: Expr[I, Boolean, OP],
+    debugging: Debugging[I, Boolean] = NoDebugging,
+  )(implicit
+    opO: OP[Boolean],
+  ) extends Expr[I, Boolean, OP]("or") {
+    override def withDebugging(debugging: Debugging[Any, Any]): Expr[I, Boolean, OP] = copy(debugging = debugging)
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Boolean] = v.visitOr(this)
   }
 
   /**
