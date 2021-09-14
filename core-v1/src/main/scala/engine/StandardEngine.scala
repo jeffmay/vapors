@@ -27,6 +27,20 @@ object StandardEngine {
 
     protected def withState[O](state: ExprState[Any, O]): Visitor[O, OP] = new Visitor(state)
 
+    override def visitAnd[I](
+      expr: Expr.And[I, OP],
+    )(implicit
+      opO: OP[Boolean],
+    ): PO <:< I => ExprResult[PO, I, Boolean, OP] = { implicit evPOisI =>
+      val left = expr.leftExpr.visit(this)(implicitly)
+      val right = expr.rightExpr.visit(this)(implicitly)
+      val output = left.state.output || right.state.output
+      // TODO: Do justification here
+      val newState = state.swapAndReplaceOutput(output)
+      expr.debugging.attach(newState)
+      ExprResult.And(expr, newState, left, right)
+    }
+
     override def visitAndThen[II, IO : OP, OI, OO : OP](
       expr: Expr.AndThen[II, IO, OI, OO, OP],
     )(implicit
@@ -101,6 +115,20 @@ object StandardEngine {
       val input = evPOisI(state.output)
       expr.debugging.attach(state.withBoth(input, input))
       ExprResult.Identity(expr, state.swapAndReplaceOutput(input))
+    }
+
+    override def visitOr[I](
+      expr: Expr.Or[I, OP],
+    )(implicit
+      evO: OP[Boolean],
+    ): PO <:< I => ExprResult[PO, I, Boolean, OP] = { implicit evPOisI =>
+      val left = expr.leftExpr.visit(this)(implicitly)
+      val right = expr.rightExpr.visit(this)(implicitly)
+      val output = left.state.output || right.state.output
+      // TODO: Do justification here
+      val newState = state.swapAndReplaceOutput(output)
+      expr.debugging.attach(newState)
+      ExprResult.Or(expr, newState, left, right)
     }
 
     override def visitValuesOfType[T](
