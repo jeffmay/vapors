@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package algebra
 
-import data.{ExprState, FactTypeSet}
+import data.{ExprState, FactTypeSet, TypedFact}
 import debug.{DebugArgs, Debugging, NoDebugging}
 import math.Add
 
@@ -170,7 +170,7 @@ object Expr {
 
     def visitOr[I](expr: Or[I, OP])(implicit evO: OP[Boolean]): I ~> Boolean
 
-    def visitValuesOfType[T](expr: ValuesOfType[T, OP])(implicit opTs: OP[Seq[T]]): Any ~> Seq[T]
+    def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~> Seq[O]
   }
 
   final case class And[-I, OP[_]](
@@ -344,13 +344,14 @@ object Expr {
     * @param factTypeSet a set of fact types that all share the same type (can be one or more types)
     * @tparam T the type of value for the matching facts
     */
-  final case class ValuesOfType[T, OP[_]](
+  final case class ValuesOfType[T, +O, OP[_]](
     factTypeSet: FactTypeSet[T],
-    debugging: Debugging[Any, Seq[T]] = NoDebugging,
+    transform: TypedFact[T] => O,
+    debugging: Debugging[Any, Seq[Any]] = NoDebugging,
   )(implicit
-    opTs: OP[Seq[T]],
-  ) extends Expr[Any, Seq[T], OP]("valuesOfType") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[Any, Seq[T]] = v.visitValuesOfType(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): ValuesOfType[T, OP] = copy(debugging = debugging)
+    opTs: OP[Seq[O]],
+  ) extends Expr[Any, Seq[O], OP]("valuesOfType") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[Any, Seq[O]] = v.visitValuesOfType(this)
+    override def withDebugging(debugging: Debugging[Any, Any]): ValuesOfType[T, O, OP] = copy(debugging = debugging)
   }
 }

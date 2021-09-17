@@ -7,33 +7,39 @@ import data.FactTypeSet
 
 import cats.Foldable
 
-trait BuildExprDsl extends CommonDsl {
+trait BuildExprDsl {
+  self: DslTypes =>
 
-  final def apply[AI, AO <: BI : OP, BI >: AO, BO : OP](
-    inputExpr: AI ~> AO,
-    outputExpr: BI ~> BO,
-  ): Expr.AndThen[AI, AO, BI, BO, OP] = Expr.AndThen(inputExpr, outputExpr)
+  def apply[II, IO <: OI : OPW, OI >: IO, OO : OPW](
+    inputExpr: W[II] ~> W[IO],
+    outputExpr: W[OI] ~> W[OO],
+  ): Expr.AndThen[W[II], W[IO], W[OI], W[OO], OP]
 
-  final def const[O : OP](value: O): Expr.Const[O, OP] = Expr.Const(value)
+//  def const[O : OPW](value: W[O]): Expr.Const[W[O], OP]
 
-  final def ident[I : OP]: Expr.Identity[I, I, OP] = Expr.Identity[I, I, OP]()
+  def ident[I : OPW]: Expr.Identity[W[I], W[I], OP]
 
-  final def valuesOfType[T](factTypeSet: FactTypeSet[T])(implicit opTs: OP[Seq[T]]): Expr.ValuesOfType[T, OP] =
-    Expr.ValuesOfType(factTypeSet)
+  def valuesOfType[T](factTypeSet: FactTypeSet[T])(implicit opTs: OP[Seq[W[T]]]): Expr.ValuesOfType[T, W[T], OP]
 
-  implicit final def hk[I, C[_], E](expr: I ~> C[E]): HKExprBuilder[I, C, E, OP] = new HKExprBuilder(expr)
+  type SpecificHkExprBuilder[I, C[_], E] <: HkExprBuilder[I, C, E]
+
+  implicit def hk[I, C[_], E](expr: W[I] ~> C[W[E]]): SpecificHkExprBuilder[I, C, E]
+
+  trait HkExprBuilder[I, C[_], E] extends Any {
+
+    protected def inputExpr: W[I] ~> C[W[E]]
+
+    def exists(
+      conditionExpr: W[E] ~> Boolean,
+    )(implicit
+      opCE: OP[C[W[E]]],
+      opO: OP[Boolean],
+      foldC: Foldable[C],
+    ): Expr.AndThen[W[I], C[W[E]], C[W[E]], Boolean, OP]
+  }
 }
 
-final class HKExprBuilder[I, C[_], E, P[_]](private val inputExpr: Expr[I, C[E], P]) extends AnyVal with CommonDsl {
+final class ValueExprBuilder[V, OP[_]](private val value: V) extends AnyVal {
 
-  override type OP[a] = P[a]
-
-  def exists(
-    conditionExpr: E ~> Boolean,
-  )(implicit
-    opCE: OP[C[E]],
-    opO: OP[Boolean],
-    foldC: Foldable[C],
-  ): Expr.AndThen[I, C[E], C[E], Boolean, OP] =
-    Expr.AndThen(inputExpr, Expr.Exists[C, E, OP](conditionExpr))
+  def const(implicit op: OP[V]): Expr[Any, V, OP] = Expr.Const(value)
 }

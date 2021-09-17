@@ -2,7 +2,6 @@ package com.rallyhealth.vapors.v1
 
 package data
 
-import cats.Monoid
 import cats.data.NonEmptySet
 import cats.instances.order._
 
@@ -17,7 +16,9 @@ import scala.collection.immutable.SortedSet
   * TODO: there are some bugs with evidence tracking of collection-level operations and how constants
   *       are handled, so you probably shouldn't rely on this right now.
   */
-final class Evidence private (val factSet: Set[Fact]) extends AnyVal {
+sealed trait Evidence {
+
+  def factSet: SortedSet[Fact]
 
   def isEmpty: Boolean = factSet.isEmpty
   def nonEmpty: Boolean = factSet.nonEmpty
@@ -33,26 +34,20 @@ final class Evidence private (val factSet: Set[Fact]) extends AnyVal {
   /**
     * Union of the two sets of results.
     */
-  def union(that: Evidence): Evidence = this.factSet match {
-    case Evidence.none.factSet | that.factSet => that
-    case _ => Evidence(this.factSet | that.factSet)
-  }
+  def union(that: Evidence): Evidence
 
   @inline def &(that: Evidence): Evidence = combineNonEmpty(that)
 
   /**
     * If either side contains empty evidence then the result contains no evidence.
     */
-  def combineNonEmpty(that: Evidence): Evidence = {
-    if (this.isEmpty || that.isEmpty) Evidence.none
-    else this.union(that)
-  }
+  def combineNonEmpty(that: Evidence): Evidence
 
   def derivedFromSources: Evidence = {
     @tailrec def loop(
       mixed: Iterable[Fact],
-      source: FactSet,
-    ): FactSet = {
+      source: SortedSet[Fact],
+    ): SortedSet[Fact] = {
       if (mixed.isEmpty) source
       else {
         val (remainingEvidence, sourceFacts) = mixed.partitionMap {
@@ -62,45 +57,34 @@ final class Evidence private (val factSet: Set[Fact]) extends AnyVal {
         loop(remainingEvidence.flatten, source ++ sourceFacts)
       }
     }
-    val allSourceFacts = loop(this.factSet, FactSet.empty)
-    new Evidence(allSourceFacts)
+    val allSourceFacts = loop(this.factSet, SortedSet.empty)
+    Evidence(allSourceFacts)
   }
-
-  override def toString: String =
-    if (this.factSet.isEmpty) "Evidence()"
-    else s"Evidence(factSet = Set(${factSet.mkString(", ")}))"
 }
 
 object Evidence {
 
-  def unapply(evidence: Evidence): Some[Set[Fact]] = Some(evidence.factSet)
+  def none: Evidence = NoEvidence
 
-  @inline final def apply(facts: FactOrFactSet*): Evidence = {
-    if (facts.isEmpty) none
-    else new Evidence(FactOrFactSet.flatten(facts))
+  def apply(factSet: FactOrFactSet): Evidence =
+    NonEmptySet.fromSet(SortedSet.from(factSet.toSet)).map(SomeEvidence).getOrElse(NoEvidence)
+
+}
+
+case object NoEvidence extends Evidence {
+  override def factSet: SortedSet[Fact] = SortedSet.empty
+  override def union(that: Evidence): Evidence = that
+  override def combineNonEmpty(that: Evidence): Evidence = that
+}
+
+case class SomeEvidence(facts: NonEmptySet[Fact]) extends Evidence {
+  override def factSet: SortedSet[Fact] = facts.toSortedSet
+  override def union(that: Evidence): SomeEvidence = that match {
+    case NoEvidence => this
+    case SomeEvidence(facts) => SomeEvidence(this.facts ++ facts)
   }
-
-  final val none = new Evidence(Set.empty)
-
-  /**
-    * Convert any given value into [[Evidence]] by inspecting whether it is a fact or valid collection of facts.
-    *
-    * This is used by the library when iterating over a collection of facts, where the facts can be used as their own
-    * evidence in the subexpression.
-    */
-  def fromAny(any: Any): Option[Evidence] = any match {
-    case ev: Evidence => Some(ev)
-    case fact: Fact => Some(Evidence(fact))
-    case map: collection.Map[_, _] => fromAnyIterable(map.valuesIterator)
-    case iter: IterableOnce[_] => fromAnyIterable(iter)
-    case _ => None
-  }
-
-  @inline def fromAnyOrNone(any: Any): Evidence = fromAny(any).getOrElse(none)
-
-  private[this] def fromAnyIterable(anyIter: IterableOnce[_]): Option[Evidence] = {
-    val iter = anyIter.iterator
-    if (iter.isEmpty) None
-    else Some(Evidence(FactSet.from(iter.collect { case fact: Fact => fact })))
+  override def combineNonEmpty(that: Evidence): Evidence = that match {
+    case NoEvidence => NoEvidence
+    case SomeEvidence(facts) => SomeEvidence(this.facts ++ facts)
   }
 }

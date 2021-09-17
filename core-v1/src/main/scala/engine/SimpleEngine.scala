@@ -75,9 +75,13 @@ object SimpleEngine {
       expr.leftExpr.visit(this)(i) || expr.rightExpr.visit(this)(i)
     }
 
-    override def visitValuesOfType[T](expr: Expr.ValuesOfType[T, OP])(implicit opTs: OP[Seq[T]]): Any => Seq[T] = { _ =>
+    override def visitValuesOfType[T, O](
+      expr: Expr.ValuesOfType[T, O, OP],
+    )(implicit
+      opTs: OP[Seq[O]],
+    ): Any => Seq[O] = { _ =>
       val matchingFacts = factTable.getSortedSeq(expr.factTypeSet)
-      matchingFacts.map(_.value)
+      matchingFacts.map(expr.transform)
     }
   }
 }

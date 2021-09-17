@@ -106,11 +106,11 @@ object InterpretExprResultAsJson {
     override def visitOr[I](result: ExprResult.Or[PO, I, OP])(implicit opO: OP[Boolean]): ToJsonObject[I, Boolean] =
       encodeExprResult(result)
 
-    override def visitValuesOfType[T](
-      result: ExprResult.ValuesOfType[PO, T, OP],
+    override def visitValuesOfType[T, O](
+      result: ExprResult.ValuesOfType[PO, T, O, OP],
     )(implicit
-      opTs: OP[Seq[T]],
-    ): ToJsonObject[Any, Seq[T]] =
+      opTs: OP[Seq[O]],
+    ): ToJsonObject[Any, Seq[O]] =
       encodeExprResult(result)
         .add("factTypes", result.expr.factTypeSet.typeList.toList.map(_.name).asJson)
   }
@@ -185,11 +185,11 @@ object InterpretExprResultAsJson {
     override def visitOr[I](result: ExprResult.Or[PO, I, OP])(implicit opO: OP[Boolean]): ToJsonObject[I, Boolean] =
       super.visitOr(result).deepMerge(sourceInfo[Boolean])
 
-    override def visitValuesOfType[T](
-      result: ExprResult.ValuesOfType[PO, T, OP],
+    override def visitValuesOfType[T, O](
+      result: ExprResult.ValuesOfType[PO, T, O, OP],
     )(implicit
-      opTs: OP[Seq[T]],
-    ): ToJsonObject[Any, Seq[T]] = super.visitValuesOfType(result).deepMerge(sourceInfo[Seq[T]])
+      opTs: OP[Seq[O]],
+    ): ToJsonObject[Any, Seq[O]] = super.visitValuesOfType(result).deepMerge(sourceInfo[Seq[O]])
   }
 
 }

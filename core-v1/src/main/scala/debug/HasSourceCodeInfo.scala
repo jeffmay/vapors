@@ -11,6 +11,15 @@ trait HasSourceCodeInfo {
 
 object HasSourceCodeInfo {
 
+  implicit def here(
+    implicit
+    file: File,
+    line: Line,
+  ): HasSourceCodeInfo = new HasSourceCodeInfo {
+    override final val debugSource: SourceCodeInfo = SourceCodeInfo(file, line)
+  }
+
+  // TODO: Why does IntelliJ IDEA highlight this as an error?
   def fromContext[P[_] <: HasSourceCodeInfo, A](implicit op: P[A]): HasSourceCodeInfo = op
 }
 

@@ -7,4 +7,5 @@ import data.FactType
 object FactTypes {
 
   final val Age = FactType[Int]("age")
+  final val Weight = FactType[Int]("weight")
 }

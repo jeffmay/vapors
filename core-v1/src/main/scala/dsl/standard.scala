@@ -4,11 +4,11 @@ package dsl
 
 import debug.HasSourceCodeInfo
 
-object standard extends BuildExprDsl with StandardRunDsl {
+object standard extends BuildIdExprDsl with StandardRunDsl {
 
   override type OP[_] = DummyImplicit
 
-  final object withSourceInfo extends BuildExprDsl with StandardRunDsl {
+  final object withSourceInfo extends BuildIdExprDsl with StandardRunDsl {
 
     override type OP[_] = HasSourceCodeInfo
   }

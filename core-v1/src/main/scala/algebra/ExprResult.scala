@@ -85,7 +85,7 @@ object ExprResult {
 
     def visitOr[I](result: Or[PO, I, OP])(implicit opO: OP[Boolean]): I ~> Boolean
 
-    def visitValuesOfType[T](result: ValuesOfType[PO, T, OP])(implicit opTs: OP[Seq[T]]): Any ~> Seq[T]
+    def visitValuesOfType[T, O](result: ValuesOfType[PO, T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~> Seq[O]
   }
 
   /**
@@ -193,12 +193,12 @@ object ExprResult {
   /**
     * The result of running [[Expr.ValuesOfType]]
     */
-  final case class ValuesOfType[+PO, T, OP[_]](
-    expr: Expr.ValuesOfType[T, OP],
-    state: ExprState[PO, Seq[T]],
+  final case class ValuesOfType[+PO, T, +O, OP[_]](
+    expr: Expr.ValuesOfType[T, O, OP],
+    state: ExprState[PO, Seq[O]],
   )(implicit
-    opTs: OP[Seq[T]],
-  ) extends ExprResult[PO, Any, Seq[T], OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[Any, Seq[T]] = v.visitValuesOfType(this)
+    opTs: OP[Seq[O]],
+  ) extends ExprResult[PO, Any, Seq[O], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[Any, Seq[O]] = v.visitValuesOfType(this)
   }
 }

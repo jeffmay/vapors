@@ -84,4 +84,21 @@ object DebugArgs {
         expr.copy(debugging = debugging)
       }
     }
+
+  implicit def debugValuesOfType[T, O : ClassTag, OP[_]](
+    implicit
+    op: OP[Seq[O]],
+  ): DebugArgs.Aux[Expr.ValuesOfType[T, O, OP], Any, Seq[O], OP] =
+    new DebugArgs[Expr.ValuesOfType[T, O, OP], OP] {
+      override type In = Any
+      override type Out = Seq[O]
+      override def attachHook(
+        expr: Expr.ValuesOfType[T, O, OP],
+        hook: ExprState[Any, Seq[O]] => Unit,
+      ): Expr.ValuesOfType[T, O, OP] = {
+        val debugging = Debugging(hook).ignoreInvalidOutput
+        expr.copy(debugging = debugging)
+      }
+    }
+
 }

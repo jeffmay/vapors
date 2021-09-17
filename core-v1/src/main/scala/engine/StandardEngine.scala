@@ -133,13 +133,14 @@ object StandardEngine {
       ExprResult.Or(expr, newState, left, right)
     }
 
-    override def visitValuesOfType[T](
-      expr: Expr.ValuesOfType[T, OP],
+    override def visitValuesOfType[T, O](
+      expr: Expr.ValuesOfType[T, O, OP],
     )(implicit
-      opTs: OP[Seq[T]],
-    ): PO <:< Any => ExprResult[PO, Any, Seq[T], OP] = { implicit evPOisI =>
-      val matchingFactValues = state.factTable.getSortedSeq(expr.factTypeSet).map(_.value)
-      val newState = state.swapAndReplaceOutput(matchingFactValues)
+      opTs: OP[Seq[O]],
+    ): PO <:< Any => ExprResult[PO, Any, Seq[O], OP] = { implicit evPOisI =>
+      val matchingFacts = state.factTable.getSortedSeq(expr.factTypeSet)
+      val matchingValues = matchingFacts.map(expr.transform)
+      val newState = state.swapAndReplaceOutput(matchingValues)
       expr.debugging.attach(newState)
       ExprResult.ValuesOfType(expr, newState)
     }

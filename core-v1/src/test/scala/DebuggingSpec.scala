@@ -42,17 +42,16 @@ class DebuggingSpec extends FunSuite {
 
     test(s"debug const $withOrWithout input") {
       testExpr {
-        const(1)
-          .debug { state =>
-            validateInput(state.input)
-            assertEquals(state.output, 1)
-          }
+        1.const.debug { state =>
+          validateInput(state.input)
+          assertEquals(state.output, 1)
+        }
       }
     }
 
     test(s"debug combine holder $withOrWithout input") {
       testExpr {
-        (const(1) + const(3) + const(5))
+        (1.const + 3.const + 5.const)
           .debug { state =>
             val (i, a, b) = state.input
             validateInput(i)
@@ -65,7 +64,7 @@ class DebuggingSpec extends FunSuite {
     test(s"debug exists $withOrWithout input") {
       val seq = Seq(false, true)
       testExpr {
-        const(seq)
+        seq.const
           .exists(ident)
           .debug { state =>
             val (i, ce) = state.input
