@@ -15,7 +15,7 @@ class StandardResultAsJsonWithSourceInfoSpec extends FunSuite {
 
   test("serialize an expression result with debugging info") {
     val lineOfExpression = implicitly[sourcecode.Line].value + 1 // the expression is defined on the next line
-    val result = const(1).run()
+    val result = 1.const.run()
     assertEquals(
       result.asJson,
       json"""{
@@ -28,8 +28,8 @@ class StandardResultAsJsonWithSourceInfoSpec extends FunSuite {
 
   test("serialize an expression result with debugging info across multiple lines") {
     val lineOfFirstConst = implicitly[sourcecode.Line].value + 1 // the expression is defined on the next line
-    val result = (const(1) + // firstConst
-      const(2)).run() // secondConst
+    val result = (1.const + // firstConst
+      2.const).run() // secondConst
     val lineOfSecondConst = lineOfFirstConst + 1
     // unfortunately
     assertEquals(
@@ -55,8 +55,8 @@ class StandardResultAsJsonWithSourceInfoSpec extends FunSuite {
 
   test("serialize the expression result of a combine holder when it is defined".fail) {
     val lineOfFirstConst = implicitly[sourcecode.Line].value + 1 // the expression is defined on the next line
-    val expr = const(1) + // firstConst
-      const(2) // secondConst
+    val expr = 1.const + // firstConst
+      2.const // secondConst
     val result = expr.run() // unfortunately, this is where the combine expression param is collected
     // TODO: This could be fixed by using a different DebugCombineHolder that collects
     //       the source information when it is constructed and passes it to the

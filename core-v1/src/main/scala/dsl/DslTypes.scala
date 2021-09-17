@@ -4,9 +4,13 @@ package dsl
 
 import algebra.Expr
 
-trait CommonDsl extends Any {
+trait DslTypes extends Any {
 
-  type OP[_]
+  type OP[O]
+
+  final type OPW[O] = OP[W[O]]
+
+  type W[+V]
 
   final type ~>[-I, +O] = Expr[I, O, OP]
 }

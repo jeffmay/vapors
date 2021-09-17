@@ -14,14 +14,14 @@ class StandardResultAsJsonSpec extends FunSuite {
   import dsl.circe.standard._
 
   test("serialize an expression state without input") {
-    val expr = const("World")
+    val expr = "World".const
     val result = expr.run()
     val output = result.state.output
     assertEquals(result.state.asJson, json"""{"output": $output}""")
   }
 
   test("serialize a state with input") {
-    val expr = const("World")
+    val expr = "World".const
     val input = "Hello"
     val result = expr.runWith(input)
     val output = result.state.output
@@ -29,7 +29,7 @@ class StandardResultAsJsonSpec extends FunSuite {
   }
 
   test("serialize a nested combine result without input") {
-    val expr = const(1) + const(2) + const(3)
+    val expr = 1.const + 2.const + 3.const
     val result = expr.run()
     assertEquals(
       result.asJson,
@@ -59,7 +59,7 @@ class StandardResultAsJsonSpec extends FunSuite {
   }
 
   test("serialize an expression result with input") {
-    val expr = const(1) + const(2) + const(3)
+    val expr = 1.const + 2.const + 3.const
     val input = "Hello"
     val result = expr.runWith(input)
     assertEquals(
