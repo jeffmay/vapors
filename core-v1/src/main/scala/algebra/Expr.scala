@@ -224,29 +224,6 @@ object Expr {
   }
 
   /**
-    * Passes the input to this expression as its output.
-    *
-    * You can think of this like the [[identity]] function.
-    *
-    * @param evIisO proof that the input type is a subtype of the output type
-    *               (they should be the same type, but because of variance, we have to supply the proof at the call
-    *               site that the expected input of the expression this is supplied to is a subtype of the input
-    *               to this expression).
-    *               TODO: Although I tried various times to remove the second type parameter and make this invariant,
-    *                     I couldn't seem to get it to work. Maybe there are still some type tricks I can employ in
-    *                     the DSL layer that can avoid complicating this type?
-    */
-  final case class Identity[-I, +O : OP, OP[_]](
-    debugging: Debugging[I, I] = NoDebugging,
-  )(implicit
-    evIisO: I <:< O,
-  ) extends Expr[I, O, OP]("identity") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitIdentity(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Identity[I, O, OP] =
-      copy[I, O, OP](debugging = debugging)
-  }
-
-  /**
     * Ignores the input and passes the given constant value.
     *
     * You can think of this like the [[scala.Function.const]] function.
@@ -338,6 +315,21 @@ object Expr {
   ) extends Expr[C[E], Boolean, OP]("forall") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[E], Boolean] = v.visitForAll(this)
     override def withDebugging(debugging: Debugging[Any, Any]): ForAll[C, E, OP] = copy(debugging = debugging)
+  }
+
+  /**
+    * Passes the input to this expression as its output.
+    *
+    * You can think of this like the [[identity]] function.
+    */
+  final case class Identity[-I, +O : OP, OP[_]](
+    debugging: Debugging[I, I] = NoDebugging,
+  )(implicit
+    evIisO: I <:< O,
+  ) extends Expr[I, O, OP]("identity") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitIdentity(this)
+    override def withDebugging(debugging: Debugging[Any, Any]): Identity[I, O, OP] =
+      copy[I, O, OP](debugging = debugging)
   }
 
   /**
