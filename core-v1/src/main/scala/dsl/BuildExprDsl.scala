@@ -5,7 +5,7 @@ package dsl
 import algebra.Expr
 import data.FactTypeSet
 
-import cats.Foldable
+import cats.{Foldable, Functor}
 
 trait BuildExprDsl {
   self: DslTypes =>
@@ -35,7 +35,15 @@ trait BuildExprDsl {
       opCE: OP[C[W[A]]],
       opO: OP[Boolean],
       foldC: Foldable[C],
-    ): Expr.AndThen[W[I], C[W[A]], C[W[A]], Boolean, OP]
+    ): Expr[W[I], Boolean, OP]
+
+    def map[B](
+      mapExpr: W[A] ~> W[B],
+    )(implicit
+      opA: OP[C[W[A]]],
+      opB: OP[C[W[B]]],
+      functorC: Functor[C],
+    ): W[I] ~> C[W[B]]
   }
 }
 

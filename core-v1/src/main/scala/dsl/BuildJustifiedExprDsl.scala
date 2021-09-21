@@ -5,7 +5,7 @@ package dsl
 import algebra.Expr
 import data.{FactTypeSet, Justified}
 
-import cats.Foldable
+import cats.{Foldable, Functor}
 
 trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
 
@@ -52,8 +52,16 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
       opCE: OP[C[Justified[A]]],
       opO: OP[Boolean],
       foldC: Foldable[C],
-    ): Expr.AndThen[Justified[I], C[Justified[A]], C[Justified[A]], Boolean, OP] = {
+    ): Justified[I] ~> Boolean =
       Expr.AndThen(inputExpr, Expr.Exists[C, Justified[A], OP](conditionExpr))
-    }
+
+    override def map[B](
+      mapExpr: Justified[A] ~> Justified[B],
+    )(implicit
+      opA: OP[C[Justified[A]]],
+      opB: OP[C[Justified[B]]],
+      functorC: Functor[C],
+    ): Justified[I] ~> C[Justified[B]] =
+      Expr.AndThen(inputExpr, Expr.MapEvery[C, Justified[A], Justified[B], OP](mapExpr))
   }
 }
