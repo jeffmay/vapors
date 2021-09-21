@@ -21,25 +21,25 @@ trait BuildExprDsl {
 
   def valuesOfType[T](factTypeSet: FactTypeSet[T])(implicit opTs: OP[Seq[W[T]]]): Expr.ValuesOfType[T, W[T], OP]
 
-  type SpecificHkExprBuilder[I, C[_], E] <: HkExprBuilder[I, C, E]
+  type SpecificHkExprBuilder[I, C[_], A] <: HkExprBuilder[I, C, A]
 
-  implicit def hk[I, C[_], E](expr: W[I] ~> C[W[E]]): SpecificHkExprBuilder[I, C, E]
+  implicit def hk[I, C[_], A](expr: W[I] ~> C[W[A]]): SpecificHkExprBuilder[I, C, A]
 
-  trait HkExprBuilder[I, C[_], E] extends Any {
+  trait HkExprBuilder[I, C[_], A] extends Any {
 
-    protected def inputExpr: W[I] ~> C[W[E]]
+    protected def inputExpr: W[I] ~> C[W[A]]
 
     def exists(
-      conditionExpr: W[E] ~> Boolean,
+      conditionExpr: W[A] ~> Boolean,
     )(implicit
-      opCE: OP[C[W[E]]],
+      opCE: OP[C[W[A]]],
       opO: OP[Boolean],
       foldC: Foldable[C],
-    ): Expr.AndThen[W[I], C[W[E]], C[W[E]], Boolean, OP]
+    ): Expr.AndThen[W[I], C[W[A]], C[W[A]], Boolean, OP]
   }
 }
 
-final class ValueExprBuilder[V, OP[_]](private val value: V) extends AnyVal {
+final class ValueExprBuilder[A, OP[_]](private val value: A) extends AnyVal {
 
-  def const(implicit op: OP[V]): Expr[Any, V, OP] = Expr.Const(value)
+  def const(implicit op: OP[A]): Expr[Any, A, OP] = Expr.Const(value)
 }

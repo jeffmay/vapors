@@ -81,11 +81,11 @@ object StandardEngine {
       ExprResult.Const(expr, newState)
     }
 
-    override def visitExists[C[_] : Foldable, E](
-      expr: Expr.Exists[C, E, OP],
+    override def visitExists[C[_] : Foldable, A](
+      expr: Expr.Exists[C, A, OP],
     )(implicit
       opO: OP[Boolean],
-    ): PO <:< C[E] => ExprResult[PO, C[E], Boolean, OP] = { implicit evPOisI =>
+    ): PO <:< C[A] => ExprResult[PO, C[A], Boolean, OP] = { implicit evPOisI =>
       // TODO: Apply justification logic here
       val output = evPOisI(state.output).exists { e =>
         val conditionState = withState(state.withOutput(e))
@@ -96,11 +96,11 @@ object StandardEngine {
       ExprResult.Exists(expr, newState)
     }
 
-    override def visitForAll[C[_] : Foldable, E](
-      expr: Expr.ForAll[C, E, OP],
+    override def visitForAll[C[_] : Foldable, A](
+      expr: Expr.ForAll[C, A, OP],
     )(implicit
       opO: OP[Boolean],
-    ): PO <:< C[E] => ExprResult[PO, C[E], Boolean, OP] = { implicit evPOisI =>
+    ): PO <:< C[A] => ExprResult[PO, C[A], Boolean, OP] = { implicit evPOisI =>
       // TODO: Apply justification logic here
       val output = evPOisI(state.output).forall { e =>
         val conditionVisitor = withState(state.withOutput(e))

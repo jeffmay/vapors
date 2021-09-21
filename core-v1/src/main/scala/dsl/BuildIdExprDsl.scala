@@ -25,21 +25,21 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
   ): Expr.ValuesOfType[T, T, OP] =
     Expr.ValuesOfType(factTypeSet, _.value)
 
-  implicit def wrap[V](value: V): ValueExprBuilder[V, OP] = new ValueExprBuilder(value)
+  implicit def wrap[A](value: A): ValueExprBuilder[A, OP] = new ValueExprBuilder(value)
 
-  override implicit final def hk[I, C[_], E](expr: I ~> C[E]): HkIdExprBuilder[I, C, E] = new HkIdExprBuilder(expr)
+  override implicit final def hk[I, C[_], A](expr: I ~> C[A]): HkIdExprBuilder[I, C, A] = new HkIdExprBuilder(expr)
 
-  override final type SpecificHkExprBuilder[I, C[_], E] = HkIdExprBuilder[I, C, E]
+  override final type SpecificHkExprBuilder[I, C[_], A] = HkIdExprBuilder[I, C, A]
 
-  final class HkIdExprBuilder[I, C[_], E](override protected val inputExpr: I ~> C[E]) extends HkExprBuilder[I, C, E] {
+  final class HkIdExprBuilder[I, C[_], A](override protected val inputExpr: I ~> C[A]) extends HkExprBuilder[I, C, A] {
 
     override def exists(
-      conditionExpr: E ~> Boolean,
+      conditionExpr: A ~> Boolean,
     )(implicit
-      opCE: OP[C[E]],
+      opCE: OP[C[A]],
       opO: OP[Boolean],
       foldC: Foldable[C],
-    ): Expr.AndThen[I, C[E], C[E], Boolean, OP] =
-      Expr.AndThen(inputExpr, Expr.Exists[C, E, OP](conditionExpr))
+    ): Expr.AndThen[I, C[A], C[A], Boolean, OP] =
+      Expr.AndThen(inputExpr, Expr.Exists[C, A, OP](conditionExpr))
   }
 }

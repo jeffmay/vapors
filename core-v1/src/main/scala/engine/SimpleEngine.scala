@@ -51,20 +51,20 @@ object SimpleEngine {
       expr.value
     }
 
-    override def visitExists[C[_] : Foldable, E](
-      expr: Expr.Exists[C, E, OP],
+    override def visitExists[C[_] : Foldable, A](
+      expr: Expr.Exists[C, A, OP],
     )(implicit
       opO: OP[Boolean],
-    ): C[E] => Boolean = { ce =>
+    ): C[A] => Boolean = { ce =>
       val matching = expr.conditionExpr.visit(this)
       ce.exists(matching)
     }
 
-    override def visitForAll[C[_] : Foldable, E](
-      expr: Expr.ForAll[C, E, OP],
+    override def visitForAll[C[_] : Foldable, A](
+      expr: Expr.ForAll[C, A, OP],
     )(implicit
       opO: OP[Boolean],
-    ): C[E] => Boolean = { ce =>
+    ): C[A] => Boolean = { ce =>
       val matching = expr.conditionExpr.visit(this)
       ce.forall(matching)
     }
