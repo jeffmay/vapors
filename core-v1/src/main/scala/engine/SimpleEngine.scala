@@ -5,7 +5,7 @@ package engine
 import algebra.Expr
 import data.FactTable
 
-import cats.Foldable
+import cats.{Foldable, Functor}
 
 /**
   * A vapors [[Expr]] interpreter that just builds a simple function without providing any post-processing.
@@ -70,6 +70,15 @@ object SimpleEngine {
     }
 
     override def visitIdentity[I, O : OP](expr: Expr.Identity[I, O, OP])(implicit evO: I <:< O): I => O = i => i
+
+    override def visitMapEvery[C[_] : Functor, A, B](
+      expr: Expr.MapEvery[C, A, B, OP],
+    )(implicit
+      opO: OP[C[B]],
+    ): C[A] => C[B] = { i =>
+      val mapFn = expr.mapExpr.visit(this)
+      i.map(mapFn)
+    }
 
     override def visitOr[I](expr: Expr.Or[I, OP])(implicit opO: OP[Boolean]): I => Boolean = { i =>
       expr.leftExpr.visit(this)(i) || expr.rightExpr.visit(this)(i)
