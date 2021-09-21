@@ -36,8 +36,8 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
     override def exists(
       conditionExpr: A ~> Boolean,
     )(implicit
-      opCE: OP[C[A]],
-      opO: OP[Boolean],
+      opA: OP[C[A]],
+      opB: OP[Boolean],
       foldC: Foldable[C],
     ): I ~> Boolean =
       Expr.AndThen(inputExpr, Expr.Exists[C, A, OP](conditionExpr))

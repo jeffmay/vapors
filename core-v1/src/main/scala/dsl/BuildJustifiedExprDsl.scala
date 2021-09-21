@@ -49,8 +49,8 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
     override def exists(
       conditionExpr: Justified[A] ~> Boolean,
     )(implicit
-      opCE: OP[C[Justified[A]]],
-      opO: OP[Boolean],
+      opA: OP[C[Justified[A]]],
+      opB: OP[Boolean],
       foldC: Foldable[C],
     ): Justified[I] ~> Boolean =
       Expr.AndThen(inputExpr, Expr.Exists[C, Justified[A], OP](conditionExpr))
