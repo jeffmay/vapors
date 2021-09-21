@@ -81,7 +81,7 @@ object ExprResult {
       opO: OP[Boolean],
     ): C[E] ~> Boolean
 
-    def visitIdentity[I, O : OP](result: Identity[PO, I, O, OP])(implicit ev: I <:< O): I ~> O
+    def visitIdentity[I : OP](result: Identity[PO, I, OP]): I ~> I
 
     def visitMapEvery[C[_] : Functor, A, B](result: MapEvery[PO, C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~> C[B]
 
@@ -135,13 +135,11 @@ object ExprResult {
   /**
     * The result of running [[Expr.Identity]]
     */
-  final case class Identity[+PO, -I, +O : OP, OP[_]](
-    expr: Expr.Identity[I, O, OP],
-    state: ExprState[PO, O],
-  )(implicit
-    ev: I <:< O,
-  ) extends ExprResult[PO, I, O, OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitIdentity(this)
+  final case class Identity[+PO, I : OP, OP[_]](
+    expr: Expr.Identity[I, OP],
+    state: ExprState[PO, I],
+  ) extends ExprResult[PO, I, I, OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, I] = v.visitIdentity(this)
   }
 
   /**

@@ -69,7 +69,7 @@ object SimpleEngine {
       ce.forall(matching)
     }
 
-    override def visitIdentity[I, O : OP](expr: Expr.Identity[I, O, OP])(implicit evO: I <:< O): I => O = i => i
+    override def visitIdentity[I : OP](expr: Expr.Identity[I, OP]): I => I = i => i
 
     override def visitMapEvery[C[_] : Functor, A, B](
       expr: Expr.MapEvery[C, A, B, OP],
