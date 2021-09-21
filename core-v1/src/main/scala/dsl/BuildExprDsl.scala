@@ -32,8 +32,8 @@ trait BuildExprDsl {
     def exists(
       conditionExpr: W[A] ~> Boolean,
     )(implicit
-      opCE: OP[C[W[A]]],
-      opO: OP[Boolean],
+      opA: OP[C[W[A]]],
+      opB: OP[Boolean],
       foldC: Foldable[C],
     ): Expr[W[I], Boolean, OP]
 
