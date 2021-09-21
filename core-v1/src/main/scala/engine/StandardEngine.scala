@@ -109,14 +109,11 @@ object StandardEngine {
       ExprResult.ForAll(expr, state.swapAndReplaceOutput(output))
     }
 
-    override def visitIdentity[I, O : OP](
-      expr: Expr.Identity[I, O, OP],
-    )(implicit
-      evIisO: I <:< O,
-    ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evPOisI =>
-      val input = evPOisI(state.output)
-      expr.debugging.attach(state.withBoth(input, input))
-      ExprResult.Identity(expr, state.swapAndReplaceOutput(input))
+    override def visitIdentity[I : OP](expr: Expr.Identity[I, OP]): PO <:< I => ExprResult[PO, I, I, OP] = {
+      implicit evPOisI =>
+        val input = evPOisI(state.output)
+        expr.debugging.attach(state.withBoth(input, input))
+        ExprResult.Identity(expr, state.swapAndReplaceOutput(input))
     }
 
     override def visitMapEvery[C[_] : Functor, A, B](

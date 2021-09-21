@@ -17,7 +17,7 @@ trait BuildExprDsl {
 
 //  def const[O : OPW](value: W[O]): Expr.Const[W[O], OP]
 
-  def ident[I : OPW]: Expr.Identity[W[I], W[I], OP]
+  def ident[I : OPW]: Expr.Identity[W[I], OP]
 
   def valuesOfType[T](factTypeSet: FactTypeSet[T])(implicit opTs: OP[Seq[W[T]]]): Expr.ValuesOfType[T, W[T], OP]
 

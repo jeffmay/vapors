@@ -20,8 +20,8 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
 
 //  override final def const[O : OPW](value: Justified[O]): Expr.Const[Justified[O], OP] = Expr.Const(value)
 
-  override def ident[I : OPW]: Expr.Identity[Justified[I], Justified[I], OP] =
-    Expr.Identity[Justified[I], Justified[I], OP]()
+  override def ident[I : OPW]: Expr.Identity[Justified[I], OP] =
+    Expr.Identity[Justified[I], OP]()
 
   override def valuesOfType[T](
     factTypeSet: FactTypeSet[T],

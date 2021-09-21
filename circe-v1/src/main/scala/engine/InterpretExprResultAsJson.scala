@@ -97,11 +97,8 @@ object InterpretExprResultAsJson {
       opO: OP[Boolean],
     ): ToJsonObject[C[E], Boolean] = encodeExprResult(result)
 
-    override def visitIdentity[I, O : OP](
-      result: ExprResult.Identity[PO, I, O, OP],
-    )(implicit
-      ev: I <:< O,
-    ): ToJsonObject[I, O] = encodeExprResult(result)
+    override def visitIdentity[I : OP](result: ExprResult.Identity[PO, I, OP]): ToJsonObject[I, I] =
+      encodeExprResult(result)
 
     override def visitMapEvery[C[_] : Functor, A, B](
       result: ExprResult.MapEvery[PO, C, A, B, OP],
@@ -183,11 +180,8 @@ object InterpretExprResultAsJson {
       opO: OP[Boolean],
     ): ToJsonObject[C[E], Boolean] = super.visitForAll(result).deepMerge(sourceInfo[Boolean])
 
-    override def visitIdentity[I, O : OP](
-      result: ExprResult.Identity[PO, I, O, OP],
-    )(implicit
-      ev: I <:< O,
-    ): ToJsonObject[I, O] = super.visitIdentity(result).deepMerge(sourceInfo[O])
+    override def visitIdentity[I : OP](result: ExprResult.Identity[PO, I, OP]): ToJsonObject[I, I] =
+      super.visitIdentity(result).deepMerge(sourceInfo[I])
 
     override def visitMapEvery[C[_] : Functor, A, B](
       result: ExprResult.MapEvery[PO, C, A, B, OP],

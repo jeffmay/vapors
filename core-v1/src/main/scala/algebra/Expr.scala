@@ -166,7 +166,7 @@ object Expr {
       opO: OP[Boolean],
     ): C[E] ~> Boolean
 
-    def visitIdentity[I, O : OP](expr: Identity[I, O, OP])(implicit evO: I <:< O): I ~> O
+    def visitIdentity[I : OP](expr: Identity[I, OP]): I ~> I
 
     def visitMapEvery[C[_] : Functor, A, B](expr: MapEvery[C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~> C[B]
 
@@ -322,14 +322,11 @@ object Expr {
     *
     * You can think of this like the [[identity]] function.
     */
-  final case class Identity[-I, +O : OP, OP[_]](
-    debugging: Debugging[I, I] = NoDebugging,
-  )(implicit
-    evIisO: I <:< O,
-  ) extends Expr[I, O, OP]("identity") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitIdentity(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Identity[I, O, OP] =
-      copy[I, O, OP](debugging = debugging)
+  final case class Identity[I : OP, OP[_]](debugging: Debugging[I, I] = NoDebugging)
+    extends Expr[I, I, OP]("identity") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, I] = v.visitIdentity(this)
+    override def withDebugging(debugging: Debugging[Any, Any]): Identity[I, OP] =
+      copy[I, OP](debugging = debugging)
   }
 
   /**

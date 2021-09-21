@@ -16,7 +16,7 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
 
 //  final def const[O : OP](value: O): Expr.Const[O, OP] = Expr.Const(value)
 
-  override final def ident[I : OP]: Expr.Identity[I, I, OP] = Expr.Identity[I, I, OP]()
+  override final def ident[I : OP]: Expr.Identity[I, OP] = Expr.Identity[I, OP]()
 
   override final def valuesOfType[T](
     factTypeSet: FactTypeSet[T],
