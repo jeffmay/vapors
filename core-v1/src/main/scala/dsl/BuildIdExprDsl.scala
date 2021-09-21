@@ -5,7 +5,7 @@ package dsl
 import algebra.Expr
 import data.FactTypeSet
 
-import cats.Foldable
+import cats.{Foldable, Functor}
 
 trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
 
@@ -39,7 +39,16 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
       opCE: OP[C[A]],
       opO: OP[Boolean],
       foldC: Foldable[C],
-    ): Expr.AndThen[I, C[A], C[A], Boolean, OP] =
+    ): I ~> Boolean =
       Expr.AndThen(inputExpr, Expr.Exists[C, A, OP](conditionExpr))
+
+    override def map[B](
+      mapExpr: A ~> B,
+    )(implicit
+      opA: OP[C[A]],
+      opB: OP[C[B]],
+      functorC: Functor[C],
+    ): I ~> C[B] =
+      Expr.AndThen(inputExpr, Expr.MapEvery[C, A, B, OP](mapExpr))
   }
 }

@@ -340,7 +340,6 @@ object Expr {
   final case class MapEvery[C[_] : Functor, A, B, OP[_]](
     mapExpr: Expr[A, B, OP],
     debugging: Debugging[C[A], C[B]] = NoDebugging,
-    results: C[ExprResult[A, A, B, OP]],
   )(implicit
     opO: OP[C[B]],
   ) extends Expr[C[A], C[B], OP]("map") {
