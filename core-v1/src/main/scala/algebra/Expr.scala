@@ -154,17 +154,17 @@ object Expr {
 
     def visitConst[O : OP](expr: Const[O, OP]): Any ~> O
 
-    def visitExists[C[_] : Foldable, E](
-      expr: Exists[C, E, OP],
+    def visitExists[C[_] : Foldable, A](
+      expr: Exists[C, A, OP],
     )(implicit
       opO: OP[Boolean],
-    ): C[E] ~> Boolean
+    ): C[A] ~> Boolean
 
-    def visitForAll[C[_] : Foldable, E](
-      expr: ForAll[C, E, OP],
+    def visitForAll[C[_] : Foldable, A](
+      expr: ForAll[C, A, OP],
     )(implicit
       opO: OP[Boolean],
-    ): C[E] ~> Boolean
+    ): C[A] ~> Boolean
 
     def visitIdentity[I : OP](expr: Identity[I, OP]): I ~> I
 
@@ -284,16 +284,16 @@ object Expr {
     *
     * @param conditionExpr a predicate [[Expr]] that returns either `true` or `false` for every element in the input
     * @tparam C the higher-kinded container type provided as input
-    * @tparam E the type of every element of the input
+    * @tparam A the type of every element of the input
     */
-  final case class Exists[C[_] : Foldable, E, OP[_]](
-    conditionExpr: Expr[E, Boolean, OP],
-    debugging: Debugging[C[E], Boolean] = NoDebugging,
+  final case class Exists[C[_] : Foldable, A, OP[_]](
+    conditionExpr: Expr[A, Boolean, OP],
+    debugging: Debugging[C[A], Boolean] = NoDebugging,
   )(implicit
     opO: OP[Boolean],
-  ) extends Expr[C[E], Boolean, OP]("exists") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[E], Boolean] = v.visitExists(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Exists[C, E, OP] = copy(debugging = debugging)
+  ) extends Expr[C[A], Boolean, OP]("exists") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], Boolean] = v.visitExists(this)
+    override def withDebugging(debugging: Debugging[Any, Any]): Exists[C, A, OP] = copy(debugging = debugging)
   }
 
   /**
@@ -305,16 +305,16 @@ object Expr {
     *
     * @param conditionExpr a predicate [[Expr]] that returns either `true` or `false` for every element in the input
     * @tparam C the higher-kinded container type provided as input
-    * @tparam E the type of every element of the input
+    * @tparam A the type of every element of the input
     */
-  final case class ForAll[C[_] : Foldable, E, OP[_]](
-    conditionExpr: Expr[E, Boolean, OP],
-    debugging: Debugging[C[E], Boolean] = NoDebugging,
+  final case class ForAll[C[_] : Foldable, A, OP[_]](
+    conditionExpr: Expr[A, Boolean, OP],
+    debugging: Debugging[C[A], Boolean] = NoDebugging,
   )(implicit
     opO: OP[Boolean],
-  ) extends Expr[C[E], Boolean, OP]("forall") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[E], Boolean] = v.visitForAll(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): ForAll[C, E, OP] = copy(debugging = debugging)
+  ) extends Expr[C[A], Boolean, OP]("forall") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], Boolean] = v.visitForAll(this)
+    override def withDebugging(debugging: Debugging[Any, Any]): ForAll[C, A, OP] = copy(debugging = debugging)
   }
 
   /**

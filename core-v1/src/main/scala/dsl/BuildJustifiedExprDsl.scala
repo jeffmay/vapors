@@ -30,7 +30,7 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
   ): Expr.ValuesOfType[T, Justified[T], OP] =
     Expr.ValuesOfType[T, Justified[T], OP](factTypeSet, Justified.ByFact(_))
 
-  implicit def wrap[V](value: V): ValueExprBuilder[Justified[V], OP] =
+  implicit def wrap[A](value: A): ValueExprBuilder[Justified[A], OP] =
     new ValueExprBuilder(Justified.byConst(value))
 
   override type SpecificHkExprBuilder[I, C[_], E] = JustifiedHkExprBuilder[I, C, E]
@@ -38,8 +38,8 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
   override implicit def hk[I, C[_], E](expr: Justified[I] ~> C[Justified[E]]): JustifiedHkExprBuilder[I, C, E] =
     new JustifiedHkExprBuilder(expr)
 
-  final class JustifiedHkExprBuilder[I, C[_], E](override protected val inputExpr: Justified[I] ~> C[Justified[E]])
-    extends HkExprBuilder[I, C, E] {
+  final class JustifiedHkExprBuilder[I, C[_], A](override protected val inputExpr: Justified[I] ~> C[Justified[A]])
+    extends HkExprBuilder[I, C, A] {
 
     // TODO: This expr requires a Boolean output, which seems correct, however, it will require mapping the wrapped
     //       output type to a boolean. For the Justified DSL case, we might want to support an automatic conversion
@@ -47,13 +47,13 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
     //       concept instance, but we should only do this if there is a clear benefit in either syntax or meaning
     //       because there is a cost in terms of flexibility and clarity.
     override def exists(
-      conditionExpr: Justified[E] ~> Boolean,
+      conditionExpr: Justified[A] ~> Boolean,
     )(implicit
-      opCE: OP[C[Justified[E]]],
+      opCE: OP[C[Justified[A]]],
       opO: OP[Boolean],
       foldC: Foldable[C],
-    ): Expr.AndThen[Justified[I], C[Justified[E]], C[Justified[E]], Boolean, OP] = {
-      Expr.AndThen(inputExpr, Expr.Exists[C, Justified[E], OP](conditionExpr))
+    ): Expr.AndThen[Justified[I], C[Justified[A]], C[Justified[A]], Boolean, OP] = {
+      Expr.AndThen(inputExpr, Expr.Exists[C, Justified[A], OP](conditionExpr))
     }
   }
 }
