@@ -37,6 +37,14 @@ trait BuildExprDsl {
       foldC: Foldable[C],
     ): Expr[W[I], Boolean, OP]
 
+    def forall(
+      conditionExpr: W[A] ~> Boolean,
+    )(implicit
+      opA: OP[C[W[A]]],
+      opB: OP[Boolean],
+      foldC: Foldable[C],
+    ): Expr[W[I], Boolean, OP]
+
     def map[B](
       mapExpr: W[A] ~> W[B],
     )(implicit

@@ -55,6 +55,20 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
     ): Justified[I] ~> Boolean =
       Expr.AndThen(inputExpr, Expr.Exists[C, Justified[A], OP](conditionExpr))
 
+    // TODO: This expr requires a Boolean output, which seems correct, however, it will require mapping the wrapped
+    //       output type to a boolean. For the Justified DSL case, we might want to support an automatic conversion
+    //       from Justified[Boolean] into a Boolean through some kind of ExtractValue[Justified[Boolean], Boolean]
+    //       concept instance, but we should only do this if there is a clear benefit in either syntax or meaning
+    //       because there is a cost in terms of flexibility and clarity.
+    override def forall(
+      conditionExpr: Justified[A] ~> Boolean,
+    )(implicit
+      opA: OP[C[Justified[A]]],
+      opB: OP[Boolean],
+      foldC: Foldable[C],
+    ): Justified[I] ~> Boolean =
+      Expr.AndThen(inputExpr, Expr.ForAll[C, Justified[A], OP](conditionExpr))
+
     override def map[B](
       mapExpr: Justified[A] ~> Justified[B],
     )(implicit
