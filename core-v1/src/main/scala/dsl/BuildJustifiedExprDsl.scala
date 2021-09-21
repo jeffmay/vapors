@@ -15,11 +15,6 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
   ): Expr.AndThen[Justified[II], Justified[IO], Justified[OI], Justified[OO], OP] =
     Expr.AndThen(inputExpr, outputExpr)
 
-  // TODO: Maybe use a postfix extension method for building constants instead?
-//  final def const[O : OPW](value: O): Expr.Const[Justified[O], OP] = Expr.Const(Justified.byConst(value))
-
-//  override final def const[O : OPW](value: Justified[O]): Expr.Const[Justified[O], OP] = Expr.Const(value)
-
   override def ident[I : OPW]: Expr.Identity[Justified[I], OP] =
     Expr.Identity[Justified[I], OP]()
 

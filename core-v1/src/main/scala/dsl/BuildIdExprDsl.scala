@@ -14,8 +14,6 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
     outputExpr: BI ~> BO,
   ): Expr.AndThen[AI, AO, BI, BO, OP] = Expr.AndThen(inputExpr, outputExpr)
 
-//  final def const[O : OP](value: O): Expr.Const[O, OP] = Expr.Const(value)
-
   override final def ident[I : OP]: Expr.Identity[I, OP] = Expr.Identity[I, OP]()
 
   override final def valuesOfType[T](
