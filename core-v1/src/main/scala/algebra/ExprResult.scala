@@ -4,7 +4,7 @@ package algebra
 
 import data.ExprState
 
-import cats.Foldable
+import cats.{Foldable, Functor}
 
 /**
   * The result of running the associated [[Expr]] of the same name.
@@ -82,6 +82,8 @@ object ExprResult {
     ): C[E] ~> Boolean
 
     def visitIdentity[I, O : OP](result: Identity[PO, I, O, OP])(implicit ev: I <:< O): I ~> O
+
+    def visitMapEvery[C[_] : Functor, A, B](result: MapEvery[PO, C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~> C[B]
 
     def visitOr[I](result: Or[PO, I, OP])(implicit opO: OP[Boolean]): I ~> Boolean
 
@@ -188,6 +190,19 @@ object ExprResult {
     opO: OP[Boolean],
   ) extends ExprResult[PO, C[E], Boolean, OP] {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[C[E], Boolean] = v.visitForAll(this)
+  }
+
+  /**
+    * The result of running [[Expr.MapEvery]]
+    */
+  final case class MapEvery[+PO, C[_] : Functor, A, B, OP[_]](
+    expr: Expr.MapEvery[C, A, B, OP],
+    state: ExprState[PO, C[B]],
+    results: C[ExprResult[A, A, B, OP]],
+  )(implicit
+    opO: OP[C[B]],
+  ) extends ExprResult[PO, C[A], C[B], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[C[A], C[B]] = v.visitMapEvery(this)
   }
 
   /**

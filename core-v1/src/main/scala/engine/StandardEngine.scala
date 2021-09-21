@@ -5,7 +5,7 @@ package engine
 import algebra.{Expr, ExprResult}
 import data.ExprState
 
-import cats.Foldable
+import cats.{Foldable, Functor}
 
 import scala.annotation.nowarn
 
@@ -117,6 +117,21 @@ object StandardEngine {
       val input = evPOisI(state.output)
       expr.debugging.attach(state.withBoth(input, input))
       ExprResult.Identity(expr, state.swapAndReplaceOutput(input))
+    }
+
+    override def visitMapEvery[C[_] : Functor, A, B](
+      expr: Expr.MapEvery[C, A, B, OP],
+    )(implicit
+      opO: OP[C[B]],
+    ): PO <:< C[A] => ExprResult[PO, C[A], C[B], OP] = { implicit evPOisI =>
+      val input = evPOisI(state.output)
+      val results = input.map { e =>
+        expr.mapExpr.visit(withState(state.withOutput(e)))(implicitly)
+      }
+      val combinedOutput = results.map(_.state.output)
+      val newState = state.swapAndReplaceOutput(combinedOutput)
+      expr.debugging.attach(newState)
+      ExprResult.MapEvery(expr, newState, results)
     }
 
     override def visitOr[I](

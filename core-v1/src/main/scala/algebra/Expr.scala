@@ -6,7 +6,7 @@ import data.{ExprState, FactTypeSet, TypedFact}
 import debug.{DebugArgs, Debugging, NoDebugging}
 import math.Add
 
-import cats.Foldable
+import cats.{Foldable, Functor}
 
 import scala.annotation.nowarn
 
@@ -167,6 +167,8 @@ object Expr {
     ): C[E] ~> Boolean
 
     def visitIdentity[I, O : OP](expr: Identity[I, O, OP])(implicit evO: I <:< O): I ~> O
+
+    def visitMapEvery[C[_] : Functor, A, B](expr: MapEvery[C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~> C[B]
 
     def visitOr[I](expr: Or[I, OP])(implicit evO: OP[Boolean]): I ~> Boolean
 
@@ -336,6 +338,25 @@ object Expr {
   ) extends Expr[C[E], Boolean, OP]("forall") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[E], Boolean] = v.visitForAll(this)
     override def withDebugging(debugging: Debugging[Any, Any]): ForAll[C, E, OP] = copy(debugging = debugging)
+  }
+
+  /**
+    * Applies the given [[mapExpr]] to every element of the input collection (or effect) of type [[A]] to produce
+    * an effect of type [[B]].
+    *
+    * @param mapExpr the expression to apply to every element of the given collection (or effect)
+    * @tparam C the higher-kinded container type provided as input
+    * @tparam A the type of every element of the input
+    */
+  final case class MapEvery[C[_] : Functor, A, B, OP[_]](
+    mapExpr: Expr[A, B, OP],
+    debugging: Debugging[C[A], C[B]] = NoDebugging,
+    results: C[ExprResult[A, A, B, OP]],
+  )(implicit
+    opO: OP[C[B]],
+  ) extends Expr[C[A], C[B], OP]("map") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], C[B]] = v.visitMapEvery(this)
+    override def withDebugging(debugging: Debugging[Any, Any]): MapEvery[C, A, B, OP] = copy(debugging = debugging)
   }
 
   /**

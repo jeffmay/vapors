@@ -7,7 +7,7 @@ import data.ExprState
 import debug.HasSourceCodeInfo
 import dsl.circe.HasEncoder
 
-import cats.Foldable
+import cats.{Foldable, Functor}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -103,6 +103,13 @@ object InterpretExprResultAsJson {
       ev: I <:< O,
     ): ToJsonObject[I, O] = encodeExprResult(result)
 
+    override def visitMapEvery[C[_] : Functor, A, B](
+      result: ExprResult.MapEvery[PO, C, A, B, OP],
+    )(implicit
+      opO: OP[C[B]],
+    ): ToJsonObject[C[A], C[B]] =
+      encodeExprResult(result)
+
     override def visitOr[I](result: ExprResult.Or[PO, I, OP])(implicit opO: OP[Boolean]): ToJsonObject[I, Boolean] =
       encodeExprResult(result)
 
@@ -181,6 +188,12 @@ object InterpretExprResultAsJson {
     )(implicit
       ev: I <:< O,
     ): ToJsonObject[I, O] = super.visitIdentity(result).deepMerge(sourceInfo[O])
+
+    override def visitMapEvery[C[_] : Functor, A, B](
+      result: ExprResult.MapEvery[PO, C, A, B, OP],
+    )(implicit
+      opO: OP[C[B]],
+    ): ToJsonObject[C[A], C[B]] = super.visitMapEvery(result).deepMerge(sourceInfo[C[B]])
 
     override def visitOr[I](result: ExprResult.Or[PO, I, OP])(implicit opO: OP[Boolean]): ToJsonObject[I, Boolean] =
       super.visitOr(result).deepMerge(sourceInfo[Boolean])
