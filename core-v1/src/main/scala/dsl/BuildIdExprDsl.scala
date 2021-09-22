@@ -16,6 +16,8 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
 
   override final def ident[I : OP]: Expr.Identity[I, OP] = Expr.Identity[I, OP]()
 
+  override final def not[I](expr: I ~> Boolean)(implicit opB: OP[Boolean]): Expr.Not[I, OP] = Expr.Not(expr)
+
   override final def valuesOfType[T](
     factTypeSet: FactTypeSet[T],
   )(implicit
@@ -23,7 +25,7 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
   ): Expr.ValuesOfType[T, T, OP] =
     Expr.ValuesOfType(factTypeSet, _.value)
 
-  implicit def wrap[A](value: A): ValueExprBuilder[A, OP] = new ValueExprBuilder(value)
+  implicit def wrap[A](value: A): ConstExprBuilder[A, OP] = new ConstExprBuilder(value)
 
   override implicit final def hk[I, C[_], A](expr: I ~> C[A]): HkIdExprBuilder[I, C, A] = new HkIdExprBuilder(expr)
 
@@ -57,5 +59,20 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
       functorC: Functor[C],
     ): I ~> C[B] =
       Expr.AndThen(inputExpr, Expr.MapEvery[C, A, B, OP](mapExpr))
+  }
+
+  override type SpecificValExprBuilder[I, O] = ValIdExprBuilder[I, O]
+
+  override implicit def anyVal[I, O](expr: I ~> O): ValIdExprBuilder[I, O] = new ValIdExprBuilder(expr)
+
+  final class ValIdExprBuilder[I, O](override protected val inputExpr: I ~> O) extends ValExprBuilder[I, O]
+
+  override type SpecificBoolValExprBuilder[I] = BoolValIdExprBuilder[I]
+
+  override implicit def boolVal[I](expr: I ~> Boolean): BoolValIdExprBuilder[I] = new BoolValIdExprBuilder(expr)
+
+  final class BoolValIdExprBuilder[I](override protected val inputExpr: I ~> Boolean) extends BoolValExprBuilder[I] {
+
+//    override def unary_!(implicit opB: OP[Boolean]): Expr.Not[I, OP] = Expr.Not(inputExpr)
   }
 }

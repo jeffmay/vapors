@@ -25,4 +25,13 @@ class JustifiedDslSpec extends FunSuite {
     assertEquals(firstResult.configs, Seq())
     assertEquals(firstResult.value, ageFact.value)
   }
+
+  test("returns all facts in an AND as evidence") {
+    val ageFact = FactTypes.Age(1)
+    val results = valuesOfType(FactTypes.Age).run(FactTable(ageFact))
+    val firstResult = results.head
+    assertEquals(firstResult.evidence, Evidence(ageFact))
+    assertEquals(firstResult.configs, Seq())
+    assertEquals(firstResult.value, ageFact.value)
+  }
 }
