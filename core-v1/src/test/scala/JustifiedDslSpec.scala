@@ -1,8 +1,7 @@
 package com.rallyhealth.vapors.v1
 
-package example
-
-import data.{Evidence, FactTable, Justified, NoEvidence}
+import data.{Evidence, FactTable, NoEvidence}
+import example.FactTypes
 
 import munit._
 
