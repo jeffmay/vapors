@@ -7,7 +7,7 @@ import data.ExprState
 import debug.HasSourceCodeInfo
 import dsl.circe.HasEncoder
 
-import cats.{Foldable, Functor}
+import cats.{Foldable, Functor, Order}
 import com.rallyhealth.vapors.v1.logic.Negation
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -86,6 +86,9 @@ object InterpretExprResultAsJson {
     override def visitConst[O : OP](result: ExprResult.Const[PO, O, OP]): ToJsonObject[Any, O] =
       encodeExprResult(result)
 
+    override def visitCustomFunction[I, O : OP](result: ExprResult.CustomFunction[PO, I, O, OP]): ToJsonObject[I, O] =
+      encodeExprResult(result)
+
     override def visitExists[C[_] : Foldable, E](
       result: ExprResult.Exists[PO, C, E, OP],
     )(implicit
@@ -134,6 +137,12 @@ object InterpretExprResultAsJson {
     ): ToJsonObject[Any, Seq[O]] =
       encodeExprResult(result)
         .add("factTypes", result.expr.factTypeSet.typeList.toList.map(_.name).asJson)
+
+    override def visitWithinWindow[I, O](
+      result: ExprResult.WithinWindow[PO, I, O, OP],
+    )(implicit
+      opO: OP[Boolean],
+    ): ToJsonObject[I, Boolean] = encodeExprResult(result)
   }
 
   final object DebugVisitor {
@@ -185,6 +194,9 @@ object InterpretExprResultAsJson {
     override def visitConst[O : OP](result: ExprResult.Const[PO, O, OP]): ToJsonObject[Any, O] =
       super.visitConst(result).deepMerge(sourceInfo[O])
 
+    override def visitCustomFunction[I, O : OP](result: ExprResult.CustomFunction[PO, I, O, OP]): ToJsonObject[I, O] =
+      super.visitCustomFunction(result).deepMerge(sourceInfo[O])
+
     override def visitExists[C[_] : Foldable, E](
       result: ExprResult.Exists[PO, C, E, OP],
     )(implicit
@@ -230,6 +242,13 @@ object InterpretExprResultAsJson {
     )(implicit
       opTs: OP[Seq[O]],
     ): ToJsonObject[Any, Seq[O]] = super.visitValuesOfType(result).deepMerge(sourceInfo[Seq[O]])
+
+    override def visitWithinWindow[I, O](
+      result: ExprResult.WithinWindow[PO, I, O, OP],
+    )(implicit
+      opO: OP[Boolean],
+    ): ToJsonObject[I, Boolean] =
+      super.visitWithinWindow(result).deepMerge(sourceInfo[Boolean])
   }
 
 }

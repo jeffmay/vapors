@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra.Expr
-import data.FactTable
+import data.{FactTable, Window}
 
 import cats.{Foldable, Functor}
 import com.rallyhealth.vapors.v1.logic.Negation
@@ -51,6 +51,8 @@ object SimpleEngine {
     override def visitConst[O : OP](expr: Expr.Const[O, OP]): Any => O = { _ =>
       expr.value
     }
+
+    override def visitCustomFunction[I, O : OP](expr: Expr.CustomFunction[I, O, OP]): I => O = expr.function
 
     override def visitExists[C[_] : Foldable, A](
       expr: Expr.Exists[C, A, OP],
@@ -114,6 +116,16 @@ object SimpleEngine {
     ): Any => Seq[O] = { _ =>
       val matchingFacts = factTable.getSortedSeq(expr.factTypeSet)
       matchingFacts.map(expr.transform)
+    }
+
+    override def visitWithinWindow[I, O](
+      expr: Expr.WithinWindow[I, O, OP],
+    )(implicit
+      opB: OP[Boolean],
+    ): I => Boolean = { i =>
+      val window = expr.windowExpr.visit(this)(i)
+      val value = expr.valueExpr.visit(this)(i)
+      Window.contains(window, value)
     }
   }
 }

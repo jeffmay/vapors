@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra.{Expr, ExprResult}
-import data.ExprState
+import data.{ExprState, Window}
 
 import cats.{Foldable, Functor}
 import com.rallyhealth.vapors.v1.logic.Negation
@@ -80,6 +80,15 @@ object StandardEngine {
       val newState = state.swapAndReplaceOutput(expr.value)
       expr.debugging.attach(newState)
       ExprResult.Const(expr, newState)
+    }
+
+    override def visitCustomFunction[I, O : OP](
+      expr: Expr.CustomFunction[I, O, OP],
+    ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evPOisI =>
+      val customFunctionOutput = expr.function(state.output)
+      val newState = state.swapAndReplaceOutput(customFunctionOutput)
+      expr.debugging.attach(newState)
+      ExprResult.CustomFunction(expr, newState)
     }
 
     override def visitExists[C[_] : Foldable, A](
@@ -198,6 +207,19 @@ object StandardEngine {
       val newState = state.swapAndReplaceOutput(matchingValues)
       expr.debugging.attach(newState)
       ExprResult.ValuesOfType(expr, newState)
+    }
+
+    override def visitWithinWindow[I, O](
+      expr: Expr.WithinWindow[I, O, OP],
+    )(implicit
+      opB: OP[Boolean],
+    ): PO <:< I => ExprResult[PO, I, Boolean, OP] = { implicit evPOisI =>
+      val valueResult = expr.valueExpr.visit(this)(implicitly)
+      val windowResult = expr.windowExpr.visit(this)(implicitly)
+      val comparisonResult = Window.contains(windowResult.state.output, valueResult.state.output)
+      val newState = state.swapAndReplaceOutput(comparisonResult)
+      expr.debugging.attach(newState)
+      ExprResult.WithinWindow(expr, newState, valueResult, windowResult)
     }
   }
 }

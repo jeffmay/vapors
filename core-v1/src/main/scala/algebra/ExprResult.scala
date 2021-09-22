@@ -2,10 +2,10 @@ package com.rallyhealth.vapors.v1
 
 package algebra
 
-import data.ExprState
+import data.{ExprState, Window}
+import logic.Negation
 
-import cats.{Foldable, Functor}
-import com.rallyhealth.vapors.v1.logic.Negation
+import cats.{Foldable, Functor, Order}
 
 /**
   * The result of running the associated [[Expr]] of the same name.
@@ -70,6 +70,8 @@ object ExprResult {
 
     def visitConst[O : OP](result: Const[PO, O, OP]): Any ~> O
 
+    def visitCustomFunction[I, O : OP](result: CustomFunction[PO, I, O, OP]): I ~> O
+
     def visitExists[C[_] : Foldable, E](
       result: Exists[PO, C, E, OP],
     )(implicit
@@ -102,6 +104,8 @@ object ExprResult {
     def visitOr[I](result: Or[PO, I, OP])(implicit opO: OP[Boolean]): I ~> Boolean
 
     def visitValuesOfType[T, O](result: ValuesOfType[PO, T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~> Seq[O]
+
+    def visitWithinWindow[I, O](result: WithinWindow[PO, I, O, OP])(implicit opO: OP[Boolean]): I ~> Boolean
   }
 
   /**
@@ -176,6 +180,16 @@ object ExprResult {
     rightResult: ExprResult[PO, I, RO, OP],
   ) extends ExprResult[PO, I, O, OP] {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitCombine(this)
+  }
+
+  /**
+    * The result of running [[Expr.CustomFunction]]
+    */
+  final case class CustomFunction[+PO, -I, +O : OP, OP[_]](
+    expr: Expr.CustomFunction[I, O, OP],
+    state: ExprState[PO, O],
+  ) extends ExprResult[PO, I, O, OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitCustomFunction(this)
   }
 
   /**
@@ -262,5 +276,16 @@ object ExprResult {
     opTs: OP[Seq[O]],
   ) extends ExprResult[PO, Any, Seq[O], OP] {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[Any, Seq[O]] = v.visitValuesOfType(this)
+  }
+
+  final case class WithinWindow[+PO, -I, +O, OP[_]](
+    expr: Expr.WithinWindow[I, O, OP],
+    state: ExprState[PO, Boolean],
+    valueResult: ExprResult[PO, I, O, OP],
+    windowResult: ExprResult[PO, I, Window[O], OP],
+  )(implicit
+    opO: OP[Boolean],
+  ) extends ExprResult[PO, I, Boolean, OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, Boolean] = v.visitWithinWindow(this)
   }
 }
