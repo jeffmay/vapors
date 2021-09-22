@@ -2,12 +2,12 @@ package com.rallyhealth.vapors.v1
 
 package algebra
 
-import data.{ExprState, FactTypeSet, TypedFact}
+import data.{ContraWindow, ExprState, FactTypeSet, TypedFact, Window}
 import debug.{DebugArgs, Debugging, NoDebugging}
+import logic.Negation
 import math.Add
 
-import cats.{Foldable, Functor}
-import com.rallyhealth.vapors.v1.logic.Negation
+import cats.{Foldable, Functor, Order}
 
 import scala.annotation.nowarn
 
@@ -87,6 +87,116 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
     new CombineHolder(this, that, "add", add.combine(_, _): @nowarn)
   }
 
+  // TODO: Use some kind of function metadata object instead of a separate name parameter
+  private def compareExpr[CI <: I, RO >: O : Order : OP](
+    name: String,
+    that: Expr[CI, RO, OP],
+  )(
+    using: RO => Window[RO],
+  )(implicit
+    opA: OP[Window[RO]],
+    opB: OP[Boolean],
+  ): Expr.WithinWindow[CI, RO, OP] = {
+    Expr.WithinWindow(
+      this,
+      Expr.AndThen(
+        that,
+        Expr.CustomFunction(name, using),
+      ),
+    )
+  }
+
+  private def compareLiteral[RO >: O : Order](
+    @nowarn name: String, // this is unused but kept for consistency
+    that: RO,
+  )(
+    using: RO => Window[RO],
+  )(implicit
+    opA: OP[Window[RO]],
+    opB: OP[Boolean],
+  ): Expr.WithinWindow[I, RO, OP] =
+    Expr.WithinWindow(this, Expr.Const(using(that)))
+
+  def <[RO >: O : Order](
+    that: RO,
+  )(implicit
+    opA: OP[Window[RO]],
+    opB: OP[Boolean],
+  ): Expr.WithinWindow[I, RO, OP] =
+    compareLiteral("<", that)(Window.lessThan(_))
+
+  def <[CI <: I, RO >: O : Order : OP](
+    that: Expr[CI, RO, OP],
+  )(implicit
+    opA: OP[Window[RO]],
+    opB: OP[Boolean],
+  ): Expr.WithinWindow[CI, RO, OP] =
+    compareExpr("<", that)(Window.lessThan(_))
+
+  def <=[RO >: O : Order](
+    that: RO,
+  )(implicit
+    opA: OP[Window[RO]],
+    opB: OP[Boolean],
+  ): Expr.WithinWindow[I, RO, OP] =
+    compareLiteral("<=", that)(Window.lessThanOrEqual(_))
+
+  def <=[CI <: I, RO >: O : Order : OP](
+    that: Expr[CI, RO, OP],
+  )(implicit
+    opA: OP[Window[RO]],
+    opB: OP[Boolean],
+  ): Expr.WithinWindow[CI, RO, OP] =
+    compareExpr("<=", that)(Window.lessThanOrEqual(_))
+
+  def >[RO >: O : Order](
+    that: RO,
+  )(implicit
+    opA: OP[Window[RO]],
+    opB: OP[Boolean],
+  ): Expr.WithinWindow[I, RO, OP] =
+    compareLiteral(">", that)(Window.greaterThan(_))
+
+  def >[CI <: I, RO >: O : Order : OP](
+    that: Expr[CI, RO, OP],
+  )(implicit
+    opA: OP[Window[RO]],
+    opB: OP[Boolean],
+  ): Expr.WithinWindow[CI, RO, OP] =
+    compareExpr(">", that)(Window.greaterThan(_))
+
+  def >=[RO >: O : Order](
+    that: RO,
+  )(implicit
+    opA: OP[Window[RO]],
+    opB: OP[Boolean],
+  ): Expr.WithinWindow[I, RO, OP] =
+    compareLiteral(">=", that)(Window.greaterThanOrEqual(_))
+
+  def >=[CI <: I, RO >: O : Order : OP](
+    that: Expr[CI, RO, OP],
+  )(implicit
+    opA: OP[Window[RO]],
+    opB: OP[Boolean],
+  ): Expr.WithinWindow[CI, RO, OP] =
+    compareExpr(">=", that)(Window.greaterThanOrEqual(_))
+
+  // TODO: Capture better information about the window
+  def within[CI <: I, RO >: O](
+    windowExpr: Expr[CI, Window[RO], OP],
+  )(implicit
+    opB: OP[Boolean],
+  ): Expr.WithinWindow[CI, RO, OP] =
+    Expr.WithinWindow(this, windowExpr)
+
+  def within[RO >: O](
+    window: Window[RO],
+  )(implicit
+    opA: OP[Window[RO]],
+    opB: OP[Boolean],
+  ): Expr.WithinWindow[I, RO, OP] =
+    Expr.WithinWindow(this, Expr.Const(window))
+
   // TODO: Match on self and convert to string recursively as lazy val
   override def toString: String = name
 }
@@ -162,6 +272,8 @@ object Expr {
 
     def visitConst[O : OP](expr: Const[O, OP]): Any ~> O
 
+    def visitCustomFunction[I, O : OP](expr: CustomFunction[I, O, OP]): I ~> O
+
     def visitExists[C[_] : Foldable, A](
       expr: Exists[C, A, OP],
     )(implicit
@@ -194,6 +306,8 @@ object Expr {
     def visitOr[I](expr: Or[I, OP])(implicit evO: OP[Boolean]): I ~> Boolean
 
     def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~> Seq[O]
+
+    def visitWithinWindow[I, O](expr: WithinWindow[I, O, OP])(implicit opB: OP[Boolean]): I ~> Boolean
   }
 
   final case class And[-I, OP[_]](
@@ -295,6 +409,34 @@ object Expr {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitCombine(this)
     override def withDebugging(debugging: Debugging[Any, Any]): Combine[I, LI, LO, RI, RO, O, OP] =
       copy(debugging = debugging)
+  }
+
+  /**
+    * Defines a custom named operation over the input type to produce some defined output type.
+    *
+    * @note This is an escape hatch for implementing any arbitrary function in native Scala code
+    *       with very little limitation in terms of what is allowed. With that in mind, I recommend
+    *       great caution when using it as you will lose the benefits of introspectability,
+    *       serialization, etc (the things you are using Vapors to provide).
+    *
+    *       With all that said, though, you probably will need this at some point to do some kind
+    *       of transformation that is not supported by the current version of this library. In that
+    *       scenario, you can use this expression to get out of a bind. Just be careful to name the
+    *       operation appropriately and avoid anything that can be done by other expresison nodes.
+    *
+    * TODO: Add infix option and other metadata to a special case class type?
+    * TODO: Provide the full ExprState so that the operation can utilize the FactTable?
+    *
+    * @param functionName the name of the custom function
+    * @param function the anonymous function to perform the custom action
+    */
+  final case class CustomFunction[-I, +O : OP, OP[_]](
+    functionName: String,
+    function: I => O,
+    debugging: Debugging[I, Any] = NoDebugging,
+  ) extends Expr[I, O, OP]("customFunction") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitCustomFunction(this)
+    override def withDebugging(debugging: Debugging[Any, Any]): Expr[I, O, OP] = copy(debugging = debugging)
   }
 
   /**
@@ -421,5 +563,16 @@ object Expr {
   ) extends Expr[Any, Seq[O], OP]("valuesOfType") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[Any, Seq[O]] = v.visitValuesOfType(this)
     override def withDebugging(debugging: Debugging[Any, Any]): ValuesOfType[T, O, OP] = copy(debugging = debugging)
+  }
+
+  final case class WithinWindow[-I, +O, OP[_]](
+    valueExpr: Expr[I, O, OP],
+    windowExpr: Expr[I, Window[O], OP],
+    debugging: Debugging[Any, Boolean] = NoDebugging,
+  )(implicit
+    opO: OP[Boolean],
+  ) extends Expr[I, Boolean, OP]("withinWindow") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Boolean] = v.visitWithinWindow(this)
+    override def withDebugging(debugging: Debugging[Any, Any]): Expr[I, Boolean, OP] = copy(debugging = debugging)
   }
 }
