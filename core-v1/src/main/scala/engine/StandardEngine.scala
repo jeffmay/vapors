@@ -6,6 +6,7 @@ import algebra.{Expr, ExprResult}
 import data.ExprState
 
 import cats.{Foldable, Functor}
+import com.rallyhealth.vapors.v1.logic.Negation
 
 import scala.annotation.nowarn
 
@@ -129,6 +130,48 @@ object StandardEngine {
       val newState = state.swapAndReplaceOutput(combinedOutput)
       expr.debugging.attach(newState)
       ExprResult.MapEvery(expr, newState, results)
+    }
+
+    override def visitNot[I](
+      expr: Expr.Not[I, OP],
+    )(implicit
+      opO: OP[Boolean],
+    ): PO <:< I => ExprResult[PO, I, Boolean, OP] = { implicit evPOisI =>
+      val booleanResult = expr.innerExpr.visit(withState(state))(implicitly)
+      val negatedState = booleanResult.state.mapOutput(!_)
+      expr.debugging.attach(negatedState)
+      ExprResult.Not(expr, negatedState, booleanResult)
+    }
+
+    override def visitNot2[I, O : Negation : OP](expr: Expr.Not2[I, O, OP]): PO <:< I => ExprResult[PO, I, O, OP] = {
+      implicit evPOisI =>
+        val booleanResult = expr.innerExpr.visit(withState(state))(implicitly)
+        val output = booleanResult.state.output
+        val negatedOutput = Negation[O].negation(output)
+        val newState = state.swapAndReplaceOutput(negatedOutput)
+        val debugState = newState.mapInput((_, booleanResult.state.output))
+        expr.debugging.attach(debugState)
+        ExprResult.Not2(expr, newState, booleanResult)
+    }
+
+    override def visitNot3[I](
+      expr: Expr.Not3[I, OP],
+    )(implicit
+      opO: OP[Boolean],
+      evB: I <:< Boolean,
+    ): PO <:< I => ExprResult[PO, I, Boolean, OP] = { implicit evPOisI =>
+      val negated = !evB(state.output)
+      val negatedState = state.swapAndReplaceOutput(negated)
+      expr.debugging.attach(negatedState)
+      ExprResult.Not3(expr, negatedState)
+    }
+
+    override def visitNot4[I : Negation : OP](expr: Expr.Not4[I, OP]): PO <:< I => ExprResult[PO, I, I, OP] = {
+      implicit evPOisI =>
+        val negated = Negation[I].negation(state.output)
+        val negatedState = state.swapAndReplaceOutput(negated)
+        expr.debugging.attach(negatedState)
+        ExprResult.Not4(expr, negatedState)
     }
 
     override def visitOr[I](
