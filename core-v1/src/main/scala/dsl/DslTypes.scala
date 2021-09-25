@@ -12,5 +12,7 @@ trait DslTypes extends Any {
 
   type W[+V]
 
+  final type FOP[F[_], O] = F[OP[O]]
+
   final type ~>[-I, +O] = Expr[I, O, OP]
 }

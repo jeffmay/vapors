@@ -6,6 +6,7 @@ import algebra.Expr
 import data.{FactTypeSet, Justified}
 
 import cats.{Foldable, Functor}
+import com.rallyhealth.vapors.v1.logic.Negation
 
 trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
 
@@ -18,7 +19,11 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
   override def ident[I : OPW]: Expr.Identity[Justified[I], OP] =
     Expr.Identity[Justified[I], OP]()
 
-  override def not[I](expr: Justified[I] ~> Boolean)(implicit opB: OP[Boolean]): Expr.Not[Justified[I], OP] =
+  override def not[I, O : OPW](
+    expr: Justified[I] ~> Justified[O],
+  )(implicit
+    negation: Negation[Justified[O]],
+  ): Expr.Not[Justified[I], Justified[O], OP] =
     Expr.Not(expr)
 
   override def valuesOfType[T](
@@ -75,24 +80,5 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
       functorC: Functor[C],
     ): Justified[I] ~> C[Justified[B]] =
       Expr.AndThen(inputExpr, Expr.MapEvery[C, Justified[A], Justified[B], OP](mapExpr))
-  }
-
-  override type SpecificValExprBuilder[I, O] = JustifiedValExprBuilder[I, O]
-
-  override implicit def anyVal[I, O](expr: Justified[I] ~> Justified[O]): JustifiedValExprBuilder[I, O] =
-    new JustifiedValExprBuilder(expr)
-
-  final class JustifiedValExprBuilder[I, O](override protected val inputExpr: Justified[I] ~> Justified[O])
-    extends ValExprBuilder[I, O]
-
-  override type SpecificBoolValExprBuilder[I] = JustifiedBoolValExprBuilder[I]
-
-  override implicit def boolVal[I](expr: Justified[I] ~> Boolean): JustifiedBoolValExprBuilder[I] =
-    new JustifiedBoolValExprBuilder(expr)
-
-  final class JustifiedBoolValExprBuilder[I](override protected val inputExpr: Justified[I] ~> Boolean)
-    extends BoolValExprBuilder[I] {
-
-//    override def unary_!(implicit opB: OP[Boolean]): Expr.Not[Justified[I], OP] = Expr.Not(inputExpr)
   }
 }

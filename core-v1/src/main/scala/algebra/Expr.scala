@@ -197,6 +197,13 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
   ): Expr.WithinWindow[I, RO, OP] =
     Expr.WithinWindow(this, Expr.Const(window))
 
+  def unary_![RO >: O](
+    implicit
+    negation: Negation[RO],
+    opA: OP[RO],
+  ): Expr.Not[I, RO, OP] =
+    Expr.Not[I, RO, OP](this)
+
   // TODO: Match on self and convert to string recursively as lazy val
   override def toString: String = name
 }
@@ -290,18 +297,7 @@ object Expr {
 
     def visitMapEvery[C[_] : Functor, A, B](expr: MapEvery[C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~> C[B]
 
-    def visitNot[I](expr: Not[I, OP])(implicit opO: OP[Boolean]): I ~> Boolean
-
-    def visitNot2[I, O : Negation : OP](expr: Not2[I, O, OP]): I ~> O
-
-    def visitNot3[I](
-      expr: Not3[I, OP],
-    )(implicit
-      opO: OP[Boolean],
-      evB: I <:< Boolean,
-    ): I ~> Boolean
-
-    def visitNot4[I : Negation : OP](expr: Not4[I, OP]): I ~> I
+    def visitNot[I, O : Negation : OP](expr: Not[I, O, OP]): I ~> O
 
     def visitOr[I](expr: Or[I, OP])(implicit evO: OP[Boolean]): I ~> Boolean
 
@@ -510,42 +506,12 @@ object Expr {
     override def withDebugging(debugging: Debugging[Any, Any]): MapEvery[C, A, B, OP] = copy(debugging = debugging)
   }
 
-  final case class Not[-I, OP[_]](
-    innerExpr: Expr[I, Boolean, OP],
-    debugging: Debugging[I, Boolean] = NoDebugging,
-  )(implicit
-    opO: OP[Boolean],
-  ) extends Expr[I, Boolean, OP]("not") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Boolean] = v.visitNot(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Not[I, OP] = copy(debugging = debugging)
-  }
-
-  final case class Not2[-I, +O : Negation : OP, OP[_]](
+  final case class Not[-I, +O : Negation : OP, OP[_]](
     innerExpr: Expr[I, O, OP],
     debugging: Debugging[Any, Any] = NoDebugging,
   ) extends Expr[I, O, OP]("not") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitNot2(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Not2[I, O, OP] = copy(debugging = debugging)
-  }
-
-  final case class Not3[-I, OP[_]](
-    debugging: Debugging[I, Boolean] = NoDebugging,
-  )(implicit
-    opO: OP[Boolean],
-    evB: I <:< Boolean, // TODO: Use Negation typeclass?
-  ) extends Expr[I, Boolean, OP]("not") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Boolean] = v.visitNot3(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Not3[I, OP] = copy[I, OP](debugging = debugging)
-  }
-
-  final case class Not4[I, OP[_]](
-    debugging: Debugging[I, I] = NoDebugging,
-  )(implicit
-    opO: OP[I],
-    negation: Negation[I],
-  ) extends Expr[I, I, OP]("not") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, I] = v.visitNot4(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Not4[I, OP] = copy(debugging = debugging)
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitNot(this)
+    override def withDebugging(debugging: Debugging[Any, Any]): Not[I, O, OP] = copy(debugging = debugging)
   }
 
   /**
