@@ -83,26 +83,9 @@ object SimpleEngine {
       i.map(mapFn)
     }
 
-    override def visitNot[I](expr: Expr.Not[I, OP])(implicit opO: OP[Boolean]): I => Boolean = { i =>
-      !expr.innerExpr.visit(this)(i)
-    }
-
-    override def visitNot2[I, O : Negation : OP](expr: Expr.Not2[I, O, OP]): I => O = { i =>
+    override def visitNot[I, O : Negation : OP](expr: Expr.Not[I, O, OP]): I => O = { i =>
       val innerResult = expr.innerExpr.visit(this)(i)
       Negation[O].negation(innerResult)
-    }
-
-    override def visitNot3[I](
-      expr: Expr.Not3[I, OP],
-    )(implicit
-      opO: OP[Boolean],
-      evB: I <:< Boolean,
-    ): I => Boolean = { i =>
-      !i
-    }
-
-    override def visitNot4[I : Negation : OP](expr: Expr.Not4[I, OP]): I => I = { i =>
-      Negation[I].negation(i)
     }
 
     override def visitOr[I](expr: Expr.Or[I, OP])(implicit opO: OP[Boolean]): I => Boolean = { i =>

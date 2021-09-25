@@ -87,14 +87,14 @@ object DebugArgs {
       }
     }
 
-  implicit def debugNot2[I, O : ClassTag : Negation : OP, OP[_]]: DebugArgs.Aux[Expr.Not2[I, O, OP], (I, O), O, OP] =
-    new DebugArgs[Expr.Not2[I, O, OP], OP] {
+  implicit def debugNot2[I, O : ClassTag : Negation : OP, OP[_]]: DebugArgs.Aux[Expr.Not[I, O, OP], (I, O), O, OP] =
+    new DebugArgs[Expr.Not[I, O, OP], OP] {
       override type In = (I, O)
       override type Out = O
       override def attachHook(
-        expr: Expr.Not2[I, O, OP],
+        expr: Expr.Not[I, O, OP],
         hook: ExprState[(I, O), O] => Unit,
-      ): Expr.Not2[I, O, OP] = {
+      ): Expr.Not[I, O, OP] = {
         val debugging = Debugging(hook).ignoreInvalidState
         expr.copy(debugging = debugging)
       }

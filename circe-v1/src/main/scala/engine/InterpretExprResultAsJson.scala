@@ -111,20 +111,7 @@ object InterpretExprResultAsJson {
     ): ToJsonObject[C[A], C[B]] =
       encodeExprResult(result)
 
-    override def visitNot[I](result: ExprResult.Not[PO, I, OP])(implicit opO: OP[Boolean]): ToJsonObject[I, Boolean] =
-      encodeExprResult(result)
-
-    override def visitNot2[I, O : Negation : OP](result: ExprResult.Not2[PO, I, O, OP]): ToJsonObject[I, O] =
-      encodeExprResult(result)
-
-    override def visitNot3[I](
-      result: ExprResult.Not3[PO, I, OP],
-    )(implicit
-      opO: OP[Boolean],
-      evB: I <:< Boolean,
-    ): ToJsonObject[I, Boolean] = encodeExprResult(result)
-
-    override def visitNot4[I : Negation : OP](result: ExprResult.Not4[PO, I, OP]): ToJsonObject[I, I] =
+    override def visitNot[I, O : Negation : OP](result: ExprResult.Not[PO, I, O, OP]): ToJsonObject[I, O] =
       encodeExprResult(result)
 
     override def visitOr[I](result: ExprResult.Or[PO, I, OP])(implicit opO: OP[Boolean]): ToJsonObject[I, Boolean] =
@@ -218,21 +205,8 @@ object InterpretExprResultAsJson {
       opO: OP[C[B]],
     ): ToJsonObject[C[A], C[B]] = super.visitMapEvery(result).deepMerge(sourceInfo[C[B]])
 
-    override def visitNot[I](result: ExprResult.Not[PO, I, OP])(implicit opO: OP[Boolean]): ToJsonObject[I, Boolean] =
-      super.visitNot(result).deepMerge(sourceInfo[Boolean])
-
-    override def visitNot2[I, O : Negation : OP](result: ExprResult.Not2[PO, I, O, OP]): ToJsonObject[I, O] =
-      super.visitNot2(result).deepMerge(sourceInfo[O])
-
-    override def visitNot3[I](
-      result: ExprResult.Not3[PO, I, OP],
-    )(implicit
-      opO: OP[Boolean],
-      evB: I <:< Boolean,
-    ): ToJsonObject[I, Boolean] = super.visitNot3(result).deepMerge(sourceInfo[Boolean])
-
-    override def visitNot4[I : Negation : OP](result: ExprResult.Not4[PO, I, OP]): ToJsonObject[I, I] =
-      super.visitNot4(result).deepMerge(sourceInfo[I])
+    override def visitNot[I, O : Negation : OP](result: ExprResult.Not[PO, I, O, OP]): ToJsonObject[I, O] =
+      super.visitNot(result).deepMerge(sourceInfo[O])
 
     override def visitOr[I](result: ExprResult.Or[PO, I, OP])(implicit opO: OP[Boolean]): ToJsonObject[I, Boolean] =
       super.visitOr(result).deepMerge(sourceInfo[Boolean])

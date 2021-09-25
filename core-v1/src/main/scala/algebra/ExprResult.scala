@@ -88,18 +88,7 @@ object ExprResult {
 
     def visitMapEvery[C[_] : Functor, A, B](result: MapEvery[PO, C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~> C[B]
 
-    def visitNot[I](result: Not[PO, I, OP])(implicit opO: OP[Boolean]): I ~> Boolean
-
-    def visitNot2[I, O : Negation : OP](result: Not2[PO, I, O, OP]): I ~> O
-
-    def visitNot3[I](
-      result: Not3[PO, I, OP],
-    )(implicit
-      opO: OP[Boolean],
-      evB: I <:< Boolean,
-    ): I ~> Boolean
-
-    def visitNot4[I : Negation : OP](result: Not4[PO, I, OP]): I ~> I
+    def visitNot[I, O : Negation : OP](result: Not[PO, I, O, OP]): I ~> O
 
     def visitOr[I](result: Or[PO, I, OP])(implicit opO: OP[Boolean]): I ~> Boolean
 
@@ -231,39 +220,12 @@ object ExprResult {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[C[A], C[B]] = v.visitMapEvery(this)
   }
 
-  final case class Not[+PO, -I, OP[_]](
-    expr: Expr.Not[I, OP],
-    state: ExprState[PO, Boolean],
-    inputResult: ExprResult[PO, I, Boolean, OP],
-  )(implicit
-    opO: OP[Boolean],
-  ) extends ExprResult[PO, I, Boolean, OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, Boolean] = v.visitNot(this)
-  }
-
-  final case class Not2[+PO, -I, +O : Negation : OP, OP[_]](
-    expr: Expr.Not2[I, O, OP],
+  final case class Not[+PO, -I, +O : Negation : OP, OP[_]](
+    expr: Expr.Not[I, O, OP],
     state: ExprState[PO, O],
     inputResult: ExprResult[PO, I, O, OP],
   ) extends ExprResult[PO, I, O, OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitNot2(this)
-  }
-
-  final case class Not3[+PO, -I, OP[_]](
-    expr: Expr.Not3[I, OP],
-    state: ExprState[PO, Boolean],
-  )(implicit
-    opO: OP[Boolean],
-    evB: I <:< Boolean,
-  ) extends ExprResult[PO, I, Boolean, OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, Boolean] = v.visitNot3(this)
-  }
-
-  final case class Not4[+PO, I : Negation : OP, OP[_]](
-    expr: Expr.Not4[I, OP],
-    state: ExprState[PO, I],
-  ) extends ExprResult[PO, I, I, OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, I] = v.visitNot4(this)
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitNot(this)
   }
 
   /**
