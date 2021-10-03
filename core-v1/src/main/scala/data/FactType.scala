@@ -2,12 +2,12 @@ package com.rallyhealth.vapors.v1
 
 package data
 
-import lens.{NamedLens, ValidDataPathKey}
+import lens.ValidDataPathKey
 
 import cats.Order
 import izumi.reflect.Tag
 
-import scala.annotation.{nowarn, switch}
+import scala.annotation.switch
 import scala.reflect.ClassTag
 
 /**
@@ -104,10 +104,6 @@ object FactType {
       case 0 => "name"
       case _ => super.productElementName(n)
     }
-  }
-
-  implicit class ToLens[T](@nowarn private val ft: FactType[T]) extends AnyVal {
-    def lens: NamedLens[TypedFact[T], T] = TypedFact.value[T]
   }
 
   implicit def orderingByName[T]: Ordering[FactType[T]] = Ordering.by(_.nameAndFullType)

@@ -119,30 +119,30 @@ trait BuildExprDsl {
 //        Expr.Const[W[Window[V]], OP](CompareWrapped[W].wrapConst(using(that))),
 //      )
 
-    private def compareExpr(
-      name: String,
-      that: Expr[I, W[V], OP], // TODO: How to compare against another expression?... I need a zip operation
-    )(
-      using: V => Window[V],
-    ): Expr.AndThen[I, W[V], W[V], W[Boolean], OP] = {
-      Expr.AndThen(
-        valueExpr,
-        Expr.WithinWindow3(
-          Expr.AndThen(
-            that: Expr[Any, W[V], OP], // Doesn't work because that expr requires the same input as the value expr
-            Expr.CustomFunction[W[V], W[Window[V]], OP](
-              name,
-              wrappedValue => {
-                val value = Extract[W].extract(wrappedValue)
-                val window = using(value)
-                val wrappedWindow = FromConst[W].wrapConst(window)
-                wrappedWindow
-              },
-            ),
-          ),
-        ),
-      )
-    }
+//    private def compareExpr(
+//      name: String,
+//      that: Expr[I, W[V], OP], // TODO: How to compare against another expression?... I need a zip operation
+//    )(
+//      using: V => Window[V],
+//    ): Expr.AndThen[I, W[V], W[V], W[Boolean], OP] = {
+//      Expr.AndThen(
+//        valueExpr,
+//        Expr.WithinWindow3(
+//          Expr.AndThen(
+//            that: Expr[Any, W[V], OP], // Doesn't work because that expr requires the same input as the value expr
+//            Expr.CustomFunction[W[V], W[Window[V]], OP](
+//              name,
+//              wrappedValue => {
+//                val value = Extract[W].extract(wrappedValue)
+//                val window = using(value)
+//                val wrappedWindow = FromConst[W].wrapConst(window)
+//                wrappedWindow
+//              },
+//            ),
+//          ),
+//        ),
+//      )
+//    }
 
     protected def compareLiteral(
       @nowarn name: String, // this is unused but kept for consistency
@@ -159,7 +159,7 @@ trait BuildExprDsl {
 
     def >=(literal: V): I ~> W[Boolean] = compareLiteral(">=", literal)(Window.greaterThanOrEqual(_))
 
-    def >=(expr: I ~> W[V]): I ~> W[Boolean] = compareExpr(">=", expr)(Window.greaterThanOrEqual(_))
+//    def >=(expr: I ~> W[V]): I ~> W[Boolean] = compareExpr(">=", expr)(Window.greaterThanOrEqual(_))
   }
 }
 
