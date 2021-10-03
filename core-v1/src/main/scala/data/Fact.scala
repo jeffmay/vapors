@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package data
 
-import lens.{DataPath, NamedLens}
+import lens.DataPath
 
 import cats.Order
 import cats.syntax.all._
@@ -103,12 +103,6 @@ object TypedFact {
       case 0 => orderTypedFactByValue[T].compare(x, y)
       case orderByName => orderByName
     }
-  }
-
-  def lens[A]: NamedLens.Id[TypedFact[A]] = NamedLens.id[TypedFact[A]]
-
-  def value[A]: NamedLens[TypedFact[A], A] = {
-    NamedLens[TypedFact[A], A](DataPath.empty.atField("value"), _.value)
   }
 }
 

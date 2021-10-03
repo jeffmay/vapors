@@ -1,19 +1,17 @@
-package com.rallyhealth.vapors.v1
-
-package lens
-
-import NamedLens.AsIterableBuilder
+package com.rallyhealth.vapors.lens
 
 import cats.arrow.Compose
 import cats.data.NonEmptySet
 import cats.kernel.Semigroup
+import com.rallyhealth.vapors.lens.NamedLens.AsIterableBuilder
+import com.rallyhealth.vapors.v1.lens.IndexedSyntax
 import shapeless.ops.hlist
 import shapeless.{Generic, HList}
 
 import scala.collection.{Factory, MapView, View}
 
 /**
-  * @see [[NamedLens]]
+  * @see [[com.rallyhealth.vapors.v1.lens.VariantLens]]
   */
 object NamedLens extends NamedLensLowPriorityImplicits {
 
@@ -56,7 +54,7 @@ object NamedLens extends NamedLensLowPriorityImplicits {
 
     /**
       * Create a [[NamedLens]] that selects a field based on a given function and applies the appropriate
-      * [[DataPath.atField]] operator.
+      * [[com.rallyhealth.vapors.v1.lens.DataPath.atField]] operator.
       *
       * @note this uses a macro and only works for `val`s or `def`s with no arguments.
       *
@@ -156,12 +154,7 @@ sealed trait NamedLensLowPriorityImplicits {
 }
 
 /**
-  * A serializable lens for extracting a value from an object.
-  *
-  * @param path the serializable path to the value from the starting type to the value type
-  * @param get a function for extracting the field value
-  * @tparam A the starting type
-  * @tparam B the extracted value type
+  * @see [[com.rallyhealth.vapors.v1.lens.VariantLens]] for documentation, except this lens is invariant.
   */
 final case class NamedLens[A, B](
   path: DataPath,
