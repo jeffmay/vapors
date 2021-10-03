@@ -2,13 +2,21 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import algebra.Expr
+import algebra.{CompareWrapped, Expr, Extract, FromConst, WindowComparable}
 import data.FactTypeSet
 import logic.Negation
 
 import cats.{Foldable, Functor}
 
 trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
+
+  override implicit final def wrap: CompareWrapped[W] = CompareWrapped.value
+
+  override protected implicit final def windowComparable: WindowComparable[W, OP] = WindowComparable.identity
+
+  override protected implicit final def extract: Extract[W] = Extract.identity
+
+  override protected implicit final def fromConst: FromConst[W] = FromConst.identity
 
   override final def apply[AI, AO <: BI : OP, BI >: AO, BO : OP](
     inputExpr: AI ~> AO,
@@ -41,8 +49,11 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
       opA: OP[C[A]],
       opB: OP[Boolean],
       foldC: Foldable[C],
-    ): I ~> Boolean =
-      Expr.AndThen(inputExpr, Expr.Exists[C, A, OP](conditionExpr))
+    ): Expr[I, Boolean, OP] =
+      Expr.AndThen(
+        inputExpr,
+        Expr.Exists[C, A, Boolean, OP](conditionExpr, identity, _.exists(identity)),
+      )
 
     override def forall(
       conditionExpr: A ~> Boolean,

@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package algebra
 
-import data.{ContraWindow, ExprState, FactTypeSet, TypedFact, Window}
+import data.{ExprState, FactTypeSet, TypedFact, Window}
 import debug.{DebugArgs, Debugging, NoDebugging}
 import logic.Negation
 import math.Add
@@ -71,13 +71,6 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
     */
   def visit[G[-_, +_]](v: Expr.Visitor[G, OP]): G[I, O]
 
-//  def unary_!(
-//    implicit
-//    //    evO: O <:< I,
-//    evB: O <:< Boolean,
-//    opB: OP[Boolean],
-//  ): Expr.AndThen[I, O, Boolean, Boolean, OP] = Expr.AndThen[I, O, Boolean, Boolean, OP](this, Expr.Not3())
-
   def +[CI <: I, LI >: O, RI >: RO, RO <: RI : OP](
     that: Expr[CI, RO, OP],
   )(implicit
@@ -86,116 +79,6 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
     // can't eta-expand a dependent object function, the (_, _) is required
     new CombineHolder(this, that, "add", add.combine(_, _): @nowarn)
   }
-
-  // TODO: Use some kind of function metadata object instead of a separate name parameter
-  private def compareExpr[CI <: I, RO >: O : Order : OP](
-    name: String,
-    that: Expr[CI, RO, OP],
-  )(
-    using: RO => Window[RO],
-  )(implicit
-    opA: OP[Window[RO]],
-    opB: OP[Boolean],
-  ): Expr.WithinWindow[CI, RO, OP] = {
-    Expr.WithinWindow(
-      this,
-      Expr.AndThen(
-        that,
-        Expr.CustomFunction(name, using),
-      ),
-    )
-  }
-
-  private def compareLiteral[RO >: O : Order](
-    @nowarn name: String, // this is unused but kept for consistency
-    that: RO,
-  )(
-    using: RO => Window[RO],
-  )(implicit
-    opA: OP[Window[RO]],
-    opB: OP[Boolean],
-  ): Expr.WithinWindow[I, RO, OP] =
-    Expr.WithinWindow(this, Expr.Const(using(that)))
-
-  def <[RO >: O : Order](
-    that: RO,
-  )(implicit
-    opA: OP[Window[RO]],
-    opB: OP[Boolean],
-  ): Expr.WithinWindow[I, RO, OP] =
-    compareLiteral("<", that)(Window.lessThan(_))
-
-  def <[CI <: I, RO >: O : Order : OP](
-    that: Expr[CI, RO, OP],
-  )(implicit
-    opA: OP[Window[RO]],
-    opB: OP[Boolean],
-  ): Expr.WithinWindow[CI, RO, OP] =
-    compareExpr("<", that)(Window.lessThan(_))
-
-  def <=[RO >: O : Order](
-    that: RO,
-  )(implicit
-    opA: OP[Window[RO]],
-    opB: OP[Boolean],
-  ): Expr.WithinWindow[I, RO, OP] =
-    compareLiteral("<=", that)(Window.lessThanOrEqual(_))
-
-  def <=[CI <: I, RO >: O : Order : OP](
-    that: Expr[CI, RO, OP],
-  )(implicit
-    opA: OP[Window[RO]],
-    opB: OP[Boolean],
-  ): Expr.WithinWindow[CI, RO, OP] =
-    compareExpr("<=", that)(Window.lessThanOrEqual(_))
-
-  def >[RO >: O : Order](
-    that: RO,
-  )(implicit
-    opA: OP[Window[RO]],
-    opB: OP[Boolean],
-  ): Expr.WithinWindow[I, RO, OP] =
-    compareLiteral(">", that)(Window.greaterThan(_))
-
-  def >[CI <: I, RO >: O : Order : OP](
-    that: Expr[CI, RO, OP],
-  )(implicit
-    opA: OP[Window[RO]],
-    opB: OP[Boolean],
-  ): Expr.WithinWindow[CI, RO, OP] =
-    compareExpr(">", that)(Window.greaterThan(_))
-
-  def >=[RO >: O : Order](
-    that: RO,
-  )(implicit
-    opA: OP[Window[RO]],
-    opB: OP[Boolean],
-  ): Expr.WithinWindow[I, RO, OP] =
-    compareLiteral(">=", that)(Window.greaterThanOrEqual(_))
-
-  def >=[CI <: I, RO >: O : Order : OP](
-    that: Expr[CI, RO, OP],
-  )(implicit
-    opA: OP[Window[RO]],
-    opB: OP[Boolean],
-  ): Expr.WithinWindow[CI, RO, OP] =
-    compareExpr(">=", that)(Window.greaterThanOrEqual(_))
-
-  // TODO: Capture better information about the window
-  def within[CI <: I, RO >: O](
-    windowExpr: Expr[CI, Window[RO], OP],
-  )(implicit
-    opB: OP[Boolean],
-  ): Expr.WithinWindow[CI, RO, OP] =
-    Expr.WithinWindow(this, windowExpr)
-
-  def within[RO >: O](
-    window: Window[RO],
-  )(implicit
-    opA: OP[Window[RO]],
-    opB: OP[Boolean],
-  ): Expr.WithinWindow[I, RO, OP] =
-    Expr.WithinWindow(this, Expr.Const(window))
 
   def unary_![RO >: O](
     implicit
@@ -281,11 +164,7 @@ object Expr {
 
     def visitCustomFunction[I, O : OP](expr: CustomFunction[I, O, OP]): I ~> O
 
-    def visitExists[C[_] : Foldable, A](
-      expr: Exists[C, A, OP],
-    )(implicit
-      opO: OP[Boolean],
-    ): C[A] ~> Boolean
+    def visitExists[C[_] : Foldable, A, B : OP](expr: Exists[C, A, B, OP]): C[A] ~> B
 
     def visitForAll[C[_] : Foldable, A](
       expr: ForAll[C, A, OP],
@@ -304,6 +183,20 @@ object Expr {
     def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~> Seq[O]
 
     def visitWithinWindow[I, O](expr: WithinWindow[I, O, OP])(implicit opB: OP[Boolean]): I ~> Boolean
+
+    def visitWithinWindow2[I, V : OP, W[+_]](
+      expr: WithinWindow2[I, V, W, OP],
+    )(implicit
+      comparison: CompareWrapped[W],
+      opB: OP[W[Boolean]],
+    ): I ~> W[Boolean]
+
+    def visitWithinWindow3[V : OP, F[_]](
+      expr: WithinWindow3[V, F, OP],
+    )(implicit
+      comparable: WindowComparable[F, OP],
+      opB: OP[F[Boolean]],
+    ): F[V] ~> F[Boolean]
   }
 
   final case class And[-I, OP[_]](
@@ -367,6 +260,7 @@ object Expr {
     override def withDebugging(debugging: Debugging[Any, Any]): Const[O, OP] = copy(debugging = debugging)
   }
 
+  // TODO: Rename to CombineWith or BinaryOperation to fit better with Zip2With?
   /**
     * Zips the output of the [[leftExpr]] and [[rightExpr]] (executed in parallel, if supported) and passes
     * the tuple as arguments to the [[operation]] that produces a single output value.
@@ -445,14 +339,15 @@ object Expr {
     * @tparam C the higher-kinded container type provided as input
     * @tparam A the type of every element of the input
     */
-  final case class Exists[C[_] : Foldable, A, OP[_]](
-    conditionExpr: Expr[A, Boolean, OP],
-    debugging: Debugging[C[A], Boolean] = NoDebugging,
-  )(implicit
-    opO: OP[Boolean],
-  ) extends Expr[C[A], Boolean, OP]("exists") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], Boolean] = v.visitExists(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Exists[C, A, OP] = copy(debugging = debugging)
+  final case class Exists[C[_] : Foldable, A, B : OP, OP[_]](
+    // TODO: Should C[_] be covariant on inner type and A contravariant? This would prohibit using invariant Sets?
+    conditionExpr: Expr[A, B, OP],
+    asBoolean: B => Boolean, // TODO: Should this use the ExtractBoolean constraint?
+    combine: List[B] => B,
+    debugging: Debugging[C[A], B] = NoDebugging,
+  ) extends Expr[C[A], B, OP]("exists") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], B] = v.visitExists(this)
+    override def withDebugging(debugging: Debugging[Any, Any]): Exists[C, A, B, OP] = copy(debugging = debugging)
   }
 
   /**
@@ -541,4 +436,32 @@ object Expr {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Boolean] = v.visitWithinWindow(this)
     override def withDebugging(debugging: Debugging[Any, Any]): Expr[I, Boolean, OP] = copy(debugging = debugging)
   }
+
+  final case class WithinWindow2[-I, +V : OP, W[+_], OP[_]](
+    valueExpr: Expr[I, W[V], OP],
+    windowExpr: Expr[I, W[Window[V]], OP],
+    debugging: Debugging[Any, Any] = NoDebugging, // TODO: What should be the constraints on this be?
+  )(implicit
+    comparison: CompareWrapped[W],
+    opB: OP[W[Boolean]],
+  ) extends Expr[I, W[Boolean], OP]("withinWindow") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[Boolean]] = v.visitWithinWindow2(this)
+    override def withDebugging(debugging: Debugging[Any, Any]): WithinWindow2[I, V, W, OP] =
+      copy(debugging = debugging)
+  }
+
+  // TODO: Is OP[V] needed?
+  final case class WithinWindow3[V : OP, F[_], OP[_]](
+    windowExpr: Expr[F[V], F[Window[V]], OP],
+    debugging: Debugging[(F[V], F[Window[V]]), F[Boolean]] = NoDebugging,
+  )(implicit
+    comparison: WindowComparable[F, OP],
+    opB: OP[F[Boolean]],
+  ) extends Expr[F[V], F[Boolean], OP]("withinWindow") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[F[V], F[Boolean]] = v.visitWithinWindow3(this)
+    override def withDebugging(debugging: Debugging[Any, Any]): WithinWindow3[V, F, OP] =
+      copy(debugging = debugging)
+  }
+
+  // TODO: Create Expr.Select
 }

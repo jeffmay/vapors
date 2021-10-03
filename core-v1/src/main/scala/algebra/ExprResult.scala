@@ -72,11 +72,7 @@ object ExprResult {
 
     def visitCustomFunction[I, O : OP](result: CustomFunction[PO, I, O, OP]): I ~> O
 
-    def visitExists[C[_] : Foldable, E](
-      result: Exists[PO, C, E, OP],
-    )(implicit
-      opO: OP[Boolean],
-    ): C[E] ~> Boolean
+    def visitExists[C[_] : Foldable, A, B : OP](result: Exists[PO, C, A, B, OP]): C[A] ~> B
 
     def visitForAll[C[_] : Foldable, E](
       result: ForAll[PO, C, E, OP],
@@ -95,6 +91,19 @@ object ExprResult {
     def visitValuesOfType[T, O](result: ValuesOfType[PO, T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~> Seq[O]
 
     def visitWithinWindow[I, O](result: WithinWindow[PO, I, O, OP])(implicit opO: OP[Boolean]): I ~> Boolean
+
+    def visitWithinWindow2[I, V : OP, W[+_] : CompareWrapped](
+      result: WithinWindow2[PO, I, V, W, OP],
+    )(implicit
+      opB: OP[W[Boolean]],
+    ): I ~> W[Boolean]
+
+    def visitWithinWindow3[V : OP, F[_]](
+      result: WithinWindow3[PO, V, F, OP],
+    )(implicit
+      comparable: WindowComparable[F, OP],
+      opB: OP[F[Boolean]],
+    ): F[V] ~> F[Boolean]
   }
 
   /**
@@ -184,14 +193,12 @@ object ExprResult {
   /**
     * The result of running [[Expr.Exists]]
     */
-  final case class Exists[+PO, C[_] : Foldable, E, OP[_]](
-    expr: Expr.Exists[C, E, OP],
-    state: ExprState[PO, Boolean],
+  final case class Exists[+PO, C[_] : Foldable, A, B : OP, OP[_]](
+    expr: Expr.Exists[C, A, B, OP],
+    state: ExprState[PO, B],
     // TODO: Add foundTrueIndex: Option[Int]? conditionResults: C[Boolean]?
-  )(implicit
-    opO: OP[Boolean],
-  ) extends ExprResult[PO, C[E], Boolean, OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[C[E], Boolean] = v.visitExists(this)
+  ) extends ExprResult[PO, C[A], B, OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[C[A], B] = v.visitExists(this)
   }
 
   /**
@@ -249,5 +256,28 @@ object ExprResult {
     opO: OP[Boolean],
   ) extends ExprResult[PO, I, Boolean, OP] {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, Boolean] = v.visitWithinWindow(this)
+  }
+
+  final case class WithinWindow2[+PO, -I, +V : OP, W[+_], OP[_]](
+    expr: Expr.WithinWindow2[I, V, W, OP],
+    state: ExprState[PO, W[Boolean]],
+    valueResult: ExprResult[PO, I, W[V], OP],
+    windowResult: ExprResult[PO, I, W[Window[V]], OP],
+  )(implicit
+    opB: OP[W[Boolean]],
+    comparison: CompareWrapped[W],
+  ) extends ExprResult[PO, I, W[Boolean], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, W[Boolean]] = v.visitWithinWindow2(this)
+  }
+
+  final case class WithinWindow3[+PO, V : OP, F[_], OP[_]](
+    expr: Expr.WithinWindow3[V, F, OP],
+    state: ExprState[PO, F[Boolean]],
+    windowResult: ExprResult[PO, F[V], F[Window[V]], OP],
+  )(implicit
+    comparable: WindowComparable[F, OP],
+    opB: OP[F[Boolean]],
+  ) extends ExprResult[PO, F[V], F[Boolean], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[F[V], F[Boolean]] = v.visitWithinWindow3(this)
   }
 }

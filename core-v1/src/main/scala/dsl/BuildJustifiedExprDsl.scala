@@ -2,13 +2,22 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import algebra.Expr
-import data.{FactTypeSet, Justified}
+import algebra.{CompareWrapped, Expr, Extract, FromConst, WindowComparable}
+import data.{FactTypeSet, Justified, Window}
+import logic.Negation
 
+import cats.data.NonEmptyList
 import cats.{Foldable, Functor}
-import com.rallyhealth.vapors.v1.logic.Negation
 
 trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
+
+  override protected implicit final def wrap: CompareWrapped[Justified] = CompareWrapped.justified
+
+  override protected implicit final def windowComparable: WindowComparable[Justified, OP] = WindowComparable.justified
+
+  override protected implicit final def extract: Extract[Justified] = Extract.justified
+
+  override protected implicit final def fromConst: FromConst[Justified] = FromConst.justified
 
   override def apply[II, IO <: OI : OPW, OI >: IO, OO : OPW](
     inputExpr: Justified[II] ~> Justified[IO],
@@ -33,7 +42,13 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
   ): Expr.ValuesOfType[T, Justified[T], OP] =
     Expr.ValuesOfType[T, Justified[T], OP](factTypeSet, Justified.ByFact(_))
 
-  implicit def wrap[A](value: A): ConstExprBuilder[Justified[A], OP] =
+  def value[V : OP]: Justified[V] ~> V =
+    Expr.CustomFunction("justifiedValue", _.value)
+
+  implicit def wrapWindow[O](window: Window[O])(implicit opW: OP[Justified[Window[O]]]): Any ~> Justified[Window[O]] =
+    Expr.Const(Justified.byConst(window))
+
+  implicit def wrapValue[A](value: A): ConstExprBuilder[Justified[A], OP] =
     new ConstExprBuilder(Justified.byConst(value))
 
   override type SpecificHkExprBuilder[I, C[_], E] = JustifiedHkExprBuilder[I, C, E]
@@ -44,19 +59,28 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
   final class JustifiedHkExprBuilder[I, C[_], A](override protected val inputExpr: Justified[I] ~> C[Justified[A]])
     extends HkExprBuilder[I, C, A] {
 
-    // TODO: This expr requires a Boolean output, which seems correct, however, it will require mapping the wrapped
-    //       output type to a boolean. For the Justified DSL case, we might want to support an automatic conversion
-    //       from Justified[Boolean] into a Boolean through some kind of ExtractValue[Justified[Boolean], Boolean]
-    //       concept instance, but we should only do this if there is a clear benefit in either syntax or meaning
-    //       because there is a cost in terms of flexibility and clarity.
     override def exists(
-      conditionExpr: Justified[A] ~> Boolean,
+      conditionExpr: Justified[A] ~> Justified[Boolean],
     )(implicit
       opA: OP[C[Justified[A]]],
-      opB: OP[Boolean],
+      opB: OP[Justified[Boolean]],
       foldC: Foldable[C],
-    ): Justified[I] ~> Boolean =
-      Expr.AndThen(inputExpr, Expr.Exists[C, Justified[A], OP](conditionExpr))
+    ): Justified[I] ~> Justified[Boolean] =
+      Expr.AndThen(
+        inputExpr,
+        Expr.Exists[C, Justified[A], Justified[Boolean], OP](
+          conditionExpr,
+          _.value,
+          NonEmptyList
+            .fromList(_)
+            .map { justified =>
+              Justified.byInference("exists", true, justified)
+            }
+            .getOrElse {
+              Justified.byConst(false)
+            },
+        ),
+      )
 
     // TODO: This expr requires a Boolean output, which seems correct, however, it will require mapping the wrapped
     //       output type to a boolean. For the Justified DSL case, we might want to support an automatic conversion

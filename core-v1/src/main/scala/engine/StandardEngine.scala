@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{Expr, ExprResult}
+import algebra.{CompareWrapped, Expr, ExprResult, WindowComparable}
 import data.{ExprState, Window}
 
 import cats.{Foldable, Functor}
@@ -91,16 +91,31 @@ object StandardEngine {
       ExprResult.CustomFunction(expr, newState)
     }
 
-    override def visitExists[C[_] : Foldable, A](
-      expr: Expr.Exists[C, A, OP],
-    )(implicit
-      opO: OP[Boolean],
-    ): PO <:< C[A] => ExprResult[PO, C[A], Boolean, OP] = { implicit evPOisI =>
-      // TODO: Apply justification logic here
-      val output = evPOisI(state.output).exists { e =>
-        val conditionState = withState(state.withOutput(e))
-        expr.conditionExpr.visit(conditionState)(implicitly).state.output
+    override def visitExists[C[_] : Foldable, A, B : OP](
+      expr: Expr.Exists[C, A, B, OP],
+    ): PO <:< C[A] => ExprResult[PO, C[A], B, OP] = { implicit evPOisI =>
+//      val collection = evPOisI(state.output)
+//      val result = collection.foldLeft(expr.emptyOutput) { (acc, e) =>
+//        val conditionState = withState(state.withOutput(e))
+//        val isMatch = expr.conditionExpr.visit(conditionState)(implicitly).state.output
+//        expr.foldToResult(acc, e, isMatch)
+//      }
+//      val output = expr.extractOutput(result)
+//      val newState = state.swapAndReplaceOutput(output)
+//      // TODO: Should this use the new state?
+//      val debugState = newState.withBoth(collection, result)
+//      expr.debugging.attach(debugState)
+//      ExprResult.Exists(expr, newState)
+      val ca = evPOisI(state.output)
+      val matching = ca.foldLeft(List.empty[B]) { (bs, a) =>
+        val conditionState = withState(state.withOutput(a))
+        val conditionResult = expr.conditionExpr.visit(conditionState)(implicitly)
+        val b = conditionResult.state.output
+        val isMatch = expr.asBoolean(b)
+        if (isMatch) b :: bs
+        else bs
       }
+      val output = expr.combine(matching)
       val newState = state.swapAndReplaceOutput(output)
       expr.debugging.attach(newState)
       ExprResult.Exists(expr, newState)
@@ -189,6 +204,42 @@ object StandardEngine {
       val newState = state.swapAndReplaceOutput(comparisonResult)
       expr.debugging.attach(newState)
       ExprResult.WithinWindow(expr, newState, valueResult, windowResult)
+    }
+
+    override def visitWithinWindow2[I, V : OP, W[+_]](
+      expr: Expr.WithinWindow2[I, V, W, OP],
+    )(implicit
+      comparison: CompareWrapped[W],
+      opB: OP[W[Boolean]],
+    ): PO <:< I => ExprResult[PO, I, W[Boolean], OP] = { implicit evPOisI =>
+      val valueResult = expr.valueExpr.visit(this)(implicitly)
+      val windowResult = expr.windowExpr.visit(this)(implicitly)
+      val value = valueResult.state.output
+      val window = windowResult.state.output
+      // TODO: Remove after testing
+      val isWithinWindow = Window.contains(comparison.extract(window), comparison.extract(value))
+      val output = comparison.compare(value, window)
+      val newState = state.swapAndReplaceOutput(output)
+      expr.debugging.attach(newState)
+      ExprResult.WithinWindow2(expr, newState, valueResult, windowResult)
+    }
+
+    override def visitWithinWindow3[V : OP, F[_]](
+      expr: Expr.WithinWindow3[V, F, OP],
+    )(implicit
+      comparable: WindowComparable[F, OP],
+      opB: OP[F[Boolean]],
+    ): PO <:< F[V] => ExprResult[PO, F[V], F[Boolean], OP] = { implicit evPOisI =>
+      val windowResult = expr.windowExpr.visit(this)(implicitly)
+      val value = state.output
+      val window = windowResult.state.output
+      // TODO: Remove after testing
+//      val isWithinWindow = Window.contains(comparison.extract(window), comparison.extract(value))
+      val output = comparable.withinWindow(value, window)
+      val newState = state.swapAndReplaceOutput(output)
+      val debugState = newState.mapInput(value => (evPOisI(value), window))
+      expr.debugging.attach(debugState)
+      ExprResult.WithinWindow3(expr, newState, windowResult)
     }
   }
 }
