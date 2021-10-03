@@ -2,11 +2,11 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.Expr
-import data.{FactTable, Window}
+import algebra.{CompareWrapped, Expr, WindowComparable}
+import data.{ExprState, FactTable, Window}
+import logic.Negation
 
 import cats.{Foldable, Functor}
-import com.rallyhealth.vapors.v1.logic.Negation
 
 /**
   * A vapors [[Expr]] interpreter that just builds a simple function without providing any post-processing.
@@ -54,13 +54,29 @@ object SimpleEngine {
 
     override def visitCustomFunction[I, O : OP](expr: Expr.CustomFunction[I, O, OP]): I => O = expr.function
 
-    override def visitExists[C[_] : Foldable, A](
-      expr: Expr.Exists[C, A, OP],
-    )(implicit
-      opO: OP[Boolean],
-    ): C[A] => Boolean = { ce =>
-      val matching = expr.conditionExpr.visit(this)
-      ce.exists(matching)
+    override def visitExists[C[_] : Foldable, A, B : OP](expr: Expr.Exists[C, A, B, OP]): C[A] => B = { ca =>
+      val isMatchingResult = expr.conditionExpr.visit(this)
+      // Using a foldRight to short-circuit for the simple engine:
+//      val (result, foundMatch) = ce.foldRight(Eval.now(expr.emptyOutput, false))) {
+//        case ((e, foundMatch), remaining) =>
+//          if (foundMatch) Eval.now(e)
+//          else
+//            remaining.map { case (r, prevMatch) =>
+//              val isMatch = prevMatch || matching(e)
+//              (expr.foldToResult(r, e, isMatch), isMatch)
+//            }
+//      }.value
+
+      // Naive implementation will handle justification use cases better
+      val matching = ca.foldLeft(List.empty[B]) { (bs, a) =>
+        val b = isMatchingResult(a)
+        val isMatch = expr.asBoolean(b)
+        if (isMatch) b :: bs
+        else bs
+      }
+      val output = expr.combine(matching)
+      expr.debugging.attach(ExprState(factTable, Some(ca), Some(output)))
+      output
     }
 
     override def visitForAll[C[_] : Foldable, A](
@@ -109,6 +125,33 @@ object SimpleEngine {
       val window = expr.windowExpr.visit(this)(i)
       val value = expr.valueExpr.visit(this)(i)
       Window.contains(window, value)
+    }
+
+    override def visitWithinWindow2[I, V : OP, W[+_]](
+      expr: Expr.WithinWindow2[I, V, W, OP],
+    )(implicit
+      comparison: CompareWrapped[W],
+      opB: OP[W[Boolean]],
+    ): I => W[Boolean] = { i =>
+      val window = expr.windowExpr.visit(this)(i)
+      val value = expr.valueExpr.visit(this)(i)
+      // TODO: Remove after testing
+      val isWithinWindow = Window.contains(comparison.extract(window), value)
+      val output = comparison.compare(value, window)
+      output
+    }
+
+    override def visitWithinWindow3[V : OP, F[_]](
+      expr: Expr.WithinWindow3[V, F, OP],
+    )(implicit
+      comparable: WindowComparable[F, OP],
+      opB: OP[F[Boolean]],
+    ): F[V] => F[Boolean] = { i =>
+      val window = expr.windowExpr.visit(this)(i)
+      val output = comparable.withinWindow(i, window)
+      // TODO: Make a helper method for this
+      expr.debugging.attach(ExprState(factTable, Some((i, window)), Some(output)))
+      output
     }
   }
 }

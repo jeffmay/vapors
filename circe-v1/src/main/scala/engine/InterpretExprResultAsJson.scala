@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.ExprResult
+import algebra.{CompareWrapped, ExprResult, WindowComparable}
 import data.ExprState
 import debug.HasSourceCodeInfo
 import dsl.circe.HasEncoder
@@ -89,11 +89,9 @@ object InterpretExprResultAsJson {
     override def visitCustomFunction[I, O : OP](result: ExprResult.CustomFunction[PO, I, O, OP]): ToJsonObject[I, O] =
       encodeExprResult(result)
 
-    override def visitExists[C[_] : Foldable, E](
-      result: ExprResult.Exists[PO, C, E, OP],
-    )(implicit
-      opO: OP[Boolean],
-    ): ToJsonObject[C[E], Boolean] = encodeExprResult(result)
+    override def visitExists[C[_] : Foldable, A, B : OP](
+      result: ExprResult.Exists[PO, C, A, B, OP],
+    ): ToJsonObject[C[A], B] = encodeExprResult(result)
 
     override def visitForAll[C[_] : Foldable, E](
       result: ExprResult.ForAll[PO, C, E, OP],
@@ -130,6 +128,21 @@ object InterpretExprResultAsJson {
     )(implicit
       opO: OP[Boolean],
     ): ToJsonObject[I, Boolean] = encodeExprResult(result)
+
+    override def visitWithinWindow2[I, V : OP, W[+_] : CompareWrapped](
+      result: ExprResult.WithinWindow2[PO, I, V, W, OP],
+    )(implicit
+      opB: OP[W[Boolean]],
+    ): ToJsonObject[I, W[Boolean]] = {
+      encodeExprResult(result)
+    }
+
+    override def visitWithinWindow3[V : OP, F[_]](
+      result: ExprResult.WithinWindow3[PO, V, F, OP],
+    )(implicit
+      comparable: WindowComparable[F, OP],
+      opB: OP[F[Boolean]],
+    ): ToJsonObject[F[V], F[Boolean]] = ???
   }
 
   final object DebugVisitor {
@@ -184,11 +197,9 @@ object InterpretExprResultAsJson {
     override def visitCustomFunction[I, O : OP](result: ExprResult.CustomFunction[PO, I, O, OP]): ToJsonObject[I, O] =
       super.visitCustomFunction(result).deepMerge(sourceInfo[O])
 
-    override def visitExists[C[_] : Foldable, E](
-      result: ExprResult.Exists[PO, C, E, OP],
-    )(implicit
-      opO: OP[Boolean],
-    ): ToJsonObject[C[E], Boolean] = super.visitExists(result).deepMerge(sourceInfo[Boolean])
+    override def visitExists[C[_] : Foldable, A, B : OP](
+      result: ExprResult.Exists[PO, C, A, B, OP],
+    ): ToJsonObject[C[A], B] = super.visitExists(result).deepMerge(sourceInfo[B])
 
     override def visitForAll[C[_] : Foldable, E](
       result: ExprResult.ForAll[PO, C, E, OP],
@@ -223,6 +234,20 @@ object InterpretExprResultAsJson {
       opO: OP[Boolean],
     ): ToJsonObject[I, Boolean] =
       super.visitWithinWindow(result).deepMerge(sourceInfo[Boolean])
+
+    override def visitWithinWindow2[I, V : OP, W[+_] : CompareWrapped](
+      result: ExprResult.WithinWindow2[PO, I, V, W, OP],
+    )(implicit
+      opB: OP[W[Boolean]],
+    ): ToJsonObject[I, W[Boolean]] =
+      super.visitWithinWindow2(result).deepMerge(sourceInfo[W[Boolean]])
+
+    override def visitWithinWindow3[V : OP, F[_]](
+      result: ExprResult.WithinWindow3[PO, V, F, OP],
+    )(implicit
+      comparable: WindowComparable[F, OP],
+      opB: OP[F[Boolean]],
+    ): ToJsonObject[F[V], F[Boolean]] = super.visitWithinWindow3(result).deepMerge(sourceInfo[F[Boolean]])
   }
 
 }
