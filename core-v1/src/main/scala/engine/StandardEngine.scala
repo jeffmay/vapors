@@ -181,6 +181,14 @@ object StandardEngine {
       ExprResult.Or(expr, newState, left, right)
     }
 
+    override def visitSelect[I, O : OP](expr: Expr.Select[I, O, OP]): PO <:< I => ExprResult[PO, I, O, OP] = {
+      implicit evPOisI =>
+        val output = expr.lens.get(state.output)
+        val newState = state.swapAndReplaceOutput(output)
+        expr.debugging.attach(newState)
+        ExprResult.Select(expr, newState)
+    }
+
     override def visitValuesOfType[T, O](
       expr: Expr.ValuesOfType[T, O, OP],
     )(implicit

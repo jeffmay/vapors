@@ -108,6 +108,12 @@ object SimpleEngine {
       expr.leftExpr.visit(this)(i) || expr.rightExpr.visit(this)(i)
     }
 
+    override def visitSelect[I, O : OP](expr: Expr.Select[I, O, OP]): I => O = { i =>
+      val output = expr.lens.get(i)
+      expr.debugging.attach(ExprState(factTable, Some(i), Some(output)))
+      output
+    }
+
     override def visitValuesOfType[T, O](
       expr: Expr.ValuesOfType[T, O, OP],
     )(implicit
