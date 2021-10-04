@@ -123,40 +123,16 @@ object SimpleEngine {
       matchingFacts.map(expr.transform)
     }
 
-    override def visitWithinWindow[I, O](
-      expr: Expr.WithinWindow[I, O, OP],
+    override def visitWithinWindow[I, V : OP, F[+_]](
+      expr: Expr.WithinWindow[I, V, F, OP],
     )(implicit
-      opB: OP[Boolean],
-    ): I => Boolean = { i =>
-      val window = expr.windowExpr.visit(this)(i)
-      val value = expr.valueExpr.visit(this)(i)
-      Window.contains(window, value)
-    }
-
-    override def visitWithinWindow2[I, V : OP, W[+_]](
-      expr: Expr.WithinWindow2[I, V, W, OP],
-    )(implicit
-      comparison: CompareWrapped[W],
-      opB: OP[W[Boolean]],
-    ): I => W[Boolean] = { i =>
-      val window = expr.windowExpr.visit(this)(i)
-      val value = expr.valueExpr.visit(this)(i)
-      // TODO: Remove after testing
-      val isWithinWindow = Window.contains(comparison.extract(window), value)
-      val output = comparison.compare(value, window)
-      output
-    }
-
-    override def visitWithinWindow3[V : OP, F[_]](
-      expr: Expr.WithinWindow3[V, F, OP],
-    )(implicit
-      comparable: WindowComparable[F, OP],
+      comparison: WindowComparable[F, OP],
       opB: OP[F[Boolean]],
-    ): F[V] => F[Boolean] = { i =>
+    ): I => F[Boolean] = { i =>
       val window = expr.windowExpr.visit(this)(i)
-      val output = comparable.withinWindow(i, window)
-      // TODO: Make a helper method for this
-      expr.debugging.attach(ExprState(factTable, Some((i, window)), Some(output)))
+      val value = expr.valueExpr.visit(this)(i)
+      val output = comparison.withinWindow(value, window)
+      expr.debugging.attach(ExprState(factTable, Some((i, value, window)), Some(output)))
       output
     }
   }
