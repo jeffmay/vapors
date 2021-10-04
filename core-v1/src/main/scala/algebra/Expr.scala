@@ -72,6 +72,9 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
     */
   def visit[G[-_, +_]](v: Expr.Visitor[G, OP]): G[I, O]
 
+  def andThen[OI >: O, OO : OP](that: Expr[OI, OO, OP]): Expr.AndThen[I, O, OI, OO, OP] =
+    Expr.AndThen(this, that)
+
   def +[CI <: I, LI >: O, RI >: RO, RO <: RI : OP](
     that: Expr[CI, RO, OP],
   )(implicit
