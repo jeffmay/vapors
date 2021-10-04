@@ -6,9 +6,9 @@ import algebra.{CompareWrapped, ExprResult, WindowComparable}
 import data.ExprState
 import debug.HasSourceCodeInfo
 import dsl.circe.HasEncoder
+import logic.Negation
 
-import cats.{Foldable, Functor, Order}
-import com.rallyhealth.vapors.v1.logic.Negation
+import cats.{Foldable, Functor}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -126,26 +126,14 @@ object InterpretExprResultAsJson {
       encodeExprResult(result)
         .add("factTypes", result.expr.factTypeSet.typeList.toList.map(_.name).asJson)
 
-    override def visitWithinWindow[I, O](
-      result: ExprResult.WithinWindow[PO, I, O, OP],
+    override def visitWithinWindow[I, V, F[+_]](
+      result: ExprResult.WithinWindow[PO, I, V, F, OP],
     )(implicit
-      opO: OP[Boolean],
-    ): ToJsonObject[I, Boolean] = encodeExprResult(result)
-
-    override def visitWithinWindow2[I, V : OP, W[+_] : CompareWrapped](
-      result: ExprResult.WithinWindow2[PO, I, V, W, OP],
-    )(implicit
-      opB: OP[W[Boolean]],
-    ): ToJsonObject[I, W[Boolean]] = {
+      comparison: WindowComparable[F, OP],
+      opB: OP[F[Boolean]],
+    ): ToJsonObject[I, F[Boolean]] = {
       encodeExprResult(result)
     }
-
-    override def visitWithinWindow3[V : OP, F[_]](
-      result: ExprResult.WithinWindow3[PO, V, F, OP],
-    )(implicit
-      comparable: WindowComparable[F, OP],
-      opB: OP[F[Boolean]],
-    ): ToJsonObject[F[V], F[Boolean]] = ???
   }
 
   final object DebugVisitor {
@@ -234,26 +222,13 @@ object InterpretExprResultAsJson {
       opTs: OP[Seq[O]],
     ): ToJsonObject[Any, Seq[O]] = super.visitValuesOfType(result).deepMerge(sourceInfo[Seq[O]])
 
-    override def visitWithinWindow[I, O](
-      result: ExprResult.WithinWindow[PO, I, O, OP],
+    override def visitWithinWindow[I, V, F[+_]](
+      result: ExprResult.WithinWindow[PO, I, V, F, OP],
     )(implicit
-      opO: OP[Boolean],
-    ): ToJsonObject[I, Boolean] =
-      super.visitWithinWindow(result).deepMerge(sourceInfo[Boolean])
-
-    override def visitWithinWindow2[I, V : OP, W[+_] : CompareWrapped](
-      result: ExprResult.WithinWindow2[PO, I, V, W, OP],
-    )(implicit
-      opB: OP[W[Boolean]],
-    ): ToJsonObject[I, W[Boolean]] =
-      super.visitWithinWindow2(result).deepMerge(sourceInfo[W[Boolean]])
-
-    override def visitWithinWindow3[V : OP, F[_]](
-      result: ExprResult.WithinWindow3[PO, V, F, OP],
-    )(implicit
-      comparable: WindowComparable[F, OP],
+      comparison: WindowComparable[F, OP],
       opB: OP[F[Boolean]],
-    ): ToJsonObject[F[V], F[Boolean]] = super.visitWithinWindow3(result).deepMerge(sourceInfo[F[Boolean]])
+    ): ToJsonObject[I, F[Boolean]] =
+      super.visitWithinWindow(result).deepMerge(sourceInfo[F[Boolean]])
   }
 
 }

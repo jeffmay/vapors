@@ -10,6 +10,9 @@ import cats.{Id, Show}
 
 trait WindowComparable[F[_], OP[_]] {
 
+  // TODO: Should this take OP[V] and OP[Window[V]]? What about the F[_] wrapper?
+  //       For now, I am only taking the OP[V] because if the goal is to serialize the value and the window,
+  //       then that is the missing piece.
   def withinWindow[V](
     value: F[V],
     window: F[Window[V]],

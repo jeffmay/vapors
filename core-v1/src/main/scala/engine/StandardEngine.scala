@@ -201,53 +201,21 @@ object StandardEngine {
       ExprResult.ValuesOfType(expr, newState)
     }
 
-    override def visitWithinWindow[I, O](
-      expr: Expr.WithinWindow[I, O, OP],
+    override def visitWithinWindow[I, V : OP, F[+_]](
+      expr: Expr.WithinWindow[I, V, F, OP],
     )(implicit
-      opB: OP[Boolean],
-    ): PO <:< I => ExprResult[PO, I, Boolean, OP] = { implicit evPOisI =>
-      val valueResult = expr.valueExpr.visit(this)(implicitly)
-      val windowResult = expr.windowExpr.visit(this)(implicitly)
-      val comparisonResult = Window.contains(windowResult.state.output, valueResult.state.output)
-      val newState = state.swapAndReplaceOutput(comparisonResult)
-      expr.debugging.attach(newState)
-      ExprResult.WithinWindow(expr, newState, valueResult, windowResult)
-    }
-
-    override def visitWithinWindow2[I, V : OP, W[+_]](
-      expr: Expr.WithinWindow2[I, V, W, OP],
-    )(implicit
-      comparison: CompareWrapped[W],
-      opB: OP[W[Boolean]],
-    ): PO <:< I => ExprResult[PO, I, W[Boolean], OP] = { implicit evPOisI =>
+      comparison: WindowComparable[F, OP],
+      opB: OP[F[Boolean]],
+    ): PO <:< I => ExprResult[PO, I, F[Boolean], OP] = { implicit evPOisI =>
       val valueResult = expr.valueExpr.visit(this)(implicitly)
       val windowResult = expr.windowExpr.visit(this)(implicitly)
       val value = valueResult.state.output
       val window = windowResult.state.output
-      // TODO: Remove after testing
-      val isWithinWindow = Window.contains(comparison.extract(window), comparison.extract(value))
-      val output = comparison.compare(value, window)
+      val output = comparison.withinWindow(value, window)
       val newState = state.swapAndReplaceOutput(output)
-      expr.debugging.attach(newState)
-      ExprResult.WithinWindow2(expr, newState, valueResult, windowResult)
-    }
-
-    override def visitWithinWindow3[V : OP, F[_]](
-      expr: Expr.WithinWindow3[V, F, OP],
-    )(implicit
-      comparable: WindowComparable[F, OP],
-      opB: OP[F[Boolean]],
-    ): PO <:< F[V] => ExprResult[PO, F[V], F[Boolean], OP] = { implicit evPOisI =>
-      val windowResult = expr.windowExpr.visit(this)(implicitly)
-      val value = state.output
-      val window = windowResult.state.output
-      // TODO: Remove after testing
-//      val isWithinWindow = Window.contains(comparison.extract(window), comparison.extract(value))
-      val output = comparable.withinWindow(value, window)
-      val newState = state.swapAndReplaceOutput(output)
-      val debugState = newState.mapInput(value => (evPOisI(value), window))
+      val debugState = newState.mapInput(i => (i: I, value, window))
       expr.debugging.attach(debugState)
-      ExprResult.WithinWindow3(expr, newState, windowResult)
+      ExprResult.WithinWindow(expr, newState, valueResult, windowResult)
     }
   }
 }

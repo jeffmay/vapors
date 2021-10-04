@@ -188,21 +188,12 @@ object Expr {
 
     def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~> Seq[O]
 
-    def visitWithinWindow[I, O](expr: WithinWindow[I, O, OP])(implicit opB: OP[Boolean]): I ~> Boolean
-
-    def visitWithinWindow2[I, V : OP, W[+_]](
-      expr: WithinWindow2[I, V, W, OP],
+    def visitWithinWindow[I, V : OP, F[+_]](
+      expr: WithinWindow[I, V, F, OP],
     )(implicit
-      comparison: CompareWrapped[W],
-      opB: OP[W[Boolean]],
-    ): I ~> W[Boolean]
-
-    def visitWithinWindow3[V : OP, F[_]](
-      expr: WithinWindow3[V, F, OP],
-    )(implicit
-      comparable: WindowComparable[F, OP],
+      comparison: WindowComparable[F, OP],
       opB: OP[F[Boolean]],
-    ): F[V] ~> F[Boolean]
+    ): I ~> F[Boolean]
   }
 
   final case class And[-I, OP[_]](
@@ -432,40 +423,16 @@ object Expr {
     override def withDebugging(debugging: Debugging[Any, Any]): ValuesOfType[T, O, OP] = copy(debugging = debugging)
   }
 
-  final case class WithinWindow[-I, +O, OP[_]](
-    valueExpr: Expr[I, O, OP],
-    windowExpr: Expr[I, Window[O], OP],
-    debugging: Debugging[Any, Boolean] = NoDebugging,
-  )(implicit
-    opO: OP[Boolean],
-  ) extends Expr[I, Boolean, OP]("withinWindow") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Boolean] = v.visitWithinWindow(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Expr[I, Boolean, OP] = copy(debugging = debugging)
-  }
-
-  final case class WithinWindow2[-I, +V : OP, W[+_], OP[_]](
-    valueExpr: Expr[I, W[V], OP],
-    windowExpr: Expr[I, W[Window[V]], OP],
-    debugging: Debugging[Any, Any] = NoDebugging, // TODO: What should be the constraints on this be?
-  )(implicit
-    comparison: CompareWrapped[W],
-    opB: OP[W[Boolean]],
-  ) extends Expr[I, W[Boolean], OP]("withinWindow") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[Boolean]] = v.visitWithinWindow2(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): WithinWindow2[I, V, W, OP] =
-      copy(debugging = debugging)
-  }
-
-  // TODO: Is OP[V] needed?
-  final case class WithinWindow3[V : OP, F[_], OP[_]](
-    windowExpr: Expr[F[V], F[Window[V]], OP],
-    debugging: Debugging[(F[V], F[Window[V]]), F[Boolean]] = NoDebugging,
+  final case class WithinWindow[-I, +V : OP, F[+_], OP[_]](
+    valueExpr: Expr[I, F[V], OP],
+    windowExpr: Expr[I, F[Window[V]], OP],
+    debugging: Debugging[Any, F[Boolean]] = NoDebugging,
   )(implicit
     comparison: WindowComparable[F, OP],
     opB: OP[F[Boolean]],
-  ) extends Expr[F[V], F[Boolean], OP]("withinWindow") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[F[V], F[Boolean]] = v.visitWithinWindow3(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): WithinWindow3[V, F, OP] =
+  ) extends Expr[I, F[Boolean], OP]("withinWindow") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, F[Boolean]] = v.visitWithinWindow(this)
+    override def withDebugging(debugging: Debugging[Any, Any]): WithinWindow[I, V, F, OP] =
       copy(debugging = debugging)
   }
 
