@@ -115,6 +115,9 @@ object InterpretExprResultAsJson {
     override def visitOr[I](result: ExprResult.Or[PO, I, OP])(implicit opO: OP[Boolean]): ToJsonObject[I, Boolean] =
       encodeExprResult(result)
 
+    override def visitSelect[I, O : OP](result: ExprResult.Select[PO, I, O, OP]): ToJsonObject[I, O] =
+      encodeExprResult(result)
+
     override def visitValuesOfType[T, O](
       result: ExprResult.ValuesOfType[PO, T, O, OP],
     )(implicit
@@ -221,6 +224,9 @@ object InterpretExprResultAsJson {
 
     override def visitOr[I](result: ExprResult.Or[PO, I, OP])(implicit opO: OP[Boolean]): ToJsonObject[I, Boolean] =
       super.visitOr(result).deepMerge(sourceInfo[Boolean])
+
+    override def visitSelect[I, O : OP](result: ExprResult.Select[PO, I, O, OP]): ToJsonObject[I, O] =
+      super.visitSelect(result).deepMerge(sourceInfo[O])
 
     override def visitValuesOfType[T, O](
       result: ExprResult.ValuesOfType[PO, T, O, OP],

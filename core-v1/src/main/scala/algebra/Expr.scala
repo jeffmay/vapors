@@ -4,10 +4,11 @@ package algebra
 
 import data.{ExprState, FactTypeSet, TypedFact, Window}
 import debug.{DebugArgs, Debugging, NoDebugging}
+import lens.VariantLens
 import logic.Negation
 import math.Add
 
-import cats.{Foldable, Functor, Order}
+import cats.{Foldable, Functor}
 
 import scala.annotation.nowarn
 
@@ -179,6 +180,8 @@ object Expr {
     def visitNot[I, O : Negation : OP](expr: Not[I, O, OP]): I ~> O
 
     def visitOr[I](expr: Or[I, OP])(implicit evO: OP[Boolean]): I ~> Boolean
+
+    def visitSelect[I, O : OP](expr: Select[I, O, OP]): I ~> O
 
     def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~> Seq[O]
 
@@ -463,5 +466,11 @@ object Expr {
       copy(debugging = debugging)
   }
 
-  // TODO: Create Expr.Select
+  final case class Select[-I, +O : OP, OP[_]](
+    lens: VariantLens[I, O],
+    debugging: Debugging[I, Any] = NoDebugging,
+  ) extends Expr[I, O, OP]("select") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitSelect(this)
+    override def withDebugging(debugging: Debugging[Any, Any]): Select[I, O, OP] = copy(debugging = debugging)
+  }
 }

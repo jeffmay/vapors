@@ -88,6 +88,8 @@ object ExprResult {
 
     def visitOr[I](result: Or[PO, I, OP])(implicit opO: OP[Boolean]): I ~> Boolean
 
+    def visitSelect[I, O : OP](result: Select[PO, I, O, OP]): I ~> O
+
     def visitValuesOfType[T, O](result: ValuesOfType[PO, T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~> Seq[O]
 
     def visitWithinWindow[I, O](result: WithinWindow[PO, I, O, OP])(implicit opO: OP[Boolean]): I ~> Boolean
@@ -233,6 +235,13 @@ object ExprResult {
     inputResult: ExprResult[PO, I, O, OP],
   ) extends ExprResult[PO, I, O, OP] {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitNot(this)
+  }
+
+  final case class Select[+PO, -I, +O : OP, OP[_]](
+    expr: Expr.Select[I, O, OP],
+    state: ExprState[PO, O],
+  ) extends ExprResult[PO, I, O, OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitSelect(this)
   }
 
   /**
