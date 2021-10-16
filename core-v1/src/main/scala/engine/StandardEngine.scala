@@ -2,12 +2,11 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{CompareWrapped, Expr, ExprResult, WindowComparable}
-import data.{ExprState, Window}
+import algebra.{Expr, ExprResult, WindowComparable}
+import data.ExprState
+import logic.Negation
 
-import cats.data.NonEmptyList
 import cats.{Foldable, Functor}
-import com.rallyhealth.vapors.v1.logic.Negation
 
 import scala.annotation.nowarn
 
@@ -25,7 +24,8 @@ object StandardEngine {
     *       which would simplify all the places where I am using `implicitly`.
     */
   class Visitor[PO, OP[_]](val state: ExprState[Any, PO])
-    extends Expr.Visitor[Lambda[(`-I`, `+O`) => PO <:< I => ExprResult[PO, I, O, OP]], OP] {
+    extends Expr.Visitor[Lambda[(`-I`, `+O`) => PO <:< I => ExprResult[PO, I, O, OP]], OP]
+    with CommonEngine[OP] {
 
     import cats.implicits._
 
@@ -96,21 +96,11 @@ object StandardEngine {
       expr: Expr.Exists[C, A, B, OP],
     ): PO <:< C[A] => ExprResult[PO, C[A], B, OP] = { implicit evPOisI =>
       val ca: C[A] = state.output
-      val falseOrTrueResults = ca.foldLeft[Either[List[B], NonEmptyList[B]]](Left(Nil)) { (bs, a) =>
+      val output = visitExistsCommon(expr, ca) { a =>
         val conditionState = withState(state.withOutput(a))
         val conditionResult = expr.conditionExpr.visit(conditionState)(implicitly)
-        val b = conditionResult.state.output
-        val isTrue = expr.asBoolean(b)
-        bs match {
-          case Left(fs) =>
-            if (isTrue) Right(NonEmptyList.of(b)) // this whole expression is now a true result
-            else Left(b :: fs) // combine evidence for false result
-          case Right(ts) =>
-            if (isTrue) Right(b :: ts) // combine evidence for true result
-            else bs // exclude evidence for false result
-        }
+        conditionResult.state.output
       }
-      val output = falseOrTrueResults.fold(expr.combineFalse, expr.combineTrue)
       val newState = state.swapAndReplaceOutput(output)
       expr.debugging.attach(newState)
       ExprResult.Exists(expr, newState)
@@ -120,21 +110,11 @@ object StandardEngine {
       expr: Expr.ForAll[C, A, B, OP],
     ): PO <:< C[A] => ExprResult[PO, C[A], B, OP] = { implicit evPOisI =>
       val ca: C[A] = state.output
-      val falseOrTrueResults = ca.foldLeft[Either[NonEmptyList[B], List[B]]](Right(Nil)) { (bs, a) =>
+      val output = visitForAllCommon(expr, ca) { a =>
         val conditionState = withState(state.withOutput(a))
         val conditionResult = expr.conditionExpr.visit(conditionState)(implicitly)
-        val b = conditionResult.state.output
-        val isTrue = expr.asBoolean(b)
-        bs match {
-          case Right(ts) =>
-            if (isTrue) Right(b :: ts) // combine evidence for true result
-            else Left(NonEmptyList.of(b)) // this whole expression is now a false result
-          case Left(fs) =>
-            if (isTrue) bs // exclude true results from evidence for false result
-            else Left(b :: fs) // combine evidence for false result
-        }
+        conditionResult.state.output
       }
-      val output = falseOrTrueResults.fold(expr.combineFalse, expr.combineTrue)
       val newState = state.swapAndReplaceOutput(output)
       expr.debugging.attach(newState)
       ExprResult.ForAll(expr, newState)

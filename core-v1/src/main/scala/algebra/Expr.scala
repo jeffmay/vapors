@@ -339,6 +339,7 @@ object Expr {
     asBoolean: B => Boolean, // TODO: Should this use the ExtractBoolean constraint?
     combineTrue: NonEmptyList[B] => B,
     combineFalse: List[B] => B,
+    shortCircuit: Boolean,
     debugging: Debugging[C[A], B] = NoDebugging,
   ) extends Expr[C[A], B, OP]("exists") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], B] = v.visitExists(this)
@@ -362,6 +363,7 @@ object Expr {
     asBoolean: B => Boolean, // TODO: Should this use the ExtractBoolean constraint?
     combineTrue: List[B] => B,
     combineFalse: NonEmptyList[B] => B,
+    shortCircuit: Boolean,
     debugging: Debugging[C[A], B] = NoDebugging,
   ) extends Expr[C[A], B, OP]("forall") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], B] = v.visitForAll(this)

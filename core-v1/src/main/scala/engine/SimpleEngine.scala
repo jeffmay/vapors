@@ -2,11 +2,10 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{CompareWrapped, Expr, WindowComparable}
-import data.{ExprState, FactTable, Window}
+import algebra.{Expr, WindowComparable}
+import data.{ExprState, FactTable}
 import logic.Negation
 
-import cats.data.NonEmptyList
 import cats.{Foldable, Functor}
 
 /**
@@ -19,7 +18,9 @@ object SimpleEngine {
 
   @inline def apply[OP[_]](factTable: FactTable): Visitor[OP] = new Visitor(factTable)
 
-  class Visitor[OP[_]](protected val factTable: FactTable) extends Expr.Visitor[Lambda[(`-I`, `+O`) => I => O], OP] {
+  class Visitor[OP[_]](protected val factTable: FactTable)
+    extends Expr.Visitor[Lambda[(`-I`, `+O`) => I => O], OP]
+    with CommonEngine[OP] {
 
     import cats.implicits._
 
@@ -57,38 +58,14 @@ object SimpleEngine {
 
     override def visitExists[C[_] : Foldable, A, B : OP](expr: Expr.Exists[C, A, B, OP]): C[A] => B = { ca =>
       val isMatchingResult = expr.conditionExpr.visit(this)
-      val falseOrTrueResults = ca.foldLeft[Either[List[B], NonEmptyList[B]]](Left(Nil)) { (bs, a) =>
-        val b = isMatchingResult(a)
-        val isTrue = expr.asBoolean(b)
-        bs match {
-          case Left(fs) =>
-            if (isTrue) Right(NonEmptyList.of(b)) // this whole expression is now a true result
-            else Left(b :: fs) // combine evidence for false result
-          case Right(ts) =>
-            if (isTrue) Right(b :: ts) // combine evidence for true result
-            else bs // exclude evidence for false result
-        }
-      }
-      val output = falseOrTrueResults.fold(expr.combineFalse, expr.combineTrue)
+      val output = visitExistsCommon(expr, ca)(isMatchingResult)
       expr.debugging.attach(ExprState(factTable, Some(ca), Some(output)))
       output
     }
 
     override def visitForAll[C[_] : Foldable, A, B : OP](expr: Expr.ForAll[C, A, B, OP]): C[A] => B = { ca =>
       val isMatchingResult = expr.conditionExpr.visit(this)
-      val falseOrTrueResults = ca.foldLeft[Either[NonEmptyList[B], List[B]]](Right(Nil)) { (bs, a) =>
-        val b = isMatchingResult(a)
-        val isTrue = expr.asBoolean(b)
-        bs match {
-          case Right(ts) =>
-            if (isTrue) Right(b :: ts) // combine evidence for true result
-            else Left(NonEmptyList.of(b)) // this whole expression is now a false result
-          case Left(fs) =>
-            if (isTrue) bs // exclude true results from evidence for false result
-            else Left(b :: fs) // combine evidence for false result
-        }
-      }
-      val output = falseOrTrueResults.fold(expr.combineFalse, expr.combineTrue)
+      val output = visitForAllCommon(expr, ca)(isMatchingResult)
       expr.debugging.attach(ExprState(factTable, Some(ca), Some(output)))
       output
     }
