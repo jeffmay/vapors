@@ -52,7 +52,7 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
     ): Expr[I, Boolean, OP] =
       Expr.AndThen(
         inputExpr,
-        Expr.Exists[C, A, Boolean, OP](conditionExpr, identity, _.exists(identity)),
+        Expr.Exists[C, A, Boolean, OP](conditionExpr, identity, _ => true, _ => false),
       )
 
     override def forall(
@@ -62,7 +62,10 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
       opB: OP[Boolean],
       foldC: Foldable[C],
     ): Expr[I, Boolean, OP] =
-      Expr.AndThen(inputExpr, Expr.ForAll[C, A, OP](conditionExpr))
+      Expr.AndThen(
+        inputExpr,
+        Expr.ForAll[C, A, Boolean, OP](conditionExpr, identity, _ => true, _ => false),
+      )
 
     override def map[B](
       mapExpr: A ~> B,

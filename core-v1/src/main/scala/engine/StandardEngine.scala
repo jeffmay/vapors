@@ -5,6 +5,7 @@ package engine
 import algebra.{CompareWrapped, Expr, ExprResult, WindowComparable}
 import data.{ExprState, Window}
 
+import cats.data.NonEmptyList
 import cats.{Foldable, Functor}
 import com.rallyhealth.vapors.v1.logic.Negation
 
@@ -94,44 +95,49 @@ object StandardEngine {
     override def visitExists[C[_] : Foldable, A, B : OP](
       expr: Expr.Exists[C, A, B, OP],
     ): PO <:< C[A] => ExprResult[PO, C[A], B, OP] = { implicit evPOisI =>
-//      val collection = evPOisI(state.output)
-//      val result = collection.foldLeft(expr.emptyOutput) { (acc, e) =>
-//        val conditionState = withState(state.withOutput(e))
-//        val isMatch = expr.conditionExpr.visit(conditionState)(implicitly).state.output
-//        expr.foldToResult(acc, e, isMatch)
-//      }
-//      val output = expr.extractOutput(result)
-//      val newState = state.swapAndReplaceOutput(output)
-//      // TODO: Should this use the new state?
-//      val debugState = newState.withBoth(collection, result)
-//      expr.debugging.attach(debugState)
-//      ExprResult.Exists(expr, newState)
-      val ca = evPOisI(state.output)
-      val matching = ca.foldLeft(List.empty[B]) { (bs, a) =>
+      val ca: C[A] = state.output
+      val falseOrTrueResults = ca.foldLeft[Either[List[B], NonEmptyList[B]]](Left(Nil)) { (bs, a) =>
         val conditionState = withState(state.withOutput(a))
         val conditionResult = expr.conditionExpr.visit(conditionState)(implicitly)
         val b = conditionResult.state.output
-        val isMatch = expr.asBoolean(b)
-        if (isMatch) b :: bs
-        else bs
+        val isTrue = expr.asBoolean(b)
+        bs match {
+          case Left(fs) =>
+            if (isTrue) Right(NonEmptyList.of(b)) // this whole expression is now a true result
+            else Left(b :: fs) // combine evidence for false result
+          case Right(ts) =>
+            if (isTrue) Right(b :: ts) // combine evidence for true result
+            else bs // exclude evidence for false result
+        }
       }
-      val output = expr.combine(matching)
+      val output = falseOrTrueResults.fold(expr.combineFalse, expr.combineTrue)
       val newState = state.swapAndReplaceOutput(output)
       expr.debugging.attach(newState)
       ExprResult.Exists(expr, newState)
     }
 
-    override def visitForAll[C[_] : Foldable, A](
-      expr: Expr.ForAll[C, A, OP],
-    )(implicit
-      opO: OP[Boolean],
-    ): PO <:< C[A] => ExprResult[PO, C[A], Boolean, OP] = { implicit evPOisI =>
-      // TODO: Apply justification logic here
-      val output = evPOisI(state.output).forall { e =>
-        val conditionVisitor = withState(state.withOutput(e))
-        expr.conditionExpr.visit(conditionVisitor)(implicitly).state.output
+    override def visitForAll[C[_] : Foldable, A, B : OP](
+      expr: Expr.ForAll[C, A, B, OP],
+    ): PO <:< C[A] => ExprResult[PO, C[A], B, OP] = { implicit evPOisI =>
+      val ca: C[A] = state.output
+      val falseOrTrueResults = ca.foldLeft[Either[NonEmptyList[B], List[B]]](Right(Nil)) { (bs, a) =>
+        val conditionState = withState(state.withOutput(a))
+        val conditionResult = expr.conditionExpr.visit(conditionState)(implicitly)
+        val b = conditionResult.state.output
+        val isTrue = expr.asBoolean(b)
+        bs match {
+          case Right(ts) =>
+            if (isTrue) Right(b :: ts) // combine evidence for true result
+            else Left(NonEmptyList.of(b)) // this whole expression is now a false result
+          case Left(fs) =>
+            if (isTrue) bs // exclude true results from evidence for false result
+            else Left(b :: fs) // combine evidence for false result
+        }
       }
-      ExprResult.ForAll(expr, state.swapAndReplaceOutput(output))
+      val output = falseOrTrueResults.fold(expr.combineFalse, expr.combineTrue)
+      val newState = state.swapAndReplaceOutput(output)
+      expr.debugging.attach(newState)
+      ExprResult.ForAll(expr, newState)
     }
 
     override def visitIdentity[I : OP](expr: Expr.Identity[I, OP]): PO <:< I => ExprResult[PO, I, I, OP] = {

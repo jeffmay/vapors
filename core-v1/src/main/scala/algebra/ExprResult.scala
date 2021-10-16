@@ -74,11 +74,7 @@ object ExprResult {
 
     def visitExists[C[_] : Foldable, A, B : OP](result: Exists[PO, C, A, B, OP]): C[A] ~> B
 
-    def visitForAll[C[_] : Foldable, E](
-      result: ForAll[PO, C, E, OP],
-    )(implicit
-      opO: OP[Boolean],
-    ): C[E] ~> Boolean
+    def visitForAll[C[_] : Foldable, A, B : OP](result: ForAll[PO, C, A, B, OP]): C[A] ~> B
 
     def visitIdentity[I : OP](result: Identity[PO, I, OP]): I ~> I
 
@@ -199,14 +195,12 @@ object ExprResult {
   /**
     * The result of running [[Expr.ForAll]]
     */
-  final case class ForAll[+PO, C[_] : Foldable, E, OP[_]](
-    expr: Expr.ForAll[C, E, OP],
-    state: ExprState[PO, Boolean],
-    // TODO: Add foundFalseIndex: Option[Int]? conditionResults: C[Boolean]?
-  )(implicit
-    opO: OP[Boolean],
-  ) extends ExprResult[PO, C[E], Boolean, OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[C[E], Boolean] = v.visitForAll(this)
+  final case class ForAll[+PO, C[_] : Foldable, A, B : OP, OP[_]](
+    expr: Expr.ForAll[C, A, B, OP],
+    state: ExprState[PO, B],
+    // TODO: Add foundTrueIndex: Option[Int]? conditionResults: C[Boolean]?
+  ) extends ExprResult[PO, C[A], B, OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[C[A], B] = v.visitForAll(this)
   }
 
   /**

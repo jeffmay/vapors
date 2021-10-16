@@ -93,11 +93,9 @@ object InterpretExprResultAsJson {
       result: ExprResult.Exists[PO, C, A, B, OP],
     ): ToJsonObject[C[A], B] = encodeExprResult(result)
 
-    override def visitForAll[C[_] : Foldable, E](
-      result: ExprResult.ForAll[PO, C, E, OP],
-    )(implicit
-      opO: OP[Boolean],
-    ): ToJsonObject[C[E], Boolean] = encodeExprResult(result)
+    override def visitForAll[C[_] : Foldable, A, B : OP](
+      result: ExprResult.ForAll[PO, C, A, B, OP],
+    ): ToJsonObject[C[A], B] = encodeExprResult(result)
 
     override def visitIdentity[I : OP](result: ExprResult.Identity[PO, I, OP]): ToJsonObject[I, I] =
       encodeExprResult(result)
@@ -192,11 +190,9 @@ object InterpretExprResultAsJson {
       result: ExprResult.Exists[PO, C, A, B, OP],
     ): ToJsonObject[C[A], B] = super.visitExists(result).deepMerge(sourceInfo[B])
 
-    override def visitForAll[C[_] : Foldable, E](
-      result: ExprResult.ForAll[PO, C, E, OP],
-    )(implicit
-      opO: OP[Boolean],
-    ): ToJsonObject[C[E], Boolean] = super.visitForAll(result).deepMerge(sourceInfo[Boolean])
+    override def visitForAll[C[_] : Foldable, A, B : OP](
+      result: ExprResult.ForAll[PO, C, A, B, OP],
+    ): ToJsonObject[C[A], B] = super.visitForAll(result).deepMerge(sourceInfo[B])
 
     override def visitIdentity[I : OP](result: ExprResult.Identity[PO, I, OP]): ToJsonObject[I, I] =
       super.visitIdentity(result).deepMerge(sourceInfo[I])
