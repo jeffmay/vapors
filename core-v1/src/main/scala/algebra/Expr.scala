@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package algebra
 
-import data.{ExprState, FactTypeSet, TypedFact, Window}
+import data.{ExprState, ExtractValue, FactTypeSet, TypedFact, Window}
 import debug.{DebugArgs, Debugging, NoDebugging}
 import lens.VariantLens
 import logic.Negation
@@ -169,9 +169,9 @@ object Expr {
 
     def visitCustomFunction[I, O : OP](expr: CustomFunction[I, O, OP]): I ~> O
 
-    def visitExists[C[_] : Foldable, A, B : OP](expr: Exists[C, A, B, OP]): C[A] ~> B
+    def visitExists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](expr: Exists[C, A, B, OP]): C[A] ~> B
 
-    def visitForAll[C[_] : Foldable, A, B : OP](expr: ForAll[C, A, B, OP]): C[A] ~> B
+    def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](expr: ForAll[C, A, B, OP]): C[A] ~> B
 
     def visitIdentity[I : OP](expr: Identity[I, OP]): I ~> I
 
@@ -334,9 +334,8 @@ object Expr {
     * @tparam A the type of every element of the input
     * @tparam B the output type, which must define a way to be viewed as a Boolean
     */
-  final case class Exists[C[_] : Foldable, A, B : OP, OP[_]](
+  final case class Exists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP, OP[_]](
     conditionExpr: Expr[A, B, OP],
-    asBoolean: B => Boolean, // TODO: Should this use the ExtractBoolean constraint?
     combineTrue: NonEmptyList[B] => B,
     combineFalse: List[B] => B,
     shortCircuit: Boolean,
@@ -358,9 +357,8 @@ object Expr {
     * @tparam A the type of every element of the input
     * @tparam B the output type, which must define a way to be viewed as a Boolean
     */
-  final case class ForAll[C[_] : Foldable, A, B : OP, OP[_]](
+  final case class ForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP, OP[_]](
     conditionExpr: Expr[A, B, OP],
-    asBoolean: B => Boolean, // TODO: Should this use the ExtractBoolean constraint?
     combineTrue: List[B] => B,
     combineFalse: NonEmptyList[B] => B,
     shortCircuit: Boolean,

@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra.{Expr, ExprResult, WindowComparable}
-import data.ExprState
+import data.{ExprState, ExtractValue}
 import logic.Negation
 
 import cats.{Foldable, Functor}
@@ -92,7 +92,7 @@ object StandardEngine {
       ExprResult.CustomFunction(expr, newState)
     }
 
-    override def visitExists[C[_] : Foldable, A, B : OP](
+    override def visitExists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
       expr: Expr.Exists[C, A, B, OP],
     ): PO <:< C[A] => ExprResult[PO, C[A], B, OP] = { implicit evPOisI =>
       val ca: C[A] = state.output
@@ -106,7 +106,7 @@ object StandardEngine {
       ExprResult.Exists(expr, newState)
     }
 
-    override def visitForAll[C[_] : Foldable, A, B : OP](
+    override def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
       expr: Expr.ForAll[C, A, B, OP],
     ): PO <:< C[A] => ExprResult[PO, C[A], B, OP] = { implicit evPOisI =>
       val ca: C[A] = state.output

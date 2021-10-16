@@ -105,6 +105,8 @@ object Justified {
     override def productPrefix: String = "Justified.ByInference"
   }
 
+  implicit def extractValue[T]: ExtractValue[Justified[T], T] = _.value
+
   implicit def add[L, R](
     implicit
     adder: Add[L, R],
