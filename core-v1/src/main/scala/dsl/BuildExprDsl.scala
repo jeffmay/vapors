@@ -110,6 +110,16 @@ trait BuildExprDsl {
 
     def <(literal: V): I ~> W[Boolean] = compareLiteral("<", literal)(Window.lessThan(_))
 
+    def <(expr: I ~> W[V]): I ~> W[Boolean] = compareExpr("<", expr)(Window.lessThan(_))
+
+    def <=(literal: V): I ~> W[Boolean] = compareLiteral("<=", literal)(Window.lessThanOrEqual(_))
+
+    def <=(expr: I ~> W[V]): I ~> W[Boolean] = compareExpr("<=", expr)(Window.lessThanOrEqual(_))
+
+    def >(literal: V): I ~> W[Boolean] = compareLiteral(">", literal)(Window.greaterThan(_))
+
+    def >(expr: I ~> W[V]): I ~> W[Boolean] = compareExpr(">", expr)(Window.greaterThan(_))
+
     def >=(literal: V): I ~> W[Boolean] = compareLiteral(">=", literal)(Window.greaterThanOrEqual(_))
 
     def >=(expr: I ~> W[V]): I ~> W[Boolean] = compareExpr(">=", expr)(Window.greaterThanOrEqual(_))
