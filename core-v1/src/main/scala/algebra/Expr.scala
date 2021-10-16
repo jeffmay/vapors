@@ -8,6 +8,7 @@ import lens.VariantLens
 import logic.Negation
 import math.Add
 
+import cats.data.NonEmptyList
 import cats.{Foldable, Functor}
 
 import scala.annotation.nowarn
@@ -170,11 +171,7 @@ object Expr {
 
     def visitExists[C[_] : Foldable, A, B : OP](expr: Exists[C, A, B, OP]): C[A] ~> B
 
-    def visitForAll[C[_] : Foldable, A](
-      expr: ForAll[C, A, OP],
-    )(implicit
-      opO: OP[Boolean],
-    ): C[A] ~> Boolean
+    def visitForAll[C[_] : Foldable, A, B : OP](expr: ForAll[C, A, B, OP]): C[A] ~> B
 
     def visitIdentity[I : OP](expr: Identity[I, OP]): I ~> I
 
@@ -335,12 +332,13 @@ object Expr {
     * @param conditionExpr a predicate [[Expr]] that returns either `true` or `false` for every element in the input
     * @tparam C the higher-kinded container type provided as input
     * @tparam A the type of every element of the input
+    * @tparam B the output type, which must define a way to be viewed as a Boolean
     */
   final case class Exists[C[_] : Foldable, A, B : OP, OP[_]](
-    // TODO: Should C[_] be covariant on inner type and A contravariant? This would prohibit using invariant Sets?
     conditionExpr: Expr[A, B, OP],
     asBoolean: B => Boolean, // TODO: Should this use the ExtractBoolean constraint?
-    combine: List[B] => B,
+    combineTrue: NonEmptyList[B] => B,
+    combineFalse: List[B] => B,
     debugging: Debugging[C[A], B] = NoDebugging,
   ) extends Expr[C[A], B, OP]("exists") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], B] = v.visitExists(this)
@@ -357,15 +355,17 @@ object Expr {
     * @param conditionExpr a predicate [[Expr]] that returns either `true` or `false` for every element in the input
     * @tparam C the higher-kinded container type provided as input
     * @tparam A the type of every element of the input
+    * @tparam B the output type, which must define a way to be viewed as a Boolean
     */
-  final case class ForAll[C[_] : Foldable, A, OP[_]](
-    conditionExpr: Expr[A, Boolean, OP],
-    debugging: Debugging[C[A], Boolean] = NoDebugging,
-  )(implicit
-    opO: OP[Boolean],
-  ) extends Expr[C[A], Boolean, OP]("forall") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], Boolean] = v.visitForAll(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): ForAll[C, A, OP] = copy(debugging = debugging)
+  final case class ForAll[C[_] : Foldable, A, B : OP, OP[_]](
+    conditionExpr: Expr[A, B, OP],
+    asBoolean: B => Boolean, // TODO: Should this use the ExtractBoolean constraint?
+    combineTrue: List[B] => B,
+    combineFalse: NonEmptyList[B] => B,
+    debugging: Debugging[C[A], B] = NoDebugging,
+  ) extends Expr[C[A], B, OP]("forall") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], B] = v.visitForAll(this)
+    override def withDebugging(debugging: Debugging[Any, Any]): ForAll[C, A, B, OP] = copy(debugging = debugging)
   }
 
   /**

@@ -42,9 +42,6 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
   ): Expr.ValuesOfType[T, Justified[T], OP] =
     Expr.ValuesOfType[T, Justified[T], OP](factTypeSet, Justified.ByFact(_))
 
-  def value[V : OP]: Justified[V] ~> V =
-    Expr.CustomFunction("justifiedValue", _.value)
-
   implicit def wrapWindow[O](window: Window[O])(implicit opW: OP[Justified[Window[O]]]): Any ~> Justified[Window[O]] =
     Expr.Const(Justified.byConst(window))
 
@@ -71,30 +68,45 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
         Expr.Exists[C, Justified[A], Justified[Boolean], OP](
           conditionExpr,
           _.value,
-          NonEmptyList
+          combineTrue = Justified.byInference("exists", true, _),
+          combineFalse = NonEmptyList
             .fromList(_)
             .map { justified =>
-              Justified.byInference("exists", true, justified)
+              Justified.byInference("exists", false, justified)
             }
             .getOrElse {
+              // exists in an empty collection is false
+              // TODO: Should I put a reason instead of just a const?
               Justified.byConst(false)
             },
         ),
       )
 
-    // TODO: This expr requires a Boolean output, which seems correct, however, it will require mapping the wrapped
-    //       output type to a boolean. For the Justified DSL case, we might want to support an automatic conversion
-    //       from Justified[Boolean] into a Boolean through some kind of ExtractValue[Justified[Boolean], Boolean]
-    //       concept instance, but we should only do this if there is a clear benefit in either syntax or meaning
-    //       because there is a cost in terms of flexibility and clarity.
     override def forall(
-      conditionExpr: Justified[A] ~> Boolean,
+      conditionExpr: Justified[A] ~> Justified[Boolean],
     )(implicit
       opA: OP[C[Justified[A]]],
-      opB: OP[Boolean],
+      opB: OP[Justified[Boolean]],
       foldC: Foldable[C],
-    ): Justified[I] ~> Boolean =
-      Expr.AndThen(inputExpr, Expr.ForAll[C, Justified[A], OP](conditionExpr))
+    ): Justified[I] ~> Justified[Boolean] =
+      Expr.AndThen(
+        inputExpr,
+        Expr.ForAll[C, Justified[A], Justified[Boolean], OP](
+          conditionExpr,
+          _.value,
+          NonEmptyList
+            .fromList(_)
+            .map { justified =>
+              Justified.byInference("forall", true, justified)
+            }
+            .getOrElse {
+              // forall in an empty collection is true
+              // TODO: Should I put a reason instead of just a const?
+              Justified.byConst(true)
+            },
+          combineFalse = Justified.byInference("forall", false, _),
+        ),
+      )
 
     override def map[B](
       mapExpr: Justified[A] ~> Justified[B],
