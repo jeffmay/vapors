@@ -398,6 +398,14 @@ object Expr {
     override def withDebugging(debugging: Debugging[Any, Any]): MapEvery[C, A, B, OP] = copy(debugging = debugging)
   }
 
+  /**
+    * Negates a given expression.
+    *
+    * [[Negation]] is tricky to define properly using constructivist logic. It is defined in this library
+    * as the logical negation of the value with no change to the evidence.
+    *
+    * @param innerExpr the expression to negate
+    */
   final case class Not[-I, +O : Negation : OP, OP[_]](
     innerExpr: Expr[I, O, OP],
     debugging: Debugging[Any, Any] = NoDebugging,
@@ -423,6 +431,17 @@ object Expr {
     override def withDebugging(debugging: Debugging[Any, Any]): ValuesOfType[T, O, OP] = copy(debugging = debugging)
   }
 
+  /**
+    * Evaluates the [[valueExpr]] to get an effect-wrapped value, evaluates the [[windowExpr]] to get the same
+    * effect wrapped window, then checks if the value produced is within the window produced.
+    *
+    * @param valueExpr an expression returning a value from the starting input
+    * @param windowExpr an expression returning a window from the starting input
+    * @tparam I the input value type
+    * @tparam V the window value type
+    * @tparam F a container type, used to carry along metadata beyond just true / false.
+    *           This can also be an effect type, but it must be covariant on its inner type.
+    */
   final case class WithinWindow[-I, +V : OP, F[+_], OP[_]](
     valueExpr: Expr[I, F[V], OP],
     windowExpr: Expr[I, F[Window[V]], OP],
@@ -436,6 +455,11 @@ object Expr {
       copy(debugging = debugging)
   }
 
+  /**
+    * Select or view a field of the input type using the specified [[VariantLens]].
+    *
+    * @param lens a lens from the input type to some selected field
+    */
   final case class Select[-I, +O : OP, OP[_]](
     lens: VariantLens[I, O],
     debugging: Debugging[I, Any] = NoDebugging,
