@@ -19,6 +19,9 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
 
   override protected implicit final def fromConst: FromConst[Justified] = FromConst.justified
 
+  // TODO: Should this be visible outside this trait?
+  protected def dontShortCircuit: Boolean = false
+
   override def apply[II, IO <: OI : OPW, OI >: IO, OO : OPW](
     inputExpr: Justified[II] ~> Justified[IO],
     outputExpr: Justified[OI] ~> Justified[OO],
@@ -79,6 +82,7 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
               // TODO: Should I put a reason instead of just a const?
               Justified.byConst(false)
             },
+          dontShortCircuit,
         ),
       )
 
@@ -105,6 +109,7 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
               Justified.byConst(true)
             },
           combineFalse = Justified.byInference("forall", false, _),
+          dontShortCircuit,
         ),
       )
 

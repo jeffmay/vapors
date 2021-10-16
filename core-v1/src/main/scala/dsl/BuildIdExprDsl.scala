@@ -18,6 +18,9 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
 
   override protected implicit final def fromConst: FromConst[W] = FromConst.identity
 
+  // TODO: Should this be visible outside this trait?
+  protected def shortCircuit: Boolean = true
+
   override final def apply[AI, AO <: BI : OP, BI >: AO, BO : OP](
     inputExpr: AI ~> AO,
     outputExpr: BI ~> BO,
@@ -52,7 +55,7 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
     ): Expr[I, Boolean, OP] =
       Expr.AndThen(
         inputExpr,
-        Expr.Exists[C, A, Boolean, OP](conditionExpr, identity, _ => true, _ => false),
+        Expr.Exists[C, A, Boolean, OP](conditionExpr, identity, _ => true, _ => false, shortCircuit),
       )
 
     override def forall(
@@ -64,7 +67,7 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
     ): Expr[I, Boolean, OP] =
       Expr.AndThen(
         inputExpr,
-        Expr.ForAll[C, A, Boolean, OP](conditionExpr, identity, _ => true, _ => false),
+        Expr.ForAll[C, A, Boolean, OP](conditionExpr, identity, _ => true, _ => false, shortCircuit),
       )
 
     override def map[B](
