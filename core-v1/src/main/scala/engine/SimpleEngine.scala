@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra.{Expr, WindowComparable}
-import data.{ExprState, FactTable}
+import data.{ExprState, ExtractValue, FactTable}
 import logic.Negation
 
 import cats.{Foldable, Functor}
@@ -56,14 +56,18 @@ object SimpleEngine {
 
     override def visitCustomFunction[I, O : OP](expr: Expr.CustomFunction[I, O, OP]): I => O = expr.function
 
-    override def visitExists[C[_] : Foldable, A, B : OP](expr: Expr.Exists[C, A, B, OP]): C[A] => B = { ca =>
+    override def visitExists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
+      expr: Expr.Exists[C, A, B, OP],
+    ): C[A] => B = { ca =>
       val isMatchingResult = expr.conditionExpr.visit(this)
       val output = visitExistsCommon(expr, ca)(isMatchingResult)
       expr.debugging.attach(ExprState(factTable, Some(ca), Some(output)))
       output
     }
 
-    override def visitForAll[C[_] : Foldable, A, B : OP](expr: Expr.ForAll[C, A, B, OP]): C[A] => B = { ca =>
+    override def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
+      expr: Expr.ForAll[C, A, B, OP],
+    ): C[A] => B = { ca =>
       val isMatchingResult = expr.conditionExpr.visit(this)
       val output = visitForAllCommon(expr, ca)(isMatchingResult)
       expr.debugging.attach(ExprState(factTable, Some(ca), Some(output)))

@@ -6,6 +6,7 @@ import algebra.Expr
 
 import cats.data.NonEmptyList
 import cats.{Eval, Foldable}
+import com.rallyhealth.vapors.v1.data.ExtractValue
 
 /**
   * Shared implementation for expression interpreters.
@@ -15,7 +16,7 @@ import cats.{Eval, Foldable}
 trait CommonEngine[OP[_]] {
   import cats.implicits._
 
-  protected def visitForAllCommon[C[_] : Foldable, A, B : OP](
+  protected def visitForAllCommon[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
     expr: Expr.ForAll[C, A, B, OP],
     ca: C[A],
   )(
@@ -23,7 +24,7 @@ trait CommonEngine[OP[_]] {
   ): B = {
     val falseOrTrueResults = ca.foldRight[Either[NonEmptyList[B], List[B]]](Eval.now(Right(Nil))) { (a, evalResults) =>
       val b = applyCondition(a)
-      val isTrue = expr.asBoolean(b)
+      val isTrue = ExtractValue.asBoolean(b)
       if (isTrue) {
         evalResults.map {
           case Right(ts) => Right(b :: ts) // combine true evidence for true result
@@ -42,7 +43,7 @@ trait CommonEngine[OP[_]] {
     falseOrTrueResults.value.fold(expr.combineFalse, expr.combineTrue)
   }
 
-  protected def visitExistsCommon[C[_] : Foldable, A, B : OP](
+  protected def visitExistsCommon[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
     expr: Expr.Exists[C, A, B, OP],
     ca: C[A],
   )(
@@ -50,7 +51,7 @@ trait CommonEngine[OP[_]] {
   ): B = {
     val falseOrTrueResults = ca.foldRight[Either[List[B], NonEmptyList[B]]](Eval.now(Left(Nil))) { (a, evalResults) =>
       val b = applyCondition(a)
-      val isTrue = expr.asBoolean(b)
+      val isTrue = ExtractValue.asBoolean(b)
       if (isTrue) {
         if (expr.shortCircuit) Eval.now(Right(NonEmptyList.of(b)))
         else

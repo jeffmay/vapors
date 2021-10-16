@@ -70,7 +70,6 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
         inputExpr,
         Expr.Exists[C, Justified[A], Justified[Boolean], OP](
           conditionExpr,
-          _.value,
           combineTrue = Justified.byInference("exists", true, _),
           combineFalse = NonEmptyList
             .fromList(_)
@@ -97,7 +96,6 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
         inputExpr,
         Expr.ForAll[C, Justified[A], Justified[Boolean], OP](
           conditionExpr,
-          _.value,
           NonEmptyList
             .fromList(_)
             .map { justified =>
