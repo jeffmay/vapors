@@ -59,20 +59,20 @@ object WindowComparable {
   implicit def identity[OP[_]]: WindowComparable[Id, OP] = anyIdentity.asInstanceOf[WindowComparable[Id, OP]]
 }
 
-trait FromConst[F[_]] {
+trait WrapConst[F[_]] {
 
   def wrapConst[A](value: A): F[A]
 }
 
-object FromConst {
+object WrapConst {
 
-  @inline final def apply[F[_] : FromConst]: FromConst[F] = implicitly
+  @inline final def apply[F[_] : WrapConst]: WrapConst[F] = implicitly
 
-  implicit val identity: FromConst[Id] = new FromConst[Lambda[a => a]] {
+  implicit val identity: WrapConst[Id] = new WrapConst[Lambda[a => a]] {
     override def wrapConst[A](value: A): A = value
   }
 
-  implicit val justified: FromConst[Justified] = new FromConst[Justified] {
+  implicit val justified: WrapConst[Justified] = new WrapConst[Justified] {
     override def wrapConst[A](value: A): Justified[A] = Justified.byConst(value)
   }
 }

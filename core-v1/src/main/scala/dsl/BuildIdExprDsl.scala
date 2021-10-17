@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import algebra.{CompareWrapped, Expr, Extract, FromConst, WindowComparable}
+import algebra.{CompareWrapped, Expr, Extract, WindowComparable, WrapConst}
 import data.FactTypeSet
 import logic.Negation
 
@@ -10,13 +10,13 @@ import cats.{Foldable, Functor}
 
 trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
 
-  override implicit final def wrap: CompareWrapped[W] = CompareWrapped.value
+  override implicit final def compareWrapped: CompareWrapped[W] = CompareWrapped.value
 
   override protected implicit final def windowComparable: WindowComparable[W, OP] = WindowComparable.identity
 
   override protected implicit final def extract: Extract[W] = Extract.identity
 
-  override protected implicit final def fromConst: FromConst[W] = FromConst.identity
+  override protected implicit final def wrapConst: WrapConst[W] = WrapConst.identity
 
   // TODO: Should this be visible outside this trait?
   protected def shortCircuit: Boolean = true
@@ -37,8 +37,6 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
     opTs: OP[Seq[T]],
   ): Expr.ValuesOfType[T, T, OP] =
     Expr.ValuesOfType(factTypeSet, _.value)
-
-  implicit def wrap[A](value: A): ConstExprBuilder[A, OP] = new ConstExprBuilder(value)
 
   override implicit final def hk[I, C[_], A](expr: I ~> C[A]): HkIdExprBuilder[I, C, A] = new HkIdExprBuilder(expr)
 
