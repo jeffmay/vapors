@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import algebra.{CompareWrapped, Expr, Extract, FromConst, WindowComparable}
+import algebra.{CompareWrapped, Expr, Extract, WindowComparable, WrapConst}
 import data.{FactTypeSet, Justified, Window}
 import logic.Negation
 
@@ -11,13 +11,13 @@ import cats.{Foldable, Functor}
 
 trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
 
-  override protected implicit final def wrap: CompareWrapped[Justified] = CompareWrapped.justified
+  override protected implicit final def compareWrapped: CompareWrapped[Justified] = CompareWrapped.justified
 
   override protected implicit final def windowComparable: WindowComparable[Justified, OP] = WindowComparable.justified
 
   override protected implicit final def extract: Extract[Justified] = Extract.justified
 
-  override protected implicit final def fromConst: FromConst[Justified] = FromConst.justified
+  override protected implicit final def wrapConst: WrapConst[Justified] = WrapConst.justified
 
   // TODO: Should this be visible outside this trait?
   protected def dontShortCircuit: Boolean = false
@@ -45,11 +45,12 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
   ): Expr.ValuesOfType[T, Justified[T], OP] =
     Expr.ValuesOfType[T, Justified[T], OP](factTypeSet, Justified.ByFact(_))
 
+  // TODO: Why is this not in the root DSL class?
+  /**
+    * Allows you to skip calling .const on a window to wrap it in a Expr.Const
+    */
   implicit def wrapWindow[O](window: Window[O])(implicit opW: OP[Justified[Window[O]]]): Any ~> Justified[Window[O]] =
     Expr.Const(Justified.byConst(window))
-
-  implicit def wrapValue[A](value: A): ConstExprBuilder[Justified[A], OP] =
-    new ConstExprBuilder(Justified.byConst(value))
 
   override type SpecificHkExprBuilder[I, C[_], E] = JustifiedHkExprBuilder[I, C, E]
 

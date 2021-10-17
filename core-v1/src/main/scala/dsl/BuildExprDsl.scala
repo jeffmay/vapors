@@ -9,17 +9,18 @@ import logic.Negation
 import cats.{Foldable, Functor, Order}
 
 import scala.annotation.nowarn
+import scala.collection.Factory
 
 trait BuildExprDsl {
   self: DslTypes =>
 
-  protected implicit def wrap: CompareWrapped[W]
+  protected implicit def compareWrapped: CompareWrapped[W]
 
   protected implicit def windowComparable: WindowComparable[W, OP]
 
   protected implicit def extract: Extract[W]
 
-  protected implicit def fromConst: FromConst[W]
+  protected implicit def wrapConst: WrapConst[W]
 
   def apply[II, IO <: OI : OPW, OI >: IO, OO : OPW](
     inputExpr: W[II] ~> W[IO],
@@ -31,6 +32,9 @@ trait BuildExprDsl {
   def not[I, O : OPW](expr: W[I] ~> W[O])(implicit negation: Negation[W[O]]): Expr.Not[W[I], W[O], OP]
 
   def valuesOfType[T](factTypeSet: FactTypeSet[T])(implicit opTs: OP[Seq[W[T]]]): Expr.ValuesOfType[T, W[T], OP]
+
+  implicit def wrap[A](value: A)(implicit constType: WrapConstType[W, A]): ConstExprBuilder[constType.Out, OP] =
+    new ConstExprBuilder(constType(wrapConst.wrapConst(value)))
 
   type SpecificHkExprBuilder[I, C[_], A] <: HkExprBuilder[I, C, A]
 
