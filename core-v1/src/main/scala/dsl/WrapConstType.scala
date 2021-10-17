@@ -33,6 +33,12 @@ object WrapConstType extends LowPriorityWrapConstType {
       override final def apply(wrapped: W[C[A]]): C[W[A]] =
         Extract[W].extract(wrapped).map(WrapConst[W].wrapConst).to(factory)
     }
+
+  implicit def nil[W[+_]]: WrapConstType.Aux[W, Nil.type, List[W[Nothing]]] =
+    new WrapConstType[W, Nil.type] {
+      override type Out = List[W[Nothing]]
+      override def apply(wrapped: W[Nil.type]): List[W[Nothing]] = Nil
+    }
 }
 
 trait LowPriorityWrapConstType {
