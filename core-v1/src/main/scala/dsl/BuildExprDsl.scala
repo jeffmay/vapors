@@ -9,7 +9,6 @@ import logic.Negation
 import cats.{Foldable, Functor, Order}
 
 import scala.annotation.nowarn
-import scala.collection.Factory
 
 trait BuildExprDsl {
   self: DslTypes =>
@@ -38,35 +37,38 @@ trait BuildExprDsl {
 
   type SpecificHkExprBuilder[I, C[_], A] <: HkExprBuilder[I, C, A]
 
-  implicit def hk[I, C[_], A](expr: W[I] ~> C[W[A]]): SpecificHkExprBuilder[I, C, A]
+  implicit def hk[I, C[_], A](expr: I ~> C[W[A]]): SpecificHkExprBuilder[I, C, A]
 
   trait HkExprBuilder[I, C[_], A] extends Any {
 
-    protected def inputExpr: W[I] ~> C[W[A]]
+    protected def inputExpr: I ~> C[W[A]]
 
     def exists(
-      conditionExpr: W[A] ~> W[Boolean],
+      conditionExprBuilder: W[A] ~~> W[Boolean],
     )(implicit
-      opA: OP[C[W[A]]],
+      opO: OP[C[W[A]]],
+      opA: OP[W[A]],
       opB: OP[W[Boolean]],
       foldC: Foldable[C],
-    ): Expr[W[I], W[Boolean], OP]
+    ): Ap[I, C[W[A]], W[Boolean]]
 
     def forall(
-      conditionExpr: W[A] ~> W[Boolean],
+      conditionExprBuilder: W[A] ~~> W[Boolean],
     )(implicit
-      opA: OP[C[W[A]]],
+      opO: OP[C[W[A]]],
+      opA: OP[W[A]],
       opB: OP[W[Boolean]],
       foldC: Foldable[C],
-    ): Expr[W[I], W[Boolean], OP]
+    ): Ap[I, C[W[A]], W[Boolean]]
 
     def map[B](
-      mapExpr: W[A] ~> W[B],
+      mapExprBuilder: W[A] ~~> W[B],
     )(implicit
+      opI: OP[W[A]],
       opA: OP[C[W[A]]],
       opB: OP[C[W[B]]],
       functorC: Functor[C],
-    ): W[I] ~> C[W[B]]
+    ): Ap[I, C[W[A]], C[W[B]]]
   }
 
   implicit def compare[I, V : Order : OP](
@@ -132,5 +134,5 @@ trait BuildExprDsl {
 
 final class ConstExprBuilder[A, OP[_]](private val value: A) extends AnyVal {
 
-  def const(implicit op: OP[A]): Expr[Any, A, OP] = Expr.Const(value)
+  def const(implicit op: OP[A]): Expr.Const[A, OP] = Expr.Const(value)
 }

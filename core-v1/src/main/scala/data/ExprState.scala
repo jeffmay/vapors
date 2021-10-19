@@ -2,7 +2,6 @@ package com.rallyhealth.vapors.v1
 
 package data
 
-// TODO: Figure out how to incorporate justification
 final case class ExprState[+I, +O](
   factTable: FactTable,
   private val maybeInput: Option[I],

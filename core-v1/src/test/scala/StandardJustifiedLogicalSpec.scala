@@ -13,7 +13,7 @@ class StandardJustifiedLogicalSpec extends FunSuite {
   test("justified expr") {
     val age18 = FactTypes.Age(18)
     val expr = valuesOfType(FactTypes.Age).exists {
-      ident[Int] >= 18
+      _ >= 18
     }
     val output = expr.run(FactTable(age18)).state.output
     assertEquals(

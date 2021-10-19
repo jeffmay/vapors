@@ -5,6 +5,7 @@ package data
 import math.Add
 
 import cats.data.{NonEmptyList, NonEmptySet}
+import cats.Order
 
 import scala.annotation.nowarn
 
@@ -105,7 +106,11 @@ object Justified {
     override def productPrefix: String = "Justified.ByInference"
   }
 
-  implicit def extractValue[T]: ExtractValue[Justified[T], T] = _.value
+  implicit def orderingByValue[V : Ordering]: Ordering[Justified[V]] = Ordering.by(_.value)
+
+  implicit def orderByValue[V : Order]: Order[Justified[V]] = Order.by(_.value)
+
+  implicit def extractValue[V]: ExtractValue[Justified[V], V] = _.value
 
   implicit def add[L, R](
     implicit

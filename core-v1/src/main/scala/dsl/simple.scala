@@ -13,11 +13,11 @@ object simple extends BuildIdExprDsl with SimpleRunDsl {
     override type OP[_] = HasSourceCodeInfo
   }
 
-  final object justified extends BuildJustifiedExprDsl with SimpleRunDsl {
+  final object justified extends JustifiedBuildExprDsl with SimpleRunDsl {
 
     override type OP[_] = NoOP
 
-    final object withSourceInfo extends BuildJustifiedExprDsl with SimpleRunDsl {
+    final object withSourceInfo extends JustifiedBuildExprDsl with SimpleRunDsl {
 
       override type OP[_] = HasSourceCodeInfo
     }

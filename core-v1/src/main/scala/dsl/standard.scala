@@ -8,7 +8,7 @@ object standard extends BuildIdExprDsl with StandardRunDsl {
 
   override type OP[_] = NoOP
 
-  final object justified extends BuildJustifiedExprDsl with StandardRunDsl {
+  final object justified extends JustifiedBuildExprDsl with StandardRunDsl {
 
     override type OP[_] = NoOP
   }
