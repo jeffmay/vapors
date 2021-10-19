@@ -1,15 +1,26 @@
 package com.rallyhealth.vapors.v1
 
-class JustifiedCollectionLogicSpec extends munit.FunSuite {
+import data.FactTable
+import example.FactTypes
+
+import scala.collection.immutable.SortedSet
+
+class JustifiedCollectionEvidenceSpec extends munit.FunSuite {
 
   import dsl.simple.justified._
 
-  test(".exists returns false when empty") {
-    val expr = List.empty[Int].const.exists {
-      _ > 2
+  test(".exists returns all evidence when empty".fail) {
+    val emptyTagsFact = FactTypes.CombinedTags(SortedSet())
+    val expr = valuesOfType(FactTypes.CombinedTags).exists {
+      _.exists {
+        _ > "C"
+      }
     }
-    val result = expr.run()
+    val result = expr.run(FactTable(emptyTagsFact))
     assert(!result.value)
+    // TODO: This should contain the original fact as evidence
+    println(result)
+    assert(result.evidence.nonEmpty)
   }
 
   test(".exists returns true") {

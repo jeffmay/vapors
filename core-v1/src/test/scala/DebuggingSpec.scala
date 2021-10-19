@@ -40,6 +40,9 @@ class DebuggingSpec extends FunSuite {
       case None => expr.run(factTable)
     }
 
+    // TODO: These tests pass on invalid debug args, we should make them fail to make sure that each type
+    //       is passing the correct debug input type.
+
     test(s"debug const $withOrWithout input") {
       testExpr {
         1.const.debug { state =>
@@ -64,13 +67,11 @@ class DebuggingSpec extends FunSuite {
     test(s"debug exists $withOrWithout input") {
       val seq = Seq(false, true)
       testExpr {
-        seq.const
-          .exists(ident)
-          .debug { state =>
-            val (i, ce) = state.input
-            validateInput(i)
-            assertEquals(ce, seq)
-          }
+        seq.const.exists(identity).debug { state =>
+          val (i, ca) = state.input
+          validateInput(i)
+          assertEquals(ca, seq)
+        }
       }
     }
   }

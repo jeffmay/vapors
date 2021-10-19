@@ -2,14 +2,14 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import algebra.{CompareWrapped, Expr, Extract, WindowComparable, WrapConst}
-import data.{FactTypeSet, Justified, Window}
+import algebra._
+import data.{FactTypeSet, Justified}
 import logic.Negation
 
 import cats.data.NonEmptyList
 import cats.{Foldable, Functor}
 
-trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
+trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedExprDsl {
 
   override protected implicit final def compareWrapped: CompareWrapped[Justified] = CompareWrapped.justified
 
@@ -18,6 +18,12 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
   override protected implicit final def extract: Extract[Justified] = Extract.justified
 
   override protected implicit final def wrapConst: WrapConst[Justified] = WrapConst.justified
+
+  override protected def wrapElement[C[_], A](
+    outer: Justified[C[A]],
+    element: A,
+  ): Justified[A] =
+    Justified.byInference("elementOf", element, NonEmptyList.of(outer))
 
   // TODO: Should this be visible outside this trait?
   protected def dontShortCircuit: Boolean = false
@@ -45,32 +51,26 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
   ): Expr.ValuesOfType[T, Justified[T], OP] =
     Expr.ValuesOfType[T, Justified[T], OP](factTypeSet, Justified.ByFact(_))
 
-  // TODO: Why is this not in the root DSL class?
-  /**
-    * Allows you to skip calling .const on a window to wrap it in a Expr.Const
-    */
-  implicit def wrapWindow[O](window: Window[O])(implicit opW: OP[Justified[Window[O]]]): Any ~> Justified[Window[O]] =
-    Expr.Const(Justified.byConst(window))
+  override type SpecificHkExprBuilder[I, C[_], A] = JustifiedHkExprBuilder[I, C, A]
 
-  override type SpecificHkExprBuilder[I, C[_], E] = JustifiedHkExprBuilder[I, C, E]
-
-  override implicit def hk[I, C[_], E](expr: Justified[I] ~> C[Justified[E]]): JustifiedHkExprBuilder[I, C, E] =
+  override implicit def hk[I, C[_], A](expr: I ~> C[Justified[A]]): JustifiedHkExprBuilder[I, C, A] =
     new JustifiedHkExprBuilder(expr)
 
-  final class JustifiedHkExprBuilder[I, C[_], A](override protected val inputExpr: Justified[I] ~> C[Justified[A]])
+  final class JustifiedHkExprBuilder[I, C[_], A](override protected val inputExpr: I ~> C[Justified[A]])
     extends HkExprBuilder[I, C, A] {
 
     override def exists(
-      conditionExpr: Justified[A] ~> Justified[Boolean],
+      conditionExprBuilder: Justified[A] ~~> Justified[Boolean],
     )(implicit
-      opA: OP[C[Justified[A]]],
+      opO: OP[C[Justified[A]]],
+      opA: OP[Justified[A]],
       opB: OP[Justified[Boolean]],
       foldC: Foldable[C],
-    ): Justified[I] ~> Justified[Boolean] =
+    ): Ap[I, C[Justified[A]], Justified[Boolean]] =
       Expr.AndThen(
         inputExpr,
         Expr.Exists[C, Justified[A], Justified[Boolean], OP](
-          conditionExpr,
+          conditionExprBuilder(Expr.Identity()),
           combineTrue = Justified.byInference("exists", true, _),
           combineFalse = NonEmptyList
             .fromList(_)
@@ -80,6 +80,7 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
             .getOrElse {
               // exists in an empty collection is false
               // TODO: Should I put a reason instead of just a const?
+              //       Maybe I should pass the original value in these functions?
               Justified.byConst(false)
             },
           dontShortCircuit,
@@ -87,16 +88,17 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
       )
 
     override def forall(
-      conditionExpr: Justified[A] ~> Justified[Boolean],
+      conditionExprBuilder: Justified[A] ~~> Justified[Boolean],
     )(implicit
-      opA: OP[C[Justified[A]]],
+      opO: OP[C[Justified[A]]],
+      opA: OP[Justified[A]],
       opB: OP[Justified[Boolean]],
       foldC: Foldable[C],
-    ): Justified[I] ~> Justified[Boolean] =
+    ): Ap[I, C[Justified[A]], Justified[Boolean]] =
       Expr.AndThen(
         inputExpr,
         Expr.ForAll[C, Justified[A], Justified[Boolean], OP](
-          conditionExpr,
+          conditionExprBuilder(Expr.Identity()),
           NonEmptyList
             .fromList(_)
             .map { justified =>
@@ -113,12 +115,14 @@ trait BuildJustifiedExprDsl extends BuildExprDsl with JustifiedExprDsl {
       )
 
     override def map[B](
-      mapExpr: Justified[A] ~> Justified[B],
+      mapExprBuilder: Justified[A] ~~> Justified[B],
     )(implicit
+      opI: OP[Justified[A]],
       opA: OP[C[Justified[A]]],
       opB: OP[C[Justified[B]]],
       functorC: Functor[C],
-    ): Justified[I] ~> C[Justified[B]] =
-      Expr.AndThen(inputExpr, Expr.MapEvery[C, Justified[A], Justified[B], OP](mapExpr))
+    ): Ap[I, C[Justified[A]], C[Justified[B]]] =
+      Expr.AndThen(inputExpr, Expr.MapEvery[C, Justified[A], Justified[B], OP](mapExprBuilder(Expr.Identity())))
+
   }
 }

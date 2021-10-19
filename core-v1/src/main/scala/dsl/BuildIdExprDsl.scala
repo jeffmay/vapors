@@ -45,36 +45,39 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
   final class HkIdExprBuilder[I, C[_], A](override protected val inputExpr: I ~> C[A]) extends HkExprBuilder[I, C, A] {
 
     override def exists(
-      conditionExpr: A ~> Boolean,
+      conditionExprBuilder: A ~~> Boolean,
     )(implicit
-      opA: OP[C[A]],
+      opO: OP[C[A]],
+      opA: OP[A],
       opB: OP[Boolean],
       foldC: Foldable[C],
-    ): Expr[I, Boolean, OP] =
+    ): Expr.AndThen[I, C[A], C[A], Boolean, OP] =
       Expr.AndThen(
         inputExpr,
-        Expr.Exists[C, A, Boolean, OP](conditionExpr, _ => true, _ => false, shortCircuit),
+        Expr.Exists[C, A, Boolean, OP](conditionExprBuilder(ident), _ => true, _ => false, shortCircuit),
       )
 
     override def forall(
-      conditionExpr: A ~> Boolean,
+      conditionExprBuilder: A ~~> Boolean,
     )(implicit
-      opA: OP[C[A]],
+      opO: OP[C[A]],
+      opA: OP[A],
       opB: OP[Boolean],
       foldC: Foldable[C],
-    ): Expr[I, Boolean, OP] =
+    ): Expr.AndThen[I, C[A], C[A], Boolean, OP] =
       Expr.AndThen(
         inputExpr,
-        Expr.ForAll[C, A, Boolean, OP](conditionExpr, _ => true, _ => false, shortCircuit),
+        Expr.ForAll[C, A, Boolean, OP](conditionExprBuilder(ident[A]), _ => true, _ => false, shortCircuit),
       )
 
     override def map[B](
-      mapExpr: A ~> B,
+      mapExprBuilder: A ~~> B,
     )(implicit
+      opI: OP[A],
       opA: OP[C[A]],
       opB: OP[C[B]],
       functorC: Functor[C],
-    ): I ~> C[B] =
-      Expr.AndThen(inputExpr, Expr.MapEvery[C, A, B, OP](mapExpr))
+    ): Expr.AndThen[I, C[A], C[A], C[B], OP] =
+      Expr.AndThen(inputExpr, Expr.MapEvery[C, A, B, OP](mapExprBuilder(ident)))
   }
 }

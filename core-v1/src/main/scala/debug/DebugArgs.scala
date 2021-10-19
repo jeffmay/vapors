@@ -4,8 +4,7 @@ package debug
 
 import algebra.Expr
 import data.ExprState
-
-import com.rallyhealth.vapors.v1.logic.Negation
+import logic.Negation
 
 import scala.reflect.ClassTag
 
@@ -87,7 +86,20 @@ object DebugArgs {
       }
     }
 
-  implicit def debugNot2[I, O : ClassTag : Negation : OP, OP[_]]: DebugArgs.Aux[Expr.Not[I, O, OP], (I, O), O, OP] =
+  implicit def debugIdent[I : ClassTag : OP, OP[_]]: DebugArgs.Aux[Expr.Identity[I, OP], I, I, OP] =
+    new DebugArgs[Expr.Identity[I, OP], OP] {
+      override type In = I
+      override type Out = I
+      override def attachHook(
+        expr: Expr.Identity[I, OP],
+        hook: ExprState[I, I] => Unit,
+      ): Expr.Identity[I, OP] = {
+        val debugging = Debugging(hook)
+        expr.copy(debugging = debugging)
+      }
+    }
+
+  implicit def debugNot[I, O : ClassTag : Negation : OP, OP[_]]: DebugArgs.Aux[Expr.Not[I, O, OP], (I, O), O, OP] =
     new DebugArgs[Expr.Not[I, O, OP], OP] {
       override type In = (I, O)
       override type Out = O
