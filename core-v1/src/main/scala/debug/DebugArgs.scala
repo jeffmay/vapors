@@ -3,8 +3,10 @@ package com.rallyhealth.vapors.v1
 package debug
 
 import algebra.Expr
-import data.ExprState
-import logic.Negation
+import data.{ExprState, Window}
+
+import cats.data.NonEmptyList
+import com.rallyhealth.vapors.v1.lens.VariantLens
 
 import scala.reflect.ClassTag
 
@@ -18,114 +20,204 @@ import scala.reflect.ClassTag
   */
 trait DebugArgs[E <: Expr.AnyWith[OP], OP[_]] {
   type In
-  type Out
-
-  def attachHook(
-    expr: E,
-    hook: ExprState[In, Out] => Unit,
-  ): E
+  type Out // TODO: Is this ever NOT just the 'O' type parameter of Expr[I, O, OP]?
 }
 
 object DebugArgs {
 
-  type Aux[E <: Expr.AnyWith[OP], DI, DO, OP[_]] = DebugArgs[E, OP] {
+  type Aux[E <: Expr.AnyWith[OP], OP[_], DI, DO] = DebugArgs[E, OP] {
     type In = DI
     type Out = DO
   }
 
-  implicit def debugApply[
-    AI : ClassTag,
-    AO <: BI : OP,
-    BI >: AO : ClassTag,
-    BO : OP : ClassTag,
-    OP[_],
-  ]: DebugArgs.Aux[Expr.AndThen[AI, AO, BI, BO, OP], (AI, BI), BO, OP] =
-    new DebugArgs[Expr.AndThen[AI, AO, BI, BO, OP], OP] {
-      override type In = (AI, BI)
-      override type Out = BO
-      override def attachHook(
-        expr: Expr.AndThen[AI, AO, BI, BO, OP],
-        hook: ExprState[(AI, BI), BO] => Unit,
-      ): Expr.AndThen[AI, AO, BI, BO, OP] = {
-        val debugging = Debugging(hook).ignoreInvalidOutput
-        expr.copy(debugging = debugging)
+  def apply[OP[_]]: Using[OP] = new Using
+
+  final class Using[OP[_]](private val dummy: Boolean = true) extends AnyVal {
+
+    def of[E <: Expr.AnyWith[OP]](
+      expr: E,
+    )(implicit
+      debugArgs: DebugArgs[E, OP],
+    ): Adapter[E, OP, debugArgs.In, debugArgs.Out] = new Adapter(expr)
+  }
+
+  /**
+    * Uses the fixed types supplied by the [[DebugArgs]] compiler trick to provide better type inference
+    * when attaching a hook.
+    *
+    * @tparam E The specific [[Expr]] subclass used to compute the debug types
+    * @tparam DI The `Debugging Input` type (this doesn't always need to match the actual input to the [[Expr]])
+    *            Typically, this is a tuple of all of the input types of any sub-expressions preceded by the
+    *            input to the given expression.
+    * @tparam DO The `Debugging Output` type (this is always the same as the [[Expr]]'s output type)
+    * @tparam OP The `Output Parameter` (captured at the definition site for every output type in the expression tree)
+    */
+  sealed trait Attacher[E <: Expr.AnyWith[OP], OP[_], DI, DO] extends Any {
+
+    /**
+      * Attach the given function to run when the expression is being interpreted. It allows you to intercept
+      * the computation and inspect the current state, but it does not allow you to alter it.
+      *
+      * @see [[Expr.withDebugging]]
+      * @see [[Debugging]]
+      *
+      * @note The [[ClassTag]]s are required to make sure the expression is not casted improperly.
+      *       The compiler thinks it may be possible to cast an expression in such a way as to make
+      *       the attached hook require a more specific type than the expression will evaluate.
+      *       If this happens, the library will throw a more helpful error than a [[ClassCastException]].
+      *
+      *       It may also be the case that this scenario is impossible, in which case, these class
+      *       tags may be removed in the future.
+      */
+    def debug(
+      hook: ExprState[DI, DO] => Unit,
+    )(implicit
+      cti: ClassTag[DI],
+      cto: ClassTag[DO],
+      cte: ClassTag[E],
+    ): E
+  }
+
+  sealed trait Invoker[E <: Expr.AnyWith[OP], OP[_], DI, DO] extends Any {
+
+    def invokeDebugger(args: ExprState[DI, DO]): Unit
+  }
+
+  final class Adapter[E <: Expr.AnyWith[OP], OP[_], DI, DO] private[DebugArgs] (private val expr: E)
+    extends AnyVal
+    with Attacher[E, OP, DI, DO]
+    with Invoker[E, OP, DI, DO] {
+
+    override def debug(
+      hook: ExprState[DI, DO] => Unit,
+    )(implicit
+      cti: ClassTag[DI],
+      cto: ClassTag[DO],
+      cte: ClassTag[E],
+    ): E = {
+      val debugging = Debugging(hook).ignoreInvalidState
+      expr.withDebugging(debugging) match {
+        case e: E => e
+        case e =>
+          throw new IllegalStateException(
+            s"Expr.${cte.runtimeClass.getSimpleName}.withDebugging() produced the incorrect type of ${e.getClass.getSimpleName}",
+          )
       }
     }
 
-  implicit def debugCombine[
-    I : ClassTag,
-    LI >: LO : ClassTag,
-    LO <: LI : OP,
-    RI >: RO : ClassTag,
-    RO <: RI : OP,
-    O : OP : ClassTag,
-    OP[_],
-  ]: DebugArgs.Aux[Expr.Combine[I, LI, LO, RI, RO, O, OP], (I, LI, RI), O, OP] =
+    override def invokeDebugger(args: ExprState[DI, DO]): Unit = expr.debugging.ignoreInvalidState.attach(args)
+  }
+
+  implicit def anyExpr[I, O, OP[_]]: Aux[Expr[I, O, OP], OP, Any, O] =
+    new DebugArgs[Expr[I, O, OP], OP] {
+      override type In = Any
+      override type Out = O
+    }
+
+  implicit def debugAndThen[II, IO, OI, OO, OP[_]](
+    implicit
+    evIOisOI: IO <:< OI,
+  ): Aux[Expr.AndThen[II, IO, OI, OO, OP], OP, (II, OI), OO] =
+    new DebugArgs[Expr.AndThen[II, IO, OI, OO, OP], OP] {
+      override type In = (II, OI)
+      override type Out = OO
+    }
+
+  implicit def debugAnd[I, OP[_]]: Aux[Expr.And[I, OP], OP, (I, Boolean, Boolean), Boolean] =
+    new DebugArgs[Expr.And[I, OP], OP] {
+      override type In = (I, Boolean, Boolean)
+      override type Out = Boolean
+    }
+
+  implicit def debugCustomFunction[I, O, OP[_]]: Aux[Expr.CustomFunction[I, O, OP], OP, I, O] =
+    new DebugArgs[Expr.CustomFunction[I, O, OP], OP] {
+      override type In = I
+      override type Out = O
+    }
+
+  implicit def debugOr[I, OP[_]]: Aux[Expr.Or[I, OP], OP, (I, Boolean, Boolean), Boolean] =
+    new DebugArgs[Expr.Or[I, OP], OP] {
+      override type In = (I, Boolean, Boolean)
+      override type Out = Boolean
+    }
+
+  implicit def debugCombine[I, LI, LO, RI, RO, O, OP[_]](
+    implicit
+    evLOisLI: LO <:< LI,
+    evROisRI: RO <:< RI,
+  ): Aux[Expr.Combine[I, LI, LO, RI, RO, O, OP], OP, (I, LI, RI), O] =
     new DebugArgs[Expr.Combine[I, LI, LO, RI, RO, O, OP], OP] {
       override type In = (I, LI, RI)
       override type Out = O
-      override def attachHook(
-        expr: Expr.Combine[I, LI, LO, RI, RO, O, OP],
-        hook: ExprState[(I, LI, RI), O] => Unit,
-      ): Expr.Combine[I, LI, LO, RI, RO, O, OP] = {
-        val debugging = Debugging(hook).ignoreInvalidOutput
-        expr.copy(debugging = debugging)
-      }
     }
 
-  implicit def debugConst[O : ClassTag : OP, OP[_]]: DebugArgs.Aux[Expr.Const[O, OP], Any, O, OP] =
+  implicit def debugConst[O, OP[_]]: Aux[Expr.Const[O, OP], OP, Any, O] =
     new DebugArgs[Expr.Const[O, OP], OP] {
       override type In = Any
       override type Out = O
-      override def attachHook(
-        expr: Expr.Const[O, OP],
-        hook: ExprState[Any, O] => Unit,
-      ): Expr.Const[O, OP] = {
-        val debugging = Debugging(hook).ignoreInvalidOutput
-        expr.copy(debugging = debugging)
-      }
     }
 
-  implicit def debugIdent[I : ClassTag : OP, OP[_]]: DebugArgs.Aux[Expr.Identity[I, OP], I, I, OP] =
+  implicit def debugIdent[I, OP[_]]: Aux[Expr.Identity[I, OP], OP, I, I] =
     new DebugArgs[Expr.Identity[I, OP], OP] {
       override type In = I
       override type Out = I
-      override def attachHook(
-        expr: Expr.Identity[I, OP],
-        hook: ExprState[I, I] => Unit,
-      ): Expr.Identity[I, OP] = {
-        val debugging = Debugging(hook)
-        expr.copy(debugging = debugging)
-      }
     }
 
-  implicit def debugNot[I, O : ClassTag : Negation : OP, OP[_]]: DebugArgs.Aux[Expr.Not[I, O, OP], (I, O), O, OP] =
+  implicit def debugNot[I, O, OP[_]]: Aux[Expr.Not[I, O, OP], OP, (I, O), O] =
     new DebugArgs[Expr.Not[I, O, OP], OP] {
       override type In = (I, O)
       override type Out = O
-      override def attachHook(
-        expr: Expr.Not[I, O, OP],
-        hook: ExprState[(I, O), O] => Unit,
-      ): Expr.Not[I, O, OP] = {
-        val debugging = Debugging(hook).ignoreInvalidState
-        expr.copy(debugging = debugging)
-      }
     }
 
-  implicit def debugValuesOfType[T, O : ClassTag, OP[_]](
-    implicit
-    op: OP[Seq[O]],
-  ): DebugArgs.Aux[Expr.ValuesOfType[T, O, OP], Any, Seq[O], OP] =
+  implicit def debugExists[
+    C[_],
+    A,
+    B,
+    OP[_],
+  ]: Aux[Expr.Exists[C, A, B, OP], OP, (C[A], Either[List[B], NonEmptyList[B]]), B] =
+    new DebugArgs[Expr.Exists[C, A, B, OP], OP] {
+      override type In = (C[A], Either[List[B], NonEmptyList[B]])
+      override type Out = B
+    }
+
+  implicit def debugForAll[
+    C[_],
+    A,
+    B,
+    OP[_],
+  ]: Aux[Expr.ForAll[C, A, B, OP], OP, (C[A], Either[NonEmptyList[B], List[B]]), B] =
+    new DebugArgs[Expr.ForAll[C, A, B, OP], OP] {
+      override type In = (C[A], Either[NonEmptyList[B], List[B]])
+      override type Out = B
+    }
+
+  implicit def debugMapEvery[C[_], A, B, OP[_]]: Aux[Expr.MapEvery[C, A, B, OP], OP, C[A], C[B]] =
+    new DebugArgs[Expr.MapEvery[C, A, B, OP], OP] {
+      override type In = C[A]
+      override type Out = C[B]
+    }
+
+  implicit def debugSelect[I, O, OP[_]]: Aux[Expr.Select[I, O, OP], OP, (I, VariantLens[I, O]), O] =
+    new DebugArgs[Expr.Select[I, O, OP], OP] {
+      override type In = (I, VariantLens[I, O])
+      override type Out = O
+    }
+
+  implicit def debugValuesOfType[T, O, OP[_]]: Aux[Expr.ValuesOfType[T, O, OP], OP, Any, Seq[O]] =
     new DebugArgs[Expr.ValuesOfType[T, O, OP], OP] {
       override type In = Any
       override type Out = Seq[O]
-      override def attachHook(
-        expr: Expr.ValuesOfType[T, O, OP],
-        hook: ExprState[Any, Seq[O]] => Unit,
-      ): Expr.ValuesOfType[T, O, OP] = {
-        val debugging = Debugging(hook).ignoreInvalidOutput
-        expr.copy(debugging = debugging)
-      }
+    }
+
+  implicit def debugWithinWindow[
+    I,
+    V,
+    F[+_],
+    OP[_],
+  ]: Aux[Expr.WithinWindow[I, V, F, OP], OP, (I, F[V], F[Window[V]]), F[Boolean]] =
+    new DebugArgs[Expr.WithinWindow[I, V, F, OP], OP] {
+      override type In = (I, F[V], F[Window[V]])
+      override type Out = F[Boolean]
     }
 
 }

@@ -5,6 +5,8 @@ package algebra
 import debug.DebugArgs
 import math.Add
 
+import scala.annotation.nowarn
+
 /**
   * This class only exists because attempting to require an implicit `PO[AO]` on the [[Expr.+]] method
   * conflicts with the implicit search for [[Add]]. It results in diverging implicit expansion because
@@ -39,14 +41,14 @@ final class CombineHolder[-I, -LI, +LO : OP, -RI, +RO : OP, O, OP[_]](
     add: Add[NLI, NRI],
   ): CombineHolder[CI, NLI, O, NRI, NRO, add.Out, OP] = {
     // can't eta-expand a dependent object function, the (_, _) is required
-    new CombineHolder(toExpr, that, "add", add.combine(_, _))
+    new CombineHolder(toExpr, that, "add", add.combine(_, _): @nowarn)
   }
 
   def toExpr(implicit opO: OP[O]): Expr.Combine[I, LI, LO, RI, RO, O, OP] =
     Expr.Combine(left, right, operationName, combine)
 }
 
-object CombineHolder {
+object CombineHolder extends LowPriorityCombineHolderImplicits {
 
   implicit def asExpr[I, LI, LO, RI, RO, O, OP[_]](
     holder: CombineHolder[I, LI, LO, RI, RO, O, OP],
@@ -54,11 +56,33 @@ object CombineHolder {
     opO: OP[O],
   ): Expr.Combine[I, LI, LO, RI, RO, O, OP] = holder.toExpr
 
+  /**
+    * This is a hack to fix a reported error by IntelliJ.
+    *
+    * IntelliJ's presentation compiler infers (wrongly) that the input type of the [[CombineHolder]]
+    * is `Nothing`, when it should be `Any`. This hints to the compiler to use `Any` before trying any
+    * other type, so this patches an error that prevents you from calling `.run()` on a debugged
+    * [[CombineHolder]] produced expression.
+    *
+    * If this can be removed, then [[LowPriorityCombineHolderImplicits.debugExpr]] can be moved back
+    * to this position (and possibly remove the low priority trait).
+    */
+  implicit def debugAnyCombineHolder[LI, LO, RI, RO, O, OP[_]](
+    holder: CombineHolder[Any, LI, LO, RI, RO, O, OP],
+  )(implicit
+    opO: OP[O],
+    debugArgs: DebugArgs[Expr.Combine[Any, LI, LO, RI, RO, O, OP], OP],
+  ): DebugArgs.Attacher[Expr.Combine[Any, LI, LO, RI, RO, O, OP], OP, debugArgs.In, debugArgs.Out] =
+    DebugArgs[OP].of(holder.toExpr)(debugArgs)
+}
+
+trait LowPriorityCombineHolderImplicits {
+
   implicit def debugExpr[I, LI, LO, RI, RO, O, OP[_]](
     holder: CombineHolder[I, LI, LO, RI, RO, O, OP],
   )(implicit
     opO: OP[O],
     debugArgs: DebugArgs[Expr.Combine[I, LI, LO, RI, RO, O, OP], OP],
-  ): Expr.DebugSyntax[Expr.Combine[I, LI, LO, RI, RO, O, OP], debugArgs.In, debugArgs.Out, OP] =
-    new Expr.DebugSyntax(debugArgs.attachHook(asExpr(holder), _))
+  ): DebugArgs.Attacher[Expr.Combine[I, LI, LO, RI, RO, O, OP], OP, debugArgs.In, debugArgs.Out] =
+    DebugArgs[OP].of(holder.toExpr)(debugArgs)
 }

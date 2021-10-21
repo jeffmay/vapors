@@ -13,6 +13,12 @@ import scala.reflect.{classTag, ClassTag}
   * Since each [[Expr]] subclass has different input types for the debug hooks, we need [[ClassTag]]s
   * to make sure that our runtime types match the expected types as laid out by the implicit
   * [[com.rallyhealth.vapors.v1.debug.DebugArgs]] for the specific Expr subclass.
+  *
+  * TODO: The ability to alter the local state might also be helpful for debugging purposes, but it should
+  *       be something that you can disable for a more "production secure" setup. That said... maybe the
+  *       entire capability of attaching a side-effecting function should be something you can turn off.
+  *       Either way, we should always support this `ExprState => Unit` interface, so it would have to be
+  *       a separate method anyway.
   */
 sealed abstract class Debugging[-I : ClassTag, -O : ClassTag] {
 

@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package algebra
 
-import data.{ExprState, ExtractValue, FactTypeSet, TypedFact, Window}
+import data.{ExtractValue, FactTypeSet, TypedFact, Window}
 import debug.{DebugArgs, Debugging, NoDebugging}
 import lens.VariantLens
 import logic.Negation
@@ -31,15 +31,19 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
   /**
     * Holds any [[Debugging]] hook to be run while running this expression.
     *
-    * You should favor using the `.debug` extension method provided by the [[Expr.DebugSyntax]]
+    * You should favor using the `.debug` extension method provided by the [[DebugArgs.Attacher]] using an
+    * implicit conversion of this [[Expr]].
     *
     * @note Only one hook can be attached to an expression. The last one attached wins.
     *       TODO: Remove this limitation by chaining debug functions together.
     *
     * @note As a top-level [[Expr]] method, this is not very useful, as you cannot invoke it, however, you can
     *       print or inspect it for information at runtime; and placing it here prevents me from forgetting to
-    *       add this to subclasses. The types are refined when attaching the debug hooks using the [[DebugArgs]]
-    *       compiler trick.
+    *       add this to subclasses.
+    *
+    * @see [[Debugging]] for more details on how type checking is handled.
+    *
+    * TODO: Should this be made package private?
     */
   def debugging: Debugging[Nothing, Nothing]
 
@@ -100,44 +104,27 @@ object Expr {
 
   final type AnyWith[OP[_]] = Expr[Nothing, Any, OP]
 
-  implicit def debugAnyExpr[I, O, OP[_]](expr: Expr[I, O, OP]): DebugSyntax[Expr[I, O, OP], Any, Any, OP] =
-    new DebugSyntax(hook => expr.withDebugging(Debugging(hook)))
+  /**
+    * Oddly, this is required for the compiler to pick-up the .debug method. Without it, the compiler does not
+    * find the implicit conversion for [[debugExpr]]. And, despite there being 2 implicit conversions that can
+    * match any [[Expr]] type, the compiler will pick the more specific [[debugExpr]] based on the implicit
+    * [[DebugArgs]] and will fail to compile,
+    */
+  implicit def debugAnyExpr[I, O, OP[_]](expr: Expr[I, O, OP]): DebugArgs.Attacher[Expr[I, O, OP], OP, Any, O] =
+    DebugArgs[OP].of(expr)(DebugArgs.anyExpr)
 
+  /**
+    * Uses the compiler-inferred types supplied by the implicit [[DebugArgs]] for a given expression.
+    *
+    * We only allow attaching debug functions by default by upcasting the [[DebugArgs.Adapter]] to
+    * just a [[DebugArgs.Attacher]]. If you want to be able to invoke the
+    */
   implicit def debugExpr[E <: Expr.AnyWith[OP], OP[_]](
     expr: E,
   )(implicit
     debugArgs: DebugArgs[E, OP],
-  ): DebugSyntax[E, debugArgs.In, debugArgs.Out, OP] =
-    new DebugSyntax(debugArgs.attachHook(expr, _))
-
-  /**
-    * Uses the fixed types supplied by the [[DebugArgs]] compiler trick to provide better type inference
-    * when attaching a hook.
-    *
-    * @param attachHook a captured function that will attach a given hook function to the specific [[Expr]] type
-    * @tparam E The specific [[Expr]] subclass used to compute the debug types
-    * @tparam DI The `Debugging Input` type (this doesn't always need to match the actual input to the [[Expr]])
-    *            Typically, this is a tuple of all of the input types of any sub-expressions preceded by the
-    *            input to the given expression.
-    * @tparam DO The `Debugging Output` type (this is always the same as the [[Expr]]'s output type)
-    * @tparam OP The `Output Parameter` (captured at the definition site for every output type in the expression tree)
-    */
-  final class DebugSyntax[E <: Expr.AnyWith[OP], DI, DO, OP[_]](
-    private val attachHook: (ExprState[DI, DO] => Unit) => E,
-  ) extends AnyVal {
-
-    /**
-      * Attach the given function to run when the expression is being interpreted. It allows you to intercept
-      * the computation and inspect the current state, but it does not allow you to alter it.
-      *
-      * TODO: The ability to alter the local state might also be helpful for debugging purposes, but it should
-      *       be something that you can disable for a more "production secure" setup. That said... maybe the
-      *       entire capability of attaching a side-effecting function should be something you can turn off.
-      *       Either way, we should always support this `ExprState => Unit` interface, so it would have to be
-      *       a separate method anyway.
-      */
-    def debug(hook: ExprState[DI, DO] => Unit): E = attachHook(hook)
-  }
+  ): DebugArgs.Attacher[E, OP, debugArgs.In, debugArgs.Out] =
+    DebugArgs[OP].of(expr)(debugArgs)
 
   /**
     * This is the magic that allows you to traverse the entire expression recursively. You need a

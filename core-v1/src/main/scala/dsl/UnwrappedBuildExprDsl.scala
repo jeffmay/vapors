@@ -8,7 +8,7 @@ import logic.Negation
 
 import cats.{Foldable, Functor}
 
-trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
+trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
 
   override implicit final def compareWrapped: CompareWrapped[W] = CompareWrapped.value
 
