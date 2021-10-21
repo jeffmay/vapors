@@ -5,7 +5,8 @@ package dsl
 import algebra.CombineHolder
 import data.{ExprState, FactTable}
 
-trait RunExprDsl extends DslTypes {
+trait RunExprDsl {
+  self: DslTypes =>
 
   type Result[+PO, -I, +O]
 
@@ -14,13 +15,11 @@ trait RunExprDsl extends DslTypes {
     initState: ExprState[Any, PO],
   ): Result[PO, I, O]
 
-  implicit def run[O](expr: Nothing ~> O): SpecificRunExpr[O]
+  implicit def run[O](expr: Any ~> O): SpecificRunExpr[O]
 
   implicit def runWith[I, O](expr: I ~> O): SpecificRunWithExpr[I, O]
 
-  implicit def runCombine[O : OP](
-    builder: CombineHolder[Nothing, Nothing, Any, Nothing, Any, O, OP],
-  ): SpecificRunExpr[O]
+  implicit def runCombine[O : OP](builder: CombineHolder[Any, Nothing, Any, Nothing, Any, O, OP]): SpecificRunExpr[O]
 
   implicit def runCombineWith[I, O : OP](
     builder: CombineHolder[I, Nothing, Any, Nothing, Any, O, OP],
@@ -29,15 +28,15 @@ trait RunExprDsl extends DslTypes {
   type SpecificRunExpr[+O] <: RunExpr[O]
   type SpecificRunWithExpr[-I, +O] <: RunWithExpr[I, O]
 
-  class RunExpr[+O](expr: Nothing ~> O) {
+  class RunExpr[+O](expr: Any ~> O) {
 
     /**
       * Runs the expression without any starting input starting with the given [[FactTable]].
       *
       * @note this requires `()` because this could execute side-effects from the attached debuggers.
       */
-    def run(factTable: FactTable = FactTable.empty): Result[Nothing, Nothing, O] = {
-      visitExpr[Nothing, Nothing, O](expr, ExprState.Empty(factTable))
+    def run(factTable: FactTable = FactTable.empty): Result[Nothing, Any, O] = {
+      visitExpr[Nothing, Any, O](expr, ExprState.Empty(factTable))
     }
   }
 

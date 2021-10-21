@@ -18,5 +18,7 @@ trait DslTypes extends Any {
 
   final type ~~>[I, +O] = Expr.Identity[I, OP] => Expr[I, O, OP]
 
+  final type AnyExpr = Expr.AnyWith[OP]
+
   final type Ap[-I, M, +O] = Expr.AndThen[I, M, M, O, OP]
 }

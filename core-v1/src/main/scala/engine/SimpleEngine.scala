@@ -4,6 +4,8 @@ package engine
 
 import algebra.{Expr, WindowComparable}
 import data.{ExprState, ExtractValue, FactTable}
+import debug.DebugArgs
+import debug.DebugArgs.Invoker
 import logic.Negation
 
 import cats.{Foldable, Functor}
@@ -24,8 +26,23 @@ object SimpleEngine {
 
     import cats.implicits._
 
+    protected def state[I, O](
+      input: I,
+      output: O,
+    ): ExprState[I, O] = ExprState(factTable, Some(input), Some(output))
+
+    protected def debugging[E <: Expr.AnyWith[OP]](
+      expr: E,
+    )(implicit
+      debugArgs: DebugArgs[E, OP],
+    ): InvokeAndReturn[E, OP, debugArgs.In, debugArgs.Out] =
+      new InvokeAndReturn(DebugArgs[OP].of(expr)(debugArgs))
+
     override def visitAnd[I](expr: Expr.And[I, OP])(implicit opO: OP[Boolean]): I => Boolean = { i =>
-      expr.leftExpr.visit(this)(i) && expr.rightExpr.visit(this)(i)
+      val lo = expr.leftExpr.visit(this)(i)
+      val ro = expr.rightExpr.visit(this)(i)
+      val o = lo && ro
+      debugging(expr).invokeAndReturn(state((i, lo, ro), o))
     }
 
     override def visitAndThen[II, IO : OP, OI, OO : OP](
@@ -35,7 +52,7 @@ object SimpleEngine {
     ): II => OO = { ii =>
       val io = expr.inputExpr.visit(this)(ii)
       val oo = expr.outputExpr.visit(this)(io)
-      oo
+      debugging(expr).invokeAndReturn(state((ii, io), oo))
     }
 
     override def visitCombine[I, LI, LO : OP, RI, RO : OP, O : OP](
@@ -47,66 +64,75 @@ object SimpleEngine {
       val lo = expr.leftExpr.visit(this)(i)
       val ro = expr.rightExpr.visit(this)(i)
       val o = expr.operation(lo, ro)
-      o
+      debugging(expr).invokeAndReturn(state((i, lo, ro), o))
     }
 
-    override def visitConst[O : OP](expr: Expr.Const[O, OP]): Any => O = { _ =>
-      expr.value
+    override def visitConst[O : OP](expr: Expr.Const[O, OP]): Any => O = { i =>
+      val o = expr.value
+      debugging(expr).invokeAndReturn(state(i, o))
     }
 
-    override def visitCustomFunction[I, O : OP](expr: Expr.CustomFunction[I, O, OP]): I => O = expr.function
+    override def visitCustomFunction[I, O : OP](expr: Expr.CustomFunction[I, O, OP]): I => O = { i =>
+      val o = expr.function(i)
+      debugging(expr).invokeAndReturn(state(i, o))
+    }
 
     override def visitExists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
       expr: Expr.Exists[C, A, B, OP],
     ): C[A] => B = { ca =>
       val isMatchingResult = expr.conditionExpr.visit(this)
-      val output = visitExistsCommon(expr, ca)(isMatchingResult)
-      expr.debugging.attach(ExprState(factTable, Some(ca), Some(output)))
-      output
+      val (results, o) = visitExistsCommon(expr, ca)(isMatchingResult)
+      debugging(expr).invokeAndReturn(state((ca, results), o))
     }
 
     override def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
       expr: Expr.ForAll[C, A, B, OP],
     ): C[A] => B = { ca =>
       val isMatchingResult = expr.conditionExpr.visit(this)
-      val output = visitForAllCommon(expr, ca)(isMatchingResult)
-      expr.debugging.attach(ExprState(factTable, Some(ca), Some(output)))
-      output
+      val (results, o) = visitForAllCommon(expr, ca)(isMatchingResult)
+      debugging(expr).invokeAndReturn(state((ca, results), o))
     }
 
-    override def visitIdentity[I : OP](expr: Expr.Identity[I, OP]): I => I = i => i
+    override def visitIdentity[I : OP](expr: Expr.Identity[I, OP]): I => I = { i =>
+      debugging(expr).invokeAndReturn(state(i, i))
+    }
 
     override def visitMapEvery[C[_] : Functor, A, B](
       expr: Expr.MapEvery[C, A, B, OP],
     )(implicit
       opO: OP[C[B]],
-    ): C[A] => C[B] = { i =>
+    ): C[A] => C[B] = { ca =>
       val mapFn = expr.mapExpr.visit(this)
-      i.map(mapFn)
+      val cb = ca.map(mapFn)
+      debugging(expr).invokeAndReturn(state(ca, cb))
     }
 
     override def visitNot[I, O : Negation : OP](expr: Expr.Not[I, O, OP]): I => O = { i =>
-      val innerResult = expr.innerExpr.visit(this)(i)
-      Negation[O].negation(innerResult)
+      val output = expr.innerExpr.visit(this)(i)
+      val negatedOutput = Negation[O].negation(output)
+      debugging(expr).invokeAndReturn(state((i, output), negatedOutput))
     }
 
     override def visitOr[I](expr: Expr.Or[I, OP])(implicit opO: OP[Boolean]): I => Boolean = { i =>
-      expr.leftExpr.visit(this)(i) || expr.rightExpr.visit(this)(i)
+      val lo = expr.leftExpr.visit(this)(i)
+      val ro = expr.rightExpr.visit(this)(i)
+      val o = lo || ro
+      debugging(expr).invokeAndReturn(state((i, lo, ro), o))
     }
 
     override def visitSelect[I, O : OP](expr: Expr.Select[I, O, OP]): I => O = { i =>
-      val output = expr.lens.get(i)
-      expr.debugging.attach(ExprState(factTable, Some(i), Some(output)))
-      output
+      val o = expr.lens.get(i)
+      debugging(expr).invokeAndReturn(state((i, expr.lens), o))
     }
 
     override def visitValuesOfType[T, O](
       expr: Expr.ValuesOfType[T, O, OP],
     )(implicit
       opTs: OP[Seq[O]],
-    ): Any => Seq[O] = { _ =>
+    ): Any => Seq[O] = { i =>
       val matchingFacts = factTable.getSortedSeq(expr.factTypeSet)
-      matchingFacts.map(expr.transform)
+      val o = matchingFacts.map(expr.transform)
+      debugging(expr).invokeAndReturn(state(i, o))
     }
 
     override def visitWithinWindow[I, V : OP, F[+_]](
@@ -115,11 +141,23 @@ object SimpleEngine {
       comparison: WindowComparable[F, OP],
       opB: OP[F[Boolean]],
     ): I => F[Boolean] = { i =>
-      val window = expr.windowExpr.visit(this)(i)
       val value = expr.valueExpr.visit(this)(i)
-      val output = comparison.withinWindow(value, window)
-      expr.debugging.attach(ExprState(factTable, Some((i, value, window)), Some(output)))
-      output
+      val window = expr.windowExpr.visit(this)(i)
+      val o = comparison.withinWindow(value, window)
+      debugging(expr).invokeAndReturn(state((i, value, window), o))
+    }
+  }
+
+  protected implicit class InvokeAndReturn[E <: Expr.AnyWith[OP], OP[_], DI, DO](
+    private val invoker: Invoker[E, OP, DI, DO],
+  ) extends AnyVal {
+
+    /**
+      * A convenience method for returning the output after debugging.
+      */
+    def invokeAndReturn(args: ExprState[DI, DO]): DO = {
+      invoker.invokeDebugger(args)
+      args.output
     }
   }
 }

@@ -9,7 +9,7 @@ import logic.Negation
 import cats.data.NonEmptyList
 import cats.{Foldable, Functor}
 
-trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedExprDsl {
+trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
 
   override protected implicit final def compareWrapped: CompareWrapped[Justified] = CompareWrapped.justified
 

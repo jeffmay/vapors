@@ -4,6 +4,6 @@ package dsl
 
 import data.Justified
 
-trait JustifiedExprDsl extends Any with DslTypes {
+trait JustifiedDslTypes extends Any with DslTypes {
   override final type W[+O] = Justified[O]
 }
