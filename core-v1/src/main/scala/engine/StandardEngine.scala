@@ -30,7 +30,13 @@ object StandardEngine {
 
     import cats.implicits._
 
-    protected def withState[O](state: ExprState[Any, O]): Visitor[O, OP] = new Visitor(state)
+    protected def withOutput[O](output: O): Visitor[O, OP] = new Visitor(state.swapAndReplaceOutput(output))
+
+    protected def stateFromInput[DI, DO](
+      mapInput: PO => DI,
+      output: DO,
+    ): ExprState[DI, DO] =
+      state.withBoth(mapInput(state.output), output)
 
     protected def debugging[E <: Expr.AnyWith[OP]](
       expr: E,
@@ -46,28 +52,27 @@ object StandardEngine {
     ): PO <:< I => ExprResult[PO, I, Boolean, OP] = { implicit evPOisI =>
       val left = expr.leftExpr.visit(this)(implicitly)
       val right = expr.rightExpr.visit(this)(implicitly)
-      val output = left.state.output || right.state.output
+      val leftIsTrue = left.state.output
+      val rightIsTrue = right.state.output
+      val output = leftIsTrue || rightIsTrue
       // TODO: Do justification here
-      val newState = state.swapAndReplaceOutput(output)
-      expr.debugging.attach(newState)
-      ExprResult.And(expr, newState, left, right)
+      val finalState = state.swapAndReplaceOutput(output)
+      debugging(expr).invokeDebugger(stateFromInput((_, leftIsTrue, rightIsTrue), finalState.output))
+      ExprResult.And(expr, finalState, left, right)
     }
 
     override def visitAndThen[II, IO : OP, OI, OO : OP](
       expr: Expr.AndThen[II, IO, OI, OO, OP],
     )(implicit
-      evAOisBI: IO <:< OI,
+      evIOisOI: IO <:< OI,
     ): PO <:< II => ExprResult[PO, II, OO, OP] = { implicit evPOisI =>
       val inputResult = expr.inputExpr.visit(this)(implicitly)
-      val outputResult = expr.outputExpr.visit(withState(inputResult.state))(implicitly)
-      val newState = state.swapAndReplaceOutput(outputResult.state.output)
-      expr.debugging.attach(
-        newState.withBoth(
-          (inputResult.state.input, outputResult.state.input),
-          inputResult.state.output,
-        ),
-      )
-      ExprResult.AndThen(expr, newState, inputResult, outputResult)
+      val inputResultState = inputResult.state
+      val inputValue = inputResultState.output
+      val outputResult = expr.outputExpr.visit(withOutput(inputValue))(implicitly)
+      val finalState = state.swapAndReplaceOutput(outputResult.state.output)
+      debugging(expr).invokeDebugger(stateFromInput((_, inputValue), finalState.output))
+      ExprResult.AndThen(expr, finalState, inputResult, outputResult)
     }
 
     override def visitCombine[I, LI, LO : OP, RI, RO : OP, O : OP](
@@ -78,28 +83,28 @@ object StandardEngine {
     ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evPOisI =>
       val left = expr.leftExpr.visit(this)(implicitly)
       val right = expr.rightExpr.visit(this)(implicitly)
-      val leftOutput = left.state.output
-      val rightOutput = right.state.output
-      val output = expr.operation(leftOutput, rightOutput)
+      val leftInput: LI = left.state.output
+      val rightInput: RI = right.state.output
+      val output = expr.operation(leftInput, rightInput)
       // TODO: Apply justification union here
-      val newState = state.swapAndReplaceOutput(output)
-      debugging(expr).invokeDebugger(newState.mapInput((_, leftOutput, rightOutput)))
-      ExprResult.Combine(expr, newState, left, right)
+      val finalState = state.swapAndReplaceOutput(output)
+      debugging(expr).invokeDebugger(stateFromInput((_, leftInput, rightInput), finalState.output))
+      ExprResult.Combine(expr, finalState, left, right)
     }
 
     override def visitConst[O : OP](expr: Expr.Const[O, OP]): PO <:< Any => ExprResult[PO, Any, O, OP] = { _ =>
-      val newState = state.swapAndReplaceOutput(expr.value)
-      debugging(expr).invokeDebugger(newState)
-      ExprResult.Const(expr, newState)
+      val finalState = state.swapAndReplaceOutput(expr.value)
+      debugging(expr).invokeDebugger(finalState)
+      ExprResult.Const(expr, finalState)
     }
 
     override def visitCustomFunction[I, O : OP](
       expr: Expr.CustomFunction[I, O, OP],
     ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evPOisI =>
       val customFunctionOutput = expr.function(state.output)
-      val newState = state.swapAndReplaceOutput(customFunctionOutput)
-      debugging(expr).invokeDebugger(newState)
-      ExprResult.CustomFunction(expr, newState)
+      val finalState = state.swapAndReplaceOutput(customFunctionOutput)
+      debugging(expr).invokeDebugger(finalState)
+      ExprResult.CustomFunction(expr, finalState)
     }
 
     override def visitExists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
@@ -107,13 +112,13 @@ object StandardEngine {
     ): PO <:< C[A] => ExprResult[PO, C[A], B, OP] = { implicit evPOisI =>
       val ca: C[A] = state.output
       val (results, o) = visitExistsCommon(expr, ca) { a =>
-        val conditionState = withState(state.withOutput(a))
-        val conditionResult = expr.conditionExpr.visit(conditionState)(implicitly)
+        val conditionResult = expr.conditionExpr.visit(withOutput(a))(implicitly)
         conditionResult.state.output
       }
-      val newState = state.swapAndReplaceOutput(o)
-      debugging(expr).invokeDebugger(newState.withInput((ca, results)))
-      ExprResult.Exists(expr, newState)
+      val finalState = state.swapAndReplaceOutput(o)
+      val debugState = stateFromInput(i => (i: C[A], results), finalState.output)
+      debugging(expr).invokeDebugger(stateFromInput((_, results), finalState.output))
+      ExprResult.Exists(expr, finalState)
     }
 
     override def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
@@ -121,20 +126,20 @@ object StandardEngine {
     ): PO <:< C[A] => ExprResult[PO, C[A], B, OP] = { implicit evPOisI =>
       val ca: C[A] = state.output
       val (results, o) = visitForAllCommon(expr, ca) { a =>
-        val conditionState = withState(state.withOutput(a))
-        val conditionResult = expr.conditionExpr.visit(conditionState)(implicitly)
+        val conditionResult = expr.conditionExpr.visit(withOutput(a))(implicitly)
         conditionResult.state.output
       }
-      val newState = state.swapAndReplaceOutput(o)
-      debugging(expr).invokeDebugger(newState.withInput((ca, results)))
-      ExprResult.ForAll(expr, newState)
+      val finalState = state.swapAndReplaceOutput(o)
+      debugging(expr).invokeDebugger(stateFromInput((_, results), finalState.output))
+      ExprResult.ForAll(expr, finalState)
     }
 
     override def visitIdentity[I : OP](expr: Expr.Identity[I, OP]): PO <:< I => ExprResult[PO, I, I, OP] = {
       implicit evPOisI =>
-        val input = evPOisI(state.output)
-        debugging(expr).invokeDebugger(state.withBoth(input, input))
-        ExprResult.Identity(expr, state.swapAndReplaceOutput(input))
+        val input: I = state.output
+        val finalState = state.swapAndReplaceOutput(input)
+        debugging(expr).invokeDebugger(finalState)
+        ExprResult.Identity(expr, finalState)
     }
 
     override def visitMapEvery[C[_] : Functor, A, B](
@@ -142,24 +147,24 @@ object StandardEngine {
     )(implicit
       opO: OP[C[B]],
     ): PO <:< C[A] => ExprResult[PO, C[A], C[B], OP] = { implicit evPOisI =>
-      val input = evPOisI(state.output)
+      val input: C[A] = state.output
       val results = input.map { e =>
-        expr.mapExpr.visit(withState(state.withOutput(e)))(implicitly)
+        expr.mapExpr.visit(withOutput(e))(implicitly)
       }
       val combinedOutput = results.map(_.state.output)
-      val newState = state.swapAndReplaceOutput(combinedOutput)
-      debugging(expr).invokeDebugger(newState)
-      ExprResult.MapEvery(expr, newState, results)
+      val finalState = state.swapAndReplaceOutput(combinedOutput)
+      debugging(expr).invokeDebugger(stateFromInput(evPOisI, finalState.output))
+      ExprResult.MapEvery(expr, finalState, results)
     }
 
     override def visitNot[I, O : Negation : OP](expr: Expr.Not[I, O, OP]): PO <:< I => ExprResult[PO, I, O, OP] = {
       implicit evPOisI =>
-        val booleanResult = expr.innerExpr.visit(withState(state))(implicitly)
+        val booleanResult = expr.innerExpr.visit(this)(implicitly)
         val output = booleanResult.state.output
         val negatedOutput = Negation[O].negation(output)
-        val newState = state.swapAndReplaceOutput(negatedOutput)
-        debugging(expr).invokeDebugger(newState.mapInput((_, output)))
-        ExprResult.Not(expr, newState, booleanResult)
+        val finalState = state.swapAndReplaceOutput(negatedOutput)
+        debugging(expr).invokeDebugger(stateFromInput((_, output), finalState.output))
+        ExprResult.Not(expr, finalState, booleanResult)
     }
 
     override def visitOr[I](
@@ -173,17 +178,17 @@ object StandardEngine {
       val rightIsTrue = right.state.output
       val output = leftIsTrue || rightIsTrue
       // TODO: Do justification here
-      val newState = state.swapAndReplaceOutput(output)
-      debugging(expr).invokeDebugger(newState.mapInput((_, leftIsTrue, rightIsTrue)))
-      ExprResult.Or(expr, newState, left, right)
+      val finalState = state.swapAndReplaceOutput(output)
+      debugging(expr).invokeDebugger(stateFromInput((_, leftIsTrue, rightIsTrue), finalState.output))
+      ExprResult.Or(expr, finalState, left, right)
     }
 
     override def visitSelect[I, O : OP](expr: Expr.Select[I, O, OP]): PO <:< I => ExprResult[PO, I, O, OP] = {
       implicit evPOisI =>
         val output = expr.lens.get(state.output)
-        val newState = state.swapAndReplaceOutput(output)
-        debugging(expr).invokeDebugger(newState.mapInput((_, expr.lens)))
-        ExprResult.Select(expr, newState)
+        val finalState = state.swapAndReplaceOutput(output)
+        debugging(expr).invokeDebugger(stateFromInput((_, expr.lens), finalState.output))
+        ExprResult.Select(expr, finalState)
     }
 
     override def visitValuesOfType[T, O](
@@ -193,9 +198,9 @@ object StandardEngine {
     ): PO <:< Any => ExprResult[PO, Any, Seq[O], OP] = { implicit evPOisI =>
       val matchingFacts = state.factTable.getSortedSeq(expr.factTypeSet)
       val matchingValues = matchingFacts.map(expr.transform)
-      val newState = state.swapAndReplaceOutput(matchingValues)
-      debugging(expr).invokeDebugger(newState)
-      ExprResult.ValuesOfType(expr, newState)
+      val finalState = state.swapAndReplaceOutput(matchingValues)
+      debugging(expr).invokeDebugger(finalState)
+      ExprResult.ValuesOfType(expr, finalState)
     }
 
     override def visitWithinWindow[I, V : OP, F[+_]](
@@ -209,9 +214,9 @@ object StandardEngine {
       val value = valueResult.state.output
       val window = windowResult.state.output
       val output = comparison.withinWindow(value, window)
-      val newState = state.swapAndReplaceOutput(output)
-      debugging(expr).invokeDebugger(newState.mapInput((_, value, window)))
-      ExprResult.WithinWindow(expr, newState, valueResult, windowResult)
+      val finalState = state.swapAndReplaceOutput(output)
+      debugging(expr).invokeDebugger(stateFromInput((_, value, window), finalState.output))
+      ExprResult.WithinWindow(expr, finalState, valueResult, windowResult)
     }
   }
 }

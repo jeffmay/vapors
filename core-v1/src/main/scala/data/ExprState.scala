@@ -23,13 +23,19 @@ final case class ExprState[+I, +O](
     output: B,
   ): ExprState[A, B] = copy(maybeInput = Some(input), maybeOutput = Some(output))
 
+  // TODO: Use HasOutput for this?
   def flatMapOutput[A](fn: O => Option[A]): ExprState[I, A] = copy(maybeOutput = maybeOutput.flatMap(fn))
+  // TODO: Use HasOutput for this?
   def mapOutput[A](fn: O => A): ExprState[I, A] = copy(maybeOutput = maybeOutput.map(fn))
+
   def withOutput[A](output: A): ExprState[I, A] = copy(maybeOutput = Some(output))
   def withNoOutput: ExprState[I, Nothing] = copy(maybeOutput = None)
 
+  // TODO: Use HasInput for this?
   def flatMapInput[A](fn: I => Option[A]): ExprState[A, O] = copy(maybeInput = maybeInput.flatMap(fn))
+  // TODO: Use HasInput for this?
   def mapInput[A](fn: I => A): ExprState[A, O] = copy(maybeInput = maybeInput.map(fn))
+
   def withInput[A](input: A): ExprState[A, O] = copy(maybeInput = Some(input))
   def withNoInput: ExprState[Nothing, O] = copy(maybeInput = None)
 
@@ -39,6 +45,10 @@ final case class ExprState[+I, +O](
     */
   def swapAndReplaceOutput[A](output: A): ExprState[O, A] =
     copy(maybeInput = maybeOutput, maybeOutput = Some(output))
+
+  override def toString: String = {
+    s"ExprState(input = ${maybeInput.getOrElse(ExprState.Nothing)}, output = ${maybeOutput.getOrElse(ExprState.Nothing)}, factTable = $factTable)"
+  }
 }
 
 object ExprState {

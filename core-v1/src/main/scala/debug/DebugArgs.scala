@@ -4,9 +4,10 @@ package debug
 
 import algebra.Expr
 import data.{ExprState, Window}
+import lens.VariantLens
 
 import cats.data.NonEmptyList
-import com.rallyhealth.vapors.v1.lens.VariantLens
+import izumi.reflect.Tag
 
 import scala.reflect.ClassTag
 
@@ -73,8 +74,9 @@ object DebugArgs {
       hook: ExprState[DI, DO] => Unit,
     )(implicit
       cti: ClassTag[DI],
+      tti: Tag[DI],
       cto: ClassTag[DO],
-      cte: ClassTag[E],
+      tto: Tag[DO],
     ): E
   }
 
@@ -92,20 +94,24 @@ object DebugArgs {
       hook: ExprState[DI, DO] => Unit,
     )(implicit
       cti: ClassTag[DI],
+      tti: Tag[DI],
       cto: ClassTag[DO],
-      cte: ClassTag[E],
+      tto: Tag[DO],
     ): E = {
-      val debugging = Debugging(hook).ignoreInvalidState
-      expr.withDebugging(debugging) match {
-        case e: E => e
-        case e =>
-          throw new IllegalStateException(
-            s"Expr.${cte.runtimeClass.getSimpleName}.withDebugging() produced the incorrect type of ${e.getClass.getSimpleName}",
-          )
+      val expectedClass = expr.getClass
+      val debugging = Debugging(hook).throwOnInvalidState
+      val debuggedExpr = expr.withDebugging(debugging)
+      if (expectedClass.isInstance(debuggedExpr)) {
+        debuggedExpr.asInstanceOf[E]
+      } else {
+        throw new IllegalStateException(
+          s"Expr.${expectedClass.getSimpleName}.withDebugging() produced the wrong type of Expr (${debuggedExpr.getClass.getSimpleName})",
+        )
       }
+
     }
 
-    override def invokeDebugger(args: ExprState[DI, DO]): Unit = expr.debugging.ignoreInvalidState.attach(args)
+    override def invokeDebugger(args: ExprState[DI, DO]): Unit = expr.debugging.throwOnInvalidState.attach(args)
   }
 
   implicit def anyExpr[I, O, OP[_]]: Aux[Expr[I, O, OP], OP, Any, O] =

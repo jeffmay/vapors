@@ -21,7 +21,7 @@ final case class FactTable(factsByName: SortedMap[String, FactSet]) extends AnyV
   def addAll(facts: Iterable[Fact]): FactTable = {
     import cats.syntax.semigroup._
     val newFactTable = FactTable(facts)
-    new FactTable(this.factsByName.combine(newFactTable.factsByName))
+    new FactTable(this.factsByName |+| newFactTable.factsByName)
   }
 
   def getSortedSeq[T](factTypeSet: FactTypeSet[T]): IndexedSeq[TypedFact[T]] = {
@@ -37,6 +37,15 @@ final case class FactTable(factsByName: SortedMap[String, FactSet]) extends AnyV
       case factTypeSet(matchingByType) => matchingByType
     }
     matchingFacts.reduceOption(_ | _).map(TypedFactSet.from).getOrElse(Set.empty)
+  }
+
+  // TODO: Better support for formatting here
+  override def toString: String = if (factsByName.isEmpty) "FactTable.empty" else {
+    val factMap = factsByName.iterator.map {
+      case (factType, facts) =>
+        s"\"$factType\": [${facts.mkString(", ")}]"
+    }.mkString("{\n", ",\n", "\n}")
+    s"FactTable($factMap)"
   }
 }
 
