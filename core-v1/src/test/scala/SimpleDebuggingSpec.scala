@@ -44,7 +44,7 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     }
   }
 
-  val combineHolder: CombineHolder[Any, Int, Int, Int, Int, Int, OP] = 1.const + 3.const + 5.const
+  private val combineHolder = 1.const + 3.const + 5.const
 
   test("debug combine holder with input") {
     val expr = combineHolder.debug { state =>
