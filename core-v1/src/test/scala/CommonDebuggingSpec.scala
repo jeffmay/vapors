@@ -4,6 +4,7 @@ import data.{ExprState, FactTable}
 import debug.DebugArgs
 import dsl.{DslTypes, RunExprDsl}
 
+import izumi.reflect.Tag
 import munit.Assertions._
 import munit.Location
 
@@ -58,8 +59,11 @@ trait CommonDebuggingSpec {
       test: ExprState[DI, DO] => Unit,
     )(implicit
       cti: ClassTag[DI],
+      tti: Tag[DI],
       cto: ClassTag[DO],
+      tto: Tag[DO],
       cte: ClassTag[E],
+      tte: Tag[E],
     ): Unit = {
       var debugInvoked = false
       val debuggedExpr = DebugArgs[OP].of(expr)(debugArgs).debug { state =>
@@ -67,7 +71,7 @@ trait CommonDebuggingSpec {
         test(state)
       }
       runDebuggedExpr(debuggedExpr)
-      assert(debugInvoked, s"debugger never invoked by the Expr.Visitor interpreter invoked by $thisDsl")
+      assert(debugInvoked, s"debugger never invoked by the Expr.Visitor interpreter invoked by dsl.$thisDsl")
     }
   }
 

@@ -5,7 +5,10 @@ package debug
 import algebra.Expr
 import data.ExprState
 
-import scala.reflect.{classTag, ClassTag}
+import izumi.reflect.Tag
+
+import scala.annotation.nowarn
+import scala.reflect.ClassTag
 
 /**
   * Encapsulates the logic for attaching a debug hook.
@@ -20,58 +23,76 @@ import scala.reflect.{classTag, ClassTag}
   *       Either way, we should always support this `ExprState => Unit` interface, so it would have to be
   *       a separate method anyway.
   */
-sealed abstract class Debugging[-I : ClassTag, -O : ClassTag] {
+sealed abstract class Debugging[-I : ClassTag : Tag, -O : ClassTag : Tag] {
 
   def attach(state: ExprState[I, O]): Unit
 
-  final def ignoreInvalidState: Debugging[Any, Any] = Debugging { state =>
+  final def throwOnInvalidState: Debugging[Any, Any] = Debugging { state =>
+    import Debugging.{input, output}
+    def correct[V : Tag](
+      position: String,
+      @nowarn observed: V,
+    ): String = s"the correct type of $position (${Tag[V].tag})"
+    def incorrect[V : Tag](
+      position: String,
+      observed: Any,
+    ): String = observed match {
+      case ExprState.Nothing => s"no $position (i.e. ExprState.Nothing) (expected ${Tag[V].tag})"
+      case _ => s"the incorrect type of $position (${observed.getClass.getName}) (expected ${Tag[V].tag})"
+    }
+    def fail(
+      inputMsg: String,
+      outputMsg: String,
+    ): Nothing = {
+      val msg = s"$this provided $inputMsg and $outputMsg"
+      throw new IllegalStateException(msg)
+    }
     state.input match {
       case i: I =>
         state.output match {
           case o: O => attach(state.withBoth(i, o))
-          case _ =>
+          case o => fail(correct[I](input, i), incorrect[O](output, o))
         }
-      case _ =>
+      case i =>
+        state.output match {
+          case o: O => fail(incorrect[I](input, i), correct[O](output, o))
+          case o => fail(incorrect[I](input, i), incorrect[O](output, o))
+        }
     }
   }
 
-  final def ignoreInvalidInput: Debugging[Any, O] = Debugging { state =>
-    state.input match {
-      case i: I => attach(state.withInput(i))
-    }
-  }
-
-  final def ignoreInvalidOutput: Debugging[I, Any] = Debugging { state =>
-    state.output match {
-      case o: O => attach(state.withOutput(o))
-    }
-  }
-
-  final def contramap[A : ClassTag, B : ClassTag](fn: ExprState[A, B] => ExprState[I, O]): Debugging[A, B] =
+  final def contramap[A : ClassTag : Tag, B : ClassTag : Tag](fn: ExprState[A, B] => ExprState[I, O]): Debugging[A, B] =
     Debugging { state =>
       attach(fn(state))
     }
 
-  final def contramapInput[A : ClassTag](fn: A => I): Debugging[A, O] = Debugging { state =>
+  final def contramapInput[A : ClassTag : Tag](fn: A => I): Debugging[A, O] = Debugging { state =>
     attach(state.mapInput(fn))
   }
 
-  final def contramapOutput[A : ClassTag](fn: A => O): Debugging[I, A] = Debugging { state =>
+  final def contramapOutput[A : ClassTag : Tag](fn: A => O): Debugging[I, A] = Debugging { state =>
     attach(state.mapOutput(fn))
+  }
+
+  override lazy val toString: String = {
+    s"Debugging[${Tag[I].tag}, ${Tag[O].tag}]"
   }
 }
 
 object Debugging {
 
-  def apply[I : ClassTag, O : ClassTag](hook: ExprState[I, O] => Unit): Debugging[I, O] =
+  private final val input = "input"
+  private final val output = "output"
+
+  def apply[I : ClassTag : Tag, O : ClassTag : Tag](hook: ExprState[I, O] => Unit): Debugging[I, O] =
     new Debugging[I, O] {
       override final def attach(state: ExprState[I, O]): Unit = hook(state)
-      override final lazy val toString: String = s"Debugging[${classTag[I]}, ${classTag[O]}]"
     }
 
 }
 
 case object NoDebugging extends NoDebugging
 sealed class NoDebugging private extends Debugging[Any, Any] {
-  override def attach(state: ExprState[Any, Any]): Unit = {}
+  override final def attach(state: ExprState[Any, Any]): Unit = {}
+  override final lazy val toString: String = "NoDebugging"
 }

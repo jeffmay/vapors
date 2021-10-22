@@ -4,9 +4,9 @@ import algebra.Expr
 
 import munit._
 
-class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
+class StandardDebuggingSpec extends FunSuite with CommonDebuggingSpec {
 
-  override final val thisDsl = dsl.simple
+  override final val thisDsl = dsl.standard
   import thisDsl._
 
   private val initialInput = "Test input"
