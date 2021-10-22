@@ -1,6 +1,6 @@
 package com.rallyhealth.vapors.v1
 
-import algebra.{CombineHolder, Expr}
+import algebra.Expr
 
 import munit._
 
