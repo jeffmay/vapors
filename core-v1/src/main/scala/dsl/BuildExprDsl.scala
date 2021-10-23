@@ -93,7 +93,7 @@ trait BuildExprDsl {
       that: Expr[I, W[V], OP],
     )(
       using: V => Window[V],
-    ): Expr.WithinWindow[I, V, W, OP] = {
+    ): I >=< V =
       Expr.WithinWindow(
         valueExpr,
         Expr.AndThen(
@@ -101,34 +101,41 @@ trait BuildExprDsl {
           Expr.CustomFunction[W[V], W[Window[V]], OP](name, CompareWrapped[W].map(_)(using)),
         ),
       )
-    }
 
     protected def compareLiteral(
       @nowarn name: String, // this is unused but kept for consistency
       that: V,
     )(
       using: V => Window[V],
-    ): Expr.WithinWindow[I, V, W, OP] =
+    ): I >=< V =
       Expr.WithinWindow(
         valueExpr,
         Expr.Const[W[Window[V]], OP](CompareWrapped[W].wrapConst(using(that))),
       )
 
-    def <(literal: V): I ~> W[Boolean] = compareLiteral("<", literal)(Window.lessThan(_))
+    def <(literal: V): I >=< V = compareLiteral("<", literal)(Window.lessThan(_))
 
-    def <(expr: I ~> W[V]): I ~> W[Boolean] = compareExpr("<", expr)(Window.lessThan(_))
+    def <(expr: I ~> W[V]): I >=< V = compareExpr("<", expr)(Window.lessThan(_))
 
-    def <=(literal: V): I ~> W[Boolean] = compareLiteral("<=", literal)(Window.lessThanOrEqual(_))
+    def <=(literal: V): I >=< V = compareLiteral("<=", literal)(Window.lessThanOrEqual(_))
 
-    def <=(expr: I ~> W[V]): I ~> W[Boolean] = compareExpr("<=", expr)(Window.lessThanOrEqual(_))
+    def <=(expr: I ~> W[V]): I >=< V = compareExpr("<=", expr)(Window.lessThanOrEqual(_))
 
-    def >(literal: V): I ~> W[Boolean] = compareLiteral(">", literal)(Window.greaterThan(_))
+    def >(literal: V): I >=< V = compareLiteral(">", literal)(Window.greaterThan(_))
 
-    def >(expr: I ~> W[V]): I ~> W[Boolean] = compareExpr(">", expr)(Window.greaterThan(_))
+    def >(expr: I ~> W[V]): I >=< V = compareExpr(">", expr)(Window.greaterThan(_))
 
-    def >=(literal: V): I ~> W[Boolean] = compareLiteral(">=", literal)(Window.greaterThanOrEqual(_))
+    def >=(literal: V): I >=< V = compareLiteral(">=", literal)(Window.greaterThanOrEqual(_))
 
-    def >=(expr: I ~> W[V]): I ~> W[Boolean] = compareExpr(">=", expr)(Window.greaterThanOrEqual(_))
+    def >=(expr: I ~> W[V]): I >=< V = compareExpr(">=", expr)(Window.greaterThanOrEqual(_))
+
+    def within(window: Window[V]): I >=< V = this >=< window
+
+    def >=<(window: Window[V]): I >=< V = Expr.WithinWindow(valueExpr, Expr.Const(CompareWrapped[W].wrapConst(window)))
+
+    def within(expr: I ~> W[Window[V]]): I >=< V = this >=< expr
+
+    def >=<(expr: I ~> W[Window[V]]): I >=< V = Expr.WithinWindow(valueExpr, expr)
   }
 }
 

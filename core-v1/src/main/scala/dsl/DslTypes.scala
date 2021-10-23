@@ -21,4 +21,8 @@ trait DslTypes extends Any {
   final type AnyExpr = Expr.AnyWith[OP]
 
   final type Ap[-I, M, +O] = Expr.AndThen[I, M, M, O, OP]
+
+  final type WithinWindowOf[-I, +V] = Expr.WithinWindow[I, V, W, OP]
+
+  final type >=<[-I, +V] = I WithinWindowOf V
 }
