@@ -20,9 +20,14 @@ sealed trait Justified[+V] extends Product {
   def configs: Seq[(String, Option[String])] // TODO: How should this handle duplicates?
   def evidence: Evidence
 
-  def zipWith[Y, Z](that: Justified[Y])(fn: (V, Y) => Z): Justified[Z] =
+  def zipWith[Y, Z](
+    that: Justified[Y],
+    reason: String,
+  )(
+    fn: (V, Y) => Z,
+  ): Justified[Z] =
     Justified.ByInference(
-      s"zip(${this.reason} AND ${that.reason})",
+      reason,
       fn(this.value, that.value),
       NonEmptyList.of(this, that),
     )
@@ -122,7 +127,7 @@ object Justified {
         left: Justified[L],
         right: Justified[R],
       ): Justified[adder.Out] = {
-        left.zipWith(right)(adder.combine(_, _): @nowarn)
+        left.zipWith(right, "add")(adder.combine(_, _): @nowarn)
       }
     }
   }

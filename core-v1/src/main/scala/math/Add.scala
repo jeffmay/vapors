@@ -8,7 +8,7 @@ import scala.annotation.implicitNotFound
 @implicitNotFound(
   "Cannot add ${R} to ${L} with the + operator. If this is incorrect, please define an implicit Add[${L}, ${R}].",
 )
-trait Add[-L, -R] {
+trait Add[L, R] {
   type Out
 
   def combine(
@@ -22,7 +22,7 @@ trait Add[-L, -R] {
 }
 
 object Add extends NumericAddImplicits with JavaTimeAddImplicits {
-  type Aux[-L, -R, O] = Add[L, R] { type Out = O }
+  type Aux[L, R, O] = Add[L, R] { type Out = O }
 
   def apply[L, R, O](fn: (L, R) => O): Add.Aux[L, R, O] = new Add[L, R] {
     override type Out = O
