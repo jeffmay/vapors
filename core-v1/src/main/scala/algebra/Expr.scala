@@ -80,6 +80,17 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
   def andThen[OI >: O, OO : OP](that: Expr[OI, OO, OP]): Expr.AndThen[I, O, OI, OO, OP] =
     Expr.AndThen(this, that)
 
+  /**
+    * Add the given expression to this expression using the implicit definition for addition.
+    *
+    * @see [[Add]] for how to define new combinations of types that can be added.
+    * @see [[CombineHolder]] for details on how type-inference works.
+    *
+    * @param that the other expression to add
+    * @param add the type-level definition of how to add this type of output to that type of element
+    *
+    * @return a [[CombineHolder]] to allow for type-level calculation of the return type
+    */
   def +[CI <: I, LI >: O, RI >: RO, RO <: RI : OP](
     that: Expr[CI, RO, OP],
   )(implicit
@@ -89,6 +100,11 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
     new CombineHolder(this, that, "add", add.combine(_, _): @nowarn)
   }
 
+  /**
+    * Negate the output of this expression using the implicit definition of [[Negation]].
+    *
+    * @param negation the definition for how to negate the output of this expression.
+    */
   def unary_![RO >: O](
     implicit
     negation: Negation[RO],
