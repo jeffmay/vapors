@@ -8,9 +8,9 @@ import math.Add
 import scala.annotation.nowarn
 
 /**
-  * This class only exists because attempting to require an implicit `PO[AO]` on the [[Expr.+]] method
+  * This class only exists because attempting to require an implicit `PO[LO]` on the [[Expr.+]] method
   * conflicts with the implicit search for [[Add]]. It results in diverging implicit expansion because
-  * it can't decide whether to use the implicit `PO[O]` to determine the `AO` type or to use the
+  * it can't decide whether to use the implicit `PO[O]` to determine the `LO` type or to use the
   * implicit `Add.Aux[?, ?, O]` to determine the `O` type. This separation ensures that `Add.Aux` is
   * used first to fix the type of `O`, and only afterwards will the compiler search for an implicit
   * `OP[O]` to use when converting this back to an [[Expr]].

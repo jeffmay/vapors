@@ -7,7 +7,9 @@ import cats.{Invariant, Semigroupal}
 import scala.annotation.implicitNotFound
 
 /**
-  * Defines logical negation (aka NOT) for a specific type.
+  * Defines logical negation (aka "NOT") for a specific type.
+  *
+  * @note this is different from defining how to get the negative value of a number.
   */
 @implicitNotFound(
   "Cannot negate a value of type ${A}. If you want like to define negation (aka the NOT operation) for a custom type, you must implement or import an instance of Negation[${A}]",
