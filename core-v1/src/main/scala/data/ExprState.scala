@@ -23,17 +23,27 @@ final case class ExprState[+I, +O](
     output: B,
   ): ExprState[A, B] = copy(maybeInput = Some(input), maybeOutput = Some(output))
 
-  // TODO: Use HasOutput for this?
+  /**
+    * @note the given function will NOT be invoked if the state has no output.
+    */
   def flatMapOutput[A](fn: O => Option[A]): ExprState[I, A] = copy(maybeOutput = maybeOutput.flatMap(fn))
-  // TODO: Use HasOutput for this?
+
+  /**
+    * @note the given function will NOT be invoked if the state has no output.
+    */
   def mapOutput[A](fn: O => A): ExprState[I, A] = copy(maybeOutput = maybeOutput.map(fn))
 
   def withOutput[A](output: A): ExprState[I, A] = copy(maybeOutput = Some(output))
   def withNoOutput: ExprState[I, Nothing] = copy(maybeOutput = None)
 
-  // TODO: Use HasInput for this?
+  /**
+    * @note the given function will NOT be invoked if the state has no input.
+    */
   def flatMapInput[A](fn: I => Option[A]): ExprState[A, O] = copy(maybeInput = maybeInput.flatMap(fn))
-  // TODO: Use HasInput for this?
+
+  /**
+    * @note the given function will NOT be invoked if the state has no input.
+    */
   def mapInput[A](fn: I => A): ExprState[A, O] = copy(maybeInput = maybeInput.map(fn))
 
   def withInput[A](input: A): ExprState[A, O] = copy(maybeInput = Some(input))
