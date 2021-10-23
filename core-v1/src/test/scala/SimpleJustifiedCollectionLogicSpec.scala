@@ -1,6 +1,6 @@
 package com.rallyhealth.vapors.v1
 
-class JustifiedCollectionLogicSpec extends munit.FunSuite {
+class SimpleJustifiedCollectionLogicSpec extends munit.FunSuite {
 
   import dsl.simple.justified._
 
