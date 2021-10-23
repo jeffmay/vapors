@@ -28,15 +28,6 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
   // TODO: Should this be visible outside this trait?
   protected def dontShortCircuit: Boolean = false
 
-  override def apply[II, IO <: OI : OPW, OI >: IO, OO : OPW](
-    inputExpr: Justified[II] ~> Justified[IO],
-    outputExpr: Justified[OI] ~> Justified[OO],
-  ): Expr.AndThen[Justified[II], Justified[IO], Justified[OI], Justified[OO], OP] =
-    Expr.AndThen(inputExpr, outputExpr)
-
-  override def ident[I : OPW]: Expr.Identity[Justified[I], OP] =
-    Expr.Identity[Justified[I], OP]()
-
   override def not[I, O : OPW](
     expr: Justified[I] ~> Justified[O],
   )(implicit
