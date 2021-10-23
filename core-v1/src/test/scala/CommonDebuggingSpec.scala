@@ -2,7 +2,6 @@ package com.rallyhealth.vapors.v1
 
 import data.{ExprState, FactTable}
 import debug.DebugArgs
-import dsl.{DslTypes, RunExprDsl}
 
 import izumi.reflect.Tag
 import munit.Assertions._
@@ -10,9 +9,7 @@ import munit.Location
 
 import scala.reflect.ClassTag
 
-trait CommonDebuggingSpec {
-
-  val thisDsl: RunExprDsl with DslTypes
+trait CommonDebuggingSpec extends BaseDslSpec {
 
   import thisDsl._
 
