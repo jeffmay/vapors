@@ -21,12 +21,7 @@ trait BuildExprDsl {
 
   protected implicit def wrapConst: WrapConst[W]
 
-  def apply[II, IO <: OI : OPW, OI >: IO, OO : OPW](
-    inputExpr: W[II] ~> W[IO],
-    outputExpr: W[OI] ~> W[OO],
-  ): Expr.AndThen[W[II], W[IO], W[OI], W[OO], OP]
-
-  def ident[I : OPW]: Expr.Identity[W[I], OP]
+  final def ident[I : OP]: Expr.Identity[I, OP] = Expr.Identity()
 
   def not[I, O : OPW](expr: W[I] ~> W[O])(implicit negation: Negation[W[O]]): Expr.Not[W[I], W[O], OP]
 

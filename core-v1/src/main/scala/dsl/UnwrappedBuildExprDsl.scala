@@ -21,13 +21,6 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
   // TODO: Should this be visible outside this trait?
   protected def shortCircuit: Boolean = true
 
-  override final def apply[AI, AO <: BI : OP, BI >: AO, BO : OP](
-    inputExpr: AI ~> AO,
-    outputExpr: BI ~> BO,
-  ): Expr.AndThen[AI, AO, BI, BO, OP] = Expr.AndThen(inputExpr, outputExpr)
-
-  override final def ident[I : OP]: Expr.Identity[I, OP] = Expr.Identity[I, OP]()
-
   override final def not[I, O : OPW](expr: I ~> O)(implicit negation: Negation[O]): Expr.Not[I, O, OP] =
     Expr.Not(expr)
 
