@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{ExprResult, WindowComparable}
+import algebra.{EqualComparable, ExprResult, WindowComparable}
 import data.ExprState
 import data.ExtractValue.AsBoolean
 import debug.HasSourceCodeInfo
@@ -101,6 +101,15 @@ object InterpretExprResultAsJson {
     override def visitIdentity[I : OP](result: ExprResult.Identity[PO, I, OP]): ToJsonObject[I, I] =
       encodeExprResult(result)
 
+    override def visitIsEqual[I, V, W[+_]](
+      result: ExprResult.IsEqual[PO, I, V, W, OP],
+    )(implicit
+      eq: EqualComparable[W, V, OP],
+      opV: OP[W[V]],
+      opO: OP[W[Boolean]],
+    ): ToJsonObject[I, W[Boolean]] =
+      encodeExprResult(result)
+
     override def visitMapEvery[C[_] : Functor, A, B](
       result: ExprResult.MapEvery[PO, C, A, B, OP],
     )(implicit
@@ -197,6 +206,14 @@ object InterpretExprResultAsJson {
 
     override def visitIdentity[I : OP](result: ExprResult.Identity[PO, I, OP]): ToJsonObject[I, I] =
       super.visitIdentity(result).deepMerge(sourceInfo[I])
+
+    override def visitIsEqual[I, V, W[+_]](
+      result: ExprResult.IsEqual[PO, I, V, W, OP],
+    )(implicit
+      eq: EqualComparable[W, V, OP],
+      opV: OP[W[V]],
+      opO: OP[W[Boolean]],
+    ): ToJsonObject[I, W[Boolean]] = super.visitIsEqual(result).deepMerge(sourceInfo[W[Boolean]])
 
     override def visitMapEvery[C[_] : Functor, A, B](
       result: ExprResult.MapEvery[PO, C, A, B, OP],

@@ -69,6 +69,7 @@ trait BuildExprDsl extends DebugExprDsl {
     ): AndThen[I, C[W[A]], C[W[B]]]
   }
 
+  // TODO: Rename to compareWithinWindow
   implicit def compare[I, V : Order : OP](
     valueExpr: I ~:> W[V],
   )(implicit
@@ -77,6 +78,7 @@ trait BuildExprDsl extends DebugExprDsl {
     opB: OP[W[Boolean]],
   ): ComparisonExprBuilder[I, V] = new ComparisonExprBuilder(valueExpr)
 
+  // TODO: Rename to WindowComparisonExprBuilder
   class ComparisonExprBuilder[I, V : Order : OP](
     protected val valueExpr: I ~:> W[V],
   )(implicit
@@ -115,6 +117,29 @@ trait BuildExprDsl extends DebugExprDsl {
     def within(expr: I ~:> W[Window[V]]): I >=< V = this >=< expr
 
     def >=<(expr: I ~:> W[Window[V]]): I >=< V = Expr.WithinWindow(valueExpr, expr)
+  }
+
+  implicit def compareIsEqual[I, V : OP](
+    valueExpr: I ~:> W[V],
+  )(implicit
+    compareV: EqualComparable[W, V, OP],
+    opV: OP[W[V]],
+    opB: OP[W[Boolean]],
+  ): EqualComparisonExprBuilder[I, V] =
+    new EqualComparisonExprBuilder(valueExpr)
+
+  class EqualComparisonExprBuilder[I, V : OP](
+    protected val leftExpr: I ~:> W[V],
+  )(implicit
+    eqV: EqualComparable[W, V, OP],
+    opV: OP[W[V]],
+    opB: OP[W[Boolean]],
+  ) {
+
+    def ===(rightExpr: I ~:> W[V]): Expr.IsEqual[I, V, W, OP] = Expr.IsEqual(leftExpr, rightExpr)
+
+    def =!=(rightExpr: I ~:> W[V])(implicit neg: Negation[W[Boolean]]): Expr.Not[I, W[Boolean], OP] =
+      Expr.Not(Expr.IsEqual(leftExpr, rightExpr))
   }
 }
 

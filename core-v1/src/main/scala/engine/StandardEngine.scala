@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{Expr, ExprResult, WindowComparable}
+import algebra.{EqualComparable, Expr, ExprResult, WindowComparable}
 import data.{ExprState, ExtractValue, Window}
 import debug.DebugArgs
 import logic.Negation
@@ -143,6 +143,23 @@ object StandardEngine {
         val finalState = state.swapAndReplaceOutput(input)
         debugging(expr).invokeDebugger(finalState)
         ExprResult.Identity(expr, finalState)
+    }
+
+    override def visitIsEqual[I, V, W[+_]](
+      expr: Expr.IsEqual[I, V, W, OP],
+    )(implicit
+      eq: EqualComparable[W, V, OP],
+      opV: OP[W[V]],
+      opO: OP[W[Boolean]],
+    ): PO <:< I => ExprResult[PO, I, W[Boolean], OP] = { implicit evPOisI =>
+      val leftResult = expr.leftExpr.visit(this)(implicitly)
+      val rightResult = expr.rightExpr.visit(this)(implicitly)
+      val l = leftResult.state.output
+      val r = rightResult.state.output
+      val o = eq.isEqual(l, r)
+      val finalState = state.swapAndReplaceOutput(o)
+      debugging(expr).invokeDebugger(stateFromInput((_, l, r), finalState.output))
+      ExprResult.IsEqual(expr, finalState)
     }
 
     override def visitMapEvery[C[_] : Functor, A, B](
