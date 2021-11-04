@@ -36,7 +36,7 @@ import scala.annotation.nowarn
   * @tparam O the output value type
   * @tparam OP the custom output parameter type constructor (defined by the imported DSL)
   */
-sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
+sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product with Equals {
 
   /**
     * Holds any [[Debugging]] hook to be run while running this expression.
@@ -130,7 +130,7 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
     Expr.Not[I, RO, OP](this)
 
   // TODO: Match on self and convert to string recursively as lazy val
-  override def toString: String = name
+  override def toString: String = s"$name[$hashCode]"
 }
 
 object Expr {
@@ -174,6 +174,8 @@ object Expr {
     def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](expr: ForAll[C, A, B, OP]): C[A] ~:> B
 
     def visitIdentity[I : OP](expr: Identity[I, OP]): I ~:> I
+
+    def visitIsEqual[I, V, F[+_]](expr: IsEqual[I, V, F, OP])(implicit eq: EqualComparable[F, V]): I ~:> F[Boolean]
 
     def visitMapEvery[C[_] : Functor, A, B](expr: MapEvery[C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~:> C[B]
 
@@ -457,6 +459,26 @@ object Expr {
   ) extends Expr[Any, Seq[O], OP]("valuesOfType") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[Any, Seq[O]] = v.visitValuesOfType(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): ValuesOfType[T, O, OP] =
+      copy(debugging = debugging)
+  }
+
+  /**
+    * Computes two expressions (possibly in parallel) and then checks if the resulting values are equal
+    * using the provided [[EqualComparable]].
+    *
+    * @tparam V the value type to compare
+    * @tparam F the wrapper type constructor for the context in which the values are compared
+    */
+  final case class IsEqual[-I, +V : OP, F[+_], OP[_]](
+    leftExpr: Expr[I, F[V], OP],
+    rightExpr: Expr[I, F[V], OP],
+    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    eq: EqualComparable[F, V],
+    opB: OP[F[Boolean]],
+  ) extends Expr[I, F[Boolean], OP]("isEqual") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, F[Boolean]] = v.visitIsEqual(this)
+    override def withDebugging(debugging: Debugging[Nothing, Nothing]): IsEqual[I, V, F, OP] =
       copy(debugging = debugging)
   }
 

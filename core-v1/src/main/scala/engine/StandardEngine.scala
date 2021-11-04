@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{Expr, ExprResult, WindowComparable}
+import algebra.{EqualComparable, Expr, ExprResult, WindowComparable}
 import data.{ExprState, ExtractValue, Window}
 import debug.DebugArgs
 import logic.Negation
@@ -144,6 +144,12 @@ object StandardEngine {
         debugging(expr).invokeDebugger(finalState)
         ExprResult.Identity(expr, finalState)
     }
+
+    override def visitIsEqual[I, V, F[+_]](
+      expr: Expr.IsEqual[I, V, F, OP],
+    )(implicit
+      eq: EqualComparable[F, V],
+    ): PO <:< I => ExprResult[PO, I, F[Boolean], OP] = ???
 
     override def visitMapEvery[C[_] : Functor, A, B](
       expr: Expr.MapEvery[C, A, B, OP],

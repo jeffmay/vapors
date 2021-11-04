@@ -169,6 +169,12 @@ object DebugArgs {
       override type Out = I
     }
 
+  implicit def debugIsEqual[I, V, F[+_], OP[_]]: Aux[Expr.IsEqual[I, V, F, OP], OP, (I, F[V], F[V]), F[Boolean]] =
+    new DebugArgs[Expr.IsEqual[I, V, F, OP], OP] {
+      override type In = (I, F[V], F[V])
+      override type Out = F[Boolean]
+    }
+
   implicit def debugNot[I, O, OP[_]]: Aux[Expr.Not[I, O, OP], OP, (I, O), O] =
     new DebugArgs[Expr.Not[I, O, OP], OP] {
       override type In = (I, O)
