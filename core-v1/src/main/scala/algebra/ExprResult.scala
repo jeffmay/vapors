@@ -80,6 +80,14 @@ object ExprResult {
 
     def visitIdentity[I : OP](result: Identity[PO, I, OP]): I ~>: I
 
+    def visitIsEqual[I, V, W[+_]](
+      result: IsEqual[PO, I, V, W, OP],
+    )(implicit
+      eq: EqualComparable[W, V, OP],
+      opV: OP[W[V]],
+      opO: OP[W[Boolean]],
+    ): I ~>: W[Boolean]
+
     def visitMapEvery[C[_] : Functor, A, B](result: MapEvery[PO, C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~>: C[B]
 
     def visitNot[I, O : Negation : OP](result: Not[PO, I, O, OP]): I ~>: O
@@ -149,6 +157,20 @@ object ExprResult {
     state: ExprState[PO, I],
   ) extends ExprResult[PO, I, I, OP] {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, I] = v.visitIdentity(this)
+  }
+
+  /**
+    * The result of running [[Expr.IsEqual]]
+    */
+  final case class IsEqual[+PO, -I, +V, W[+_], OP[_]](
+    expr: Expr.IsEqual[I, V, W, OP],
+    state: ExprState[PO, W[Boolean]],
+  )(implicit
+    eq: EqualComparable[W, V, OP],
+    opV: OP[W[V]],
+    opO: OP[W[Boolean]],
+  ) extends ExprResult[PO, I, W[Boolean], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, W[Boolean]] = v.visitIsEqual(this)
   }
 
   /**

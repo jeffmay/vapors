@@ -2,10 +2,11 @@ package com.rallyhealth.vapors.v1
 
 package data
 
+import algebra.EqualComparable
 import math.Add
 
 import cats.data.{NonEmptyList, NonEmptySet}
-import cats.{Functor, Order}
+import cats.{Eq, Functor, Order}
 
 import scala.annotation.nowarn
 
@@ -145,6 +146,20 @@ object Justified {
       sources.foldLeft(Evidence.none)(_ | _.evidence) // TODO: Is this even valid?
     override def productPrefix: String = "Justified.ByInference"
   }
+
+  implicit def eq[V : Eq, OP[_]]: EqualComparable[Justified, V, OP] =
+    new EqualComparable[Justified, V, OP] {
+      override def isEqual(
+        left: Justified[V],
+        right: Justified[V],
+      )(implicit
+        opV: OP[Justified[V]],
+        opO: OP[Justified[Boolean]],
+      ): Justified[Boolean] = {
+        val isEqual = Eq[V].eqv(left.value, right.value)
+        Justified.byInference("isEqual", isEqual, NonEmptyList.of(left, right))
+      }
+    }
 
   implicit def orderingByValue[V : Ordering]: Ordering[Justified[V]] = Ordering.by(_.value)
 
