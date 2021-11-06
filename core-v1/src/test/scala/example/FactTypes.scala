@@ -6,6 +6,7 @@ import data.FactType
 
 import cats.Order
 
+import java.time.Instant
 import scala.collection.immutable.SortedSet
 
 object FactTypes {
@@ -21,5 +22,20 @@ final case class CombinedTags(
 )
 
 object CombinedTags {
+
+  // TODO: Take a clock for testing?
+  def now(tags: SortedSet[String]): CombinedTags = CombinedTags(tags, Instant.now().toEpochMilli)
+
   implicit val order: Order[CombinedTags] = Order.reverse(Order.by(_.timestampMillis))
+}
+
+final case class NestedSelectable(
+  value: String,
+  opt: Option[NestedSelectable] = None,
+  map: Map[String, NestedSelectable] = Map.empty,
+  seq: Seq[NestedSelectable] = Seq.empty,
+)
+
+object NestedSelectable {
+  implicit val order: Order[NestedSelectable] = Order.by(_.value)
 }

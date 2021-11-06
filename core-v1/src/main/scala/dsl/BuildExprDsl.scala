@@ -4,6 +4,7 @@ package dsl
 
 import algebra._
 import data.{FactTypeSet, Window}
+import lens.VariantLens
 import logic.Negation
 
 import cats.{Foldable, Functor, Order}
@@ -31,6 +32,17 @@ trait BuildExprDsl extends DebugExprDsl {
   ): Expr.Not[W[I], W[O], OP]
 
   def valuesOfType[T](factTypeSet: FactTypeSet[T])(implicit opTs: OP[Seq[W[T]]]): Expr.ValuesOfType[T, W[T], OP]
+
+  type SpecificSelectExprBuilder[-I, T] <: SelectExprBuilder[I, T]
+
+  implicit def in[I, T](expr: I ~:> W[T]): SpecificSelectExprBuilder[I, T]
+
+  trait SelectExprBuilder[-I, T] extends Any {
+
+    protected def inputExpr: I ~:> W[T]
+
+    def get[O](selector: VariantLens.FromTo[T, O])(implicit opO: OP[W[O]]): I ~:> W[O]
+  }
 
   implicit def wrap[A](value: A)(implicit constType: WrapConstType[W, A]): ConstExprBuilder[constType.Out, OP] =
     new ConstExprBuilder(constType(wrapConst.wrapConst(value)))

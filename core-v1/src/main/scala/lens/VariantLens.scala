@@ -34,7 +34,7 @@ object VariantLens extends VariantLensLowPriorityImplicits {
   /**
     * A function for building a lens from the [[Id]] lens.
     */
-  type Fn[-A, +B] = VariantLens[Any, A] => VariantLens[A, B]
+  type FromTo[A, +B] = VariantLens[A, A] => VariantLens[A, B]
 
   implicit object ComposeInstance extends Compose[VariantLens] {
     override def compose[A, B, C](

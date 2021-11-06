@@ -4,6 +4,7 @@ package dsl
 
 import algebra._
 import data.{FactTypeSet, Justified}
+import lens.VariantLens
 import logic.Negation
 
 import cats.data.NonEmptyList
@@ -43,10 +44,29 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
   ): Expr.ValuesOfType[T, Justified[T], OP] =
     Expr.ValuesOfType[T, Justified[T], OP](factTypeSet, Justified.ByFact(_))
 
-  override type SpecificHkExprBuilder[-I, C[_], A] = JustifiedHkExprBuilder[I, C, A]
+  override implicit def in[I, T](expr: I ~:> Justified[T]): JustifiedSelectExprBuilder[I, T] =
+    new JustifiedSelectExprBuilder(expr)
+
+  override type SpecificSelectExprBuilder[-I, T] = JustifiedSelectExprBuilder[I, T]
+
+  final class JustifiedSelectExprBuilder[-I, T](override protected val inputExpr: I ~:> Justified[T])
+    extends SelectExprBuilder[I, T] {
+
+    override def get[O](selector: VariantLens.FromTo[T, O])(implicit opO: OP[Justified[O]]): I ~:> Justified[O] = {
+      val lens = selector(VariantLens.id[T])
+      inputExpr.andThen(
+        Expr.CustomFunction(
+          "get",
+          (in: Justified[T]) => Justified.byInference("select", lens.get(in.value), NonEmptyList.of(in)),
+        ),
+      )
+    }
+  }
 
   override implicit def hk[I, C[_], A](expr: I ~:> C[Justified[A]]): JustifiedHkExprBuilder[I, C, A] =
     new JustifiedHkExprBuilder(expr)
+
+  override type SpecificHkExprBuilder[-I, C[_], A] = JustifiedHkExprBuilder[I, C, A]
 
   final class JustifiedHkExprBuilder[-I, C[_], A](override protected val inputExpr: I ~:> C[Justified[A]])
     extends HkExprBuilder[I, C, A] {

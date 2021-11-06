@@ -117,6 +117,9 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
     new CombineHolder(this, that, "add", add.combine(_, _): @nowarn)
   }
 
+  def selectWith[OI >: O, OO : OP](lens: VariantLens[OI, OO]): Expr.AndThen[I, O, OI, OO, OP] =
+    Expr.AndThen(this, Expr.Select(lens))
+
   /**
     * Negate the output of this expression using the implicit definition of [[Negation]].
     *

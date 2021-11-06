@@ -2,8 +2,9 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import algebra.{Expr, Extract, WindowComparable, WrapConst}
+import algebra._
 import data.FactTypeSet
+import lens.VariantLens
 import logic.Negation
 
 import cats.{catsInstancesForId, Foldable, Functor}
@@ -35,6 +36,16 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
     opTs: OP[Seq[T]],
   ): Expr.ValuesOfType[T, T, OP] =
     Expr.ValuesOfType(factTypeSet, _.value)
+
+  override implicit final def in[I, T](expr: I ~:> T): SelectIdExprBuilder[I, T] = new SelectIdExprBuilder(expr)
+
+  override final type SpecificSelectExprBuilder[-I, T] = SelectIdExprBuilder[I, T]
+
+  final class SelectIdExprBuilder[-I, T](override protected val inputExpr: I ~:> T) extends SelectExprBuilder[I, T] {
+
+    override def get[O](selector: VariantLens.FromTo[T, O])(implicit opO: OP[O]): I ~:> O =
+      inputExpr.selectWith(selector(VariantLens.id[T]))
+  }
 
   override implicit final def hk[I, C[_], A](expr: I ~:> C[A]): HkIdExprBuilder[I, C, A] = new HkIdExprBuilder(expr)
 
