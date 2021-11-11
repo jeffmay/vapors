@@ -42,6 +42,13 @@ object Dependencies {
   private val sourcecode = "com.lihaoyi" %% "sourcecode" % sourcecodeVersion
   private val zio = "dev.zio" %% "zio" % zioVersion
 
+  final object BenchProject {
+
+    val all: Seq[ModuleID] = Seq(
+      scalaCheckOps,
+    ).map(_ % Test)
+  }
+
   final object CoreProject {
 
     def all(scalaVersion: String): Seq[ModuleID] =

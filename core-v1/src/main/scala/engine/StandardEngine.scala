@@ -6,7 +6,7 @@ import algebra._
 import data.{ExprState, Extract, ExtractValue, Window}
 import debug.DebugArgs
 import logic.{Conjunction, Disjunction, Negation}
-import cats.{Foldable, Functor}
+import cats.{Foldable, Functor, Id}
 
 import scala.annotation.nowarn
 
@@ -27,8 +27,8 @@ object StandardEngine {
     *       which would simplify all the places where I am using `implicitly`.
     */
   class Visitor[PO, OP[_]](val state: ExprState[Any, PO])
-    extends Expr.Visitor[Lambda[(`-I`, `+O`) => PO <:< I => ExprResult[PO, I, O, OP]], OP]
-    with CommonEngine[OP] {
+    extends CommonUncachedEngine[OP]
+    with Expr.Visitor[Lambda[(`-I`, `+O`) => PO <:< I => ExprResult[PO, I, O, OP]], OP] {
 
     import cats.implicits._
 
@@ -119,7 +119,6 @@ object StandardEngine {
         conditionResult.state.output
       }
       val finalState = state.swapAndReplaceOutput(o)
-      val debugState = stateFromInput(i => (i: C[A], results), finalState.output)
       debugging(expr).invokeDebugger(stateFromInput((_, results), finalState.output))
       ExprResult.Exists(expr, finalState)
     }

@@ -3,9 +3,8 @@ package com.rallyhealth.vapors.v1
 package data
 
 import algebra.EqualComparable
-import cats.data.{NonEmptyList, NonEmptySet}
+import cats.data.{NonEmptyList, NonEmptySeq, NonEmptySet, NonEmptyVector}
 import cats.{Eq, Order}
-import data.ExtractValue.AsBoolean
 import dsl.{WrapConst, WrapFact, WrapQuantifier, WrapSelected}
 import lens.{DataPath, VariantLens}
 import logic.Logic
@@ -91,7 +90,7 @@ sealed trait Justified[+V] extends Product {
     Justified.ByInference(
       reason,
       fn(this.value, that.value),
-      NonEmptyList.of(this, that),
+      NonEmptySeq.of(this, that),
     )
 }
 
@@ -170,13 +169,27 @@ object Justified {
   def byInference[V](
     reason: String,
     value: V,
-    sources: NonEmptyList[Justified[Any]],
+    sources: NonEmptySeq[Justified[Any]],
   ): Justified[V] = ByInference(reason, value, sources)
+
+  // TODO: Deprecate the other byInference methods below?
+
+  def byInference[V](
+    reason: String,
+    value: V,
+    sources: NonEmptyVector[Justified[Any]],
+  ): Justified[V] = ByInference(reason, value, NonEmptySeq.fromSeqUnsafe(sources.toVector))
+
+  def byInference[V](
+    reason: String,
+    value: V,
+    sources: NonEmptyList[Justified[Any]],
+  ): Justified[V] = ByInference(reason, value, NonEmptySeq.fromSeqUnsafe(sources.toList))
 
   final case class ByInference[+V](
     reason: String,
     value: V,
-    sources: NonEmptyList[Justified[Any]],
+    sources: NonEmptySeq[Justified[Any]],
   ) extends Justified[V] {
     override def productPrefix: String = "Justified.ByInference"
     override lazy val configs: Seq[(String, Option[String])] =
@@ -246,15 +259,15 @@ object Justified {
     override def shortCircuit: Boolean = false
 
     override def wrapFalseForAll(
-      falseResults: NonEmptyList[Justified[Boolean]],
+      falseResults: NonEmptySeq[Justified[Boolean]],
     )(implicit
       opB: Any,
     ): Justified[Boolean] =
       Justified.byInference("forall", false, falseResults)
 
-    override def wrapTrueForAll(trueResults: List[Justified[Boolean]])(implicit opB: Any): Justified[Boolean] = {
-      NonEmptyList
-        .fromList(trueResults)
+    override def wrapTrueForAll(trueResults: Seq[Justified[Boolean]])(implicit opB: Any): Justified[Boolean] = {
+      NonEmptySeq
+        .fromSeq(trueResults)
         .map { justified =>
           Justified.byInference("forall", true, justified)
         }
@@ -265,9 +278,9 @@ object Justified {
         }
     }
 
-    override def wrapFalseExists(falseResults: List[Justified[Boolean]])(implicit opB: Any): Justified[Boolean] = {
-      NonEmptyList
-        .fromList(falseResults)
+    override def wrapFalseExists(falseResults: Seq[Justified[Boolean]])(implicit opB: Any): Justified[Boolean] = {
+      NonEmptySeq
+        .fromSeq(falseResults)
         .map { justified =>
           Justified.byInference("exists", false, justified)
         }
@@ -279,7 +292,7 @@ object Justified {
         }
     }
 
-    override def wrapTrueExists(trueResults: NonEmptyList[Justified[Boolean]])(implicit opB: Any): Justified[Boolean] =
+    override def wrapTrueExists(trueResults: NonEmptySeq[Justified[Boolean]])(implicit opB: Any): Justified[Boolean] =
       Justified.byInference("exists", true, trueResults)
   }
 
@@ -290,7 +303,7 @@ object Justified {
 
   implicit def bool[OP[_]]: Logic[Justified, Boolean, OP] = anyBool.asInstanceOf[Logic[Justified, Boolean, OP]]
 
-  final class BooleanLogic[B : AsBoolean](fromBoolean: Boolean => B) extends Logic[Justified, B, Any] {
+  final class BooleanLogic[B : ExtractValue.AsBoolean](fromBoolean: Boolean => B) extends Logic[Justified, B, Any] {
 
     override def and(
       left: Justified[B],

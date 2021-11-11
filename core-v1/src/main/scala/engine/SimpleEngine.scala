@@ -20,8 +20,8 @@ object SimpleEngine {
   @inline def apply[OP[_]](factTable: FactTable): Visitor[OP] = new Visitor(factTable)
 
   class Visitor[OP[_]](protected val factTable: FactTable)
-    extends Expr.Visitor[Lambda[(`-I`, `+O`) => I => O], OP]
-    with CommonEngine[OP] {
+    extends CommonUncachedEngine[OP]
+    with Expr.Visitor[Lambda[(`-I`, `+O`) => I => O], OP] {
 
     import cats.implicits._
 
@@ -54,7 +54,7 @@ object SimpleEngine {
     override def visitAndThen[II, IO : OP, OI, OO : OP](
       expr: Expr.AndThen[II, IO, OI, OO, OP],
     )(implicit
-      evBI: IO <:< OI,
+      evIOisOI: IO <:< OI,
     ): II => OO = { ii =>
       val io = expr.inputExpr.visit(this)(ii)
       val oo = expr.outputExpr.visit(this)(io)
@@ -87,7 +87,7 @@ object SimpleEngine {
       expr: Expr.Exists[C, A, B, OP],
     ): C[A] => B = { ca =>
       val isMatchingResult = expr.conditionExpr.visit(this)
-      val (results, o) = visitExistsCommon(expr, ca)(isMatchingResult)
+      val (results, o) = visitExistsCommon(expr, ca)(a => isMatchingResult(a))
       debugging(expr).invokeAndReturn(state((ca, results), o))
     }
 

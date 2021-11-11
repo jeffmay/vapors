@@ -3,10 +3,9 @@ package com.rallyhealth.vapors.v1
 package debug
 
 import algebra.Expr
+import cats.data.{NonEmptySeq, NonEmptyVector}
 import data.{ExprState, Window}
 import lens.VariantLens
-
-import cats.data.{NonEmptyList, NonEmptyVector}
 import izumi.reflect.Tag
 
 import scala.reflect.ClassTag
@@ -183,9 +182,9 @@ object DebugArgs {
     A,
     B,
     OP[_],
-  ]: Aux[Expr.Exists[C, A, B, OP], OP, (C[A], Either[List[B], NonEmptyList[B]]), B] =
+  ]: Aux[Expr.Exists[C, A, B, OP], OP, (C[A], Either[Seq[B], NonEmptySeq[B]]), B] =
     new DebugArgs[Expr.Exists[C, A, B, OP], OP] {
-      override type In = (C[A], Either[List[B], NonEmptyList[B]])
+      override type In = (C[A], Either[Seq[B], NonEmptySeq[B]])
       override type Out = B
     }
 
@@ -194,9 +193,9 @@ object DebugArgs {
     A,
     B,
     OP[_],
-  ]: Aux[Expr.ForAll[C, A, B, OP], OP, (C[A], Either[NonEmptyList[B], List[B]]), B] =
+  ]: Aux[Expr.ForAll[C, A, B, OP], OP, (C[A], Either[NonEmptySeq[B], Seq[B]]), B] =
     new DebugArgs[Expr.ForAll[C, A, B, OP], OP] {
-      override type In = (C[A], Either[NonEmptyList[B], List[B]])
+      override type In = (C[A], Either[NonEmptySeq[B], Seq[B]])
       override type Out = B
     }
 
