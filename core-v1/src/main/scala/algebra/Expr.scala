@@ -2,11 +2,11 @@ package com.rallyhealth.vapors.v1
 
 package algebra
 
-import cats.data.{NonEmptyList, NonEmptyVector}
+import cats.data.{NonEmptySeq, NonEmptyVector}
 import cats.{Foldable, Functor}
 import data.{Extract, ExtractValue, FactTypeSet, TypedFact, Window}
 import debug.{DebugArgs, Debugging, NoDebugging}
-import lens.{DataPath, VariantLens}
+import lens.VariantLens
 import logic.{Conjunction, Disjunction, Negation}
 import math.Add
 
@@ -154,7 +154,11 @@ object Expr {
       opB: OP[W[B]],
     ): I ~:> W[B]
 
-    def visitAndThen[II, IO : OP, OI, OO : OP](expr: AndThen[II, IO, OI, OO, OP])(implicit evBI: IO <:< OI): II ~:> OO
+    def visitAndThen[II, IO : OP, OI, OO : OP](
+      expr: AndThen[II, IO, OI, OO, OP],
+    )(implicit
+      evIOisOI: IO <:< OI,
+    ): II ~:> OO
 
     def visitCombine[I, LI, LO : OP, RI, RO : OP, O : OP](
       expr: Combine[I, LI, LO, RI, RO, O, OP],
@@ -406,8 +410,8 @@ object Expr {
     */
   final case class Exists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP, OP[_]](
     conditionExpr: Expr[A, B, OP],
-    combineTrue: NonEmptyList[B] => B,
-    combineFalse: List[B] => B,
+    combineTrue: NonEmptySeq[B] => B,
+    combineFalse: Seq[B] => B,
     shortCircuit: Boolean,
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   ) extends Expr[C[A], B, OP]("exists") {
@@ -430,8 +434,8 @@ object Expr {
     */
   final case class ForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP, OP[_]](
     conditionExpr: Expr[A, B, OP],
-    combineTrue: List[B] => B,
-    combineFalse: NonEmptyList[B] => B,
+    combineTrue: Seq[B] => B,
+    combineFalse: NonEmptySeq[B] => B,
     shortCircuit: Boolean,
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   ) extends Expr[C[A], B, OP]("forall") {
