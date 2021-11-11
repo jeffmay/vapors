@@ -54,7 +54,7 @@ object SimpleEngine {
     override def visitAndThen[II, IO : OP, OI, OO : OP](
       expr: Expr.AndThen[II, IO, OI, OO, OP],
     )(implicit
-      evBI: IO <:< OI,
+      evIOisOI: IO <:< OI,
     ): II => OO = { ii =>
       val io = expr.inputExpr.visit(this)(ii)
       val oo = expr.outputExpr.visit(this)(io)
@@ -87,7 +87,7 @@ object SimpleEngine {
       expr: Expr.Exists[C, A, B, OP],
     ): C[A] => B = { ca =>
       val isMatchingResult = expr.conditionExpr.visit(this)
-      val (results, o) = visitExistsCommon(expr, ca)(isMatchingResult)
+      val (results, o, _) = visitExistsCommon(expr, ca, ())((a, _) => (isMatchingResult(a), ()))
       debugging(expr).invokeAndReturn(state((ca, results), o))
     }
 

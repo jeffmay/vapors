@@ -154,7 +154,11 @@ object Expr {
       opB: OP[W[B]],
     ): I ~:> W[B]
 
-    def visitAndThen[II, IO : OP, OI, OO : OP](expr: AndThen[II, IO, OI, OO, OP])(implicit evBI: IO <:< OI): II ~:> OO
+    def visitAndThen[II, IO : OP, OI, OO : OP](
+      expr: AndThen[II, IO, OI, OO, OP],
+    )(implicit
+      evIOisOI: IO <:< OI,
+    ): II ~:> OO
 
     def visitCombine[I, LI, LO : OP, RI, RO : OP, O : OP](
       expr: Combine[I, LI, LO, RI, RO, O, OP],

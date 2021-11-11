@@ -36,7 +36,7 @@ class StandardJustifiedExistsEvidenceSpec extends FunSuite {
             "_ >= 18",
             false,
             NonEmptyList.of(
-              Justified.byFact(age10),
+              Justified.byFact(age14),
               Justified.byConst(Window.greaterThanOrEqual(18)),
             ),
           ),
@@ -44,7 +44,7 @@ class StandardJustifiedExistsEvidenceSpec extends FunSuite {
             "_ >= 18",
             false,
             NonEmptyList.of(
-              Justified.byFact(age14),
+              Justified.byFact(age10),
               Justified.byConst(Window.greaterThanOrEqual(18)),
             ),
           ),

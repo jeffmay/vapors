@@ -114,9 +114,10 @@ object StandardEngine {
       expr: Expr.Exists[C, A, B, OP],
     ): PO <:< C[A] => ExprResult[PO, C[A], B, OP] = { implicit evPOisI =>
       val ca: C[A] = state.output
-      val (results, o) = visitExistsCommon(expr, ca) { a =>
-        val conditionResult = expr.conditionExpr.visit(withOutput(a))(implicitly)
-        conditionResult.state.output
+      val (results, o, _) = visitExistsCommon(expr, ca, ()) {
+        case (a, _) =>
+          val conditionResult = expr.conditionExpr.visit(withOutput(a))(implicitly)
+          (conditionResult.state.output, ())
       }
       val finalState = state.swapAndReplaceOutput(o)
       val debugState = stateFromInput(i => (i: C[A], results), finalState.output)
