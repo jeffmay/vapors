@@ -62,6 +62,9 @@ abstract class VisitGenericExprWithProxyFn[V, P, G[_]] extends Visitor[V, P, Lam
     expr: Expr.ExistsInOutput[V, M, U, P],
   ): ExprInput[V] => G[Boolean] = visitGeneric(expr, _)
 
+  override def visitExponentiateOutputs(expr: Expr.ExponentiateOutputs[V, P]): ExprInput[V] => G[Double] =
+    visitGeneric(expr, _)
+
   override def visitFilterOutput[M[_] : Foldable : FunctorFilter, R](
     expr: Expr.FilterOutput[V, M, R, P],
   ): ExprInput[V] => G[M[R]] = visitGeneric(expr, _)

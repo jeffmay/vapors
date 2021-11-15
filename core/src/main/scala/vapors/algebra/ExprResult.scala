@@ -53,6 +53,7 @@ object ExprResult {
     def visitDivideOutputs[R](result: DivideOutputs[V, R, P]): G[R]
     def visitEmbed[R](result: Embed[V, R, P]): G[R]
     def visitExistsInOutput[M[_] : Foldable, U](result: ExistsInOutput[V, M, U, P]): G[Boolean]
+    def visitExponentiateOutputs(result: ExponentiateOutputs[V, P]): G[Double]
     def visitFilterOutput[M[_] : Foldable : FunctorFilter, R](result: FilterOutput[V, M, R, P]): G[M[R]]
     def visitFlatMapOutput[M[_], U, R](result: FlatMapOutput[V, M, U, R, P]): G[M[R]]
     def visitGroupOutput[M[_] : Foldable, U : Order, K](result: GroupOutput[V, M, U, K, P]): G[MapView[K, Seq[U]]]
@@ -311,6 +312,15 @@ object ExprResult {
     subResultList: List[ExprResult[V, R, P]],
   ) extends ExprResult[V, R, P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitDivideOutputs(this)
+  }
+
+  final case class ExponentiateOutputs[V, P](
+    expr: Expr.ExponentiateOutputs[V, P],
+    context: Context[V, Double, P],
+    baseResult: ExprResult[V, Double, P],
+    exponentResult: ExprResult[V, Double, P],
+  ) extends ExprResult[V, Double, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[Double] = v.visitExponentiateOutputs(this)
   }
 
   final case class WrapOutput[V, L, R, P](

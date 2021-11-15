@@ -261,6 +261,14 @@ trait ExprDsl extends TimeFunctions with WrapExprSyntax with WrapEachExprSyntax 
   ): Expr.DivideOutputs[V, R, P] =
     Expr.DivideOutputs(NonEmptyList.of(lhs, rhs), capture)
 
+  def pow[V, P](
+    base: Expr[V, Double, P],
+    exp: Expr[V, Double, P],
+  )(implicit
+    capture: CaptureP[V, Double, P],
+  ): Expr.ExponentiateOutputs[V, P] =
+    Expr.ExponentiateOutputs(base, exp, capture)
+
   def negative[V, R : Negative, P](
     inputExpr: Expr[V, R, P],
   )(implicit
