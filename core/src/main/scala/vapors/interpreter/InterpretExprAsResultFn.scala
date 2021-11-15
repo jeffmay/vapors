@@ -167,6 +167,21 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     }
   }
 
+  override def visitExponentiateOutputs(
+    expr: Expr.ExponentiateOutputs[V, P],
+  ): ExprInput[V] => ExprResult[V, Double, P] = { input =>
+    val baseResult = expr.baseExpr.visit(this)(input)
+    val exponentResult = expr.exponentExpr.visit(this)(input)
+    val base = baseResult.output.value
+    val exponent = exponentResult.output.value
+    val output = Math.pow(base, exponent)
+    val allEvidence = baseResult.output.evidence ++ exponentResult.output.evidence
+    val allParams = List(baseResult.param, exponentResult.param)
+    resultOfManySubExpr(expr, input, output, allEvidence, allParams) {
+      ExprResult.ExponentiateOutputs(_, _, baseResult, exponentResult)
+    }
+  }
+
   override def visitFilterOutput[M[_] : Foldable : FunctorFilter, U](
     expr: Expr.FilterOutput[V, M, U, P],
   ): ExprInput[V] => ExprResult[V, M[U], P] = { input =>

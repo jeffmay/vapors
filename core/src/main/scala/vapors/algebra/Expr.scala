@@ -52,6 +52,7 @@ object Expr {
     def visitDivideOutputs[R : Division](expr: DivideOutputs[V, R, P]): G[R]
     def visitEmbed[R](expr: Embed[V, R, P]): G[R]
     def visitExistsInOutput[M[_] : Foldable, U](expr: ExistsInOutput[V, M, U, P]): G[Boolean]
+    def visitExponentiateOutputs(expr: ExponentiateOutputs[V, P]): G[Double]
     def visitFilterOutput[M[_] : Foldable : FunctorFilter, R](expr: FilterOutput[V, M, R, P]): G[M[R]]
     def visitFlatMapOutput[M[_] : Foldable : FlatMap, U, X](expr: FlatMapOutput[V, M, U, X, P]): G[M[X]]
     def visitGroupOutput[M[_] : Foldable, U : Order, K](expr: GroupOutput[V, M, U, K, P]): G[MapView[K, Seq[U]]]
@@ -529,6 +530,17 @@ object Expr {
     capture: CaptureP[V, R, P],
   ) extends Expr[V, R, P] {
     override def visit[G[_]](v: Visitor[V, P, G]): G[R] = v.visitDivideOutputs(this)
+  }
+
+  /**
+    * Raise the given base expression to the result of the given power exponent expression.
+    */
+  final case class ExponentiateOutputs[V, P](
+    baseExpr: Expr[V, Double, P],
+    exponentExpr: Expr[V, Double, P],
+    capture: CaptureP[V, Double, P],
+  ) extends Expr[V, Double, P] {
+    override def visit[G[_]](v: Visitor[V, P, G]): G[Double] = v.visitExponentiateOutputs(this)
   }
 
   /**

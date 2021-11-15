@@ -97,8 +97,18 @@ object VaporsEvalTestHelpers {
         },
         expectedValue => {
           val result = eval(FactTable.empty)(query)
-          assertResult(expectedValue) {
-            result.output.value
+          expectedValue match {
+            case num: Double if num.isNaN =>
+              result.output.value match {
+                case obs: Double =>
+                  assert(obs.isNaN, "Expected output to be NaN")
+                case _ =>
+                  fail("Expected output to be a Double")
+              }
+            case _ =>
+              assertResult(expectedValue) {
+                result.output.value
+              }
           }
         },
       )
