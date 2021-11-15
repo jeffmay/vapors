@@ -238,25 +238,20 @@ object SimpleCachingEngine {
     }
   }
 
-  def evalMultiple[OP[_]](
-    expressions: Seq[Expr[Any, Any, OP]],
+  def evalMultiple[OP[_], O](
+    expressions: Seq[Expr[Any, O, OP]],
     factTable: FactTable = FactTable.empty,
     cache: ResultCache = Map.empty,
-  ): IndexedSeq[Any] = {
-    val (results, cacheState) = expressions.foldLeft((Vector.empty[Any], cache)) {
-      case ((results, cache), next) =>
-        val result = next.visit(new Visitor[OP](factTable, cache))(())
-        (results :+ result.value, result.cacheState)
-    }
-    results
+  ): IndexedSeq[O] = {
+    debugMultiple(expressions, factTable, cache)._1.map(_.value)
   }
 
-  def debugMultiple[OP[_]](
-    expressions: Seq[Expr[Any, Any, OP]],
+  def debugMultiple[OP[_], O](
+    expressions: Seq[Expr[Any, O, OP]],
     factTable: FactTable = FactTable.empty,
     cache: ResultCache = Map.empty,
-  ): (IndexedSeq[CachedResult[Any]], ResultCache) = {
-    expressions.foldLeft((Vector.empty[CachedResult[Any]], cache)) {
+  ): (IndexedSeq[CachedResult[O]], ResultCache) = {
+    expressions.foldLeft((Vector.empty[CachedResult[O]], cache)) {
       case ((results, cache), next) =>
         val result = next.visit(new Visitor[OP](factTable, cache))(())
         (results :+ result, result.cacheState)
