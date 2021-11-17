@@ -37,7 +37,7 @@ object WindowComparable {
           case _ => Show.fromToString
         }
         val comparison = Window.showWindowWithTerm[V]("_").show(window.value)
-        val isWithinWindow = Window.contains(window.value, value.value)
+        val isWithinWindow = window.value.contains(value.value)
         // TODO: Combine evidence of window with evidence of value?
         Justified.byInference(comparison, isWithinWindow, NonEmptyList.of(value, window))
       }
@@ -53,7 +53,7 @@ object WindowComparable {
       window: Window[V],
     )(implicit
       opV: Any,
-    ): Boolean = Window.contains(window, value)
+    ): Boolean = window.contains(value)
   }
 
   implicit def identity[OP[_]]: WindowComparable[Id, OP] = anyIdentity.asInstanceOf[WindowComparable[Id, OP]]

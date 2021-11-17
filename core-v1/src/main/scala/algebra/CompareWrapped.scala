@@ -42,7 +42,7 @@ object CompareWrapped {
       override def compare[V](
         value: V,
         window: Window[V],
-      ): Boolean = Window.contains(window, value)
+      ): Boolean = window.contains(value)
     }
   }
 
@@ -67,7 +67,7 @@ object CompareWrapped {
         window: Justified[Window[V]],
       ): Justified[Boolean] = {
         val comparison = Window.showWindowWithTerm[V]("_")(Show.fromToString).show(window.value)
-        val isWithinWindow = Window.contains(window.value, value.value)
+        val isWithinWindow = window.value.contains(value.value)
         Justified.byInference(comparison, isWithinWindow, NonEmptyList.of(value, window))
       }
     }
