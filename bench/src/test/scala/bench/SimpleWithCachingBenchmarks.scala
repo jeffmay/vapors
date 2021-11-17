@@ -5,7 +5,7 @@ package bench
 import bench.timeit._
 import v1.engine.SimpleCachingEngine
 
-object SimpleWithCaching extends FindInSeqOfTagsListsBenchmarkSetup {
+object SimpleWithCachingBenchmarks extends FindInSeqOfTagsListsBenchmarkSetup {
   import FindInSeqOfTagsListsBenchmarkSetup.Params
 
   import v1.dsl.simple._
