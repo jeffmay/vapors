@@ -2,7 +2,7 @@ package com.rallyhealth.vapors
 
 package bench
 
-import bench.timeit.Benchmark
+import bench.timeit.{Benchmark, BenchmarkConfig}
 import v1.data.FactTable
 import v1.dsl.simple.OP
 import v1.example.{CombinedTags, FactTypes}
@@ -11,33 +11,52 @@ import org.scalacheck.Gen
 import org.scalacheck.ops._
 
 import scala.collection.immutable.SortedSet
-import scala.util.Random
 
 trait FindInSeqOfTagsListsBenchmarkSetup {
+  import FindInSeqOfTagsListsBenchmarkSetup._
 
-  protected def findInSeqOfTagsLists(setup: VaporsBenchmarkSetup[Boolean, OP]): Benchmark
+  protected def findInSeqOfTagsLists(setup: VaporsBenchmarkSetup[Params, Boolean, OP]): Benchmark[Params]
 
-  final lazy val benchmarkFindInSeqOfTagsLists: Benchmark =
+  final lazy val benchmarkDefaultFindInSeqOfTagsLists: Benchmark[Params] =
     findInSeqOfTagsLists(FindInSeqOfTagsListsBenchmarkSetup.setupDefaultFindInSeqOfTagsLists)
+
+  final lazy val benchmarkMultiFindInSeqOfTags: Seq[Benchmark[Params]] = Seq(
+    Params(1, 10, 10),
+    Params(2, 10, 10),
+    Params(3, 10, 10),
+    Params(4, 10, 10),
+    Params(5, 10, 10),
+    Params(6, 10, 10),
+    Params(7, 10, 10),
+    Params(8, 10, 10),
+    Params(9, 10, 10),
+    Params(10, 10, 10),
+  ).map { params =>
+    findInSeqOfTagsLists(setupFindInSeqOfTagsLists(params))
+  }
 }
 
 object FindInSeqOfTagsListsBenchmarkSetup {
   import v1.dsl.simple._
 
-  // TODO: Make number of runs configurable?
-  val setupDefaultFindInSeqOfTagsLists: VaporsBenchmarkSetup[Boolean, OP] =
-    setupFindInSeqOfTagsLists(30, 10, 50)
-
-  def setupFindInSeqOfTagsLists(
+  final case class Params(
     numExpressions: Int,
     numTagFacts: Int,
     numTagsPerFact: Int,
+  )
+
+  // TODO: Make number of runs configurable?
+  val setupDefaultFindInSeqOfTagsLists: VaporsBenchmarkSetup[Params, Boolean, OP] =
+    setupFindInSeqOfTagsLists(Params(30, 10, 50))
+
+  def setupFindInSeqOfTagsLists(
+    params: Params,
   )(implicit
     gc: GenConfig,
-  ): VaporsBenchmarkSetup[Boolean, OP] = {
+  ): VaporsBenchmarkSetup[Params, Boolean, OP] = {
     val expectedTag = "waldo"
-    val genTags = Gen.containerOfN[Set, String](numTagsPerFact, Gen.identifier)
-    val genTagSets = Gen.listOfN(numTagFacts, genTags)
+    val genTags = Gen.containerOfN[Set, String](params.numTagsPerFact, Gen.identifier)
+    val genTagSets = Gen.listOfN(params.numTagFacts, genTags)
     val tagsetsWithoutExpected = genTagSets.head
     val lastTagsetWithExpected = tagsetsWithoutExpected.head.drop(1) + expectedTag
     val tagsetsWithExpected = lastTagsetWithExpected :: tagsetsWithoutExpected.tail
@@ -46,9 +65,12 @@ object FindInSeqOfTagsListsBenchmarkSetup {
         FactTypes.CombinedTags(CombinedTags(SortedSet.from(tagset), idx + 1))
     }
     VaporsBenchmarkSetup(
-      s"[x$numExpressions] find tag in $numTagFacts tag facts ($numTagsPerFact tags each)",
+      BenchmarkConfig(
+        s"[x${params.numExpressions}] find tag in ${params.numTagFacts} tag facts (${params.numTagsPerFact} tags each)",
+        params,
+      ),
       FactTable(facts),
-    ).repeated(numExpressions) {
+    ).repeated(params.numExpressions) {
         valuesOfType(FactTypes.CombinedTags).exists { tags =>
           tags.get(_.select(_.tags)).exists { tag =>
             tag === expectedTag.const

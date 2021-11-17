@@ -2,8 +2,8 @@ package com.rallyhealth.vapors
 
 package bench.timeit
 
-final class Benchmark private (
-  val config: BenchmarkConfig,
+final class Benchmark[+P] private (
+  val config: BenchmarkConfig[P],
   runFn: () => BenchmarkResults,
 ) {
   def run(): BenchmarkResults = runFn()
@@ -11,7 +11,7 @@ final class Benchmark private (
 
 object Benchmark {
 
-  def create(config: BenchmarkConfig)(block: => Any): Benchmark =
+  def create[P](config: BenchmarkConfig[P])(block: => Any): Benchmark[P] =
     new Benchmark(config, () => {
       for (_ <- 0 until config.warmupIterations) {
         block
@@ -23,6 +23,6 @@ object Benchmark {
         val end = System.nanoTime()
         resultArray(i) = end - start
       }
-      BenchmarkResults(config, resultArray)
+      BenchmarkResults(resultArray)
     })
 }

@@ -6,11 +6,12 @@ import bench.timeit._
 import v1.engine.SimpleCachingEngine
 
 object SimpleWithCaching extends FindInSeqOfTagsListsBenchmarkSetup {
+  import FindInSeqOfTagsListsBenchmarkSetup.Params
 
   import v1.dsl.simple._
 
-  override protected def findInSeqOfTagsLists(setup: VaporsBenchmarkSetup[Boolean, OP]): Benchmark = {
-    Benchmark.create(BenchmarkConfig(s"with caching: ${setup.commonName}")) {
+  override protected def findInSeqOfTagsLists(setup: VaporsBenchmarkSetup[Params, Boolean, OP]): Benchmark[Params] = {
+    Benchmark.create(setup.config.prefixName("with caching: ")) {
       SimpleCachingEngine.evalMultiple(setup.expressions, setup.factTable).foreach(setup.ensureValidResult)
     }
   }

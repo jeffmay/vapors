@@ -2,20 +2,27 @@ package com.rallyhealth.vapors
 
 package bench
 
-import bench.timeit.Benchmark
-
 import java.util.concurrent.TimeUnit
 
 object Main {
 
   def main(args: Array[String]): Unit = {
-    val allBenchmarks: Seq[Benchmark] = Seq(
-      SimpleWithCaching.benchmarkFindInSeqOfTagsLists,
-      SimpleWithoutCaching.benchmarkFindInSeqOfTagsLists,
-    )
-    for (benchmark <- allBenchmarks) {
+    val benchmarkMatrix =
+      SimpleWithCaching.benchmarkMultiFindInSeqOfTags ++ SimpleWithoutCaching.benchmarkMultiFindInSeqOfTags
+    println("Name,Exprs,Facts,Tags/Fact,Avg,StdDev")
+    val unit = TimeUnit.MICROSECONDS
+    for (benchmark <- benchmarkMatrix) {
       val results = benchmark.run()
-      println(results.display(TimeUnit.MICROSECONDS))
+      val p = benchmark.config.params
+      val row = (
+        benchmark.config.name.takeWhile(_ != ':'),
+        p.numExpressions,
+        p.numTagFacts,
+        p.numTagsPerFact,
+        results.durationAvg.toUnit(unit),
+        results.durationStdDev.toUnit(unit),
+      )
+      println(row.productIterator.mkString(","))
     }
   }
 }

@@ -6,19 +6,27 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 
 final case class BenchmarkResults(
-  config: BenchmarkConfig,
-  nanoDurations: IndexedSeq[Long],
+  nanoDurations: IndexedSeq[Long], // should this be non-empty?
 ) {
   lazy val durations: IndexedSeq[FiniteDuration] = nanoDurations.map(_.nanos)
   lazy val durationMin: FiniteDuration = nanoDurations.min.nanos
   lazy val durationMax: FiniteDuration = nanoDurations.max.nanos
   lazy val durationAvg: FiniteDuration = (nanoDurations.sum / nanoDurations.size).nanos
+  lazy val durationStdDev: FiniteDuration = {
+    if (nanoDurations.isEmpty)
+      throw new UnsupportedOperationException("durationStdDev called on empty BenchmarkResults")
 
-  def display(unit: TimeUnit = TimeUnit.MICROSECONDS): String = {
-    val u = BenchmarkResults.shortUnitName(unit)
-    s"""BENCHMARK: ${config.name}
-       |Avg: ${durationAvg.toUnit(unit)}$u, Min: ${durationMin.toUnit(unit)}$u, Max: ${durationMax.toUnit(unit)}$u
-       |""".stripMargin
+    val n = nanoDurations.length
+    val u = nanoDurations.foldLeft(0d) {
+      case (acc, nanos) =>
+        acc + (nanos.toDouble / n)
+    }
+    val root = nanoDurations.foldLeft(0d) {
+      case (acc, nanos) =>
+        acc + (Math.pow(nanos.toDouble - u, 2) / n)
+    }
+    val stddevNanos = Math.pow(root, .5)
+    stddevNanos.nanos
   }
 }
 
