@@ -15,7 +15,6 @@ import scala.collection.immutable.NumericRange
   */
 sealed trait Window[+A] {
 
-  // For covariant window...
   def bounds: Option[Ior[Bounded.Above[A], Bounded.Below[A]]]
 
   final def mapBothBounds[B >: A : Order](
@@ -33,10 +32,6 @@ sealed trait Window[+A] {
 
   final def mapLowerBound[B >: A : Order](fn: A => B): Window[B] =
     mapBothBounds(fn, identity)
-
-  // For contravariant window...
-//  def contains(value: A): Boolean
-//  def contramap[B : Order](fn: B => A): Window[B]
 }
 
 object Window {
@@ -46,18 +41,15 @@ object Window {
   @inline final def empty[A]: Window[A] = Empty
 
   private final case object Empty extends Window[Nothing] {
-//    override def contains(value: Any): Boolean = false
-//    override def contramap[B : Order](fn: B => Any): Window[B] = this
     override def bounds: Option[Ior[Above[Nothing], Below[Nothing]]] = None
   }
 
-  // TODO: Convert to extension method
-  def contains[A](
-    window: Window[A],
-    value: A,
-  ): Boolean = window match {
-    case Empty => false
-    case knownWindow: KnownWindow[A] => knownWindow.contains(value)
+  implicit final class IWindowOps[A](private val window: Window[A]) extends AnyVal {
+
+    def contains(value: A): Boolean = window match {
+      case Empty => false
+      case knownWindow: KnownWindow[A] => knownWindow.contains(value)
+    }
   }
 
   def showWindowWithTerm[A : Show](term: String): Show[Window[A]] = Show.show {
