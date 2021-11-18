@@ -2,13 +2,21 @@ package com.rallyhealth.vapors.v1
 
 package dsl.circe
 
-import dsl.StandardRunDsl
+import dsl.{JustifiedBuildExprDsl, StandardRunDsl, UnwrappedBuildExprDsl}
 
-object standard extends UnwrappedCirceBuildExprDsl with StandardRunDsl {
+object standard extends CirceDsl with UnwrappedBuildExprDsl with StandardRunDsl {
 
   override type OP[a] = HasEncoder[a]
 
-  final object withSourceInfo extends UnwrappedCirceBuildExprDsl with StandardRunDsl {
+  final object justified extends CirceDsl with JustifiedBuildExprDsl with StandardRunDsl {
+    override type OP[a] = HasEncoder[a]
+
+    final object withSourceInfo extends CirceDsl with JustifiedBuildExprDsl with StandardRunDsl {
+      override type OP[a] = CirceDebuggingContext[a]
+    }
+  }
+
+  final object withSourceInfo extends CirceDsl with UnwrappedBuildExprDsl with StandardRunDsl {
     override type OP[a] = CirceDebuggingContext[a]
   }
 }
