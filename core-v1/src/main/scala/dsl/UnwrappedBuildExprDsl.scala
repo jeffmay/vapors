@@ -10,7 +10,7 @@ import logic.Logic
 import cats.{Foldable, Functor, FunctorFilter, Traverse}
 import com.rallyhealth.vapors.v1.dsl.ConstOutputType.Aux
 import com.rallyhealth.vapors.v1.math.Power
-import shapeless.<:!<
+import shapeless.{<:!<, Generic, HList}
 
 trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with UnwrappedDslTypes {
 
@@ -79,6 +79,23 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
     ne: NotEmpty[C, A],
   ): UnwrappedHkExprBuilder[I, C, A] =
     new UnwrappedHkExprBuilder(expr)
+
+  override implicit def fromHL[I, L <: HList](expr: I ~:> L): UnwrappedConvertHListExprBuilder[I, L] =
+    new UnwrappedConvertHListExprBuilder(expr)
+
+  final class UnwrappedConvertHListExprBuilder[-I, L <: HList](inputExpr: I ~:> L)
+    extends ConvertHListExprBuilder(inputExpr) {
+
+    override def as[P](
+      implicit
+      gen: Generic.Aux[P, L],
+      opL: OP[L],
+      opWL: OP[L],
+      opP: OP[P],
+      opWP: OP[P],
+    ): AndThen[I, L, P] =
+      inputExpr.andThen(Expr.Convert(ExprConverter.asProductType)(opWP))(opWP)
+  }
 
   override final type SpecificHkExprBuilder[-I, C[_], A] = UnwrappedHkExprBuilder[I, C, A]
 
@@ -153,7 +170,7 @@ sealed trait UnwrappedImplicits extends MidPriorityUnwrappedImplicits with WrapI
     implicit
     sot: SelectOutputType[W, C[O], O],
     opCO: OP[C[O]],
-  ): Aux[W, C[O], C[sot.Out]] = defn.constTraverse(sot)
+  ): ConstOutputType.Aux[W, C[O], C[sot.Out]] = defn.constTraverse(sot)
 
   override implicit final def selectOption[I : OP, O : OP](
     implicit

@@ -80,6 +80,8 @@ object ExprResult {
 
     def visitConst[O : OP](result: Const[PO, O, OP]): Any ~>: O
 
+    def visitConvert[I, O : OP](result: Convert[PO, I, O, OP]): I ~>: O
+
     def visitCustomFunction[I, O : OP](result: CustomFunction[PO, I, O, OP]): I ~>: O
 
     def visitExists[C[_] : Foldable, A, B : AsBoolean : OP](result: Exists[PO, C, A, B, OP]): C[A] ~>: B
@@ -184,6 +186,16 @@ object ExprResult {
     state: ExprState[PO, O],
   ) extends ExprResult[PO, Any, O, OP] {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[Any, O] = v.visitConst(this)
+  }
+
+  /**
+    * The result of running [[Expr.Convert]]
+    */
+  final case class Convert[+PO, -I, +O : OP, OP[_]](
+    expr: Expr.Convert[I, O, OP],
+    state: ExprState[PO, O],
+  ) extends ExprResult[PO, I, O, OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitConvert(this)
   }
 
   /**

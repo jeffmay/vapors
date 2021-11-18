@@ -269,6 +269,8 @@ object Expr {
 
     def visitConst[O : OP](expr: Const[O, OP]): Any ~:> O
 
+    def visitConvert[I, O : OP](expr: Convert[I, O, OP]): I ~:> O
+
     def visitCustomFunction[I, O : OP](expr: CustomFunction[I, O, OP]): I ~:> O
 
     def visitExists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](expr: Exists[C, A, B, OP]): C[A] ~:> B
@@ -738,6 +740,15 @@ object Expr {
   ) extends Expr[I, W[Boolean], OP]("withinWindow") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[Boolean]] = v.visitWithinWindow(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): WithinWindow[I, V, W, OP] =
+      copy(debugging = debugging)
+  }
+
+  final case class Convert[-I, +O : OP, OP[_]](
+    converter: ExprConverter[I, O],
+    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  ) extends Expr[I, O, OP]("convert") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitConvert(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Convert[I, O, OP] =
       copy(debugging = debugging)
   }
 }

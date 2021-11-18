@@ -2,13 +2,13 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import algebra.{CombineHolder, Expr}
+import algebra.{CombineHolder, Expr, ExprConverter}
 import data.{Extract, ExtractValue, FactTypeSet}
-import dsl.SelectOutputType.Aux
 import lens.VariantLens
 import math.Power
 
 import cats.{Foldable, Functor, FunctorFilter}
+import shapeless.{Generic, HList}
 
 trait WrappedExprDsl extends BuildExprDsl {
   self: DslTypes with WrapImplicits =>
@@ -56,7 +56,7 @@ trait WrappedExprDsl extends BuildExprDsl {
     override def get[B : Wrappable, O](
       selector: VariantLens.FromTo[A, B],
     )(implicit
-      sot: Aux[W, A, B, O],
+      sot: SelectOutputType.Aux[W, A, B, O],
       opO: OP[O],
     ): Expr.Select[I, W[A], B, O, OP] = {
       val lens = VariantLens.id[W[A]].extractValue.andThen(selector(VariantLens.id[A]))
@@ -64,6 +64,23 @@ trait WrappedExprDsl extends BuildExprDsl {
     }
 
     override def getAs[C[_]]: GetAsWrapper[I, W, A, C, OP] = new GetAsWrapper(inputExpr)
+  }
+
+  override implicit def fromHL[I, L <: HList](expr: I ~:> W[L]): WrappedConvertHListExprBuilder[I, L] =
+    new WrappedConvertHListExprBuilder(expr)
+
+  class WrappedConvertHListExprBuilder[-I, L <: HList](inputExpr: I ~:> W[L])
+    extends ConvertHListExprBuilder(inputExpr) {
+
+    override def as[P](
+      implicit
+      gen: Generic.Aux[P, L],
+      opL: OP[L],
+      opWL: OP[W[L]],
+      opP: OP[P],
+      opWP: OP[W[P]],
+    ): AndThen[I, W[L], W[P]] =
+      inputExpr.andThen(Expr.Convert(ExprConverter.asWrappedProductType[W, L, P, OP]))
   }
 
   override implicit def hk[I, C[_], A](
