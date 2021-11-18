@@ -7,6 +7,7 @@ import data.{Extract, FactTypeSet, Window}
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Logic, Negation}
 import math.Power
+import shapeless.{Generic, HList}
 
 import cats.data.NonEmptyVector
 import cats.{Foldable, Functor, FunctorFilter, Order}
@@ -89,6 +90,20 @@ trait BuildExprDsl extends DebugExprDsl {
     ): Expr.Select[I, W[A], B, O, OP]
 
     def getAs[C[_]]: GetAsWrapper[I, W, A, C, OP]
+  }
+
+  implicit def fromHL[I, L <: HList](expr: I ~:> W[L]): ConvertHListExprBuilder[I, L]
+
+  abstract class ConvertHListExprBuilder[-I, L <: HList](proof: I ~:> W[L]) {
+
+    def as[P](
+      implicit
+      gen: Generic.Aux[P, L],
+      opL: OP[L],
+      opWL: OP[W[L]],
+      opP: OP[P],
+      opWP: OP[W[P]],
+    ): AndThen[I, W[L], W[P]]
   }
 
   implicit def hk[I, C[_], A](expr: I ~:> C[W[A]])(implicit ne: NotEmpty[C, A]): SpecificHkExprBuilder[I, C, A]

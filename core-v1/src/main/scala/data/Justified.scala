@@ -6,7 +6,7 @@ import algebra.EqualComparable
 import dsl.{WrapConst, WrapFact, WrapQuantifier, WrapSelected}
 import lens.{DataPath, VariantLens}
 import logic.Logic
-import math.{Add, Divide, Multiply, Power, Subtract}
+import math._
 
 import cats.data.{NonEmptySeq, NonEmptySet}
 import cats.implicits._

@@ -2,8 +2,10 @@ package com.rallyhealth.vapors.v1
 
 package algebra
 
-import data.Window
-
+import data.{Extract, Window}
+import cats.Functor
+import com.rallyhealth.vapors.v1.dsl.WrapSelected
+import com.rallyhealth.vapors.v1.lens.DataPath
 import shapeless.ops.hlist.Tupler
 import shapeless.{Generic, HList}
 
@@ -40,6 +42,13 @@ object ExprConverter {
 
   def asProductType[I <: HList, O](implicit gen: Generic.Aux[O, I]): ExprConverter[I, O] =
     new Impl("asProduct", gen.from)
+
+  def asWrappedProductType[W[+_] : Extract, I <: HList : OP, O : OP, OP[_]](
+    implicit
+    gen: Generic.Aux[O, I],
+    wrapSelected: WrapSelected[W, OP],
+  ): ExprConverter[W[I], W[O]] =
+    new Impl("asProductWrapped", wi => wrapSelected.wrapSelected(wi, DataPath.empty, gen.from(Extract[W].extract(wi))))
 
   def asTuple[I <: HList, O](implicit tupler: Tupler.Aux[I, O]): ExprConverter[I, O] =
     new Impl("asTuple", tupler.apply)

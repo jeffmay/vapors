@@ -94,6 +94,9 @@ object InterpretExprResultAsJson {
     override def visitConst[O : OP](result: ExprResult.Const[PO, O, OP]): ToJsonObject[Any, O] =
       encodeExprResult(result)
 
+    override def visitConvert[I, O : OP](result: ExprResult.Convert[PO, I, O, OP]): ToJsonObject[I, O] =
+      encodeExprResult(result)
+
     override def visitCustomFunction[I, O : OP](result: ExprResult.CustomFunction[PO, I, O, OP]): ToJsonObject[I, O] =
       encodeExprResult(result)
 
@@ -226,6 +229,9 @@ object InterpretExprResultAsJson {
 
     override def visitConst[O : OP](result: ExprResult.Const[PO, O, OP]): ToJsonObject[Any, O] =
       super.visitConst(result).deepMerge(sourceInfo[O])
+
+    override def visitConvert[I, O : OP](result: ExprResult.Convert[PO, I, O, OP]): ToJsonObject[I, O] =
+      super.visitConvert(result).deepMerge(sourceInfo[O])
 
     override def visitCustomFunction[I, O : OP](result: ExprResult.CustomFunction[PO, I, O, OP]): ToJsonObject[I, O] =
       super.visitCustomFunction(result).deepMerge(sourceInfo[O])

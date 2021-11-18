@@ -165,6 +165,12 @@ object DebugArgs {
       override type Out = O
     }
 
+  implicit def debugConvert[I, O, OP[_]]: Aux[Expr.Convert[I, O, OP], OP, I, O] =
+    new DebugArgs[Expr.Convert[I, O, OP], OP] {
+      override type In = I
+      override type Out = O
+    }
+
   implicit def debugIdent[I, OP[_]]: Aux[Expr.Identity[I, OP], OP, I, I] =
     new DebugArgs[Expr.Identity[I, OP], OP] {
       override type In = I
