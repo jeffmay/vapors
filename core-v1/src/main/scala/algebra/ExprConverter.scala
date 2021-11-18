@@ -4,6 +4,7 @@ package algebra
 
 import data.Window
 
+import cats.Functor
 import shapeless.ops.hlist.Tupler
 import shapeless.{Generic, HList}
 
@@ -40,6 +41,9 @@ object ExprConverter {
 
   def asProductType[I <: HList, O](implicit gen: Generic.Aux[O, I]): ExprConverter[I, O] =
     new Impl("asProduct", gen.from)
+
+  def asWrappedProductType[W[+_] : Functor, I <: HList, O](implicit gen: Generic.Aux[O, I]): ExprConverter[W[I], W[O]] =
+    new Impl("asProductWrapped", Functor[W].map(_)(gen.from))
 
   def asTuple[I <: HList, O](implicit tupler: Tupler.Aux[I, O]): ExprConverter[I, O] =
     new Impl("asTuple", tupler.apply)

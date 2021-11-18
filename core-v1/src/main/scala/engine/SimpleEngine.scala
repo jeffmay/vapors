@@ -77,6 +77,11 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state(i, o))
     }
 
+    override def visitConvert[I, O : OP](expr: Expr.Convert[I, O, OP]): I => O = { i =>
+      val o = expr.converter(i)
+      debugging(expr).invokeAndReturn(state(i, o))
+    }
+
     override def visitCustomFunction[I, O : OP](expr: Expr.CustomFunction[I, O, OP]): I => O = { i =>
       val o = expr.function(i)
       debugging(expr).invokeAndReturn(state(i, o))

@@ -9,6 +9,7 @@ import logic.Logic
 
 import cats.data.NonEmptyList
 import cats.{Foldable, Functor}
+import shapeless.{Generic, HList}
 
 trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
 
@@ -37,6 +38,23 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
     opTs: OP[Seq[Justified[T]]],
   ): Expr.ValuesOfType[T, Justified[T], OP] =
     Expr.ValuesOfType[T, Justified[T], OP](factTypeSet, Justified.ByFact(_))
+
+  override implicit def wrapHList[I, L <: HList](expr: I ~:> Justified[L]): SpecificWrapHListExprBuilder[I, L] =
+    new WrapHListJustifiedExprBuilder(expr)
+
+  override type SpecificWrapHListExprBuilder[-I, L <: HList] = WrapHListJustifiedExprBuilder[I, L]
+
+  final class WrapHListJustifiedExprBuilder[-I, L <: HList](override protected val inputExpr: I ~:> Justified[L])
+    extends WrapHListExprBuilder[I, L] {
+
+    override def as[P](
+      implicit
+      gen: Generic.Aux[P, L],
+      opL: OP[Justified[L]],
+      opP: OP[Justified[P]],
+    ): I ~:> Justified[P] =
+      Expr.AndThen(inputExpr, Expr.Convert(ExprConverter.asWrappedProductType[Justified, L, P]))
+  }
 
   override implicit def in[I, T](expr: I ~:> Justified[T]): JustifiedSelectExprBuilder[I, T] =
     new JustifiedSelectExprBuilder(expr)

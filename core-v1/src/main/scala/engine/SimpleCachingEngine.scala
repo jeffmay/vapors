@@ -126,6 +126,11 @@ object SimpleCachingEngine {
       debugging(expr).invokeAndReturn(state(i, cached(o)))
     }
 
+    override def visitConvert[I, O : OP](expr: Expr.Convert[I, O, OP]): I => CachedResult[O] = memoize(expr, _) { i =>
+      val o = expr.converter(i)
+      debugging(expr).invokeAndReturn(state(i, cached(o)))
+    }
+
     override def visitCustomFunction[I, O : OP](expr: Expr.CustomFunction[I, O, OP]): I => CachedResult[O] =
       memoize(expr, _) { i =>
         val o = expr.function(i)

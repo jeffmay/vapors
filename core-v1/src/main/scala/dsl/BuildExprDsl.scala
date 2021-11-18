@@ -8,6 +8,7 @@ import lens.VariantLens
 import logic.{Conjunction, Disjunction, Logic, Negation}
 
 import cats.{Foldable, Functor, Order}
+import shapeless.{Generic, HList}
 
 import scala.annotation.nowarn
 
@@ -56,6 +57,9 @@ trait BuildExprDsl extends DebugExprDsl {
   ): Expr.Not[I, B, W, OP] =
     Expr.Not(expr)
 
+  implicit def wrap[A](value: A)(implicit constType: WrapConstType[W, A]): ConstExprBuilder[constType.Out, OP] =
+    new ConstExprBuilder(constType(wrapConst.wrapConst(value)))
+
   type SpecificSelectExprBuilder[-I, T] <: SelectExprBuilder[I, T]
 
   implicit def in[I, T](expr: I ~:> W[T]): SpecificSelectExprBuilder[I, T]
@@ -67,8 +71,21 @@ trait BuildExprDsl extends DebugExprDsl {
     def get[O](selector: VariantLens.FromTo[T, O])(implicit opO: OP[W[O]]): I ~:> W[O]
   }
 
-  implicit def wrap[A](value: A)(implicit constType: WrapConstType[W, A]): ConstExprBuilder[constType.Out, OP] =
-    new ConstExprBuilder(constType(wrapConst.wrapConst(value)))
+  type SpecificWrapHListExprBuilder[-I, L <: HList] <: WrapHListExprBuilder[I, L]
+
+  implicit def wrapHList[I, L <: HList](expr: I ~:> W[L]): SpecificWrapHListExprBuilder[I, L]
+
+  trait WrapHListExprBuilder[-I, L <: HList] extends Any {
+
+    protected def inputExpr: I ~:> W[L]
+
+    def as[P](
+      implicit
+      gen: Generic.Aux[P, L],
+      opL: OP[W[L]],
+      opP: OP[W[P]],
+    ): I ~:> W[P]
+  }
 
   implicit def hk[I, C[_], A](expr: I ~:> C[W[A]]): SpecificHkExprBuilder[I, C, A]
 

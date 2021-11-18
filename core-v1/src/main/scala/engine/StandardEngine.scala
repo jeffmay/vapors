@@ -101,6 +101,14 @@ object StandardEngine {
       ExprResult.Const(expr, finalState)
     }
 
+    override def visitConvert[I, O : OP](expr: Expr.Convert[I, O, OP]): PO <:< I => ExprResult[PO, I, O, OP] = {
+      implicit evPOisI =>
+        val o = expr.converter(state.output)
+        val finalState = state.swapAndReplaceOutput(o)
+        debugging(expr).invokeDebugger(finalState)
+        ExprResult.Convert(expr, finalState)
+    }
+
     override def visitCustomFunction[I, O : OP](
       expr: Expr.CustomFunction[I, O, OP],
     ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evPOisI =>

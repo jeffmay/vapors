@@ -13,6 +13,7 @@ object FactTypes {
 
   final val Age = FactType[Int]("age")
   final val CombinedTags = FactType[CombinedTags]("combined_tags")
+  final val GeoLocation = FactType[GeoLocation]("geolocation")
   final val Weight = FactType[Int]("weight")
 }
 
@@ -38,4 +39,14 @@ final case class NestedSelectable(
 
 object NestedSelectable {
   implicit val order: Order[NestedSelectable] = Order.by(_.value)
+}
+
+final case class GeoLocation(
+  lat: Double,
+  lng: Double,
+)
+
+object GeoLocation {
+  // Order by latitude then longitude
+  implicit val order: Order[GeoLocation] = Order.whenEqual(Order.by(_.lat), Order.by(_.lng))
 }

@@ -8,6 +8,7 @@ import lens.VariantLens
 import logic.Logic
 
 import cats.{catsInstancesForId, Foldable, Functor}
+import shapeless.{Generic, HList}
 
 trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
 
@@ -39,6 +40,23 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
 
     override def get[O](selector: VariantLens.FromTo[T, O])(implicit opO: OP[O]): I ~:> O =
       inputExpr.selectWith(selector(VariantLens.id[T]))
+  }
+
+  override implicit def wrapHList[I, L <: HList](expr: I ~:> L): WrapHListIdExprBuilder[I, L] =
+    new WrapHListIdExprBuilder(expr)
+
+  override type SpecificWrapHListExprBuilder[-I, L <: HList] = WrapHListIdExprBuilder[I, L]
+
+  final class WrapHListIdExprBuilder[-I, L <: HList](override protected val inputExpr: I ~:> L)
+    extends WrapHListExprBuilder[I, L] {
+
+    override def as[P](
+      implicit
+      gen: Generic.Aux[P, L],
+      opL: OP[L],
+      opP: OP[P],
+    ): Ap[I, L, P] =
+      Expr.AndThen(inputExpr, Expr.Convert(ExprConverter.asProductType))
   }
 
   override implicit final def hk[I, C[_], A](expr: I ~:> C[A]): HkIdExprBuilder[I, C, A] = new HkIdExprBuilder(expr)
