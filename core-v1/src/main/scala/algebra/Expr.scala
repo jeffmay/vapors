@@ -22,6 +22,7 @@ import scala.annotation.nowarn
   *
   * The expression defines a set of useful operations (modeled after the Scala collections library) that
   * contain enough information to be serializable.
+  * @see [[dsl.FullDsl]] for more information about how this works.
   *
   * @tparam I the input value type
   * @tparam O the output value type
