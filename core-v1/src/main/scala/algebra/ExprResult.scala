@@ -89,7 +89,7 @@ object ExprResult {
   }
 
   /**
-    * The result of running [[Expr.Or]]
+    * The result of running [[Expr.And]]
     */
   final case class And[+PO, -I, OP[_]](
     expr: Expr.And[I, OP],
