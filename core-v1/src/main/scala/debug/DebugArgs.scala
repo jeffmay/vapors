@@ -7,6 +7,7 @@ import cats.data.{NonEmptySeq, NonEmptyVector}
 import data.{ExprState, Window}
 import lens.VariantLens
 import izumi.reflect.Tag
+import shapeless.{::, HList}
 
 import scala.reflect.ClassTag
 
@@ -244,6 +245,18 @@ object DebugArgs {
     new DebugArgs[Expr.WithinWindow[I, V, W, OP], OP] {
       override type In = (I, W[V], W[Window[V]])
       override type Out = W[Boolean]
+    }
+
+  implicit def debugZipToShortestHList[
+    I,
+    F[+_],
+    WL <: HList,
+    UL <: HList,
+    OP[_],
+  ]: Aux[Expr.ZipToShortestHList[I, F, WL, UL, OP], OP, I, F[UL]] =
+    new DebugArgs[Expr.ZipToShortestHList[I, F, WL, UL, OP], OP] {
+      override type In = I
+      override type Out = F[UL]
     }
 
 }

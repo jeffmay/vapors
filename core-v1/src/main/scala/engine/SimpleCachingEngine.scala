@@ -3,16 +3,17 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra.{EqualComparable, Expr, WindowComparable}
-import cats.data.NonEmptyVector
-import cats.{Eval, Foldable, Functor, FunctorFilter, Order}
 import data.ExtractValue.AsBoolean
-import data.{ExprState, Extract, ExtractValue, FactTable, Window}
+import data._
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
-import dsl.Sortable
+import dsl.{Sortable, ZipToShortest}
 import logic.{Conjunction, Disjunction, Negation}
 
-import scala.collection.Factory
+import cats.arrow.Arrow
+import cats.data.NonEmptyVector
+import cats.{Eval, Foldable, Functor, FunctorFilter}
+import shapeless.HList
 
 object SimpleCachingEngine {
 
@@ -59,9 +60,32 @@ object SimpleCachingEngine {
     protected val factTable: FactTable,
     protected val resultCache: ResultCache,
   ) extends CommonEngine[CachedResult, OP]
-    with Expr.Visitor[Lambda[(`-I`, `+O`) => I => CachedResult[O]], OP] {
+    with Expr.Visitor[Lambda[(`-i`, `+o`) => i => CachedResult[o]], OP] {
 
     import cats.implicits._
+
+    /**
+      * A simple type alias for defining the [[Arrow]] typeclass.
+      */
+    private type =*>[-I, +O] = I => CachedResult[O]
+
+    private implicit val arrowCachedFunction: Arrow[=*>] = new Arrow[=*>] {
+      override def lift[A, B](f: A => B): A =*> B = f.andThen(CachedResult(_, resultCache))
+      override def compose[A, B, C](
+        f: B =*> C,
+        g: A =*> B,
+      ): A =*> C = {
+        g.andThen { b =>
+          val c = f(b.value)
+          CachedResult(c.value, b.cacheState ++ c.cacheState)
+        }
+      }
+      override def first[A, B, C](fa: A =*> B): (A, C) =*> (B, C) = {
+        case (a, c) =>
+          val b = fa(a)
+          CachedResult((b.value, c), resultCache ++ b.cacheState)
+      }
+    }
 
     protected def visitWithUpdatedCache[I, O](
       input: I,
@@ -319,6 +343,16 @@ object SimpleCachingEngine {
         comparison.withinWindow(value, window)
       }
       debugging(expr).invokeAndReturn(state((i, value, window), o))
+    }
+
+    override def visitZipToShortestHList[I, F[+_], WL <: HList, UL <: HList](
+      expr: Expr.ZipToShortestHList[I, F, WL, UL, OP],
+    )(implicit
+      zip: ZipToShortest.Aux[F, WL, OP, UL],
+      opO: OP[F[UL]],
+    ): I =*> F[UL] = memoize(expr, _) { i =>
+      val o = zip.zipToShortestWith(expr.exprHList, this).apply(i)
+      debugging(expr).invokeAndReturn(state(i, o))
     }
   }
 

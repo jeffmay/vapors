@@ -4,13 +4,14 @@ package algebra
 
 import data.{ExtractValue, FactTypeSet, TypedFact, Window}
 import debug.{DebugArgs, Debugging, NoDebugging}
-import dsl.Sortable
+import dsl.{ExprHList, ExprHNil, Sortable, ZipToShortest}
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Negation}
 import math._
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
 import cats.{Foldable, Functor, FunctorFilter}
+import shapeless.{::, HList, HNil}
 
 import scala.annotation.nowarn
 
@@ -39,6 +40,13 @@ import scala.annotation.nowarn
   *            See [[dsl.DslTypes.OP]] for more details.
   */
 sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product with Equals {
+
+  /**
+    * TODO: Document better
+    *
+    * @param head the expression to prepend to the constructed [[ExprHList]]
+    */
+  def ::[CI <: I, H](head: Expr[CI, H, OP]): ExprHList[CI, H :: O :: HNil, OP] = head :: this :: ExprHNil[OP]
 
   /**
     * Holds any [[Debugging]] hook to be run while running this expression.
@@ -243,7 +251,8 @@ object Expr {
     * @tparam ~:> an infix type alias for the higher-kinded result type of this visitor
     *             (the symbol was chosen to indicate that more work must be performed by the visitor to produce
     *             a value of the output type and it will most often be interpreted as a `Function`)
-    * @tparam OP `Output Parameter` (captured at the definition site for every output type in the expression tree)
+    * @tparam OP `Output Parameter` (captured at the definition site for every output type in the expression tree).
+    *            See [[dsl.DslTypes.OP]] for more details.
     */
   trait Visitor[~:>[-_, +_], OP[_]] {
 
@@ -328,6 +337,148 @@ object Expr {
       opW: OP[W[Window[V]]],
       opB: OP[W[Boolean]],
     ): I ~:> W[Boolean]
+
+    def visitZipToShortestHList[I, W[+_], WL <: HList, UL <: HList](
+      expr: Expr.ZipToShortestHList[I, W, WL, UL, OP],
+    )(implicit
+      zip: ZipToShortest.Aux[W, WL, OP, UL],
+      opO: OP[W[UL]],
+    ): I ~:> W[UL]
+  }
+
+  /**
+    * A simple function definition for a function defined over 2 higher-kinded arity-2 type constructors,
+    * [[G]] and [[H]], alongside a custom output parameter [[OP]].
+    *
+    * This is primarily used by [[ProxyVisitor]], but it could be seen as a general definition for the most
+    * generic transformer for any [[Expr]] operation.
+    */
+  trait ProxyFunction[G[-_, +_], H[-_, +_], OP[_]] {
+    def apply[I, O : OP](g: => G[I, O]): H[I, O]
+  }
+
+  /**
+    * Proxy all method invocations to an [[underlying]] [[Visitor]] into a given [[ProxyFunction]] for pre / post
+    * processing.
+    *
+    * @note You can override any specific method to do something other than proxy the visitor invocation.
+    *       Alternatively, you can ignore the given visitor invocation and do something entirely different,
+    *       however, it is unlikely you can do much with the input or output type, since the only constraint
+    *       is on the output type, and it will not likely provide much power.
+    *
+    * @param proxy the [[ProxyFunction]] that will receive all method invocations (by default)
+    * @param underlying the [[Visitor]] to invoke (by default) when proxying the method
+    * @tparam G the initial interpreter result (parameterized over the input and output)
+    * @tparam H the transformed interpreter result (parameterized over the same input and output)
+    * @tparam OP `Output Parameter` (captured at the definition site for every output type in the expression tree).
+    *            See [[dsl.DslTypes.OP]] for more details.
+    */
+  class ProxyVisitor[G[-_, +_], H[-_, +_], OP[_]](
+    proxy: ProxyFunction[G, H, OP],
+    underlying: Visitor[G, OP],
+  ) extends Visitor[H, OP] {
+
+    override def visitAnd[I, B, W[+_]](
+      expr: And[I, B, W, OP],
+    )(implicit
+      logic: Conjunction[W, B, OP],
+      opB: OP[W[B]],
+    ): H[I, W[B]] = proxy(underlying.visitAnd(expr))
+
+    override def visitAndThen[II, IO : OP, OI, OO : OP](
+      expr: AndThen[II, IO, OI, OO, OP],
+    )(implicit
+      evIOisOI: IO <:< OI,
+    ): H[II, OO] = proxy(underlying.visitAndThen(expr))
+
+    override def visitCombine[I, LI, LO : OP, RI, RO : OP, O : OP](
+      expr: Combine[I, LI, LO, RI, RO, O, OP],
+    )(implicit
+      evLOisLI: LO <:< LI,
+      evROisRI: RO <:< RI,
+    ): H[I, O] = proxy(underlying.visitCombine(expr))
+
+    override def visitConst[O : OP](expr: Const[O, OP]): H[Any, O] = proxy(underlying.visitConst(expr))
+
+    override def visitConvert[I, O : OP](expr: Convert[I, O, OP]): H[I, O] = proxy(underlying.visitConvert(expr))
+
+    override def visitCustomFunction[I, O : OP](expr: CustomFunction[I, O, OP]): H[I, O] =
+      proxy(underlying.visitCustomFunction(expr))
+
+    override def visitExists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
+      expr: Exists[C, A, B, OP],
+    ): H[C[A], B] =
+      proxy(underlying.visitExists(expr))
+
+    override def visitFilter[C[_] : FunctorFilter, A, B : ExtractValue.AsBoolean : OP](
+      expr: Filter[C, A, B, OP],
+    )(implicit
+      opO: OP[C[A]],
+    ): H[C[A], C[A]] = proxy(underlying.visitFilter(expr))
+
+    override def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
+      expr: ForAll[C, A, B, OP],
+    ): H[C[A], B] =
+      proxy(underlying.visitForAll(expr))
+
+    override def visitIdentity[I : OP](expr: Identity[I, OP]): H[I, I] = proxy(underlying.visitIdentity(expr))
+
+    override def visitIsEqual[I, V, W[+_]](
+      expr: IsEqual[I, V, W, OP],
+    )(implicit
+      eq: EqualComparable[W, V, OP],
+      opV: OP[W[V]],
+      opO: OP[W[Boolean]],
+    ): H[I, W[Boolean]] = proxy(underlying.visitIsEqual(expr))
+
+    override def visitMapEvery[C[_] : Functor, A, B](
+      expr: MapEvery[C, A, B, OP],
+    )(implicit
+      opO: OP[C[B]],
+    ): H[C[A], C[B]] = proxy(underlying.visitMapEvery(expr))
+
+    override def visitNot[I, B, F[+_]](
+      expr: Not[I, B, F, OP],
+    )(implicit
+      logic: Negation[F, B, OP],
+      opB: OP[F[B]],
+    ): H[I, F[B]] = proxy(underlying.visitNot(expr))
+
+    override def visitOr[I, B, W[+_]](
+      expr: Or[I, B, W, OP],
+    )(implicit
+      logic: Disjunction[W, B, OP],
+      opO: OP[W[B]],
+    ): H[I, W[B]] = proxy(underlying.visitOr(expr))
+
+    override def visitSelect[I, A, B, O : OP](expr: Select[I, A, B, O, OP]): H[I, O] =
+      proxy(underlying.visitSelect(expr))
+
+    override def visitSorted[C[_], A](
+      expr: Sorted[C, A, OP],
+    )(implicit
+      sortable: Sortable[C, A],
+      opAs: OP[C[A]],
+    ): H[C[A], C[A]] = proxy(underlying.visitSorted(expr))
+
+    override def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): H[Any, Seq[O]] =
+      proxy(underlying.visitValuesOfType(expr))
+
+    override def visitWithinWindow[I, V, W[+_]](
+      expr: WithinWindow[I, V, W, OP],
+    )(implicit
+      comparison: WindowComparable[W, OP],
+      opV: OP[W[V]],
+      opW: OP[W[Window[V]]],
+      opB: OP[W[Boolean]],
+    ): H[I, W[Boolean]] = proxy(underlying.visitWithinWindow(expr))
+
+    override def visitZipToShortestHList[I, W[+_], WL <: HList, UL <: HList](
+      expr: ZipToShortestHList[I, W, WL, UL, OP],
+    )(implicit
+      zip: ZipToShortest.Aux[W, WL, OP, UL],
+      opO: OP[W[UL]],
+    ): H[I, W[UL]] = proxy(underlying.visitZipToShortestHList(expr))
   }
 
   /**
@@ -749,6 +900,20 @@ object Expr {
   ) extends Expr[I, O, OP]("convert") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitConvert(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Convert[I, O, OP] =
+      copy(debugging = debugging)
+  }
+
+  final case class ZipToShortestHList[-I, W[+_], +WL <: HList, +UL <: HList, OP[_]](
+    exprHList: ExprHList[I, WL, OP],
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    zip: ZipToShortest.Aux[W, WL, OP, UL],
+    opO: OP[W[UL]],
+  ) extends Expr[I, W[UL], OP]("zipToHList") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[UL]] = v.visitZipToShortestHList(this)
+    override private[v1] def withDebugging(
+      debugging: Debugging[Nothing, Nothing],
+    ): ZipToShortestHList[I, W, WL, UL, OP] =
       copy(debugging = debugging)
   }
 }

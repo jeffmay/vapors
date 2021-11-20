@@ -4,6 +4,7 @@ import algebra.Expr
 import com.rallyhealth.vapors.v1.example.NestedSelectable
 import com.rallyhealth.vapors.v1.lens.VariantLens
 import munit._
+import shapeless.HNil
 
 class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
 
@@ -186,11 +187,10 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
   }
 
   test("debug map without initial input") {
-    val seq = Seq(1, 2)
     testExpr(mapEveryExpr).withNoInput.verifyDebuggerCalledWith { state =>
       val (i, ca) = state.input
       assertInputEquals(None, i)
-      assertEquals(ca, seq)
+      assertEquals(ca, mapEveryInput)
       assertEquals(state.output, mapEveryExprOutput)
     }
   }
@@ -238,6 +238,43 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
         b: Option[NestedSelectable],
       ) = state.input
       val o: Option[NestedSelectable] = state.output
+    }
+  }
+
+  // TODO: These tests would be more useful in a wrapped DSL
+  private val zipToHListExpr0 = ("a".const :: 1.const).toHList
+  private val zipToHListOutput0 = "a" :: 1 :: HNil
+
+  test("debug zipToHList without initial input") {
+    testExpr(zipToHListExpr0).withNoInput.verifyDebuggerCalledWith { state =>
+      val i = state.input
+      assertInputEquals(None, i)
+      assertEquals(state.output, zipToHListOutput0)
+    }
+  }
+
+  test("debug zipToHList syntax works") {
+    zipToHListExpr0.debug { state =>
+      assertEquals(state.output, zipToHListOutput0)
+    }
+  }
+
+  private val zipToHListInput1 = 1
+  private val zipToHListExpr1 = (ident[Int] :: "bananas".const).toHList
+  private val zipToHListOutput1 = zipToHListInput1 :: "bananas" :: HNil
+
+  test("debug zipToHList with input") {
+    testExpr(zipToHListExpr1).withInput(zipToHListInput1).verifyDebuggerCalledWith { state =>
+      val i = state.input
+      assertInputEquals(Some(zipToHListInput1), i)
+      assertEquals(state.output, zipToHListOutput1)
+    }
+  }
+
+  test("debug zipToHList with input syntax works") {
+    zipToHListExpr1.debug { state =>
+      assertEquals(state.input, zipToHListInput1)
+      assertEquals(state.output, zipToHListOutput1)
     }
   }
 }

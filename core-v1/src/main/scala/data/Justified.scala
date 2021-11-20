@@ -10,7 +10,7 @@ import math._
 
 import cats.data.{NonEmptySeq, NonEmptySet}
 import cats.implicits._
-import cats.{Eq, Order, Traverse}
+import cats.{Applicative, Eq, Eval, Order, Semigroupal, Traverse}
 
 import scala.annotation.nowarn
 
@@ -292,6 +292,49 @@ object Justified {
 
   implicit def wrapQuantifier[OP[_]]: WrapQuantifier[Justified, OP] =
     WrapQuantifierJustified.asInstanceOf[WrapQuantifier[Justified, OP]]
+
+  implicit val semigroupal: Semigroupal[Justified] = new Semigroupal[Justified] {
+    override def product[A, B](
+      fa: Justified[A],
+      fb: Justified[B],
+    ): Justified[(A, B)] = {
+      Justified.byInference("product", (fa.value, fb.value), NonEmptySeq(fa, Vector(fb)))
+    }
+  }
+
+  implicit val traverse: Traverse[Justified] = new Traverse[Justified] {
+
+    override def map[A, B](fa: Justified[A])(f: A => B): Justified[B] = fa match {
+      case Justified.ByConst(v) => Justified.byConst(f(v))
+      case Justified.ByConfig(v, k, d) => Justified.byConfig(f(v), k, d)
+      case _ =>
+        val derived = f(fa.value)
+        Justified.byInference("map", derived, NonEmptySeq.of(fa))
+    }
+
+    override def traverse[G[_] : Applicative, A, B](fa: Justified[A])(f: A => G[B]): G[Justified[B]] = {
+      val gb = f(fa.value)
+      Applicative[G].map(gb) { b =>
+        Justified.byInference("traverse", b, NonEmptySeq.of(fa))
+      }
+    }
+
+    override def foldLeft[A, B](
+      fa: Justified[A],
+      b: B,
+    )(
+      f: (B, A) => B,
+    ): B =
+      f(b, fa.value)
+
+    override def foldRight[A, B](
+      fa: Justified[A],
+      lb: Eval[B],
+    )(
+      f: (A, Eval[B]) => Eval[B],
+    ): Eval[B] =
+      f(fa.value, lb)
+  }
 
   private val anyBool = new BooleanLogic[Boolean](identity)
 
