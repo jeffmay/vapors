@@ -66,6 +66,27 @@ trait WrappedExprDsl extends BuildExprDsl {
     override def getAs[C[_]]: GetAsWrapper[I, W, A, C, OP] = new GetAsWrapper(inputExpr)
   }
 
+  override implicit def xhlOps[I, WL <: HList](exprHList: ExprHList[I, WL, OP]): WrappedExprHListOpsBuilder[I, WL] =
+    new WrappedExprHListOpsBuilder(exprHList)
+
+  class WrappedExprHListOpsBuilder[-I, WL <: HList](inputExprHList: ExprHList[I, WL, OP])
+    extends ExprHListOpsBuilder(inputExprHList) {
+
+    override def toHList[UL <: HList](
+      implicit
+      isCons: ZipToShortest.Aux[W, WL, OP, UL],
+      opO: OP[W[UL]],
+    ): I ~:> W[UL] =
+      Expr.ZipToShortestHList(inputExprHList)
+
+    override def zipToShortest[C[+_], UL <: HList](
+      implicit
+      zip: ZipToShortest.Aux[CW[C, W, +*], WL, OP, UL],
+      opO: OP[C[W[UL]]],
+    ): I ~:> C[W[UL]] =
+      Expr.ZipToShortestHList[I, CW[C, W, +*], WL, UL, OP](inputExprHList)(zip, opO)
+  }
+
   override implicit def fromHL[I, L <: HList](expr: I ~:> W[L]): WrappedConvertHListExprBuilder[I, L] =
     new WrappedConvertHListExprBuilder(expr)
 

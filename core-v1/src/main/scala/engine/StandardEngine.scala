@@ -5,10 +5,11 @@ package engine
 import algebra._
 import data.{ExprState, ExtractValue, Window}
 import debug.DebugArgs
-import dsl.Sortable
+import dsl.{Sortable, ZipToShortest}
 import logic.{Conjunction, Disjunction, Negation}
 
 import cats.{Foldable, Functor, FunctorFilter}
+import shapeless.HList
 
 import scala.annotation.nowarn
 
@@ -284,6 +285,17 @@ object StandardEngine {
       val finalState = state.swapAndReplaceOutput(output)
       debugging(expr).invokeDebugger(stateFromInput((_, value, window), finalState.output))
       ExprResult.WithinWindow(expr, finalState, valueResult, windowResult)
+    }
+
+    override def visitZipToShortestHList[I, F[+_], WL <: HList, UL <: HList](
+      expr: Expr.ZipToShortestHList[I, F, WL, UL, OP],
+    )(implicit
+      zip: ZipToShortest.Aux[F, WL, OP, UL],
+      opO: OP[F[UL]],
+    ): PO <:< I => ExprResult[PO, I, F[UL], OP] = { implicit evPOisI =>
+      // TODO: Figure out how to create an Arrow for this type? Maybe a simpler visitor? Maybe I can rewrite this visitor?
+      val output = zip.zipToShortestWith(expr.exprHList, this)(???)(implicitly)
+      output
     }
   }
 }

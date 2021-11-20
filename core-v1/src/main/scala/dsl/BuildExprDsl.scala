@@ -7,10 +7,10 @@ import data.{Extract, FactTypeSet, Window}
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Logic, Negation}
 import math.Power
-import shapeless.{Generic, HList}
 
 import cats.data.NonEmptyVector
-import cats.{Foldable, Functor, FunctorFilter, Order}
+import cats.{Foldable, Functor, FunctorFilter, Order, Semigroupal}
+import shapeless.{Generic, HList}
 
 trait BuildExprDsl extends DebugExprDsl {
   self: DslTypes with WrapImplicits =>
@@ -20,6 +20,10 @@ trait BuildExprDsl extends DebugExprDsl {
   protected implicit def windowComparable: WindowComparable[W, OP]
 
   protected implicit def extract: Extract[W]
+
+  protected implicit def functor: Functor[W]
+
+  protected implicit def semigroupal: Semigroupal[W]
 
   protected implicit def wrapConst: WrapConst[W, OP]
 
@@ -90,6 +94,23 @@ trait BuildExprDsl extends DebugExprDsl {
     ): Expr.Select[I, W[A], B, O, OP]
 
     def getAs[C[_]]: GetAsWrapper[I, W, A, C, OP]
+  }
+
+  implicit def xhlOps[I, WL <: HList](exprHList: ExprHList[I, WL, OP]): ExprHListOpsBuilder[I, WL]
+
+  abstract class ExprHListOpsBuilder[-I, WL <: HList](proof: ExprHList[I, WL, OP]) {
+
+    def toHList[UL <: HList](
+      implicit
+      isCons: ZipToShortest.Aux[W, WL, OP, UL],
+      opO: OP[W[UL]],
+    ): I ~:> W[UL]
+
+    def zipToShortest[C[+_], UL <: HList](
+      implicit
+      zip: ZipToShortest.Aux[CW[C, W, +*], WL, OP, UL],
+      opO: OP[C[W[UL]]],
+    ): I ~:> C[W[UL]]
   }
 
   implicit def fromHL[I, L <: HList](expr: I ~:> W[L]): ConvertHListExprBuilder[I, L]

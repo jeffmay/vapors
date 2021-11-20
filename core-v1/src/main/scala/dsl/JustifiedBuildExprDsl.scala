@@ -6,7 +6,7 @@ import algebra._
 import data.{Extract, ExtractValue, Justified}
 import logic.Logic
 
-import cats.Traverse
+import cats.{Functor, Semigroupal, Traverse}
 import shapeless.<:!<
 
 trait JustifiedBuildExprDsl extends WrappedExprDsl with WrapJustifiedImplicits with JustifiedDslTypes {
@@ -22,6 +22,10 @@ trait JustifiedBuildExprDsl extends WrappedExprDsl with WrapJustifiedImplicits w
   ]: ExtractValue.AsBoolean[Justified[B]] = { b =>
     ExtractValue.asBoolean(b.value)
   }
+
+  override protected implicit final def functor: Functor[Justified] = Justified.traverse
+
+  override protected implicit final def semigroupal: Semigroupal[Justified] = Justified.semigroupal
 
   override protected implicit final def wrapConst: WrapConst[Justified, OP] = Justified.wrapConst
 

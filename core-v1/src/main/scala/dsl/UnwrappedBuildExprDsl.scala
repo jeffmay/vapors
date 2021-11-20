@@ -6,10 +6,9 @@ import algebra._
 import data.{Extract, FactTypeSet}
 import lens.VariantLens
 import logic.Logic
+import math.Power
 
-import cats.{Foldable, Functor, FunctorFilter, Traverse}
-import com.rallyhealth.vapors.v1.dsl.ConstOutputType.Aux
-import com.rallyhealth.vapors.v1.math.Power
+import cats.{catsInstancesForId, Foldable, Functor, FunctorFilter, Semigroupal, Traverse}
 import shapeless.{<:!<, Generic, HList}
 
 trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with UnwrappedDslTypes {
@@ -20,6 +19,10 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
 
   override protected implicit final def extract: Extract[W] = Extract.identity
 
+  override protected implicit def functor: Functor[W] = catsInstancesForId
+
+  override protected implicit def semigroupal: Semigroupal[W] = catsInstancesForId
+
   override protected implicit final def wrapConst: WrapConst[W, OP] = WrapConst.unwrapped
 
   override protected implicit final def wrapSelected: WrapSelected[W, OP] = WrapSelected.unwrapped
@@ -27,7 +30,7 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
   override protected final val defn: WrapDefinitions[W, OP] = new WrapDefinitions[W, OP]
 
   // TODO: Should this be visible outside this trait?
-  protected def shortCircuit: Boolean = true
+  protected final def shortCircuit: Boolean = true
 
   override final def ident[I](implicit opI: OP[I]): Expr.Identity[I, OP] = Expr.Identity()
 
@@ -73,12 +76,30 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
     override def getAs[C[_]]: GetAsUnwrapped[I, A, C, OP] = new GetAsUnwrapped(inputExpr)
   }
 
-  override implicit final def hk[I, C[_], A](
-    expr: I ~:> C[A],
-  )(implicit
-    ne: NotEmpty[C, A],
-  ): UnwrappedHkExprBuilder[I, C, A] =
-    new UnwrappedHkExprBuilder(expr)
+  override implicit final def xhlOps[I, WL <: HList](xhl: ExprHList[I, WL, OP]): UnwrappedExprHListOpsBuilder[I, WL] =
+    new UnwrappedExprHListOpsBuilder(xhl)
+
+  final class UnwrappedExprHListOpsBuilder[-I, WL <: HList](inputExprHList: ExprHList[I, WL, OP])
+    extends ExprHListOpsBuilder(inputExprHList) {
+
+    override def toHList[UL <: HList](
+      implicit
+      zip: ZipToShortest.Aux[W, WL, OP, UL],
+      opO: OP[UL],
+    ): I ~:> UL = {
+      val expr = Expr.ZipToShortestHList(inputExprHList)
+      expr: I ~:> UL // let the compiler prove that W[UL] == UL after computing the correct mapN implicit above
+    }
+
+    override def zipToShortest[C[+_], UL <: HList](
+      implicit
+      zip: ZipToShortest.Aux[CW[C, W, +*], WL, OP, UL],
+      opO: OP[C[UL]],
+    ): I ~:> C[UL] = {
+      val expr = Expr.ZipToShortestHList[I, CW[C, W, +*], WL, UL, OP](inputExprHList)(zip, opO)
+      expr: I ~:> C[UL] // let the compiler prove that C[W[UL]] == C[UL] after computing the correct mapN implicit above
+    }
+  }
 
   override implicit def fromHL[I, L <: HList](expr: I ~:> L): UnwrappedConvertHListExprBuilder[I, L] =
     new UnwrappedConvertHListExprBuilder(expr)
@@ -96,6 +117,13 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
     ): AndThen[I, L, P] =
       inputExpr.andThen(Expr.Convert(ExprConverter.asProductType)(opWP))(opWP)
   }
+
+  override implicit final def hk[I, C[_], A](
+    expr: I ~:> C[A],
+  )(implicit
+    ne: NotEmpty[C, A],
+  ): UnwrappedHkExprBuilder[I, C, A] =
+    new UnwrappedHkExprBuilder(expr)
 
   override final type SpecificHkExprBuilder[-I, C[_], A] = UnwrappedHkExprBuilder[I, C, A]
 
@@ -185,7 +213,7 @@ sealed trait MidPriorityUnwrappedImplicits extends LowPriorityUnwrappedImplicits
     implicit
     sot: SelectOutputType[W, I, O],
     nt: C[O] <:!< Product,
-  ): SelectOutputType.Aux[W, I, C[O], C[sot.Out]] = defn.selectTraverse(sot)
+  ): SelectOutputType.Aux[W, I, C[O], C[sot.Out]] = defn.selectTraverse[C, I, O](sot)
 }
 
 sealed trait LowPriorityUnwrappedImplicits extends LowPriorityWrapImplicits with UnwrappedDslTypes {

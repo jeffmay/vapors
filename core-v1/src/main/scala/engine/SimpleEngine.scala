@@ -6,10 +6,11 @@ import algebra.{EqualComparable, Expr, WindowComparable}
 import data.{ExprState, ExtractValue, FactTable, Window}
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
-import dsl.Sortable
+import dsl.{Sortable, ZipToShortest}
 import logic.{Conjunction, Disjunction, Negation}
 
 import cats.{Foldable, Functor, FunctorFilter}
+import shapeless.HList
 
 /**
   * A vapors [[Expr]] interpreter that just builds a simple function without providing any post-processing.
@@ -207,6 +208,16 @@ object SimpleEngine {
       val window = expr.windowExpr.visit(this)(i)
       val o = comparison.withinWindow(value, window)
       debugging(expr).invokeAndReturn(state((i, value, window), o))
+    }
+
+    override def visitZipToShortestHList[I, F[+_], WL <: HList, UL <: HList](
+      expr: Expr.ZipToShortestHList[I, F, WL, UL, OP],
+    )(implicit
+      zip: ZipToShortest.Aux[F, WL, OP, UL],
+      opO: OP[F[UL]],
+    ): I => F[UL] = { i =>
+      val o = zip.zipToShortestWith(expr.exprHList, this).apply(i)
+      debugging(expr).invokeAndReturn(state(i, o))
     }
   }
 
