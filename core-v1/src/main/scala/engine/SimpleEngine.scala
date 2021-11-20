@@ -2,13 +2,14 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{EqualComparable, Expr, WindowComparable}
+import algebra.{ConcatToHList, EqualComparable, Expr, NonEmptyExprHList, WindowComparable, ZipToHList}
 import data.{ExprState, ExtractValue, FactTable, Window}
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
 import logic.{Conjunction, Disjunction, Negation}
 
-import cats.{Foldable, Functor, FunctorFilter}
+import cats.{Foldable, Functor, FunctorFilter, Semigroupal}
+import shapeless.{::, HList}
 
 /**
   * A vapors [[Expr]] interpreter that just builds a simple function without providing any post-processing.
@@ -70,6 +71,14 @@ object SimpleEngine {
       val ro = expr.rightExpr.visit(this)(i)
       val o = expr.operation(lo, ro)
       debugging(expr).invokeAndReturn(state((i, lo, ro), o))
+    }
+
+    override def visitConcatToHList[I, F[+_], WL <: HList : OP, UL <: HList](
+      expr: Expr.ConcatToHList[I, F, WL, UL, OP],
+    ): I => WL = { i =>
+      val zipOutputToHList = expr.exprHList.concatToHListWith(ConcatToHList.proxy(this))
+      val o = zipOutputToHList(i)
+      debugging(expr).invokeAndReturn(state(i, o))
     }
 
     override def visitConst[O : OP](expr: Expr.Const[O, OP]): Any => O = { i =>
@@ -188,6 +197,15 @@ object SimpleEngine {
       val window = expr.windowExpr.visit(this)(i)
       val o = comparison.withinWindow(value, window)
       debugging(expr).invokeAndReturn(state((i, value, window), o))
+    }
+
+    override def visitZipToHList[I, F[+_] : Functor : Semigroupal, WL <: HList, UL <: HList](
+      expr: Expr.ZipToHList[I, F, WL, UL, OP],
+    )(implicit
+      opO: OP[F[UL]],
+    ): I => F[UL] = { i =>
+      val o = expr.exprHList.zipToHListWith(ZipToHList.proxy(this))(i)
+      debugging(expr).invokeAndReturn(state(i, o))
     }
   }
 

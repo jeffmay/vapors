@@ -56,7 +56,7 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
       opL: OP[L],
       opP: OP[P],
     ): Ap[I, L, P] =
-      Expr.AndThen(inputExpr, Expr.Convert(ExprConverter.asProductType))
+      inputExpr.andThen(Expr.Convert(ExprConverter.asProductType))
   }
 
   override implicit final def hk[I, C[_], A](expr: I ~:> C[A]): HkIdExprBuilder[I, C, A] = new HkIdExprBuilder(expr)

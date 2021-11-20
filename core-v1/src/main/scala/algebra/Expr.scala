@@ -9,7 +9,9 @@ import logic.{Conjunction, Disjunction, Negation}
 import math._
 
 import cats.data.NonEmptyList
-import cats.{Foldable, Functor, FunctorFilter}
+import cats.{Foldable, Functor, FunctorFilter, Semigroupal}
+import com.rallyhealth.vapors.v1.data.ExtractValue.AsBoolean
+import shapeless.{::, HList, HNil}
 
 import scala.annotation.nowarn
 
@@ -243,6 +245,8 @@ object Expr {
       evROisRI: RO <:< RI,
     ): I ~:> O
 
+    def visitConcatToHList[I, F[+_], WL <: HList : OP, UL <: HList](expr: ConcatToHList[I, F, WL, UL, OP]): I ~:> WL
+
     def visitConst[O : OP](expr: Const[O, OP]): Any ~:> O
 
     def visitConvert[I, O : OP](expr: Convert[I, O, OP]): I ~:> O
@@ -291,6 +295,109 @@ object Expr {
       opW: OP[F[Window[V]]],
       opB: OP[F[Boolean]],
     ): I ~:> F[Boolean]
+
+    def visitZipToHList[I, F[+_] : Functor : Semigroupal, WL <: HList, UL <: HList](
+      expr: Expr.ZipToHList[I, F, WL, UL, OP],
+    )(implicit
+      opO: OP[F[UL]],
+    ): I ~:> F[UL]
+  }
+
+  abstract class ProxyVisitor[G[-_, +_], H[-_, +_], OP[_]](protected val underlying: Visitor[G, OP])
+    extends Visitor[H, OP] {
+
+    protected def proxy[I, O](underlying: => G[I, O]): H[I, O]
+
+    override def visitAnd[I, B, F[+_]](
+      expr: And[I, B, F, OP],
+    )(implicit
+      logic: Conjunction[F, B, OP],
+      opB: OP[F[B]],
+    ): H[I, F[B]] = proxy(underlying.visitAnd(expr))
+
+    override def visitAndThen[II, IO : OP, OI, OO : OP](
+      expr: AndThen[II, IO, OI, OO, OP],
+    )(implicit
+      evIOisOI: IO <:< OI,
+    ): H[II, OO] = proxy(underlying.visitAndThen(expr))
+
+    override def visitCombine[I, LI, LO : OP, RI, RO : OP, O : OP](
+      expr: Combine[I, LI, LO, RI, RO, O, OP],
+    )(implicit
+      evLOisLI: LO <:< LI,
+      evROisRI: RO <:< RI,
+    ): H[I, O] = proxy(underlying.visitCombine(expr))
+
+    override def visitConcatToHList[I, F[+_], WL <: HList : OP, UL <: HList](
+      expr: ConcatToHList[I, F, WL, UL, OP],
+    ): H[I, WL] = proxy(underlying.visitConcatToHList(expr))
+
+    override def visitConst[O : OP](expr: Const[O, OP]): H[Any, O] = proxy(underlying.visitConst(expr))
+
+    override def visitConvert[I, O : OP](expr: Convert[I, O, OP]): H[I, O] = proxy(underlying.visitConvert(expr))
+
+    override def visitCustomFunction[I, O : OP](expr: CustomFunction[I, O, OP]): H[I, O] =
+      proxy(underlying.visitCustomFunction(expr))
+
+    override def visitExists[C[_] : Foldable, A, B : AsBoolean : OP](expr: Exists[C, A, B, OP]): H[C[A], B] =
+      proxy(underlying.visitExists(expr))
+
+    override def visitFilter[C[_] : FunctorFilter, A, B : AsBoolean : OP](
+      expr: Filter[C, A, B, OP],
+    )(implicit
+      opO: OP[C[A]],
+    ): H[C[A], C[A]] = proxy(underlying.visitFilter(expr))
+
+    override def visitForAll[C[_] : Foldable, A, B : AsBoolean : OP](expr: ForAll[C, A, B, OP]): H[C[A], B] =
+      proxy(underlying.visitForAll(expr))
+
+    override def visitIdentity[I : OP](expr: Identity[I, OP]): H[I, I] = proxy(underlying.visitIdentity(expr))
+
+    override def visitIsEqual[I, V, F[+_]](
+      expr: IsEqual[I, V, F, OP],
+    )(implicit
+      eq: EqualComparable[F, V],
+    ): H[I, F[Boolean]] = proxy(underlying.visitIsEqual(expr))
+
+    override def visitMapEvery[C[_] : Functor, A, B](
+      expr: MapEvery[C, A, B, OP],
+    )(implicit
+      opO: OP[C[B]],
+    ): H[C[A], C[B]] = proxy(underlying.visitMapEvery(expr))
+
+    override def visitNot[I, B, F[+_]](
+      expr: Not[I, B, F, OP],
+    )(implicit
+      logic: Negation[F, B, OP],
+      opB: OP[F[B]],
+    ): H[I, F[B]] = proxy(underlying.visitNot(expr))
+
+    override def visitOr[I, B, F[+_]](
+      expr: Or[I, B, F, OP],
+    )(implicit
+      logic: Disjunction[F, B, OP],
+      opO: OP[F[B]],
+    ): H[I, F[B]] = proxy(underlying.visitOr(expr))
+
+    override def visitSelect[I, O : OP](expr: Select[I, O, OP]): H[I, O] = proxy(underlying.visitSelect(expr))
+
+    override def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): H[Any, Seq[O]] =
+      proxy(underlying.visitValuesOfType(expr))
+
+    override def visitWithinWindow[I, V, F[+_]](
+      expr: WithinWindow[I, V, F, OP],
+    )(implicit
+      comparison: WindowComparable[F, OP],
+      opV: OP[F[V]],
+      opW: OP[F[Window[V]]],
+      opB: OP[F[Boolean]],
+    ): H[I, F[Boolean]] = proxy(underlying.visitWithinWindow(expr))
+
+    override def visitZipToHList[I, F[+_] : Functor : Semigroupal, WL <: HList, UL <: HList](
+      expr: ZipToHList[I, F, WL, UL, OP],
+    )(implicit
+      opO: OP[F[UL]],
+    ): H[I, F[UL]] = proxy(underlying.visitZipToHList(expr))
   }
 
   // TODO: Use a NonEmptyList of expressions?
@@ -647,6 +754,26 @@ object Expr {
   ) extends Expr[I, O, OP]("convert") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitConvert(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Convert[I, O, OP] =
+      copy(debugging = debugging)
+  }
+
+  final case class ConcatToHList[-I, F[+_], +WL <: HList : OP, +UL <: HList, OP[_]](
+    exprHList: NonEmptyExprHList[I, F, WL, UL, OP],
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  ) extends Expr[I, WL, OP]("concatToHList") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, WL] = v.visitConcatToHList(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): ConcatToHList[I, F, WL, UL, OP] =
+      copy(debugging = debugging)
+  }
+
+  final case class ZipToHList[-I, F[+_] : Functor : Semigroupal, +WL <: HList, +UL <: HList, OP[_]](
+    exprHList: NonEmptyExprHList[I, F, WL, UL, OP],
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    opO: OP[F[UL]],
+  ) extends Expr[I, F[UL], OP]("zipToHList") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, F[UL]] = v.visitZipToHList(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): ZipToHList[I, F, WL, UL, OP] =
       copy(debugging = debugging)
   }
 }

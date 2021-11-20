@@ -8,7 +8,8 @@ import logic.Logic
 import math.{Add, Divide, Multiply, Subtract}
 
 import cats.data.{NonEmptyList, NonEmptySet}
-import cats.{Eq, Functor, Order}
+import cats.{Eq, Functor, Order, Semigroupal}
+import shapeless.{::, HList, HNil, ProductTypeClass, ProductTypeClassCompanion}
 
 import scala.annotation.nowarn
 
@@ -37,7 +38,7 @@ sealed trait Justified[+V] extends Product {
     )
 }
 
-object Justified {
+object Justified extends ProductTypeClassCompanion[Justified] {
 
   def apply[V](value: V): Justified[V] = ByConst(value)
 
@@ -125,6 +126,25 @@ object Justified {
 
   implicit def extractValue[V]: ExtractValue[Justified[V], V] = _.value
 
+  override val typeClass: ProductTypeClass[Justified] = new ProductTypeClass[Justified] {
+
+    override def product[H, T <: HList](
+      ch: Justified[H],
+      ct: Justified[T],
+    ): Justified[H :: T] = Justified.byInference("::", ch.value :: ct.value, NonEmptyList.of(ch, ct))
+
+    override def emptyProduct: Justified[HNil] = Justified.byConst(HNil)
+
+    override def project[F, G](
+      instance: => Justified[G],
+      to: F => G,
+      from: G => F,
+    ): Justified[F] = {
+      val justified = instance
+      Justified.byInference("map", from(justified.value), NonEmptyList.of(justified))
+    }
+  }
+
   implicit val functor: Functor[Justified] = new Functor[Justified] {
     override def map[A, B](fa: Justified[A])(f: A => B): Justified[B] = fa match {
       case Justified.ByConst(v) => Justified.byConst(f(v))
@@ -132,6 +152,15 @@ object Justified {
       case _ =>
         val derived = f(fa.value)
         Justified.byInference("map", derived, NonEmptyList.of(fa))
+    }
+  }
+
+  implicit val semigroupal: Semigroupal[Justified] = new Semigroupal[Justified] {
+    override def product[A, B](
+      fa: Justified[A],
+      fb: Justified[B],
+    ): Justified[(A, B)] = {
+      Justified.byInference("product", (fa.value, fb.value), NonEmptyList.of(fa, fb))
     }
   }
 

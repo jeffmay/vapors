@@ -8,6 +8,7 @@ import lens.VariantLens
 
 import cats.data.NonEmptyList
 import izumi.reflect.Tag
+import shapeless.{::, HList}
 
 import scala.reflect.ClassTag
 
@@ -114,18 +115,15 @@ object DebugArgs {
     override def invokeDebugger(args: ExprState[DI, DO]): Unit = expr.debugging.throwOnInvalidState.attach(args)
   }
 
-  implicit def anyExpr[I, O, OP[_]]: Aux[Expr[I, O, OP], OP, Any, O] =
+  def anyExpr[I, O, OP[_]]: Aux[Expr[I, O, OP], OP, Any, O] =
     new DebugArgs[Expr[I, O, OP], OP] {
       override type In = Any
       override type Out = O
     }
 
-  implicit def debugAndThen[II, IO, OI, OO, OP[_]](
-    implicit
-    evIOisOI: IO <:< OI,
-  ): Aux[Expr.AndThen[II, IO, OI, OO, OP], OP, (II, OI), OO] =
+  implicit def debugAndThen[II, IO, OI, OO, OP[_]]: Aux[Expr.AndThen[II, IO, OI, OO, OP], OP, (II, IO), OO] =
     new DebugArgs[Expr.AndThen[II, IO, OI, OO, OP], OP] {
-      override type In = (II, OI)
+      override type In = (II, IO)
       override type Out = OO
     }
 
@@ -244,4 +242,40 @@ object DebugArgs {
       override type Out = F[Boolean]
     }
 
+  implicit def debugConcatToHList[
+    I,
+    F[+_],
+    WL <: HList,
+    UL <: HList,
+    OP[_],
+  ]: Aux[Expr.ConcatToHList[I, F, WL, UL, OP], OP, I, WL] =
+    new DebugArgs[Expr.ConcatToHList[I, F, WL, UL, OP], OP] {
+      override type In = I
+      override type Out = WL
+    }
+
+  implicit def debugZipToHList[
+    I,
+    F[+_],
+    WL <: HList,
+    UL <: HList,
+    OP[_],
+  ]: Aux[Expr.ZipToHList[I, F, WL, UL, OP], OP, I, F[UL]] =
+    new DebugArgs[Expr.ZipToHList[I, F, WL, UL, OP], OP] {
+      override type In = I
+      override type Out = F[UL]
+    }
+
 }
+
+//trait LowPriorityDebugArgs {
+//
+//  implicit def debugAndThen[II, IO, OI, OO, OP[_]](
+//    implicit
+//    evIOisOI: IO <:< OI,
+//  ): DebugArgs.Aux[Expr.AndThen[II, IO, OI, OO, OP], OP, (II, OI), OO] =
+//    new DebugArgs[Expr.AndThen[II, IO, OI, OO, OP], OP] {
+//      override type In = (II, OI)
+//      override type Out = OO
+//    }
+//}

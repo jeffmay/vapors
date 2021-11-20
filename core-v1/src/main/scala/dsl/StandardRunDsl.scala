@@ -37,7 +37,7 @@ trait StandardRunDsl extends RunExprDsl {
     override def run(factTable: FactTable = FactTable.empty): ExprResult[Nothing, Nothing, O, OP] = super.run(factTable)
   }
 
-  final class RunWithStandardExpr[-I, +O](expr: I ~:> O) extends RunWithExpr(expr) {
+  final class RunWithStandardExpr[-I, +O](expr: I ~:> O) extends RunWithExpr[I, O](expr) {
     override def runWith[In <: I](
       input: In,
       factTable: FactTable = FactTable.empty,

@@ -2,14 +2,16 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{EqualComparable, Expr, WindowComparable}
+import algebra.{ConcatToHList, EqualComparable, Expr, NonEmptyExprHList, WindowComparable, ZipToHList}
 import data.ExtractValue.AsBoolean
 import data.{ExprState, ExtractValue, FactTable, Window}
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
 import logic.{Conjunction, Disjunction, Negation}
 
-import cats.{Foldable, Functor, FunctorFilter}
+import cats.arrow.Arrow
+import cats.{Foldable, Functor, FunctorFilter, Semigroupal}
+import shapeless.{::, HList}
 
 object SimpleCachingEngine {
 
@@ -23,13 +25,33 @@ object SimpleCachingEngine {
     cacheState: ResultCache,
   )
 
+  type =*>[-I, +O] = I => CachedResult[O]
+
   class Visitor[OP[_]](
     protected val factTable: FactTable,
     protected val resultCache: ResultCache,
-  ) extends Expr.Visitor[Lambda[(`-I`, `+O`) => I => CachedResult[O]], OP]
+  ) extends Expr.Visitor[=*>, OP]
     with CommonEngine[OP] {
 
     import cats.implicits._
+
+    implicit val arrowCachedFunction: Arrow[=*>] = new Arrow[=*>] {
+      override def lift[A, B](f: A => B): A =*> B = f.andThen(CachedResult(_, resultCache))
+      override def compose[A, B, C](
+        f: B =*> C,
+        g: A =*> B,
+      ): A =*> C = {
+        g.andThen { b =>
+          val c = f(b.value)
+          CachedResult(c.value, b.cacheState ++ c.cacheState)
+        }
+      }
+      override def first[A, B, C](fa: A =*> B): (A, C) =*> (B, C) = {
+        case (a, c) =>
+          val b = fa(a)
+          CachedResult((b.value, c), resultCache ++ b.cacheState)
+      }
+    }
 
     protected def visitWithUpdatedCache[I, O](
       input: I,
@@ -105,7 +127,7 @@ object SimpleCachingEngine {
       val io = expr.inputExpr.visit(this)(ii)
       val oi: OI = io.value
       val oo = visitWithUpdatedCache(oi, expr.outputExpr, io.cacheState)
-      debugging(expr).invokeAndReturn(state((ii, oi), oo))
+      debugging(expr).invokeAndReturn(state((ii, io.value), oo))
     }
 
     override def visitCombine[I, LI, LO : OP, RI, RO : OP, O : OP](
@@ -118,6 +140,13 @@ object SimpleCachingEngine {
         expr.operation(lo, ro)
       }
       debugging(expr).invokeAndReturn(state((i, lo, ro), o))
+    }
+
+    override def visitConcatToHList[I, F[+_], WL <: HList : OP, UL <: HList](
+      expr: Expr.ConcatToHList[I, F, WL, UL, OP],
+    ): I => CachedResult[WL] = memoize(expr, _) { i =>
+      val o = expr.exprHList.concatToHListWith(ConcatToHList.proxy(this))(i)
+      debugging(expr).invokeAndReturn(state(i, o))
     }
 
     override def visitConst[O : OP](expr: Expr.Const[O, OP]): Any => CachedResult[O] = { i =>
@@ -251,6 +280,15 @@ object SimpleCachingEngine {
         comparison.withinWindow(value, window)
       }
       debugging(expr).invokeAndReturn(state((i, value, window), o))
+    }
+
+    override def visitZipToHList[I, F[+_] : Functor : Semigroupal, WL <: HList, UL <: HList](
+      expr: Expr.ZipToHList[I, F, WL, UL, OP],
+    )(implicit
+      opO: OP[F[UL]],
+    ): I => CachedResult[F[UL]] = memoize(expr, _) { i =>
+      val o = expr.exprHList.zipToHListWith(ZipToHList.proxy(this))(i)
+      debugging(expr).invokeAndReturn(state(i, o))
     }
   }
 

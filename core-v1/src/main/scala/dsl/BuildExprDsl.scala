@@ -9,7 +9,7 @@ import logic.{Conjunction, Disjunction, Logic, Negation}
 import math.Power
 
 import cats.{Foldable, Functor, FunctorFilter, Order}
-import shapeless.{Generic, HList}
+import shapeless.{::, Generic, HList, HNil}
 
 import scala.annotation.nowarn
 
@@ -81,6 +81,12 @@ trait BuildExprDsl extends DebugExprDsl {
 
     def get[O](selector: VariantLens.FromTo[T, O])(implicit opO: OP[W[O]]): I ~:> W[O]
   }
+
+  implicit def hlist[I, WL <: HList, UL <: HList](
+    xhl: NonEmptyExprHList[I, W, WL, UL, OP],
+  ): ExprHListExprBuilder[I, W, WL, UL, OP] = new ExprHListExprBuilder(xhl)
+
+  implicit def last[I, O](expr: I ~:> W[O]): ExprHLastBuilder[I, W, O, OP] = new ExprHLastBuilder(expr)
 
   type SpecificWrapHListExprBuilder[-I, L <: HList] <: WrapHListExprBuilder[I, L]
 
@@ -244,4 +250,17 @@ trait BuildExprDsl extends DebugExprDsl {
 final class ConstExprBuilder[A, OP[_]](private val value: A) extends AnyVal {
 
   def const(implicit op: OP[A]): Expr.Const[A, OP] = Expr.Const(value)
+}
+
+final class ExprHLastBuilder[-I, F[+_], +O, OP[_]](private val last: Expr[I, F[O], OP]) extends AnyVal {
+
+  def ::[NI <: I, H](prepend: Expr[NI, F[H], OP]): ExprHCons[NI, F, H, F[O] :: HNil, O :: HNil, OP] =
+    prepend :: ExprHLast(last)
+}
+
+final class ExprHListExprBuilder[-I, F[+_], WL <: HList, UL <: HList, OP[_]](
+  private val xhl: NonEmptyExprHList[I, F, WL, UL, OP],
+) extends AnyVal {
+
+  def concatToHList(implicit opO: OP[WL]): Expr.ConcatToHList[I, F, WL, UL, OP] = Expr.ConcatToHList(xhl)
 }

@@ -3,14 +3,13 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra.{EqualComparable, Expr, ExprResult, WindowComparable}
+import data.ExtractValue.AsBoolean
 import data.{ExprState, ExtractValue, Window}
 import debug.DebugArgs
 import logic.{Conjunction, Disjunction, Negation}
 
-import cats.{Foldable, Functor}
-import logic.Negation
-import cats.{Foldable, Functor, FunctorFilter}
-import com.rallyhealth.vapors.v1.data.ExtractValue.AsBoolean
+import cats.{Foldable, Functor, FunctorFilter, Semigroupal}
+import shapeless.HList
 
 import scala.annotation.nowarn
 
@@ -24,6 +23,10 @@ object StandardEngine {
   final class Applied[OP[_]](@nowarn private val dummy: Boolean = true) extends AnyVal {
     def apply[PO](state: ExprState[Any, PO]): Visitor[PO, OP] = new Visitor(state)
   }
+
+//  type VisitorParam[PO, OP[_]] = {
+//    type Fn[-I, +O] = PO <:< I => ExprResult[PO, I, O, OP]
+//  }
 
   /**
     *
@@ -96,6 +99,36 @@ object StandardEngine {
       val finalState = state.swapAndReplaceOutput(output)
       debugging(expr).invokeDebugger(stateFromInput((_, leftInput, rightInput), finalState.output))
       ExprResult.Combine(expr, finalState, left, right)
+    }
+
+    //    type SimpleFn[-I, +O] = ExprState[Any, I] => ExprResult[Any, Any, O, OP]
+    //    type StateFn[-I, +O] = ExprState[Any, I] => ExprState[PO, O]
+    //    implicit val arrow: Arrow[StateFn] = new Arrow[StateFn] {
+    //      override def lift[A, B](f: A => B): StateFn[A, B] = _.mapOutput(f)
+    //      override def compose[A, B, C](f: StateFn[B, C], g: StateFn[A, B]): StateFn[A, C] = f.compose(g)
+    //      override def first[A, B, C](fa: StateFn[A, B]): StateFn[(A, C), (B, C)] = { s =>
+    //        val (a, c) = s.output
+    //        val b = fa(s.withOutput(a))
+    //        b.mapOutput((_, c))
+    //      }
+    //    }
+
+    //    object asSimpleFn
+    //      extends Expr.ProxyVisitor[VisitorParam[PO, OP]#Fn, StateFn, OP](this) {
+    //      override protected def proxy[I, O](underlying: => PO <:< I => ExprResult[PO, I, O, OP]): StateFn[I, O] = { _ =>
+    //        val result = underlying(implicitly[PO <:< I])
+    //        result.state
+    //      }
+    //    }
+
+    // TODO: Refactor this engine to better support NonEmptyExprHList
+    override def visitConcatToHList[I, F[+_], WL <: HList : OP, UL <: HList](
+      expr: Expr.ConcatToHList[I, F, WL, UL, OP],
+    ): PO <:< I => ExprResult[PO, I, WL, OP] = { implicit evPOisI =>
+      //      val compute = expr.exprHList.toHListWrappedWith(ToHListWrapped.proxy(asSimpleFn))
+      //      val result = compute(evPOisI(state.output))
+      //      result
+      ???
     }
 
     override def visitConst[O : OP](expr: Expr.Const[O, OP]): PO <:< Any => ExprResult[PO, Any, O, OP] = { _ =>
@@ -260,5 +293,11 @@ object StandardEngine {
       debugging(expr).invokeDebugger(stateFromInput((_, value, window), finalState.output))
       ExprResult.WithinWindow(expr, finalState, valueResult, windowResult)
     }
+
+    override def visitZipToHList[I, F[+_] : Functor : Semigroupal, WL <: HList, UL <: HList](
+      expr: Expr.ZipToHList[I, F, WL, UL, OP],
+    )(implicit
+      opO: OP[F[UL]],
+    ): PO <:< I => ExprResult[PO, I, F[UL], OP] = ???
   }
 }
