@@ -59,6 +59,9 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
     *       information about the state of the expression, however, you can print or inspect the values at
     *       runtime in the hook; and placing it here prevents me from forgetting to add this to subclasses.
     *       The types are refined when attaching the debug hooks using the [[DebugArgs]] compiler trick.
+    *
+    * @see [[com.rallyhealth.vapors.v1.dsl.DebugExprDsl.debugExpr]] for how to get better type information
+    *      at compile-time.
     */
   def withDebugging(debugging: Debugging[Any, Any]): Expr[I, O, OP]
 
@@ -120,28 +123,6 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
 object Expr {
 
   final type AnyWith[OP[_]] = Expr[Nothing, Any, OP]
-
-  /**
-    * Oddly, this is required for the compiler to pick-up the .debug method. Without it, the compiler does not
-    * find the implicit conversion for [[debugExpr]]. And, despite there being 2 implicit conversions that can
-    * match any [[Expr]] type, the compiler will pick the more specific [[debugExpr]] based on the implicit
-    * [[DebugArgs]] and will fail to compile,
-    */
-  implicit def debugAnyExpr[I, O, OP[_]](expr: Expr[I, O, OP]): DebugArgs.Attacher[Expr[I, O, OP], OP, Any, O] =
-    DebugArgs[OP].of(expr)(DebugArgs.anyExpr)
-
-  /**
-    * Uses the compiler-inferred types supplied by the implicit [[DebugArgs]] for a given expression.
-    *
-    * We only allow attaching debug functions by default by upcasting the [[DebugArgs.Adapter]] to
-    * just a [[DebugArgs.Attacher]]. If you want to be able to invoke the
-    */
-  implicit def debugExpr[E <: Expr.AnyWith[OP], OP[_]](
-    expr: E,
-  )(implicit
-    debugArgs: DebugArgs[E, OP],
-  ): DebugArgs.Attacher[E, OP, debugArgs.In, debugArgs.Out] =
-    DebugArgs[OP].of(expr)(debugArgs)
 
   /**
     * This is the magic that allows you to traverse the entire expression recursively. You need a

@@ -12,12 +12,11 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
   private val initialInput = "Test input"
   private val expectedInitialInput = Some(initialInput)
 
-  private val output = "Test output"
-  private val anySeqExpr = output.split(' ').toSeq.const
+  private val anySeqExpr: Any ~:> Seq[String] = Seq("generic", "expression").const
 
-  test("debug any expr returns the correct output type") {
+  test("debug any expr syntax produces the correct output type") {
     anySeqExpr.debug { state =>
-      assertEquals(state.output.mkString(" "), output)
+      val o: Seq[String] = state.output
     }
   }
 
@@ -38,9 +37,9 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     }
   }
 
-  test("debug const syntax works") {
+  test("debug const syntax produces the correct types") {
     constExpr.debug { state =>
-      assertEquals(state.output, constValue)
+      val o: Int = state.output
     }
   }
 
@@ -93,7 +92,8 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
 
   test("debug combine syntax works") {
     combineExpr.debug { state =>
-      assertEquals(state.output, combineHolderOutput)
+      val (_, l: Int, r: Int) = state.input
+      val o: Int = state.output
     }
   }
 
@@ -109,7 +109,7 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
 
   test("debug custom function syntax works") {
     customFunctionExpr.debug { state =>
-      assertEquals(state.output, initialInput.length)
+      val o: Int = state.output
     }
   }
 
@@ -135,9 +135,10 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     }
   }
 
-  test("debug exists syntax works") {
+  test("debug exists syntax produces the correct types") {
     existsExpr.debug { state =>
-      assertEquals(state.output, existsExprOutput)
+      val (_, ca: Seq[Boolean]) = state.input
+      val o: Boolean = state.output
     }
   }
 
@@ -163,9 +164,10 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     }
   }
 
-  test("debug forall syntax works") {
+  test("debug forall syntax produces the correct types") {
     forAllExpr.debug { state =>
-      assertEquals(state.output, forAllExprOutput)
+      val (_, ca: Seq[Boolean]) = state.input
+      val o: Boolean = state.output
     }
   }
 
@@ -192,9 +194,10 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     }
   }
 
-  test("debug map syntax works") {
+  test("debug map syntax produces the correct types") {
     mapEveryExpr.debug { state =>
-      assertEquals(state.output, mapEveryExprOutput)
+      val (_, ca: Seq[Int]) = state.input
+      val o: Seq[Int] = state.output
     }
   }
 }
