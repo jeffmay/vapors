@@ -10,7 +10,7 @@ import cats.{Foldable, Functor, Order}
 
 import scala.annotation.nowarn
 
-trait BuildExprDsl {
+trait BuildExprDsl extends DebugExprDsl {
   self: DslTypes =>
 
   protected implicit def compareWrapped: CompareWrapped[W]
