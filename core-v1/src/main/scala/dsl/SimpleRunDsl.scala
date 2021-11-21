@@ -9,7 +9,7 @@ import engine.SimpleEngine
 trait SimpleRunDsl extends RunExprDsl {
   self: DslTypes =>
 
-  override final type Result[+PO, -I, +O] = O
+  override final type RunWithResult[+PO, -I, +O] = O
 
   override protected final def visitExpr[PO <: I, I, O](
     expr: I ~:> O,

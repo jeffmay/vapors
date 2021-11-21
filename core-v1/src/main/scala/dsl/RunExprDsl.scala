@@ -8,12 +8,13 @@ import data.{ExprState, FactTable}
 trait RunExprDsl {
   self: DslTypes =>
 
-  type Result[+PO, -I, +O]
+  type RunWithResult[+PO, -I, +O]
+  type RunResult[+O] = RunWithResult[Nothing, Nothing, O]
 
   protected def visitExpr[PO <: I, I, O](
     expr: I ~:> O,
     initState: ExprState[Any, PO],
-  ): Result[PO, I, O]
+  ): RunWithResult[PO, I, O]
 
   implicit def run[O](expr: Any ~:> O): SpecificRunExpr[O]
 
@@ -28,6 +29,18 @@ trait RunExprDsl {
   type SpecificRunExpr[+O] <: RunExpr[O]
   type SpecificRunWithExpr[-I, +O] <: RunWithExpr[I, O]
 
+  /**
+    * The expression needs to be able to handle any input, even though we will not give it any input.
+    *
+    * Technically, the input for this expression would be `ExprState[Nothing, Nothing]`, and thus the expression
+    * could be `Nothing ~> O`, however, this would permit every expression to be run (because `Nothing` can be
+    * passed into any expression's input, as it will always be a subtype of the required input). However, at
+    * runtime, `Nothing` would throw an exception if the expression attempted to use the initial value and this
+    * is probably not what the caller intends. Instead, we distinguish between what is provided (i.e. `Nothing`)
+    * and what is required (i.e. `Any`). The expression must be the most specific kind of expression that can
+    * handle any input, but the type of input we will provide to the runner is `ExprState[Nothing, Nothing]`,
+    * which -- by definition -- this expression must be able to handle.
+    */
   class RunExpr[+O](expr: Any ~:> O) {
 
     /**
@@ -35,8 +48,8 @@ trait RunExprDsl {
       *
       * @note this requires `()` because this could execute side-effects from the attached debuggers.
       */
-    def run(factTable: FactTable = FactTable.empty): Result[Nothing, Any, O] = {
-      visitExpr[Nothing, Any, O](expr, ExprState.Empty(factTable))
+    def run(factTable: FactTable = FactTable.empty): RunResult[O] = {
+      visitExpr[Nothing, Nothing, O](expr, ExprState.Empty(factTable))
     }
   }
 
@@ -48,7 +61,7 @@ trait RunExprDsl {
     def runWith[In <: I](
       input: In,
       factTable: FactTable = FactTable.empty,
-    ): Result[In, I, O] = {
+    ): RunWithResult[In, I, O] = {
       visitExpr(expr, ExprState.Output(input, factTable))
     }
   }

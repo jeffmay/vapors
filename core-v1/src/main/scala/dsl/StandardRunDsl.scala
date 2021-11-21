@@ -9,7 +9,7 @@ import engine.StandardEngine
 trait StandardRunDsl extends RunExprDsl {
   self: DslTypes =>
 
-  override final type Result[+PO, -I, +O] = ExprResult[PO, I, O, OP]
+  override final type RunWithResult[+PO, -I, +O] = ExprResult[PO, I, O, OP]
 
   override protected def visitExpr[PO <: I, I, O](
     expr: I ~:> O,
@@ -34,7 +34,7 @@ trait StandardRunDsl extends RunExprDsl {
   override type SpecificRunWithExpr[-I, +O] = RunWithStandardExpr[I, O]
 
   final class RunStandardExpr[+O](expr: Any ~:> O) extends RunExpr(expr) {
-    override def run(factTable: FactTable = FactTable.empty): ExprResult[Nothing, Any, O, OP] = super.run(factTable)
+    override def run(factTable: FactTable = FactTable.empty): ExprResult[Nothing, Nothing, O, OP] = super.run(factTable)
   }
 
   final class RunWithStandardExpr[-I, +O](expr: I ~:> O) extends RunWithExpr(expr) {
