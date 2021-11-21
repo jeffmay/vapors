@@ -12,13 +12,13 @@ trait SimpleRunDsl extends RunExprDsl {
   override final type Result[+PO, -I, +O] = O
 
   override protected final def visitExpr[PO <: I, I, O](
-    expr: I ~> O,
+    expr: I ~:> O,
     initState: ExprState[Any, PO],
   ): O = expr.visit(SimpleEngine[OP](initState.factTable))(initState.output)
 
-  override implicit final def run[O](expr: Any ~> O): RunIdExpr[O] = new RunIdExpr(expr)
+  override implicit final def run[O](expr: Any ~:> O): RunIdExpr[O] = new RunIdExpr(expr)
 
-  override implicit final def runWith[I, O](expr: I ~> O): RunWithIdExpr[I, O] = new RunWithIdExpr(expr)
+  override implicit final def runWith[I, O](expr: I ~:> O): RunWithIdExpr[I, O] = new RunWithIdExpr(expr)
 
   override implicit final def runCombine[O : OP](
     builder: CombineHolder[Any, Nothing, Any, Nothing, Any, O, OP],
@@ -31,11 +31,11 @@ trait SimpleRunDsl extends RunExprDsl {
   override final type SpecificRunExpr[+O] = RunIdExpr[O]
   override final type SpecificRunWithExpr[-I, +O] = RunWithIdExpr[I, O]
 
-  final class RunIdExpr[+O](expr: Any ~> O) extends RunExpr[O](expr) {
+  final class RunIdExpr[+O](expr: Any ~:> O) extends RunExpr[O](expr) {
     override def run(factTable: FactTable = FactTable.empty): O = super.run(factTable)
   }
 
-  final class RunWithIdExpr[-I, +O](expr: I ~> O) extends RunWithExpr[I, O](expr) {
+  final class RunWithIdExpr[-I, +O](expr: I ~:> O) extends RunWithExpr[I, O](expr) {
     override def runWith[In <: I](
       input: In,
       factTable: FactTable = FactTable.empty,

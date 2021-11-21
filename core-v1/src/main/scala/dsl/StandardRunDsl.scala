@@ -12,15 +12,15 @@ trait StandardRunDsl extends RunExprDsl {
   override final type Result[+PO, -I, +O] = ExprResult[PO, I, O, OP]
 
   override protected def visitExpr[PO <: I, I, O](
-    expr: I ~> O,
+    expr: I ~:> O,
     initState: ExprState[Any, PO],
   ): ExprResult[PO, I, O, OP] = {
     expr.visit(StandardEngine[OP](initState))(implicitly)
   }
 
-  override implicit final def run[O](expr: Any ~> O): RunStandardExpr[O] = new RunStandardExpr(expr)
+  override implicit final def run[O](expr: Any ~:> O): RunStandardExpr[O] = new RunStandardExpr(expr)
 
-  override implicit final def runWith[I, O](expr: I ~> O): RunWithStandardExpr[I, O] = new RunWithStandardExpr(expr)
+  override implicit final def runWith[I, O](expr: I ~:> O): RunWithStandardExpr[I, O] = new RunWithStandardExpr(expr)
 
   override implicit def runCombine[O : OP](
     builder: CombineHolder[Any, Nothing, Any, Nothing, Any, O, OP],
@@ -33,11 +33,11 @@ trait StandardRunDsl extends RunExprDsl {
   override type SpecificRunExpr[+O] = RunStandardExpr[O]
   override type SpecificRunWithExpr[-I, +O] = RunWithStandardExpr[I, O]
 
-  final class RunStandardExpr[+O](expr: Any ~> O) extends RunExpr(expr) {
+  final class RunStandardExpr[+O](expr: Any ~:> O) extends RunExpr(expr) {
     override def run(factTable: FactTable = FactTable.empty): ExprResult[Nothing, Any, O, OP] = super.run(factTable)
   }
 
-  final class RunWithStandardExpr[-I, +O](expr: I ~> O) extends RunWithExpr(expr) {
+  final class RunWithStandardExpr[-I, +O](expr: I ~:> O) extends RunWithExpr(expr) {
     override def runWith[In <: I](
       input: In,
       factTable: FactTable = FactTable.empty,

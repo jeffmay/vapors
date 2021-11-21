@@ -23,23 +23,23 @@ trait BuildExprDsl {
 
   final def ident[I : OP]: Expr.Identity[I, OP] = Expr.Identity()
 
-  def not[I, O : OPW](expr: W[I] ~> W[O])(implicit negation: Negation[W[O]]): Expr.Not[W[I], W[O], OP]
+  def not[I, O : OPW](expr: W[I] ~:> W[O])(implicit negation: Negation[W[O]]): Expr.Not[W[I], W[O], OP]
 
   def valuesOfType[T](factTypeSet: FactTypeSet[T])(implicit opTs: OP[Seq[W[T]]]): Expr.ValuesOfType[T, W[T], OP]
 
   implicit def wrap[A](value: A)(implicit constType: WrapConstType[W, A]): ConstExprBuilder[constType.Out, OP] =
     new ConstExprBuilder(constType(wrapConst.wrapConst(value)))
 
-  implicit def hk[I, C[_], A](expr: I ~> C[W[A]]): SpecificHkExprBuilder[I, C, A]
+  implicit def hk[I, C[_], A](expr: I ~:> C[W[A]]): SpecificHkExprBuilder[I, C, A]
 
-  type SpecificHkExprBuilder[I, C[_], A] <: HkExprBuilder[I, C, A]
+  type SpecificHkExprBuilder[-I, C[_], A] <: HkExprBuilder[I, C, A]
 
-  trait HkExprBuilder[I, C[_], A] extends Any {
+  trait HkExprBuilder[-I, C[_], A] extends Any {
 
-    protected def inputExpr: I ~> C[W[A]]
+    protected def inputExpr: I ~:> C[W[A]]
 
     def exists(
-      conditionExprBuilder: W[A] ~~> W[Boolean],
+      conditionExprBuilder: W[A] =~:> W[Boolean],
     )(implicit
       opO: OP[C[W[A]]],
       opA: OP[W[A]],
@@ -48,7 +48,7 @@ trait BuildExprDsl {
     ): Ap[I, C[W[A]], W[Boolean]]
 
     def forall(
-      conditionExprBuilder: W[A] ~~> W[Boolean],
+      conditionExprBuilder: W[A] =~:> W[Boolean],
     )(implicit
       opO: OP[C[W[A]]],
       opA: OP[W[A]],
@@ -57,7 +57,7 @@ trait BuildExprDsl {
     ): Ap[I, C[W[A]], W[Boolean]]
 
     def map[B](
-      mapExprBuilder: W[A] ~~> W[B],
+      mapExprBuilder: W[A] =~:> W[B],
     )(implicit
       opI: OP[W[A]],
       opA: OP[C[W[A]]],
@@ -67,7 +67,7 @@ trait BuildExprDsl {
   }
 
   implicit def compare[I, V : Order : OP](
-    valueExpr: I ~> W[V],
+    valueExpr: I ~:> W[V],
   )(implicit
     opV: OP[W[V]],
     opW: OP[W[Window[V]]],
@@ -75,7 +75,7 @@ trait BuildExprDsl {
   ): ComparisonExprBuilder[I, V] = new ComparisonExprBuilder(valueExpr)
 
   class ComparisonExprBuilder[I, V : Order : OP](
-    protected val valueExpr: I ~> W[V],
+    protected val valueExpr: I ~:> W[V],
   )(implicit
     opV: OP[W[V]],
     opW: OP[W[Window[V]]],
@@ -110,27 +110,27 @@ trait BuildExprDsl {
 
     def <(literal: V): I >=< V = compareLiteral("<", literal)(Window.lessThan(_))
 
-    def <(expr: I ~> W[V]): I >=< V = compareExpr("<", expr)(Window.lessThan(_))
+    def <(expr: I ~:> W[V]): I >=< V = compareExpr("<", expr)(Window.lessThan(_))
 
     def <=(literal: V): I >=< V = compareLiteral("<=", literal)(Window.lessThanOrEqual(_))
 
-    def <=(expr: I ~> W[V]): I >=< V = compareExpr("<=", expr)(Window.lessThanOrEqual(_))
+    def <=(expr: I ~:> W[V]): I >=< V = compareExpr("<=", expr)(Window.lessThanOrEqual(_))
 
     def >(literal: V): I >=< V = compareLiteral(">", literal)(Window.greaterThan(_))
 
-    def >(expr: I ~> W[V]): I >=< V = compareExpr(">", expr)(Window.greaterThan(_))
+    def >(expr: I ~:> W[V]): I >=< V = compareExpr(">", expr)(Window.greaterThan(_))
 
     def >=(literal: V): I >=< V = compareLiteral(">=", literal)(Window.greaterThanOrEqual(_))
 
-    def >=(expr: I ~> W[V]): I >=< V = compareExpr(">=", expr)(Window.greaterThanOrEqual(_))
+    def >=(expr: I ~:> W[V]): I >=< V = compareExpr(">=", expr)(Window.greaterThanOrEqual(_))
 
     def within(window: Window[V]): I >=< V = this >=< window
 
     def >=<(window: Window[V]): I >=< V = Expr.WithinWindow(valueExpr, Expr.Const(CompareWrapped[W].wrapConst(window)))
 
-    def within(expr: I ~> W[Window[V]]): I >=< V = this >=< expr
+    def within(expr: I ~:> W[Window[V]]): I >=< V = this >=< expr
 
-    def >=<(expr: I ~> W[Window[V]]): I >=< V = Expr.WithinWindow(valueExpr, expr)
+    def >=<(expr: I ~:> W[Window[V]]): I >=< V = Expr.WithinWindow(valueExpr, expr)
   }
 }
 

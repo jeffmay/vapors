@@ -32,13 +32,13 @@ trait CommonDebuggingSpec extends BaseDslSpec {
 
   final class TestDebugExprWith[E <: AnyExpr, DI, DO](expr: E)(implicit debugArgs: DebugArgs.Aux[E, OP, DI, DO]) {
 
-    def withInput[I, S >: E <: I ~> Any](input: I)(implicit ev: E <:< S): TestInputDebugExpr[S, I, DI, DO] = {
+    def withInput[I, S >: E <: I ~:> Any](input: I)(implicit ev: E <:< S): TestInputDebugExpr[S, I, DI, DO] = {
       new TestInputDebugExpr[S, I, DI, DO](expr, input, FactTable.empty)(
         debugArgs.asInstanceOf[DebugArgs.Aux[S, OP, DI, DO]],
       )
     }
 
-    def withNoInput[S >: E <: Any ~> Any](implicit ev: E <:< S): TestAnyDebugExpr[S, DI, DO] = {
+    def withNoInput[S >: E <: Any ~:> Any](implicit ev: E <:< S): TestAnyDebugExpr[S, DI, DO] = {
       new TestAnyDebugExpr[S, DI, DO](expr, FactTable.empty)(
         debugArgs.asInstanceOf[DebugArgs.Aux[S, OP, DI, DO]],
       )
@@ -72,7 +72,7 @@ trait CommonDebuggingSpec extends BaseDslSpec {
     }
   }
 
-  final class TestAnyDebugExpr[E <: Any ~> Any, DI, DO](
+  final class TestAnyDebugExpr[E <: Any ~:> Any, DI, DO](
     override protected val expr: E,
     factTable: FactTable,
   )(implicit
@@ -87,7 +87,7 @@ trait CommonDebuggingSpec extends BaseDslSpec {
     }
   }
 
-  final class TestInputDebugExpr[E <: I ~> Any, I, DI, DO](
+  final class TestInputDebugExpr[E <: I ~:> Any, I, DI, DO](
     override protected val expr: E,
     expectInput: I,
     factTable: FactTable,
