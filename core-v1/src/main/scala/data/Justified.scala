@@ -10,14 +10,15 @@ import cats.Order
 import scala.annotation.nowarn
 
 sealed trait Justified[+V] extends Product {
+
   def value: V
-//  def withValue[U](value: U): Justified[U]
 
   def reason: String
 
   def visit[G[+_]](v: Justified.Visitor[G]): G[V]
 
-  def configs: Seq[(String, Option[String])] // TODO: How should this handle duplicates?
+  def configs: Seq[(String, Option[String])] // TODO: How should this handle duplicate keys?
+
   def evidence: Evidence
 
   def zipWith[Y, Z](
@@ -31,8 +32,6 @@ sealed trait Justified[+V] extends Product {
       fn(this.value, that.value),
       NonEmptyList.of(this, that),
     )
-
-//  final def map[U](fn: V => U): Justified[U] = withValue(fn(value))
 }
 
 object Justified {
@@ -91,7 +90,6 @@ object Justified {
     override def visit[G[+_]](v: Visitor[G]): G[V] = v.visitFact(this)
     override def configs: Seq[(String, Option[String])] = Seq.empty
     override def productPrefix: String = "Justified.ByFact"
-//    override def withValue[U](value: U): Justified[U] = ByFact()
   }
 
   def byInference[V](
@@ -103,11 +101,13 @@ object Justified {
   final case class ByInference[V](
     reason: String,
     value: V,
-    sources: NonEmptyList[Justified[Any]], // TODO: Should this be a NonEmptySet? How to sort it?
+    sources: NonEmptyList[Justified[Any]],
   ) extends Justified[V] {
     override def visit[G[+_]](v: Visitor[G]): G[V] = v.visitInference(this)
-    override lazy val configs: Seq[(String, Option[String])] = sources.map(_.configs).reduce // TODO: should this be sorted?
-    override lazy val evidence: Evidence = sources.foldLeft(Evidence.none)(_ | _.evidence) // TODO: Is this even valid?
+    override lazy val configs: Seq[(String, Option[String])] =
+      sources.map(_.configs).reduce // TODO: avoid clobbering duplicate keys
+    override lazy val evidence: Evidence =
+      sources.foldLeft(Evidence.none)(_ | _.evidence) // TODO: Is this even valid?
     override def productPrefix: String = "Justified.ByInference"
   }
 

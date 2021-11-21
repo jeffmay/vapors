@@ -9,12 +9,10 @@ import scala.annotation.tailrec
 import scala.collection.immutable.SortedSet
 
 /**
-  * A set of [[Fact]]s used to derive an evaluated expression result.
+  * A set of [[Fact]]s with helpful operations.
   *
-  * If the resulting evidence is empty, then you should treat the value as identical to its negation.
-  *
-  * TODO: there are some bugs with evidence tracking of collection-level operations and how constants
-  *       are handled, so you probably shouldn't rely on this right now.
+  * TODO: The mechanics of [[Justified]] results is still under construction. You should not rely on this type
+  *       yet as it may be removed before v1.0.0.
   */
 sealed trait Evidence {
 
