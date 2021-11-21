@@ -29,7 +29,7 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
   protected def dontShortCircuit: Boolean = false
 
   override def not[I, O : OPW](
-    expr: Justified[I] ~> Justified[O],
+    expr: Justified[I] ~:> Justified[O],
   )(implicit
     negation: Negation[Justified[O]],
   ): Expr.Not[Justified[I], Justified[O], OP] =
@@ -42,16 +42,16 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
   ): Expr.ValuesOfType[T, Justified[T], OP] =
     Expr.ValuesOfType[T, Justified[T], OP](factTypeSet, Justified.ByFact(_))
 
-  override type SpecificHkExprBuilder[I, C[_], A] = JustifiedHkExprBuilder[I, C, A]
+  override type SpecificHkExprBuilder[-I, C[_], A] = JustifiedHkExprBuilder[I, C, A]
 
-  override implicit def hk[I, C[_], A](expr: I ~> C[Justified[A]]): JustifiedHkExprBuilder[I, C, A] =
+  override implicit def hk[I, C[_], A](expr: I ~:> C[Justified[A]]): JustifiedHkExprBuilder[I, C, A] =
     new JustifiedHkExprBuilder(expr)
 
-  final class JustifiedHkExprBuilder[I, C[_], A](override protected val inputExpr: I ~> C[Justified[A]])
+  final class JustifiedHkExprBuilder[-I, C[_], A](override protected val inputExpr: I ~:> C[Justified[A]])
     extends HkExprBuilder[I, C, A] {
 
     override def exists(
-      conditionExprBuilder: Justified[A] ~~> Justified[Boolean],
+      conditionExprBuilder: Justified[A] =~:> Justified[Boolean],
     )(implicit
       opO: OP[C[Justified[A]]],
       opA: OP[Justified[A]],
@@ -78,7 +78,7 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
       }
 
     override def forall(
-      conditionExprBuilder: Justified[A] ~~> Justified[Boolean],
+      conditionExprBuilder: Justified[A] =~:> Justified[Boolean],
     )(implicit
       opO: OP[C[Justified[A]]],
       opA: OP[Justified[A]],
@@ -104,7 +104,7 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
       }
 
     override def map[B](
-      mapExprBuilder: Justified[A] ~~> Justified[B],
+      mapExprBuilder: Justified[A] =~:> Justified[B],
     )(implicit
       opI: OP[Justified[A]],
       opA: OP[C[Justified[A]]],

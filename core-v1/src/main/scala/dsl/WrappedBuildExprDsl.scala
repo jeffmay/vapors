@@ -15,7 +15,7 @@ trait WrappedBuildExprDsl extends BuildExprDsl with MidPriorityWrappedBuildExprD
   /**
     * Allows you to skip calling .const on a window to wrap it in a Expr.Const
     */
-  implicit def wrapWindow[O](window: Window[O])(implicit opW: OP[W[Window[O]]]): Any ~> W[Window[O]] =
+  implicit def wrapWindow[O](window: Window[O])(implicit opW: OP[W[Window[O]]]): Any ~:> W[Window[O]] =
     Expr.Const(wrapConst.wrapConst(window))
 
 }
@@ -24,7 +24,7 @@ trait MidPriorityWrappedBuildExprDsl extends LowPriorityWrappedBuildExprDsl {
   self: BuildExprDsl with DslTypes =>
 
   implicit def hkIterable[I, C[a] <: IterableOnce[a], A](
-    expr: I ~> W[C[A]],
+    expr: I ~:> W[C[A]],
   )(implicit
     factory: Factory[W[A], C[W[A]]],
     opC: OP[C[W[A]]],
@@ -49,7 +49,7 @@ trait LowPriorityWrappedBuildExprDsl {
   import cats.implicits._
 
   implicit def hkFunctor[I, C[_] : Functor, A](
-    expr: I ~> W[C[A]],
+    expr: I ~:> W[C[A]],
   )(implicit
     opC: OP[C[W[A]]],
   ): SpecificHkExprBuilder[I, C, A] = hk {

@@ -11,13 +11,13 @@ trait RunExprDsl {
   type Result[+PO, -I, +O]
 
   protected def visitExpr[PO <: I, I, O](
-    expr: I ~> O,
+    expr: I ~:> O,
     initState: ExprState[Any, PO],
   ): Result[PO, I, O]
 
-  implicit def run[O](expr: Any ~> O): SpecificRunExpr[O]
+  implicit def run[O](expr: Any ~:> O): SpecificRunExpr[O]
 
-  implicit def runWith[I, O](expr: I ~> O): SpecificRunWithExpr[I, O]
+  implicit def runWith[I, O](expr: I ~:> O): SpecificRunWithExpr[I, O]
 
   implicit def runCombine[O : OP](builder: CombineHolder[Any, Nothing, Any, Nothing, Any, O, OP]): SpecificRunExpr[O]
 
@@ -28,7 +28,7 @@ trait RunExprDsl {
   type SpecificRunExpr[+O] <: RunExpr[O]
   type SpecificRunWithExpr[-I, +O] <: RunWithExpr[I, O]
 
-  class RunExpr[+O](expr: Any ~> O) {
+  class RunExpr[+O](expr: Any ~:> O) {
 
     /**
       * Runs the expression without any starting input starting with the given [[FactTable]].
@@ -40,7 +40,7 @@ trait RunExprDsl {
     }
   }
 
-  class RunWithExpr[-I, +O](expr: I ~> O) {
+  class RunWithExpr[-I, +O](expr: I ~:> O) {
 
     /**
       * Runs the expression with the given input and starting [[FactTable]].

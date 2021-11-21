@@ -153,48 +153,48 @@ object Expr {
     *
     * Every [[Expr]] subclass will call the associated `visitExpr` method and pass the required constraints.
     *
-    * @tparam ~> an infix type alias for the higher-kinded result type of this visitor
+    * @tparam ~:> an infix type alias for the higher-kinded result type of this visitor
     * @tparam OP `Output Parameter` (captured at the definition site for every output type in the expression tree)
     */
-  trait Visitor[~>[-_, +_], OP[_]] {
+  trait Visitor[~:>[-_, +_], OP[_]] {
 
-    def visitAnd[I](expr: And[I, OP])(implicit opO: OP[Boolean]): I ~> Boolean
+    def visitAnd[I](expr: And[I, OP])(implicit opO: OP[Boolean]): I ~:> Boolean
 
-    def visitAndThen[II, IO : OP, OI, OO : OP](expr: AndThen[II, IO, OI, OO, OP])(implicit evBI: IO <:< OI): II ~> OO
+    def visitAndThen[II, IO : OP, OI, OO : OP](expr: AndThen[II, IO, OI, OO, OP])(implicit evBI: IO <:< OI): II ~:> OO
 
     def visitCombine[I, LI, LO : OP, RI, RO : OP, O : OP](
       expr: Combine[I, LI, LO, RI, RO, O, OP],
     )(implicit
       evLOisLI: LO <:< LI,
       evROisRI: RO <:< RI,
-    ): I ~> O
+    ): I ~:> O
 
-    def visitConst[O : OP](expr: Const[O, OP]): Any ~> O
+    def visitConst[O : OP](expr: Const[O, OP]): Any ~:> O
 
-    def visitCustomFunction[I, O : OP](expr: CustomFunction[I, O, OP]): I ~> O
+    def visitCustomFunction[I, O : OP](expr: CustomFunction[I, O, OP]): I ~:> O
 
-    def visitExists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](expr: Exists[C, A, B, OP]): C[A] ~> B
+    def visitExists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](expr: Exists[C, A, B, OP]): C[A] ~:> B
 
-    def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](expr: ForAll[C, A, B, OP]): C[A] ~> B
+    def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](expr: ForAll[C, A, B, OP]): C[A] ~:> B
 
-    def visitIdentity[I : OP](expr: Identity[I, OP]): I ~> I
+    def visitIdentity[I : OP](expr: Identity[I, OP]): I ~:> I
 
-    def visitMapEvery[C[_] : Functor, A, B](expr: MapEvery[C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~> C[B]
+    def visitMapEvery[C[_] : Functor, A, B](expr: MapEvery[C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~:> C[B]
 
-    def visitNot[I, O : Negation : OP](expr: Not[I, O, OP]): I ~> O
+    def visitNot[I, O : Negation : OP](expr: Not[I, O, OP]): I ~:> O
 
-    def visitOr[I](expr: Or[I, OP])(implicit evO: OP[Boolean]): I ~> Boolean
+    def visitOr[I](expr: Or[I, OP])(implicit evO: OP[Boolean]): I ~:> Boolean
 
-    def visitSelect[I, O : OP](expr: Select[I, O, OP]): I ~> O
+    def visitSelect[I, O : OP](expr: Select[I, O, OP]): I ~:> O
 
-    def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~> Seq[O]
+    def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~:> Seq[O]
 
     def visitWithinWindow[I, V : OP, F[+_]](
       expr: WithinWindow[I, V, F, OP],
     )(implicit
       comparison: WindowComparable[F, OP],
       opB: OP[F[Boolean]],
-    ): I ~> F[Boolean]
+    ): I ~:> F[Boolean]
   }
 
   final case class And[-I, OP[_]](
