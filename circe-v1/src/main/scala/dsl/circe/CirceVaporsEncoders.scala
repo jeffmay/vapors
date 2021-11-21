@@ -62,8 +62,8 @@ trait MidPrioritySourceInfoEncoders extends LowPrioritySimpleResultEncoders {
   implicit def encodeExprResultNoInput[
     O : OP,
     OP[a] <: HasEncoder[a],
-  ]: Encoder.AsObject[ExprResult[Nothing, Any, O, OP]] = {
-    encodeExprResult[Nothing, Any, O, OP]
+  ]: Encoder.AsObject[ExprResult[Nothing, Nothing, O, OP]] = {
+    encodeExprResult[Nothing, Nothing, O, OP]
   }
 
   // TODO: Does the following need to move to a separate trait to avoid ambiguous implicits with the above?
@@ -77,8 +77,8 @@ trait MidPrioritySourceInfoEncoders extends LowPrioritySimpleResultEncoders {
   implicit def encodeExprResultNoInputWithDebugInfo[
     O : OP,
     OP[a] <: HasEncoder[a] with HasSourceCodeInfo,
-  ]: Encoder.AsObject[ExprResult[Nothing, Any, O, OP]] = {
-    encodeDebugExprResultWithDebugInfo[Nothing, Any, O, OP]
+  ]: Encoder.AsObject[ExprResult[Nothing, Nothing, O, OP]] = {
+    encodeDebugExprResultWithDebugInfo[Nothing, Nothing, O, OP]
   }
 }
 

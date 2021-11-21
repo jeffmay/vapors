@@ -11,8 +11,9 @@ class SimpleWrapAsSpec extends FunSuite {
 
   test("wrap lat / lng as a GeoLocation") {
     val expected = GeoLocation(1.0, 2.0)
-    val q = (expected.lat :: expected.lng :: HNil).const.as[GeoLocation]
-    val result = q.run()
+    val xhl = (expected.lat :: expected.lng :: HNil).const
+    val xgl = xhl.as[GeoLocation]
+    val result = xgl.run()
     assertEquals(result, expected)
   }
 }
