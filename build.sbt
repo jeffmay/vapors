@@ -47,7 +47,7 @@ def commonProject(
 }
 
 lazy val bench = commonProject("bench", "vapors")
-  .dependsOn(`core-v1`) // TODO: Include other projects for comparison
+  .dependsOn(`core-v1` % "test->test") // TODO: Include other projects for comparison
   .settings(
     libraryDependencies ++= BenchProject.all,
     Test / parallelExecution := false,
