@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra.Expr
-import cats.{Foldable, Functor}
+import cats.{Foldable, Functor, FunctorFilter}
 import data.{Extract, ExtractValue, FactTypeSet}
 import dsl.SelectOutputType.Aux
 import lens.VariantLens
@@ -122,5 +122,15 @@ trait WrappedExprDsl extends BuildExprDsl {
       functorC: Functor[C],
     ): AndThen[I, C[W[A]], C[W[B]]] =
       inputExpr.andThen(Expr.MapEvery(mapExprBuilder(ident)))
+
+    override def filter(
+      conditionExprBuilder: W[A] =~:> W[Boolean],
+    )(implicit
+      opO: OP[C[W[A]]],
+      opA: OP[W[A]],
+      opB: OP[W[Boolean]],
+      filterC: FunctorFilter[C],
+    ): AndThen[I, C[W[A]], C[W[A]]] =
+      inputExpr.andThen(Expr.Filter(conditionExprBuilder(Expr.Identity())))
   }
 }

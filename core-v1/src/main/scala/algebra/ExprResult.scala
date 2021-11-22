@@ -6,7 +6,7 @@ import data.ExtractValue.AsBoolean
 import data.{ExprState, Extract, Window}
 import logic.{Conjunction, Disjunction, Negation}
 import cats.data.NonEmptyVector
-import cats.{Foldable, Functor}
+import cats.{Foldable, Functor, FunctorFilter}
 
 /**
   * The result of running the associated [[Expr]] of the same name.
@@ -81,6 +81,12 @@ object ExprResult {
     def visitCustomFunction[I, O : OP](result: CustomFunction[PO, I, O, OP]): I ~>: O
 
     def visitExists[C[_] : Foldable, A, B : AsBoolean : OP](result: Exists[PO, C, A, B, OP]): C[A] ~>: B
+
+    def visitFilter[C[_] : FunctorFilter, A, B : AsBoolean : OP](
+      result: Filter[PO, C, A, B, OP],
+    )(implicit
+      opO: OP[C[A]],
+    ): C[A] ~>: C[A]
 
     def visitForAll[C[_] : Foldable, A, B : AsBoolean : OP](result: ForAll[PO, C, A, B, OP]): C[A] ~>: B
 
@@ -259,6 +265,18 @@ object ExprResult {
     // TODO: Add foundTrueIndex: Option[Int]? conditionResults: C[Boolean]?
   ) extends ExprResult[PO, C[A], B, OP] {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[C[A], B] = v.visitForAll(this)
+  }
+
+  /**
+    * The result of running [[Expr.Filter]]
+    */
+  final case class Filter[+PO, C[_] : FunctorFilter, A, B : AsBoolean : OP, OP[_]](
+    expr: Expr.Filter[C, A, B, OP],
+    state: ExprState[PO, C[A]],
+  )(implicit
+    opO: OP[C[A]],
+  ) extends ExprResult[PO, C[A], C[A], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[C[A], C[A]] = v.visitFilter(this)
   }
 
   /**

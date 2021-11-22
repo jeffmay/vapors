@@ -15,7 +15,7 @@ trait ExtractValue[T, V] extends (T => V) {
 object ExtractValue {
   type AsBoolean[T] = ExtractValue[T, Boolean]
 
-  def asBoolean[T](value: T)(implicit extractor: AsBoolean[T]): Boolean = extractor.extractValue(value)
+  @inline def asBoolean[T](value: T)(implicit extractor: AsBoolean[T]): Boolean = extractor.extractValue(value)
 
   @inline final def apply[V]: Of[V] = new Of[V]
   final class Of[V] private[ExtractValue] (private val dummy: Boolean = true) extends AnyVal {

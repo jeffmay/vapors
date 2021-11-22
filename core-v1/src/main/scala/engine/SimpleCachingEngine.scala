@@ -4,12 +4,12 @@ package engine
 
 import algebra.{EqualComparable, Expr, WindowComparable}
 import cats.data.NonEmptyVector
+import cats.{Eval, Foldable, Functor, FunctorFilter}
 import data.ExtractValue.AsBoolean
-import data.{ExprState, Extract, FactTable, Window}
+import data.{ExprState, Extract, ExtractValue, FactTable, Window}
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
 import logic.{Conjunction, Disjunction, Negation}
-import cats.{Eval, Foldable, Functor}
 
 object SimpleCachingEngine {
 
@@ -184,6 +184,17 @@ object SimpleCachingEngine {
       }
       val (results, o) = finalState.value
       debugging(expr).invokeAndReturn(state((ca, results), cached(o, finalState.cacheState)))
+    }
+
+    override def visitFilter[C[_] : FunctorFilter, A, B : ExtractValue.AsBoolean : OP](
+      expr: Expr.Filter[C, A, B, OP],
+    )(implicit
+      opO: OP[C[A]],
+    ): C[A] => CachedResult[C[A]] = memoize(expr, _) { input =>
+      // TODO: Is it possible to use cache between elements in the functor?
+      val isMatchingResult = expr.conditionExpr.visit(this).andThen(r => ExtractValue.asBoolean(r.value))
+      val o = input.filter(isMatchingResult)
+      debugging(expr).invokeAndReturn(state(input, cached(o)))
     }
 
     override def visitForAll[C[_] : Foldable, A, B : AsBoolean : OP](

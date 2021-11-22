@@ -3,10 +3,10 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra._
+import cats.{Foldable, Functor, FunctorFilter}
 import data.{ExprState, Extract, ExtractValue, Window}
 import debug.DebugArgs
 import logic.{Conjunction, Disjunction, Negation}
-import cats.{Foldable, Functor, Id}
 
 import scala.annotation.nowarn
 
@@ -121,6 +121,21 @@ object StandardEngine {
       val finalState = state.swapAndReplaceOutput(o)
       debugging(expr).invokeDebugger(stateFromInput((_, results), finalState.output))
       ExprResult.Exists(expr, finalState)
+    }
+
+    override def visitFilter[C[_] : FunctorFilter, A, B : ExtractValue.AsBoolean : OP](
+      expr: Expr.Filter[C, A, B, OP],
+    )(implicit
+      opO: OP[C[A]],
+    ): PO <:< C[A] => ExprResult[PO, C[A], C[A], OP] = { implicit evPOisI =>
+      val ca: C[A] = state.output
+      val o = ca.filter { a =>
+        val conditionResult = expr.conditionExpr.visit(withOutput(a))(implicitly)
+        ExtractValue.asBoolean(conditionResult.state.output)
+      }
+      val finalState = state.swapAndReplaceOutput(o)
+      debugging(expr).invokeDebugger(finalState)
+      ExprResult.Filter(expr, finalState)
     }
 
     override def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](

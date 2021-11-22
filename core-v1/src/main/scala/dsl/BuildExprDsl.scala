@@ -4,7 +4,7 @@ package dsl
 
 import algebra._
 import cats.data.NonEmptyVector
-import cats.{Foldable, Functor, Order}
+import cats.{Foldable, Functor, FunctorFilter, Order}
 import data.{Extract, FactTypeSet, Window}
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Logic, Negation}
@@ -102,6 +102,15 @@ trait BuildExprDsl extends DebugExprDsl {
       opB: OP[W[Boolean]],
       foldC: Foldable[C],
     ): AndThen[I, C[W[A]], W[Boolean]]
+
+    def filter(
+      conditionExprBuilder: W[A] =~:> W[Boolean],
+    )(implicit
+      opO: OP[C[W[A]]],
+      opA: OP[W[A]],
+      opB: OP[W[Boolean]],
+      filterC: FunctorFilter[C],
+    ): AndThen[I, C[W[A]], C[W[A]]]
 
     def forall(
       conditionExprBuilder: W[A] =~:> W[Boolean],

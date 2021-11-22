@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra._
-import cats.{Foldable, Functor, Traverse}
+import cats.{Foldable, Functor, FunctorFilter, Traverse}
 import data.{Extract, FactTypeSet}
 import lens.VariantLens
 import logic.Logic
@@ -93,6 +93,16 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
       inputExpr.andThen(
         Expr.Exists[C, A, Boolean, OP](conditionExprBuilder(ident), _ => true, _ => false, shortCircuit),
       )
+
+    override def filter(
+      conditionExprBuilder: A =~:> Boolean,
+    )(implicit
+      opO: OP[C[A]],
+      opA: OP[A],
+      opB: OP[Boolean],
+      filterC: FunctorFilter[C],
+    ): AndThen[I, C[A], C[A]] =
+      inputExpr.andThen(Expr.Filter(conditionExprBuilder(ident)))
 
     override def forall(
       conditionExprBuilder: A =~:> Boolean,
