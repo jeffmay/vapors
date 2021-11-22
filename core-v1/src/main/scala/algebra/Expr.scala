@@ -7,9 +7,8 @@ import debug.{DebugArgs, Debugging, NoDebugging}
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Negation}
 import math.Add
-
 import cats.data.NonEmptyList
-import cats.{Foldable, Functor}
+import cats.{Foldable, Functor, FunctorFilter}
 
 import scala.annotation.nowarn
 
@@ -184,6 +183,12 @@ object Expr {
     def visitCustomFunction[I, O : OP](expr: CustomFunction[I, O, OP]): I ~:> O
 
     def visitExists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](expr: Exists[C, A, B, OP]): C[A] ~:> B
+
+    def visitFilter[C[_] : FunctorFilter, A, B : ExtractValue.AsBoolean : OP](
+      expr: Filter[C, A, B, OP],
+    )(implicit
+      opO: OP[C[A]],
+    ): C[A] ~:> C[A]
 
     def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](expr: ForAll[C, A, B, OP]): C[A] ~:> B
 
@@ -382,7 +387,7 @@ object Expr {
     * @param conditionExpr a predicate [[Expr]] that returns either `true` or `false` for every element in the input
     * @tparam C the higher-kinded container type provided as input
     * @tparam A the type of every element of the input
-    * @tparam B the output type, which must define a way to be viewed as a Boolean
+    * @tparam B the condition result type, which must define a way to be viewed as a `Boolean`
     */
   final case class Exists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP, OP[_]](
     conditionExpr: Expr[A, B, OP],
@@ -406,7 +411,7 @@ object Expr {
     * @param conditionExpr a predicate [[Expr]] that returns either `true` or `false` for every element in the input
     * @tparam C the higher-kinded container type provided as input
     * @tparam A the type of every element of the input
-    * @tparam B the output type, which must define a way to be viewed as a Boolean
+    * @tparam B the condition result type, which must define a way to be viewed as a `Boolean`
     */
   final case class ForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP, OP[_]](
     conditionExpr: Expr[A, B, OP],
@@ -417,6 +422,26 @@ object Expr {
   ) extends Expr[C[A], B, OP]("forall") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], B] = v.visitForAll(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): ForAll[C, A, B, OP] =
+      copy(debugging = debugging)
+  }
+
+  /**
+    * Applies the given [[conditionExpr]] to every element of the input only includes the element in the result
+    * if it satisfies the predicate condition.
+    *
+    * @param conditionExpr a predicate [[Expr]] that returns either `true` or `false` for every element in the input
+    * @tparam C the higher-kinded container type provided as input
+    * @tparam A the type of every element of the input
+    * @tparam B the condition result type, which must define a way to be viewed as a `Boolean`
+    */
+  final case class Filter[C[_] : FunctorFilter, A, B : ExtractValue.AsBoolean : OP, OP[_]](
+    conditionExpr: Expr[A, B, OP],
+    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    opO: OP[C[A]],
+  ) extends Expr[C[A], C[A], OP]("filter") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], C[A]] = v.visitFilter(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Filter[C, A, B, OP] =
       copy(debugging = debugging)
   }
 

@@ -8,6 +8,9 @@ import debug.DebugArgs
 import logic.{Conjunction, Disjunction, Negation}
 
 import cats.{Foldable, Functor}
+import logic.Negation
+import cats.{Foldable, Functor, FunctorFilter}
+import com.rallyhealth.vapors.v1.data.ExtractValue.AsBoolean
 
 import scala.annotation.nowarn
 
@@ -131,6 +134,21 @@ object StandardEngine {
       val debugState = stateFromInput(i => (i: C[A], results), finalState.output)
       debugging(expr).invokeDebugger(stateFromInput((_, results), finalState.output))
       ExprResult.Exists(expr, finalState)
+    }
+
+    override def visitFilter[C[_] : FunctorFilter, A, B : AsBoolean : OP](
+      expr: Expr.Filter[C, A, B, OP],
+    )(implicit
+      opO: OP[C[A]],
+    ): PO <:< C[A] => ExprResult[PO, C[A], C[A], OP] = { implicit evPOisI =>
+      val ca: C[A] = state.output
+      val o = ca.filter { a =>
+        val conditionResult = expr.conditionExpr.visit(withOutput(a))(implicitly)
+        ExtractValue.asBoolean(conditionResult.state.output)
+      }
+      val finalState = state.swapAndReplaceOutput(o)
+      debugging(expr).invokeDebugger(finalState)
+      ExprResult.Filter(expr, finalState)
     }
 
     override def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](

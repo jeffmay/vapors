@@ -198,6 +198,12 @@ object DebugArgs {
       override type Out = B
     }
 
+  implicit def debugFilter[C[_], A, B, OP[_]]: Aux[Expr.Filter[C, A, B, OP], OP, C[A], C[A]] =
+    new DebugArgs[Expr.Filter[C, A, B, OP], OP] {
+      override type In = C[A]
+      override type Out = C[A]
+    }
+
   implicit def debugForAll[
     C[_],
     A,

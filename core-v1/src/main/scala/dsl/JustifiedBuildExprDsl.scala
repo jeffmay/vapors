@@ -8,7 +8,7 @@ import lens.VariantLens
 import logic.Logic
 
 import cats.data.NonEmptyList
-import cats.{Foldable, Functor}
+import cats.{Foldable, Functor, FunctorFilter}
 import shapeless.{Generic, HList}
 
 trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
@@ -109,6 +109,16 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
           dontShortCircuit,
         )
       }
+
+    override def filter(
+      conditionExprBuilder: Justified[A] =~:> Justified[Boolean],
+    )(implicit
+      opO: OP[C[Justified[A]]],
+      opA: OP[Justified[A]],
+      opB: OP[Justified[Boolean]],
+      filterC: FunctorFilter[C],
+    ): Ap[I, C[Justified[A]], C[Justified[A]]] =
+      inputExpr.andThen(Expr.Filter(conditionExprBuilder(ident)))
 
     override def forall(
       conditionExprBuilder: Justified[A] =~:> Justified[Boolean],

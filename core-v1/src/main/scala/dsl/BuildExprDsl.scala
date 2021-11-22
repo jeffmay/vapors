@@ -7,7 +7,7 @@ import data.{FactTypeSet, Window}
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Logic, Negation}
 
-import cats.{Foldable, Functor, Order}
+import cats.{Foldable, Functor, FunctorFilter, Order}
 import shapeless.{Generic, HList}
 
 import scala.annotation.nowarn
@@ -103,6 +103,15 @@ trait BuildExprDsl extends DebugExprDsl {
       opB: OP[W[Boolean]],
       foldC: Foldable[C],
     ): Ap[I, C[W[A]], W[Boolean]]
+
+    def filter(
+      conditionExprBuilder: W[A] =~:> W[Boolean],
+    )(implicit
+      opO: OP[C[W[A]]],
+      opA: OP[W[A]],
+      opB: OP[W[Boolean]],
+      filterC: FunctorFilter[C],
+    ): Ap[I, C[W[A]], C[W[A]]]
 
     def forall(
       conditionExprBuilder: W[A] =~:> W[Boolean],

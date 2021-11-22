@@ -7,7 +7,7 @@ import data.FactTypeSet
 import lens.VariantLens
 import logic.Logic
 
-import cats.{catsInstancesForId, Foldable, Functor}
+import cats.{catsInstancesForId, Foldable, Functor, FunctorFilter}
 import shapeless.{Generic, HList}
 
 trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
@@ -77,6 +77,16 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
       inputExpr.andThen(
         Expr.Exists[C, A, Boolean, OP](conditionExprBuilder(ident), _ => true, _ => false, shortCircuit),
       )
+
+    override def filter(
+      conditionExprBuilder: A =~:> Boolean,
+    )(implicit
+      opO: OP[C[A]],
+      opA: OP[A],
+      opB: OP[Boolean],
+      filterC: FunctorFilter[C],
+    ): Ap[I, C[A], C[A]] =
+      inputExpr.andThen(Expr.Filter(conditionExprBuilder(ident)))
 
     override def forall(
       conditionExprBuilder: A =~:> Boolean,

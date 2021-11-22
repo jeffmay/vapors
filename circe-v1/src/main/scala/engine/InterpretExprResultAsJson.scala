@@ -9,7 +9,7 @@ import debug.HasSourceCodeInfo
 import dsl.circe.HasEncoder
 import logic.{Conjunction, Disjunction, Negation}
 
-import cats.{Foldable, Functor}
+import cats.{Foldable, Functor, FunctorFilter}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -101,6 +101,12 @@ object InterpretExprResultAsJson {
     override def visitExists[C[_] : Foldable, A, B : AsBoolean : OP](
       result: ExprResult.Exists[PO, C, A, B, OP],
     ): ToJsonObject[C[A], B] = encodeExprResult(result)
+
+    override def visitFilter[C[_] : FunctorFilter, A, B : AsBoolean : OP](
+      result: ExprResult.Filter[PO, C, A, B, OP],
+    )(implicit
+      opO: OP[C[A]],
+    ): ToJsonObject[C[A], C[A]] = encodeExprResult(result)
 
     override def visitForAll[C[_] : Foldable, A, B : AsBoolean : OP](
       result: ExprResult.ForAll[PO, C, A, B, OP],
@@ -214,6 +220,12 @@ object InterpretExprResultAsJson {
     override def visitExists[C[_] : Foldable, A, B : AsBoolean : OP](
       result: ExprResult.Exists[PO, C, A, B, OP],
     ): ToJsonObject[C[A], B] = super.visitExists(result).deepMerge(sourceInfo[B])
+
+    override def visitFilter[C[_] : FunctorFilter, A, B : AsBoolean : OP](
+      result: ExprResult.Filter[PO, C, A, B, OP],
+    )(implicit
+      opO: OP[C[A]],
+    ): ToJsonObject[C[A], C[A]] = super.visitFilter(result).deepMerge(sourceInfo[C[A]])
 
     override def visitForAll[C[_] : Foldable, A, B : AsBoolean : OP](
       result: ExprResult.ForAll[PO, C, A, B, OP],
