@@ -141,6 +141,34 @@ class StandardDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     }
   }
 
+  private val filterInput = Seq(1, 2, 3, 4)
+  private val filterExpr = filterInput.const.filter(_ < 3.const)
+  private val filterExprOutput = filterInput.filter(_ < 3)
+
+  test("debug filter with input") {
+    testExpr(filterExpr).withInput(initialInput).verifyDebuggerCalledWith { state =>
+      val (i, ca) = state.input
+      assertInputEquals(expectedInitialInput, i)
+      assertEquals(ca, filterInput)
+      assertEquals(state.output, filterExprOutput)
+    }
+  }
+
+  test("debug filter without initial input") {
+    testExpr(filterExpr).withNoInput.verifyDebuggerCalledWith { state =>
+      val (i, ca) = state.input
+      assertInputEquals(None, i)
+      assertEquals(ca, filterInput)
+      assertEquals(state.output, filterExprOutput)
+    }
+  }
+
+  test("debug filter syntax works") {
+    filterExpr.debug { state =>
+      assertEquals(state.output, filterExprOutput)
+    }
+  }
+
   private val forAllInput = Seq(false, true)
   private val forAllExpr = forAllInput.const.forall(identity)
   private val forAllExprOutput = forAllInput.forall(identity)

@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra.{EqualComparable, Expr, WindowComparable}
-import cats.{Foldable, Functor}
+import cats.{Foldable, Functor, FunctorFilter}
 import data.{ExprState, Extract, ExtractValue, FactTable, Window}
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
@@ -89,6 +89,16 @@ object SimpleEngine {
       val isMatchingResult = expr.conditionExpr.visit(this)
       val (results, o) = visitExistsCommon(expr, ca)(a => isMatchingResult(a))
       debugging(expr).invokeAndReturn(state((ca, results), o))
+    }
+
+    override def visitFilter[C[_] : FunctorFilter, A, B : ExtractValue.AsBoolean : OP](
+      expr: Expr.Filter[C, A, B, OP],
+    )(implicit
+      opO: OP[C[A]],
+    ): C[A] => C[A] = { input =>
+      val isMatchingResult = expr.conditionExpr.visit(this).andThen(ExtractValue.asBoolean(_))
+      val o = input.filter(isMatchingResult)
+      debugging(expr).invokeAndReturn(state(input, o))
     }
 
     override def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
