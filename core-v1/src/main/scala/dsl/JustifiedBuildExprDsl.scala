@@ -11,8 +11,6 @@ import cats.{Foldable, Functor}
 
 trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
 
-  override protected implicit final def compareWrapped: CompareWrapped[Justified] = CompareWrapped.justified
-
   override protected implicit final def windowComparable: WindowComparable[Justified, OP] = WindowComparable.justified
 
   override protected implicit final def extract: Extract[Justified] = Extract.justified

@@ -13,8 +13,6 @@ import scala.annotation.nowarn
 trait BuildExprDsl extends DebugExprDsl {
   self: DslTypes =>
 
-  protected implicit def compareWrapped: CompareWrapped[W]
-
   protected implicit def windowComparable: WindowComparable[W, OP]
 
   protected implicit def extract: Extract[W]
