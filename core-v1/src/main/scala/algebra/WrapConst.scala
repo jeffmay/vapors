@@ -15,6 +15,8 @@ object WrapConst {
 
   @inline final def apply[F[_] : WrapConst]: WrapConst[F] = implicitly
 
+  def wrap[F[_], V](value: V)(implicit wrap: WrapConst[F]): F[V] = wrap.wrapConst(value)
+
   implicit val identity: WrapConst[Id] = new WrapConst[Lambda[a => a]] {
     override def wrapConst[A](value: A): A = value
   }
