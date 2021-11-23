@@ -5,19 +5,27 @@ package algebra
 import data.{Justified, Window}
 import debug.HasShow
 
+import cats.Show
 import cats.data.NonEmptyList
-import cats.{Id, Show}
+import shapeless.Id
 
+/**
+  * Defines the capability for performing a comparison over a wrapper type.
+  *
+  * This is primarily used by the [[Expr.WithinWindow]] interpreter to take the result of a value expression
+  * and a window expression and perform the appropriate action to produce a wrapped boolean result.
+  *
+  * @tparam F a wrapper type or effect to map over when performing the comparison
+  * @tparam OP the output parameter of the input values and the output value
+  */
 trait WindowComparable[F[_], OP[_]] {
 
-  // TODO: Should this take OP[V] and OP[Window[V]]? What about the F[_] wrapper?
-  //       For now, I am only taking the OP[V] because if the goal is to serialize the value and the window,
-  //       then that is the missing piece.
   def withinWindow[V](
     value: F[V],
     window: F[Window[V]],
   )(implicit
-    opV: OP[V],
+    opV: OP[F[V]],
+    opW: OP[F[Window[V]]],
   ): F[Boolean]
 }
 
@@ -31,6 +39,7 @@ object WindowComparable {
         window: Justified[Window[V]],
       )(implicit
         opV: Any,
+        opW: Any,
       ): Justified[Boolean] = {
         implicit val showV: Show[V] = opV match {
           case has: HasShow[_] => has.show.asInstanceOf[Show[V]]
@@ -38,7 +47,6 @@ object WindowComparable {
         }
         val comparison = Window.showWindowWithTerm[V]("_").show(window.value)
         val isWithinWindow = window.value.contains(value.value)
-        // TODO: Combine evidence of window with evidence of value?
         Justified.byInference(comparison, isWithinWindow, NonEmptyList.of(value, window))
       }
     }
@@ -47,12 +55,13 @@ object WindowComparable {
   implicit def justified[OP[_]]: WindowComparable[Justified, OP] =
     anyJustified.asInstanceOf[WindowComparable[Justified, OP]]
 
-  private val anyIdentity: WindowComparable[Lambda[a => a], Any] = new WindowComparable[Lambda[a => a], Any] {
+  private val anyIdentity: WindowComparable[Id, Any] = new WindowComparable[Id, Any] {
     override def withinWindow[V](
       value: V,
       window: Window[V],
     )(implicit
       opV: Any,
+      opW: Any,
     ): Boolean = window.contains(value)
   }
 
