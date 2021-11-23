@@ -2,8 +2,9 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{CompareWrapped, ExprResult, WindowComparable}
+import algebra.{ExprResult, WindowComparable}
 import data.ExprState
+import data.ExtractValue.AsBoolean
 import debug.HasSourceCodeInfo
 import dsl.circe.HasEncoder
 import logic.Negation
@@ -89,11 +90,11 @@ object InterpretExprResultAsJson {
     override def visitCustomFunction[I, O : OP](result: ExprResult.CustomFunction[PO, I, O, OP]): ToJsonObject[I, O] =
       encodeExprResult(result)
 
-    override def visitExists[C[_] : Foldable, A, B : OP](
+    override def visitExists[C[_] : Foldable, A, B : AsBoolean : OP](
       result: ExprResult.Exists[PO, C, A, B, OP],
     ): ToJsonObject[C[A], B] = encodeExprResult(result)
 
-    override def visitForAll[C[_] : Foldable, A, B : OP](
+    override def visitForAll[C[_] : Foldable, A, B : AsBoolean : OP](
       result: ExprResult.ForAll[PO, C, A, B, OP],
     ): ToJsonObject[C[A], B] = encodeExprResult(result)
 
@@ -186,11 +187,11 @@ object InterpretExprResultAsJson {
     override def visitCustomFunction[I, O : OP](result: ExprResult.CustomFunction[PO, I, O, OP]): ToJsonObject[I, O] =
       super.visitCustomFunction(result).deepMerge(sourceInfo[O])
 
-    override def visitExists[C[_] : Foldable, A, B : OP](
+    override def visitExists[C[_] : Foldable, A, B : AsBoolean : OP](
       result: ExprResult.Exists[PO, C, A, B, OP],
     ): ToJsonObject[C[A], B] = super.visitExists(result).deepMerge(sourceInfo[B])
 
-    override def visitForAll[C[_] : Foldable, A, B : OP](
+    override def visitForAll[C[_] : Foldable, A, B : AsBoolean : OP](
       result: ExprResult.ForAll[PO, C, A, B, OP],
     ): ToJsonObject[C[A], B] = super.visitForAll(result).deepMerge(sourceInfo[B])
 
