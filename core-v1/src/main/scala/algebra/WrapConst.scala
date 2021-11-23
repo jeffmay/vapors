@@ -6,6 +6,14 @@ import data.Justified
 
 import cats.Id
 
+/**
+  * This typeclass defines the capability of this wrapper type being used to create wrapped values in a DSL traits.
+  *
+  * This is similar to the `Pure` typeclass from alleycats, except more specific to the Vapors project.
+  * It will only be used to construct wrapped constant values.
+  *
+  * @tparam F the wrapper type to place the constant values into
+  */
 trait WrapConst[F[_]] {
 
   def wrapConst[A](value: A): F[A]
