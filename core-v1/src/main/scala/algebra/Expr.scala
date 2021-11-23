@@ -11,13 +11,14 @@ import cats.Foldable
 import scala.annotation.nowarn
 
 /**
-  * Required features:
+  * The root trait of all expression nodes.
   *
-  * - Intermediate caching
-  * - Stack-free computation (i.e. conversion to cats / zio)
-  * - Interpretation
-  * - Reflection
-  * - Support for flatMap
+  * An expression can be interpreted to produce a function, a JSON object, or really, anything you want!
+  *
+  * The expression node is contravariant on the input
+  *
+  * The expression defines a set of useful operations (modeled after the Scala collections library) that
+  * contain enough information to be serializable.
   *
   * @tparam I the input value type
   * @tparam O the output value type
