@@ -5,7 +5,7 @@ package data
 import math.Add
 
 import cats.data.{NonEmptyList, NonEmptySet}
-import cats.Order
+import cats.{Functor, Order}
 
 import scala.annotation.nowarn
 
@@ -116,6 +116,16 @@ object Justified {
   implicit def orderByValue[V : Order]: Order[Justified[V]] = Order.by(_.value)
 
   implicit def extractValue[V]: ExtractValue[Justified[V], V] = _.value
+
+  implicit val functor: Functor[Justified] = new Functor[Justified] {
+    override def map[A, B](fa: Justified[A])(f: A => B): Justified[B] = fa match {
+      case Justified.ByConst(v) => Justified.byConst(f(v))
+      case Justified.ByConfig(v, k, d) => Justified.byConfig(f(v), k, d)
+      case _ =>
+        val derived = f(fa.value)
+        Justified.byInference("map", derived, NonEmptyList.of(fa))
+    }
+  }
 
   implicit def add[L, R](
     implicit

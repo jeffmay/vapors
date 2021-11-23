@@ -6,7 +6,7 @@ import algebra.{CompareWrapped, Expr, Extract, WindowComparable, WrapConst}
 import data.FactTypeSet
 import logic.Negation
 
-import cats.{Foldable, Functor}
+import cats.{catsInstancesForId, Foldable, Functor}
 
 trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
 
@@ -15,6 +15,8 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
   override protected implicit final def windowComparable: WindowComparable[W, OP] = WindowComparable.identity
 
   override protected implicit final def extract: Extract[W] = Extract.identity
+
+  override protected implicit final def functor: Functor[W] = catsInstancesForId
 
   override protected implicit final def wrapConst: WrapConst[W] = WrapConst.identity
 

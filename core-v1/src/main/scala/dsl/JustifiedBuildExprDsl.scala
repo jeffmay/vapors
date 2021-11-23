@@ -17,6 +17,8 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
 
   override protected implicit final def extract: Extract[Justified] = Extract.justified
 
+  override protected implicit final def functor: Functor[Justified] = Justified.functor
+
   override protected implicit final def wrapConst: WrapConst[Justified] = WrapConst.justified
 
   override protected def wrapElement[C[_], A](

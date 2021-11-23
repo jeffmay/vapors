@@ -19,6 +19,8 @@ trait BuildExprDsl {
 
   protected implicit def extract: Extract[W]
 
+  protected implicit def functor: Functor[W]
+
   protected implicit def wrapConst: WrapConst[W]
 
   final def ident[I : OP]: Expr.Identity[I, OP] = Expr.Identity()
@@ -93,7 +95,7 @@ trait BuildExprDsl {
         valueExpr,
         Expr.AndThen(
           that,
-          Expr.CustomFunction[W[V], W[Window[V]], OP](name, CompareWrapped[W].map(_)(using)),
+          Expr.CustomFunction[W[V], W[Window[V]], OP](name, Functor[W].map(_)(using)),
         ),
       )
 
@@ -105,7 +107,7 @@ trait BuildExprDsl {
     ): I >=< V =
       Expr.WithinWindow(
         valueExpr,
-        Expr.Const[W[Window[V]], OP](CompareWrapped[W].wrapConst(using(that))),
+        Expr.Const[W[Window[V]], OP](WrapConst.wrap(using(that))),
       )
 
     def <(literal: V): I >=< V = compareLiteral("<", literal)(Window.lessThan(_))
@@ -126,7 +128,7 @@ trait BuildExprDsl {
 
     def within(window: Window[V]): I >=< V = this >=< window
 
-    def >=<(window: Window[V]): I >=< V = Expr.WithinWindow(valueExpr, Expr.Const(CompareWrapped[W].wrapConst(window)))
+    def >=<(window: Window[V]): I >=< V = Expr.WithinWindow(valueExpr, Expr.Const(WrapConst.wrap(window)))
 
     def within(expr: I ~:> W[Window[V]]): I >=< V = this >=< expr
 
