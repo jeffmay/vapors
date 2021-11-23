@@ -2,15 +2,13 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import algebra.{CompareWrapped, Expr, Extract, WindowComparable, WrapConst}
+import algebra.{Expr, Extract, WindowComparable, WrapConst}
 import data.FactTypeSet
 import logic.Negation
 
 import cats.{catsInstancesForId, Foldable, Functor}
 
 trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
-
-  override implicit final def compareWrapped: CompareWrapped[W] = CompareWrapped.value
 
   override protected implicit final def windowComparable: WindowComparable[W, OP] = WindowComparable.identity
 
