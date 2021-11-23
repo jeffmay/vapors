@@ -46,7 +46,7 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
     *
     * TODO: Should this be made package private?
     */
-  def debugging: Debugging[Nothing, Nothing]
+  private[v1] def debugging: Debugging[Nothing, Nothing]
 
   /**
     * Allows you to attach a debug hook that handles any input. Subclasses should override this to be more
@@ -63,7 +63,7 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
     * @see [[com.rallyhealth.vapors.v1.dsl.DebugExprDsl.debugExpr]] for how to get better type information
     *      at compile-time.
     */
-  def withDebugging(debugging: Debugging[Any, Any]): Expr[I, O, OP]
+  private[v1] def withDebugging(debugging: Debugging[Any, Any]): Expr[I, O, OP]
 
   /**
     * Helpful when inside of a long chain of expressions when you need to refer to this expression, but don't
@@ -185,8 +185,9 @@ object Expr {
   )(implicit
     opO: OP[Boolean],
   ) extends Expr[I, Boolean, OP]("and") {
-    override def withDebugging(debugging: Debugging[Any, Any]): Expr[I, Boolean, OP] = copy(debugging = debugging)
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Boolean] = v.visitAnd(this)
+    override private[v1] def withDebugging(debugging: Debugging[Any, Any]): Expr[I, Boolean, OP] =
+      copy(debugging = debugging)
   }
 
   final case class Or[-I, OP[_]](
@@ -196,8 +197,9 @@ object Expr {
   )(implicit
     opO: OP[Boolean],
   ) extends Expr[I, Boolean, OP]("or") {
-    override def withDebugging(debugging: Debugging[Any, Any]): Expr[I, Boolean, OP] = copy(debugging = debugging)
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Boolean] = v.visitOr(this)
+    override private[v1] def withDebugging(debugging: Debugging[Any, Any]): Expr[I, Boolean, OP] =
+      copy(debugging = debugging)
   }
 
   /**
@@ -222,7 +224,7 @@ object Expr {
     evIOisOI: IO <:< OI,
   ) extends Expr[II, OO, OP]("andThen") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[II, OO] = v.visitAndThen(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): AndThen[II, IO, OI, OO, OP] =
+    override private[v1] def withDebugging(debugging: Debugging[Any, Any]): AndThen[II, IO, OI, OO, OP] =
       copy(debugging = debugging)
   }
 
@@ -236,7 +238,7 @@ object Expr {
     debugging: Debugging[Any, Any] = NoDebugging,
   ) extends Expr[Any, O, OP]("const") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[Any, O] = v.visitConst(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Const[O, OP] = copy(debugging = debugging)
+    override private[v1] def withDebugging(debugging: Debugging[Any, Any]): Const[O, OP] = copy(debugging = debugging)
   }
 
   // TODO: Rename to CombineWith or BinaryOperation to fit better with Zip2With?
@@ -276,7 +278,7 @@ object Expr {
     evROisRI: RO <:< RI,
   ) extends Expr[I, O, OP]("combine") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitCombine(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Combine[I, LI, LO, RI, RO, O, OP] =
+    override private[v1] def withDebugging(debugging: Debugging[Any, Any]): Combine[I, LI, LO, RI, RO, O, OP] =
       copy(debugging = debugging)
   }
 
@@ -305,7 +307,7 @@ object Expr {
     debugging: Debugging[I, Any] = NoDebugging,
   ) extends Expr[I, O, OP]("customFunction") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitCustomFunction(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Expr[I, O, OP] = copy(debugging = debugging)
+    override private[v1] def withDebugging(debugging: Debugging[Any, Any]): Expr[I, O, OP] = copy(debugging = debugging)
   }
 
   /**
@@ -327,7 +329,8 @@ object Expr {
     debugging: Debugging[C[A], B] = NoDebugging,
   ) extends Expr[C[A], B, OP]("exists") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], B] = v.visitExists(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Exists[C, A, B, OP] = copy(debugging = debugging)
+    override private[v1] def withDebugging(debugging: Debugging[Any, Any]): Exists[C, A, B, OP] =
+      copy(debugging = debugging)
   }
 
   /**
@@ -350,7 +353,8 @@ object Expr {
     debugging: Debugging[C[A], B] = NoDebugging,
   ) extends Expr[C[A], B, OP]("forall") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], B] = v.visitForAll(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): ForAll[C, A, B, OP] = copy(debugging = debugging)
+    override private[v1] def withDebugging(debugging: Debugging[Any, Any]): ForAll[C, A, B, OP] =
+      copy(debugging = debugging)
   }
 
   /**
@@ -361,7 +365,7 @@ object Expr {
   final case class Identity[I : OP, OP[_]](debugging: Debugging[I, I] = NoDebugging)
     extends Expr[I, I, OP]("identity") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, I] = v.visitIdentity(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Identity[I, OP] =
+    override private[v1] def withDebugging(debugging: Debugging[Any, Any]): Identity[I, OP] =
       copy[I, OP](debugging = debugging)
   }
 
@@ -380,7 +384,8 @@ object Expr {
     opO: OP[C[B]],
   ) extends Expr[C[A], C[B], OP]("map") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], C[B]] = v.visitMapEvery(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): MapEvery[C, A, B, OP] = copy(debugging = debugging)
+    override private[v1] def withDebugging(debugging: Debugging[Any, Any]): MapEvery[C, A, B, OP] =
+      copy(debugging = debugging)
   }
 
   /**
@@ -396,7 +401,7 @@ object Expr {
     debugging: Debugging[Any, Any] = NoDebugging,
   ) extends Expr[I, O, OP]("not") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitNot(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Not[I, O, OP] = copy(debugging = debugging)
+    override private[v1] def withDebugging(debugging: Debugging[Any, Any]): Not[I, O, OP] = copy(debugging = debugging)
   }
 
   /**
@@ -413,7 +418,8 @@ object Expr {
     opTs: OP[Seq[O]],
   ) extends Expr[Any, Seq[O], OP]("valuesOfType") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[Any, Seq[O]] = v.visitValuesOfType(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): ValuesOfType[T, O, OP] = copy(debugging = debugging)
+    override private[v1] def withDebugging(debugging: Debugging[Any, Any]): ValuesOfType[T, O, OP] =
+      copy(debugging = debugging)
   }
 
   /**
@@ -436,7 +442,7 @@ object Expr {
     opB: OP[F[Boolean]],
   ) extends Expr[I, F[Boolean], OP]("withinWindow") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, F[Boolean]] = v.visitWithinWindow(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): WithinWindow[I, V, F, OP] =
+    override private[v1] def withDebugging(debugging: Debugging[Any, Any]): WithinWindow[I, V, F, OP] =
       copy(debugging = debugging)
   }
 
@@ -450,6 +456,7 @@ object Expr {
     debugging: Debugging[I, Any] = NoDebugging,
   ) extends Expr[I, O, OP]("select") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitSelect(this)
-    override def withDebugging(debugging: Debugging[Any, Any]): Select[I, O, OP] = copy(debugging = debugging)
+    override private[v1] def withDebugging(debugging: Debugging[Any, Any]): Select[I, O, OP] =
+      copy(debugging = debugging)
   }
 }
