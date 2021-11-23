@@ -2,6 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package algebra
 
+import data.ExtractValue.AsBoolean
 import data.{ExprState, Window}
 import logic.Negation
 
@@ -72,9 +73,9 @@ object ExprResult {
 
     def visitCustomFunction[I, O : OP](result: CustomFunction[PO, I, O, OP]): I ~> O
 
-    def visitExists[C[_] : Foldable, A, B : OP](result: Exists[PO, C, A, B, OP]): C[A] ~> B
+    def visitExists[C[_] : Foldable, A, B : AsBoolean : OP](result: Exists[PO, C, A, B, OP]): C[A] ~> B
 
-    def visitForAll[C[_] : Foldable, A, B : OP](result: ForAll[PO, C, A, B, OP]): C[A] ~> B
+    def visitForAll[C[_] : Foldable, A, B : AsBoolean : OP](result: ForAll[PO, C, A, B, OP]): C[A] ~> B
 
     def visitIdentity[I : OP](result: Identity[PO, I, OP]): I ~> I
 
@@ -184,7 +185,7 @@ object ExprResult {
   /**
     * The result of running [[Expr.Exists]]
     */
-  final case class Exists[+PO, C[_] : Foldable, A, B : OP, OP[_]](
+  final case class Exists[+PO, C[_] : Foldable, A, B : AsBoolean : OP, OP[_]](
     expr: Expr.Exists[C, A, B, OP],
     state: ExprState[PO, B],
     // TODO: Add foundTrueIndex: Option[Int]? conditionResults: C[Boolean]?
@@ -195,7 +196,7 @@ object ExprResult {
   /**
     * The result of running [[Expr.ForAll]]
     */
-  final case class ForAll[+PO, C[_] : Foldable, A, B : OP, OP[_]](
+  final case class ForAll[+PO, C[_] : Foldable, A, B : AsBoolean : OP, OP[_]](
     expr: Expr.ForAll[C, A, B, OP],
     state: ExprState[PO, B],
     // TODO: Add foundTrueIndex: Option[Int]? conditionResults: C[Boolean]?
