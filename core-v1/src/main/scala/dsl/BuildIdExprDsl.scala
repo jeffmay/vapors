@@ -51,9 +51,8 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
       opA: OP[A],
       opB: OP[Boolean],
       foldC: Foldable[C],
-    ): Expr.AndThen[I, C[A], C[A], Boolean, OP] =
-      Expr.AndThen(
-        inputExpr,
+    ): Ap[I, C[A], Boolean] =
+      inputExpr.andThen(
         Expr.Exists[C, A, Boolean, OP](conditionExprBuilder(ident), _ => true, _ => false, shortCircuit),
       )
 
@@ -64,10 +63,9 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
       opA: OP[A],
       opB: OP[Boolean],
       foldC: Foldable[C],
-    ): Expr.AndThen[I, C[A], C[A], Boolean, OP] =
-      Expr.AndThen(
-        inputExpr,
-        Expr.ForAll[C, A, Boolean, OP](conditionExprBuilder(ident[A]), _ => true, _ => false, shortCircuit),
+    ): Ap[I, C[A], Boolean] =
+      inputExpr.andThen(
+        Expr.ForAll[C, A, Boolean, OP](conditionExprBuilder(ident), _ => true, _ => false, shortCircuit),
       )
 
     override def map[B](
@@ -77,7 +75,7 @@ trait BuildIdExprDsl extends BuildExprDsl with IdExprDsl {
       opA: OP[C[A]],
       opB: OP[C[B]],
       functorC: Functor[C],
-    ): Expr.AndThen[I, C[A], C[A], C[B], OP] =
-      Expr.AndThen(inputExpr, Expr.MapEvery[C, A, B, OP](mapExprBuilder(ident)))
+    ): Ap[I, C[A], C[B]] =
+      inputExpr.andThen(Expr.MapEvery[C, A, B, OP](mapExprBuilder(ident)))
   }
 }

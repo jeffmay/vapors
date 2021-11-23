@@ -35,9 +35,9 @@ trait BuildExprDsl {
   implicit def wrap[A](value: A)(implicit constType: WrapConstType[W, A]): ConstExprBuilder[constType.Out, OP] =
     new ConstExprBuilder(constType(wrapConst.wrapConst(value)))
 
-  type SpecificHkExprBuilder[I, C[_], A] <: HkExprBuilder[I, C, A]
-
   implicit def hk[I, C[_], A](expr: I ~> C[W[A]]): SpecificHkExprBuilder[I, C, A]
+
+  type SpecificHkExprBuilder[I, C[_], A] <: HkExprBuilder[I, C, A]
 
   trait HkExprBuilder[I, C[_], A] extends Any {
 

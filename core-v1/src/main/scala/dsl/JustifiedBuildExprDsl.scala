@@ -67,8 +67,7 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedExprDsl {
       opB: OP[Justified[Boolean]],
       foldC: Foldable[C],
     ): Ap[I, C[Justified[A]], Justified[Boolean]] =
-      Expr.AndThen(
-        inputExpr,
+      inputExpr.andThen {
         Expr.Exists[C, Justified[A], Justified[Boolean], OP](
           conditionExprBuilder(Expr.Identity()),
           combineTrue = Justified.byInference("exists", true, _),
@@ -84,8 +83,8 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedExprDsl {
               Justified.byConst(false)
             },
           dontShortCircuit,
-        ),
-      )
+        )
+      }
 
     override def forall(
       conditionExprBuilder: Justified[A] ~~> Justified[Boolean],
@@ -95,8 +94,7 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedExprDsl {
       opB: OP[Justified[Boolean]],
       foldC: Foldable[C],
     ): Ap[I, C[Justified[A]], Justified[Boolean]] =
-      Expr.AndThen(
-        inputExpr,
+      inputExpr.andThen {
         Expr.ForAll[C, Justified[A], Justified[Boolean], OP](
           conditionExprBuilder(Expr.Identity()),
           NonEmptyList
@@ -111,8 +109,8 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedExprDsl {
             },
           combineFalse = Justified.byInference("forall", false, _),
           dontShortCircuit,
-        ),
-      )
+        )
+      }
 
     override def map[B](
       mapExprBuilder: Justified[A] ~~> Justified[B],
@@ -122,7 +120,7 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedExprDsl {
       opB: OP[C[Justified[B]]],
       functorC: Functor[C],
     ): Ap[I, C[Justified[A]], C[Justified[B]]] =
-      Expr.AndThen(inputExpr, Expr.MapEvery[C, Justified[A], Justified[B], OP](mapExprBuilder(Expr.Identity())))
+      inputExpr.andThen(Expr.MapEvery[C, Justified[A], Justified[B], OP](mapExprBuilder(ident)))
 
   }
 }
