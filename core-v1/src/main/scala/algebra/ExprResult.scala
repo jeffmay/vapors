@@ -55,6 +55,7 @@ object ExprResult {
     *
     * @tparam PO `Previous Output` type (as specific as necessary for applying this visitor)
     * @tparam ~>: an infix type alias for the higher-kinded result type of this visitor
+    *             (the symbol was chosen to indicate that the work is performed with the result of the arrow in scope)
     * @tparam OP `Output Parameter` (captured at the definition site for every output type in the expression tree)
     */
   trait Visitor[-PO, ~>:[-_, +_], OP[_]] {
@@ -217,6 +218,9 @@ object ExprResult {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[C[A], C[B]] = v.visitMapEvery(this)
   }
 
+  /**
+    * The result of running [[Expr.Not]]
+    */
   final case class Not[+PO, -I, +O : Negation : OP, OP[_]](
     expr: Expr.Not[I, O, OP],
     state: ExprState[PO, O],
@@ -225,6 +229,9 @@ object ExprResult {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitNot(this)
   }
 
+  /**
+    * The result of running [[Expr.Select]]
+    */
   final case class Select[+PO, -I, +O : OP, OP[_]](
     expr: Expr.Select[I, O, OP],
     state: ExprState[PO, O],
@@ -244,6 +251,9 @@ object ExprResult {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[Any, Seq[O]] = v.visitValuesOfType(this)
   }
 
+  /**
+    * The result of running [[Expr.WithinWindow]]
+    */
   final case class WithinWindow[+PO, -I, +V, F[+_], OP[_]](
     expr: Expr.WithinWindow[I, V, F, OP],
     state: ExprState[PO, F[Boolean]],
