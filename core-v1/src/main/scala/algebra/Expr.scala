@@ -168,10 +168,12 @@ object Expr {
 
     def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~:> Seq[O]
 
-    def visitWithinWindow[I, V : OP, F[+_]](
+    def visitWithinWindow[I, V, F[+_]](
       expr: WithinWindow[I, V, F, OP],
     )(implicit
       comparison: WindowComparable[F, OP],
+      opV: OP[F[V]],
+      opW: OP[F[Window[V]]],
       opB: OP[F[Boolean]],
     ): I ~:> F[Boolean]
   }
@@ -431,12 +433,14 @@ object Expr {
     * @tparam F a container type, used to carry along metadata beyond just true / false.
     *           This can also be an effect type, but it must be covariant on its inner type.
     */
-  final case class WithinWindow[-I, +V : OP, F[+_], OP[_]](
+  final case class WithinWindow[-I, +V, F[+_], OP[_]](
     valueExpr: Expr[I, F[V], OP],
     windowExpr: Expr[I, F[Window[V]], OP],
     private[v1] val debugging: Debugging[Any, Any] = NoDebugging,
   )(implicit
     comparison: WindowComparable[F, OP],
+    opV: OP[F[V]],
+    opW: OP[F[Window[V]]],
     opB: OP[F[Boolean]],
   ) extends Expr[I, F[Boolean], OP]("withinWindow") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, F[Boolean]] = v.visitWithinWindow(this)

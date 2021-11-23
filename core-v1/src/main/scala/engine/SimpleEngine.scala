@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra.{Expr, WindowComparable}
-import data.{ExprState, ExtractValue, FactTable}
+import data.{ExprState, ExtractValue, FactTable, Window}
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
 import logic.Negation
@@ -135,10 +135,12 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state(i, o))
     }
 
-    override def visitWithinWindow[I, V : OP, F[+_]](
+    override def visitWithinWindow[I, V, F[+_]](
       expr: Expr.WithinWindow[I, V, F, OP],
     )(implicit
       comparison: WindowComparable[F, OP],
+      opV: OP[F[V]],
+      opW: OP[F[Window[V]]],
       opB: OP[F[Boolean]],
     ): I => F[Boolean] = { i =>
       val value = expr.valueExpr.visit(this)(i)
