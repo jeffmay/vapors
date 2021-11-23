@@ -43,8 +43,6 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
     *       add this to subclasses.
     *
     * @see [[Debugging]] for more details on how type checking is handled.
-    *
-    * TODO: Should this be made package private?
     */
   private[v1] def debugging: Debugging[Nothing, Nothing]
 
@@ -181,7 +179,7 @@ object Expr {
   final case class And[-I, OP[_]](
     leftExpr: Expr[I, Boolean, OP],
     rightExpr: Expr[I, Boolean, OP],
-    debugging: Debugging[I, Boolean] = NoDebugging,
+    private[v1] val debugging: Debugging[Any, Any] = NoDebugging,
   )(implicit
     opO: OP[Boolean],
   ) extends Expr[I, Boolean, OP]("and") {
@@ -193,7 +191,7 @@ object Expr {
   final case class Or[-I, OP[_]](
     leftExpr: Expr[I, Boolean, OP],
     rightExpr: Expr[I, Boolean, OP],
-    debugging: Debugging[I, Boolean] = NoDebugging,
+    private[v1] val debugging: Debugging[Any, Any] = NoDebugging,
   )(implicit
     opO: OP[Boolean],
   ) extends Expr[I, Boolean, OP]("or") {
@@ -219,7 +217,7 @@ object Expr {
   final case class AndThen[-II, +IO : OP, -OI, +OO : OP, OP[_]](
     inputExpr: Expr[II, IO, OP],
     outputExpr: Expr[OI, OO, OP],
-    debugging: Debugging[(II, OI), Any] = NoDebugging,
+    private[v1] val debugging: Debugging[Any, Any] = NoDebugging,
   )(implicit
     evIOisOI: IO <:< OI,
   ) extends Expr[II, OO, OP]("andThen") {
@@ -235,7 +233,7 @@ object Expr {
     */
   final case class Const[+O : OP, OP[_]](
     value: O,
-    debugging: Debugging[Any, Any] = NoDebugging,
+    private[v1] val debugging: Debugging[Any, Any] = NoDebugging,
   ) extends Expr[Any, O, OP]("const") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[Any, O] = v.visitConst(this)
     override private[v1] def withDebugging(debugging: Debugging[Any, Any]): Const[O, OP] = copy(debugging = debugging)
@@ -272,7 +270,7 @@ object Expr {
     rightExpr: Expr[I, RO, OP],
     operationName: String,
     operation: (LI, RI) => O,
-    debugging: Debugging[(I, LI, RI), Any] = NoDebugging,
+    private[v1] val debugging: Debugging[Any, Any] = NoDebugging,
   )(implicit
     evLOisLI: LO <:< LI,
     evROisRI: RO <:< RI,
@@ -304,7 +302,7 @@ object Expr {
   final case class CustomFunction[-I, +O : OP, OP[_]](
     functionName: String,
     function: I => O,
-    debugging: Debugging[I, Any] = NoDebugging,
+    private[v1] val debugging: Debugging[Any, Any] = NoDebugging,
   ) extends Expr[I, O, OP]("customFunction") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitCustomFunction(this)
     override private[v1] def withDebugging(debugging: Debugging[Any, Any]): Expr[I, O, OP] = copy(debugging = debugging)
@@ -326,7 +324,7 @@ object Expr {
     combineTrue: NonEmptyList[B] => B,
     combineFalse: List[B] => B,
     shortCircuit: Boolean,
-    debugging: Debugging[C[A], B] = NoDebugging,
+    private[v1] val debugging: Debugging[Any, Any] = NoDebugging,
   ) extends Expr[C[A], B, OP]("exists") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], B] = v.visitExists(this)
     override private[v1] def withDebugging(debugging: Debugging[Any, Any]): Exists[C, A, B, OP] =
@@ -350,7 +348,7 @@ object Expr {
     combineTrue: List[B] => B,
     combineFalse: NonEmptyList[B] => B,
     shortCircuit: Boolean,
-    debugging: Debugging[C[A], B] = NoDebugging,
+    private[v1] val debugging: Debugging[Any, Any] = NoDebugging,
   ) extends Expr[C[A], B, OP]("forall") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], B] = v.visitForAll(this)
     override private[v1] def withDebugging(debugging: Debugging[Any, Any]): ForAll[C, A, B, OP] =
@@ -362,7 +360,7 @@ object Expr {
     *
     * You can think of this like the [[identity]] function.
     */
-  final case class Identity[I : OP, OP[_]](debugging: Debugging[I, I] = NoDebugging)
+  final case class Identity[I : OP, OP[_]](private[v1] val debugging: Debugging[Any, Any] = NoDebugging)
     extends Expr[I, I, OP]("identity") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, I] = v.visitIdentity(this)
     override private[v1] def withDebugging(debugging: Debugging[Any, Any]): Identity[I, OP] =
@@ -379,7 +377,7 @@ object Expr {
     */
   final case class MapEvery[C[_] : Functor, A, B, OP[_]](
     mapExpr: Expr[A, B, OP],
-    debugging: Debugging[C[A], C[B]] = NoDebugging,
+    private[v1] val debugging: Debugging[Any, Any] = NoDebugging,
   )(implicit
     opO: OP[C[B]],
   ) extends Expr[C[A], C[B], OP]("map") {
@@ -398,7 +396,7 @@ object Expr {
     */
   final case class Not[-I, +O : Negation : OP, OP[_]](
     innerExpr: Expr[I, O, OP],
-    debugging: Debugging[Any, Any] = NoDebugging,
+    private[v1] val debugging: Debugging[Any, Any] = NoDebugging,
   ) extends Expr[I, O, OP]("not") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitNot(this)
     override private[v1] def withDebugging(debugging: Debugging[Any, Any]): Not[I, O, OP] = copy(debugging = debugging)
@@ -413,7 +411,7 @@ object Expr {
   final case class ValuesOfType[T, +O, OP[_]](
     factTypeSet: FactTypeSet[T],
     transform: TypedFact[T] => O,
-    debugging: Debugging[Any, Seq[Any]] = NoDebugging,
+    private[v1] val debugging: Debugging[Any, Any] = NoDebugging,
   )(implicit
     opTs: OP[Seq[O]],
   ) extends Expr[Any, Seq[O], OP]("valuesOfType") {
@@ -436,7 +434,7 @@ object Expr {
   final case class WithinWindow[-I, +V : OP, F[+_], OP[_]](
     valueExpr: Expr[I, F[V], OP],
     windowExpr: Expr[I, F[Window[V]], OP],
-    debugging: Debugging[Any, F[Boolean]] = NoDebugging,
+    private[v1] val debugging: Debugging[Any, Any] = NoDebugging,
   )(implicit
     comparison: WindowComparable[F, OP],
     opB: OP[F[Boolean]],
@@ -453,7 +451,7 @@ object Expr {
     */
   final case class Select[-I, +O : OP, OP[_]](
     lens: VariantLens[I, O],
-    debugging: Debugging[I, Any] = NoDebugging,
+    private[v1] val debugging: Debugging[Any, Any] = NoDebugging,
   ) extends Expr[I, O, OP]("select") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitSelect(this)
     override private[v1] def withDebugging(debugging: Debugging[Any, Any]): Select[I, O, OP] =
