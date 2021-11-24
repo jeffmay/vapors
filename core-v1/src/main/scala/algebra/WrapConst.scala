@@ -4,7 +4,7 @@ package algebra
 
 import data.Justified
 
-import cats.Id
+import shapeless.Id
 
 /**
   * This typeclass defines the capability of this wrapper type being used to create wrapped values in a DSL traits.
@@ -25,7 +25,7 @@ object WrapConst {
 
   def wrap[F[_], V](value: V)(implicit wrap: WrapConst[F]): F[V] = wrap.wrapConst(value)
 
-  implicit val identity: WrapConst[Id] = new WrapConst[Lambda[a => a]] {
+  implicit val identity: WrapConst[Id] = new WrapConst[Id] {
     override def wrapConst[A](value: A): A = value
   }
 
