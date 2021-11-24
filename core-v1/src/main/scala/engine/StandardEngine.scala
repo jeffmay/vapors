@@ -11,6 +11,9 @@ import cats.{Foldable, Functor}
 
 import scala.annotation.nowarn
 
+// TODO: Rename all DSLs and this engine from "standard" to "lossless", "mirror", or something more descriptive
+//       rather than prescriptive. Many users will not find a full copy of the entire expression tree to be
+//       necessary for their use cases, so this engine will probably not be as "standard" as the "simple" engine
 object StandardEngine {
 
   @inline def apply[OP[_]]: Applied[OP] = new Applied[OP]
