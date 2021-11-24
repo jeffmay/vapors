@@ -23,7 +23,12 @@ trait BuildExprDsl extends DebugExprDsl {
 
   final def ident[I : OP]: Expr.Identity[I, OP] = Expr.Identity()
 
-  def not[I, O : OPW](expr: W[I] ~:> W[O])(implicit negation: Negation[W[O]]): Expr.Not[W[I], W[O], OP]
+  def not[I, O](
+    expr: W[I] ~:> W[O],
+  )(implicit
+    opO: OP[W[O]],
+    negation: Negation[W[O]],
+  ): Expr.Not[W[I], W[O], OP]
 
   def valuesOfType[T](factTypeSet: FactTypeSet[T])(implicit opTs: OP[Seq[W[T]]]): Expr.ValuesOfType[T, W[T], OP]
 
