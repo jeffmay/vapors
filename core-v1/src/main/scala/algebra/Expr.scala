@@ -17,8 +17,16 @@ import scala.annotation.nowarn
   * The root trait of all expression nodes.
   *
   * An expression can be interpreted to produce a function, a JSON object, or really, anything you want!
+  * You can define an [[algebra.Expr.Visitor]] over both the input and output parameter and custom output
+  * param ([[OP]]) and recurse by invoking the [[visit]] method on each node.
   *
-  * The expression node is contravariant on the input
+  * The expression node is contravariant on the input and covariant on the output so that it feels a lot more
+  * like native [[Function]]s and expressions that operate on [[Seq]] can be chained to an expression that
+  * returns a [[List]]. Likewise, expressions that ignore the input can be defined without any fancy implicit
+  * footwork to embed a [[algebra.Expr.Const]] expression.
+  *
+  * The use of variance requires imposes some limitations and requires some fancy type-level tricks to work
+  * around this.
   *
   * The expression defines a set of useful operations (modeled after the Scala collections library) that
   * contain enough information to be serializable.
@@ -26,6 +34,7 @@ import scala.annotation.nowarn
   *
   * @tparam I the input value type
   * @tparam O the output value type
+  * @tparam OP the custom output parameter type constructor (defined by the imported DSL)
   */
 sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
 
@@ -79,6 +88,12 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
     */
   def visit[G[-_, +_]](v: Expr.Visitor[G, OP]): G[I, O]
 
+  /**
+    * Passes the output of this expression to the input of the expression given to create
+    * an expression that returns the output of that expression.
+    *
+    * @see [[Expr.AndThen]] for more details
+    */
   def andThen[OI >: O, OO : OP](that: Expr[OI, OO, OP]): Expr.AndThen[I, O, OI, OO, OP] =
     Expr.AndThen(this, that)
 
@@ -133,6 +148,8 @@ object Expr {
     * Every [[Expr]] subclass will call the associated `visitExpr` method and pass the required constraints.
     *
     * @tparam ~:> an infix type alias for the higher-kinded result type of this visitor
+    *             (the symbol was chosen to indicate that more work must be performed by the visitor to produce
+    *             a value of the output type and it will most often be interpreted as a `Function`)
     * @tparam OP `Output Parameter` (captured at the definition site for every output type in the expression tree)
     */
   trait Visitor[~:>[-_, +_], OP[_]] {
@@ -178,6 +195,14 @@ object Expr {
     ): I ~:> F[Boolean]
   }
 
+  // TODO: Use ExtractValue.AsBoolean instead of Boolean here
+  // TODO: Use a NonEmptyList of expressions?
+  /**
+    * Evaluates the left and right expression nodes and uses `&&` to combine the results.
+    *
+    * @param leftExpr the left side of the `AND` operation
+    * @param rightExpr the right side of the `AND` operation
+    */
   final case class And[-I, OP[_]](
     leftExpr: Expr[I, Boolean, OP],
     rightExpr: Expr[I, Boolean, OP],
@@ -190,6 +215,14 @@ object Expr {
       copy(debugging = debugging)
   }
 
+  // TODO: Use ExtractValue.AsBoolean instead of Boolean here
+  // TODO: Use a NonEmptyList of expressions?
+  /**
+    * Evaluates the left and right expression nodes and uses `||` to combine the results.
+    *
+    * @param leftExpr the left side of the `OR` operation
+    * @param rightExpr the right side of the `OR` operation
+    */
   final case class Or[-I, OP[_]](
     leftExpr: Expr[I, Boolean, OP],
     rightExpr: Expr[I, Boolean, OP],
@@ -232,6 +265,8 @@ object Expr {
     * Ignores the input and passes the given constant value.
     *
     * You can think of this like the [[scala.Function.const]] function.
+    *
+    * @param value the constant value to return regardless of the input
     */
   final case class Const[+O : OP, OP[_]](
     value: O,
