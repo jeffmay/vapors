@@ -2,16 +2,23 @@ package com.rallyhealth.vapors.v1
 
 package dsl.circe
 
-import debug.{HasSourceCodeInfo, SourceCodeInfo}
+import debug.{HasDebugSourceInfo, SourceCodeInfo}
 
+import cats.Show
 import io.circe.Encoder
 
-trait CirceDebuggingContext[O] extends HasEncoder[O] with HasSourceCodeInfo
+trait CirceDebuggingContext[O] extends HasEncoder[O] with HasDebugSourceInfo[O]
 
 object CirceDebuggingContext {
-  implicit def enc[O : Encoder](implicit info: SourceCodeInfo): CirceDebuggingContext[O] =
+
+  implicit def enc[O](
+    implicit
+    encoder: Encoder[O],
+    info: HasDebugSourceInfo[O],
+  ): CirceDebuggingContext[O] =
     new CirceDebuggingContext[O] {
-      override final val encodeOutput: Encoder[O] = implicitly
-      override final val debugSource: SourceCodeInfo = info
+      override final val encodeOutput: Encoder[O] = encoder
+      override final val debugSource: SourceCodeInfo = info.debugSource
+      override final val show: Show[O] = info.show
     }
 }
