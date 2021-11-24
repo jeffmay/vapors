@@ -28,9 +28,10 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
   // TODO: Should this be visible outside this trait?
   protected def dontShortCircuit: Boolean = false
 
-  override def not[I, O : OPW](
+  override def not[I, O](
     expr: Justified[I] ~:> Justified[O],
   )(implicit
+    opO: OP[Justified[O]],
     negation: Negation[Justified[O]],
   ): Expr.Not[Justified[I], Justified[O], OP] =
     Expr.Not(expr)
