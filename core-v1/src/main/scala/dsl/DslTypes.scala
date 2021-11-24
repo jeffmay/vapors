@@ -4,21 +4,83 @@ package dsl
 
 import algebra.Expr
 
+/**
+  * All type aliases defined by the [[FullDsl]] subclasses.
+  */
 trait DslTypes extends Any {
 
+  /**
+    * The type of output parameter to collect at each node of the expression.
+    *
+    * It is generally a good idea to define a trait that has typeclass instances as members of the trait,
+    * rather than putting the exact typeclass here.
+    *
+    * <h3>Example</h3>
+    *
+    * If you want to define a custom parameter that includes [[cats.Show]] information as well as your own
+    * custom Codec[_] trait, you could create a custom trait that combines the two:
+    *
+    * {{{
+    *   trait MyCustomParam[A] extends HasShow[A] {
+    *     def codec: Codec[A]
+    *   }
+    *
+    *   object MyCustomParam {
+    *     private final case class Impl[A](codec: Codec[A], show: Show[A]) extends MyCustomParam[A]
+    *     implicit def enc[A](implicit codec: Codec[A], show: HasShow[A]): MyCustomParam[A] = Impl(codec, show)
+    *   }
+    *
+    *   object MyCustomDsl extends FullDsl with SimpleRunDsl with UnwrappedBuildExprDsl {
+    *     override type OP[a] = MyCustomParam[a]
+    *   }
+    * }}}
+    *
+    * This pattern can be extended again in the same way that [[debug.HasShow]] is extended above.
+    *
+    * <hr/>
+    *
+    * @note the invariant type parameter allows any type constructor to be used here.
+    * @note `type OP[_] = X[_]` is not the same as `type OP[a] = X[a]`.
+    */
   type OP[O]
 
+  /**
+    * The type of wrapper (for example [[data.Justified]] or [[shapeless.Id]]).
+    *
+    * @note the covariant type parameter restricts what type constructors can be used here, however,
+    *       since the output type of the [[Expr]] is covariant, this wrapper must be covariant as well.
+    * @note `type W[_] = X[_]` is not the same as `type W[a] = X[a]`.
+    */
   type W[+V]
 
+  /**
+    * Alias for [[Expr]] where the [[OP]] type is fixed.
+    *
+    * This makes it easy to use this type alias with infix notation (i.e. `~:>[I, O]` can be written `I ~:> O`)
+    */
   final type ~:>[-I, +O] = Expr[I, O, OP]
 
+  /**
+    * Alias for a function from a starting `I ~:> I` expression and building a `I ~:> O` expression from that.
+    */
   final type =~:>[I, +O] = Expr.Identity[I, OP] => Expr[I, O, OP]
 
+  /**
+    * Alias for any expression with the `OP` type fixed by this DSL.
+    */
   final type AnyExpr = Expr.AnyWith[OP]
 
+  /**
+    * Alias for a chained [[Expr.AndThen]] expression with `I ~:> M` followed by `M ~:> O`
+    */
   final type Ap[-I, M, +O] = Expr.AndThen[I, M, M, O, OP]
 
-  final type WithinWindowOf[-I, +V] = Expr.WithinWindow[I, V, W, OP]
-
-  final type >=<[-I, +V] = I WithinWindowOf V
+  /**
+    * Alias for an [[Expr.WithinWindow]] where the output of a value expression `I ~:> W[V]` is checked for whether
+    * it falls between the window defined by an internal expression of `I ~:> W[ Window[V] ]`.
+    *
+    * @note the symbol `>=<` is meant to look like the operators that are enabled by this `>`, `===`, `<`, `>=`, etc.
+    *       as well as the boundaries of a closed range.
+    */
+  final type >=<[-I, +V] = Expr.WithinWindow[I, V, W, OP]
 }
