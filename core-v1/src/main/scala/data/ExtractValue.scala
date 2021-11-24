@@ -5,12 +5,12 @@ package data
 /**
   * Extracts a value from some starting value.
   */
-trait ExtractValue[-T, +V] {
+trait ExtractValue[T, V] {
   def extractValue(obj: T): V
 }
 
 object ExtractValue {
-  type AsBoolean[-T] = ExtractValue[T, Boolean]
+  type AsBoolean[T] = ExtractValue[T, Boolean]
 
   def asBoolean[T](value: T)(implicit extractor: AsBoolean[T]): Boolean = extractor.extractValue(value)
 
