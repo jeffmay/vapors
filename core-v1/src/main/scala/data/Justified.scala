@@ -3,14 +3,14 @@ package com.rallyhealth.vapors.v1
 package data
 
 import algebra.EqualComparable
-
-import cats.data.{NonEmptyList, NonEmptySeq, NonEmptySet, NonEmptyVector}
-import cats.implicits._
-import cats.{Eq, Functor, Order, Traverse}
-import dsl.{SelectOutputType, WrapConst, WrapFact, WrapQuantifier, WrapSelected}
+import dsl.{WrapConst, WrapFact, WrapQuantifier, WrapSelected}
 import lens.{DataPath, VariantLens}
 import logic.Logic
 import math.{Add, Subtract}
+
+import cats.data.{NonEmptySeq, NonEmptySet}
+import cats.implicits._
+import cats.{Eq, Order, Traverse}
 
 import scala.annotation.nowarn
 
@@ -325,17 +325,14 @@ object Justified {
     }
   }
 
-  implicit def add[L, R, O](
-    implicit
-    adder: Add.Aux[L, R, O],
-  ): Add.Aux[Justified[L], Justified[R], Justified[O]] = {
+  implicit def add[L, R, O](implicit add0: Add.Aux[L, R, O]): Add.Aux[Justified[L], Justified[R], Justified[O]] = {
     new Add[Justified[L], Justified[R]] {
-      override type Out = Justified[adder.Out]
-      def combine(
+      override type Out = Justified[O]
+      def add(
         left: Justified[L],
         right: Justified[R],
-      ): Justified[adder.Out] = {
-        left.zipWith(right, "add")(adder.combine(_, _): @nowarn)
+      ): Justified[O] = {
+        left.zipWith(right, "add")(add0.add(_, _): @nowarn)
       }
     }
   }

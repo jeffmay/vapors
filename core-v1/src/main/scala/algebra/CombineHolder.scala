@@ -52,7 +52,7 @@ final class CombineHolder[-I, -LI, +LO : OP, -RI, +RO : OP, O, OP[_]](
     add: Add[NLI, NRI],
   ): CombineHolder[CI, NLI, O, NRI, NRO, add.Out, OP] = {
     // can't eta-expand a dependent object function, the (_, _) is required
-    new CombineHolder(toExpr, that, "add", add.combine(_, _): @nowarn)
+    new CombineHolder(toExpr, that, "add", add.add(_, _): @nowarn)
   }
 
   def toExpr(implicit opO: OP[O]): Expr.Combine[I, LI, LO, RI, RO, O, OP] =
