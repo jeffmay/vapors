@@ -5,7 +5,7 @@ package data
 import algebra.EqualComparable
 import data.ExtractValue.AsBoolean
 import logic.Logic
-import math.Add
+import math.{Add, Subtract}
 
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.{Eq, Functor, Order}
@@ -178,6 +178,21 @@ object Justified {
         right: Justified[R],
       ): Justified[adder.Out] = {
         left.zipWith(right, "add")(adder.combine(_, _): @nowarn)
+      }
+    }
+  }
+
+  implicit def subtract[L, R, O](
+    implicit
+    subLR: Subtract.Aux[L, R, O],
+  ): Subtract.Aux[Justified[L], Justified[R], Justified[O]] = {
+    new Subtract[Justified[L], Justified[R]] {
+      override type Out = Justified[O]
+      def subtract(
+        left: Justified[L],
+        right: Justified[R],
+      ): Justified[O] = {
+        left.zipWith(right, "subtract")(subLR.subtract(_, _): @nowarn)
       }
     }
   }

@@ -6,7 +6,8 @@ import data.{ExtractValue, FactTypeSet, TypedFact, Window}
 import debug.{DebugArgs, Debugging, NoDebugging}
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Negation}
-import math.Add
+import math.{Add, Subtract}
+
 import cats.data.NonEmptyList
 import cats.{Foldable, Functor, FunctorFilter}
 
@@ -115,6 +116,23 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
     // can't eta-expand a dependent object function, the (_, _) is required
     new CombineHolder(this, that, "add", add.combine(_, _): @nowarn)
   }
+
+  /**
+    * Subtract the given expression from this expression using the implicit definition for subtraction.
+    *
+    * @see [[Subtract]] for how to define new combinations of types that can be subtracted.
+    *
+    * @param that the other expression to subtract from the output of this expression
+    * @param sub the type-level definition of how to subtract that type of output from this type of output
+    *
+    * @return a [[CombineHolder]] to allow for type-level calculation of the return type
+    */
+  def -[CI <: I, LI >: O, RI >: RO, RO <: RI : OP](
+    that: Expr[CI, RO, OP],
+  )(implicit
+    sub: Subtract[LI, RI],
+  ): CombineHolder[CI, LI, O, RI, RO, sub.Out, OP] =
+    new CombineHolder(this, that, "minus", sub.subtract(_, _): @nowarn)
 
   def selectWith[OI >: O, OO : OP](lens: VariantLens[OI, OO]): Expr.AndThen[I, O, OI, OO, OP] =
     Expr.AndThen(this, Expr.Select(lens))
