@@ -121,7 +121,7 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
     add: Add[LI, RI],
   ): CombineHolder[CI, LI, O, RI, RO, add.Out, OP] = {
     // can't eta-expand a dependent object function, the (_, _) is required
-    new CombineHolder(this, that, "add", add.combine(_, _): @nowarn)
+    new CombineHolder(this, that, "add", add.add(_, _): @nowarn)
   }
 
   /**
