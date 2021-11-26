@@ -167,17 +167,17 @@ object Justified {
     }
   }
 
-  implicit def add[L, R](
+  implicit def add[L, R, O](
     implicit
-    adder: Add[L, R],
-  ): Add.Aux[Justified[L], Justified[R], Justified[adder.Out]] = {
+    addLR: Add.Aux[L, R, O],
+  ): Add.Aux[Justified[L], Justified[R], Justified[O]] = {
     new Add[Justified[L], Justified[R]] {
-      override type Out = Justified[adder.Out]
-      def combine(
+      override type Out = Justified[O]
+      def add(
         left: Justified[L],
         right: Justified[R],
-      ): Justified[adder.Out] = {
-        left.zipWith(right, "add")(adder.combine(_, _): @nowarn)
+      ): Justified[O] = {
+        left.zipWith(right, "add")(addLR.add(_, _): @nowarn)
       }
     }
   }

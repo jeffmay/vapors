@@ -5,43 +5,48 @@ package math
 import java.time.{Duration, Instant, LocalDate, Period}
 import scala.annotation.implicitNotFound
 
-@implicitNotFound(
-  "Cannot add ${R} to ${L} with the + operator. If this is incorrect, please define an implicit Add[${L}, ${R}].",
-)
+@implicitNotFound("""${L} + ${R} is not supported.
+                     
+If these are non-numeric types, try swapping the order of arguments to ${R} + ${L}.
+                     
+If you think this operation should be allowed, you can define an implicit Add[${L}, ${R}].""")
 trait Add[L, R] {
   type Out
 
-  def combine(
+  def add(
     left: L,
     right: R,
   ): Out
 
+  /**
+    * Swap the order of arguments to the combine method. This is based on the assumption that addition
+    * is always commutative between the left and right argument types.
+    */
   final def swapArgs: Add.Aux[R, L, Out] = Add { (r, l) =>
-    combine(l, r)
+    add(l, r)
   }
 }
 
-object Add extends NumericAddImplicits with JavaTimeAddImplicits {
+object Add extends AddNumericImplicits with AddJavaTimeImplicits {
   type Aux[L, R, O] = Add[L, R] { type Out = O }
 
   def apply[L, R, O](fn: (L, R) => O): Add.Aux[L, R, O] = new Add[L, R] {
     override type Out = O
-    override def combine(
+    override def add(
       left: L,
       right: R,
     ): Out = fn(left, right)
   }
 
   @inline def id[N](implicit add: Add.Aux[N, N, N]): Aux[N, N, N] = add
-
 }
 
-trait NumericAddImplicits extends LowPriorityNumericAddImplicits {
+private[math] trait AddNumericImplicits extends LowPriorityAddNumericImplicits {
 
   implicit def numeric[I : Numeric]: Add.Aux[I, I, I] = Add(Numeric[I].plus)
 }
 
-trait LowPriorityNumericAddImplicits {
+private[math] trait LowPriorityAddNumericImplicits {
 
   implicit def numericCoerceLeft[L : Numeric, R : Numeric](implicit ev: R => L): Add.Aux[L, R, L] =
     Add(Numeric[L].plus(_, _))
@@ -50,13 +55,9 @@ trait LowPriorityNumericAddImplicits {
     Add(Numeric[R].plus(_, _))
 }
 
-trait JavaTimeAddImplicits {
+private[math] trait AddJavaTimeImplicits {
 
   implicit val addDurationToInstant: Add.Aux[Instant, Duration, Instant] = Add(_.plus(_))
 
-  implicit val addInstantToDuration: Add.Aux[Duration, Instant, Instant] = addDurationToInstant.swapArgs
-
   implicit val addPeriodToLocalDate: Add.Aux[LocalDate, Period, LocalDate] = Add(_.plus(_))
-
-  implicit val addLocalDateToPeriod: Add.Aux[Period, LocalDate, LocalDate] = addPeriodToLocalDate.swapArgs
 }
