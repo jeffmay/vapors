@@ -5,7 +5,7 @@ package data
 import algebra.EqualComparable
 import data.ExtractValue.AsBoolean
 import logic.Logic
-import math.{Add, Subtract}
+import math.{Add, Multiply, Subtract}
 
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.{Eq, Functor, Order}
@@ -196,4 +196,16 @@ object Justified {
       }
     }
   }
+
+  implicit def multiply[L, R, O](
+    implicit
+    multLR: Multiply.Aux[L, R, O],
+  ): Multiply.Aux[Justified[L], Justified[R], Justified[O]] =
+    new Multiply[Justified[L], Justified[R]] {
+      override type Out = Justified[O]
+      override def multiply(
+        left: Justified[L],
+        right: Justified[R],
+      ): Justified[O] = left.zipWith(right, "multiply")(multLR.multiply(_, _): @nowarn)
+    }
 }
