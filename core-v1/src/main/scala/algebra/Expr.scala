@@ -7,7 +7,7 @@ import debug.{DebugArgs, Debugging, NoDebugging}
 import dsl.Sortable
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Negation}
-import math.Add
+import math.{Add, Subtract}
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
 import cats.{Foldable, Functor, FunctorFilter}
@@ -123,6 +123,23 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
     // can't eta-expand a dependent object function, the (_, _) is required
     new CombineHolder(this, that, "add", add.combine(_, _): @nowarn)
   }
+
+  /**
+    * Subtract the given expression from this expression using the implicit definition for subtraction.
+    *
+    * @see [[Subtract]] for how to define new combinations of types that can be subtracted.
+    *
+    * @param that the other expression to subtract from the output of this expression
+    * @param sub the type-level definition of how to subtract that type of output from this type of output
+    *
+    * @return a [[CombineHolder]] to allow for type-level calculation of the return type
+    */
+  def -[CI <: I, LI >: O, RI >: RO, RO <: RI : OP](
+    that: Expr[CI, RO, OP],
+  )(implicit
+    sub: Subtract[LI, RI],
+  ): CombineHolder[CI, LI, O, RI, RO, sub.Out, OP] =
+    new CombineHolder(this, that, "minus", sub.subtract(_, _): @nowarn)
 
   // TODO: Match on self and convert to string recursively as lazy val
   override def toString: String = s"$name[$hashCode]"

@@ -10,7 +10,7 @@ import cats.{Eq, Functor, Order, Traverse}
 import dsl.{SelectOutputType, WrapConst, WrapFact, WrapQuantifier, WrapSelected}
 import lens.{DataPath, VariantLens}
 import logic.Logic
-import math.Add
+import math.{Add, Subtract}
 
 import scala.annotation.nowarn
 
@@ -336,6 +336,21 @@ object Justified {
         right: Justified[R],
       ): Justified[adder.Out] = {
         left.zipWith(right, "add")(adder.combine(_, _): @nowarn)
+      }
+    }
+  }
+
+  implicit def subtract[L, R, O](
+    implicit
+    sub0: Subtract.Aux[L, R, O],
+  ): Subtract.Aux[Justified[L], Justified[R], Justified[O]] = {
+    new Subtract[Justified[L], Justified[R]] {
+      override type Out = Justified[O]
+      def subtract(
+        left: Justified[L],
+        right: Justified[R],
+      ): Justified[O] = {
+        left.zipWith(right, "subtract")(sub0.subtract(_, _): @nowarn)
       }
     }
   }
