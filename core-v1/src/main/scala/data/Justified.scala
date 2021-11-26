@@ -6,7 +6,7 @@ import algebra.EqualComparable
 import dsl.{WrapConst, WrapFact, WrapQuantifier, WrapSelected}
 import lens.{DataPath, VariantLens}
 import logic.Logic
-import math.{Add, Multiply, Subtract}
+import math.{Add, Divide, Multiply, Subtract}
 
 import cats.data.{NonEmptySeq, NonEmptySet}
 import cats.implicits._
@@ -362,5 +362,17 @@ object Justified {
         left: Justified[L],
         right: Justified[R],
       ): Justified[O] = left.zipWith(right, "multiply")(mult0.multiply(_, _): @nowarn)
+    }
+
+  implicit def divide[N, D, O](
+    implicit
+    div0: Divide.Aux[N, D, O],
+  ): Divide.Aux[Justified[N], Justified[D], Justified[O]] =
+    new Divide[Justified[N], Justified[D]] {
+      override type Out = Justified[O]
+      override def divide(
+        numerator: Justified[N],
+        denominator: Justified[D],
+      ): Justified[O] = numerator.zipWith(denominator, "divide")(div0.divide(_, _): @nowarn)
     }
 }

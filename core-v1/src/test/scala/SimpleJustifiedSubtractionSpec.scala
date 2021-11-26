@@ -10,6 +10,14 @@ class SimpleJustifiedSubtractionSpec extends FunSuite {
 
   import dsl.simple.justified._
 
+  // TODO: Should this return an Option[Int]? Maybe another method for this?
+  test("Divide by zero") {
+    val expr = 1.const / 0.const
+    interceptMessage[ArithmeticException]("/ by zero") {
+      expr.run()
+    }
+  }
+
   test("Int - Int") {
     val expr = 2.const - 1.const
     val observed = expr.run()
