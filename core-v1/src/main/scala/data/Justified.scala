@@ -6,7 +6,7 @@ import algebra.EqualComparable
 import dsl.{WrapConst, WrapFact, WrapQuantifier, WrapSelected}
 import lens.{DataPath, VariantLens}
 import logic.Logic
-import math.{Add, Subtract}
+import math.{Add, Multiply, Subtract}
 
 import cats.data.{NonEmptySeq, NonEmptySet}
 import cats.implicits._
@@ -351,4 +351,16 @@ object Justified {
       }
     }
   }
+
+  implicit def multiply[L, R, O](
+    implicit
+    mult0: Multiply.Aux[L, R, O],
+  ): Multiply.Aux[Justified[L], Justified[R], Justified[O]] =
+    new Multiply[Justified[L], Justified[R]] {
+      override type Out = Justified[O]
+      override def multiply(
+        left: Justified[L],
+        right: Justified[R],
+      ): Justified[O] = left.zipWith(right, "multiply")(mult0.multiply(_, _): @nowarn)
+    }
 }
