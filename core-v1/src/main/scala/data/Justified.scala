@@ -5,7 +5,7 @@ package data
 import algebra.EqualComparable
 import data.ExtractValue.AsBoolean
 import logic.Logic
-import math.{Add, Multiply, Subtract}
+import math.{Add, Divide, Multiply, Subtract}
 
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.{Eq, Functor, Order}
@@ -207,5 +207,17 @@ object Justified {
         left: Justified[L],
         right: Justified[R],
       ): Justified[O] = left.zipWith(right, "multiply")(multLR.multiply(_, _): @nowarn)
+    }
+
+  implicit def divide[L, R, O](
+    implicit
+    divLR: Divide.Aux[L, R, O],
+  ): Divide.Aux[Justified[L], Justified[R], Justified[O]] =
+    new Divide[Justified[L], Justified[R]] {
+      override type Out = Justified[O]
+      override def divide(
+        left: Justified[L],
+        right: Justified[R],
+      ): Justified[O] = left.zipWith(right, "divide")(divLR.divide(_, _): @nowarn)
     }
 }

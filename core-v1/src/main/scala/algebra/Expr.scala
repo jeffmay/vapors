@@ -6,7 +6,7 @@ import data.{ExtractValue, FactTypeSet, TypedFact, Window}
 import debug.{DebugArgs, Debugging, NoDebugging}
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Negation}
-import math.{Add, Multiply, Subtract}
+import math.{Add, Divide, Multiply, Subtract}
 
 import cats.data.NonEmptyList
 import cats.{Foldable, Functor, FunctorFilter}
@@ -152,6 +152,26 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
   ): CombineHolder[CI, LI, O, RI, RO, mult.Out, OP] = {
     // can't eta-expand a dependent object function, the (_, _) is required
     new CombineHolder(this, that, "multiply", mult.multiply(_, _): @nowarn)
+  }
+
+  /**
+    * Divide the given expression into this expression using the implicit definition for division.
+    *
+    * @see [[Divide]] for how to define new combinations of types that can be divided into each other.
+    * @see [[CombineHolder]] for details on how type-inference works.
+    *
+    * @param that the other expression to multiply
+    * @param div the type-level definition of how to divide this type of output by that type of output
+    *
+    * @return a [[CombineHolder]] to allow for type-level calculation of the return type
+    */
+  def /[CI <: I, LI >: O, RI >: RO, RO <: RI : OP](
+    that: Expr[CI, RO, OP],
+  )(implicit
+    div: Divide[LI, RI],
+  ): CombineHolder[CI, LI, O, RI, RO, div.Out, OP] = {
+    // can't eta-expand a dependent object function, the (_, _) is required
+    new CombineHolder(this, that, "divide", div.divide(_, _): @nowarn)
   }
 
   def selectWith[OI >: O, OO : OP](lens: VariantLens[OI, OO]): Expr.AndThen[I, O, OI, OO, OP] =
