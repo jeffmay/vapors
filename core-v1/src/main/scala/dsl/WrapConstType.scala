@@ -43,7 +43,7 @@ object WrapConstType extends LowPriorityWrapConstType {
 
 trait LowPriorityWrapConstType {
 
-  implicit def value[W[_], A]: WrapConstType.Aux[W, A, W[A]] =
+  implicit def id[W[_], A]: WrapConstType.Aux[W, A, W[A]] =
     new WrapConstType[W, A] {
       override type Out = W[A]
       override final def apply(wrapped: W[A]): W[A] = wrapped
