@@ -6,7 +6,7 @@ import data.{ExtractValue, FactTypeSet, TypedFact, Window}
 import debug.{DebugArgs, Debugging, NoDebugging}
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Negation}
-import math.{Add, Divide, Multiply, Subtract}
+import math._
 
 import cats.data.NonEmptyList
 import cats.{Foldable, Functor, FunctorFilter}
@@ -172,6 +172,15 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
   ): CombineHolder[CI, LI, O, RI, RO, div.Out, OP] = {
     // can't eta-expand a dependent object function, the (_, _) is required
     new CombineHolder(this, that, "divide", div.divide(_, _): @nowarn)
+  }
+
+  def ^[CI <: I, LI >: O, RI >: RO, RO <: RI : OP](
+    that: Expr[CI, RO, OP],
+  )(implicit
+    pow: Power[LI, RI],
+  ): CombineHolder[CI, LI, O, RI, RO, pow.Out, OP] = {
+    // can't eta-expand a dependent object function, the (_, _) is required
+    new CombineHolder(this, that, "pow", pow.pow(_, _): @nowarn)
   }
 
   def selectWith[OI >: O, OO : OP](lens: VariantLens[OI, OO]): Expr.AndThen[I, O, OI, OO, OP] =

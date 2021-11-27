@@ -6,6 +6,7 @@ import algebra._
 import data.{FactTypeSet, Window}
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Logic, Negation}
+import math.Power
 
 import cats.{Foldable, Functor, FunctorFilter, Order}
 import shapeless.{Generic, HList}
@@ -28,6 +29,16 @@ trait BuildExprDsl extends DebugExprDsl {
   final def ident[I : OP]: Expr.Identity[I, OP] = Expr.Identity()
 
   def valuesOfType[T](factTypeSet: FactTypeSet[T])(implicit opTs: OP[Seq[W[T]]]): Expr.ValuesOfType[T, W[T], OP]
+
+  final def pow[I, L, R](
+    leftExpr: I ~:> W[L],
+    rightExpr: I ~:> W[R],
+  )(implicit
+    opR: OP[W[R]],
+    pow: Power[W[L], W[R]],
+  ): CombineHolder[I, W[L], W[L], W[R], W[R], pow.Out, OP] = {
+    (leftExpr ^ rightExpr)(opR, pow)
+  }
 
   implicit final def logical[I, B](expr: I ~:> W[B]): LogicalExprOps[I, B, W, OP] = new LogicalExprOps(expr)
 
