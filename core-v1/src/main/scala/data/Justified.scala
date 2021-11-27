@@ -6,7 +6,7 @@ import algebra.EqualComparable
 import dsl.{WrapConst, WrapFact, WrapQuantifier, WrapSelected}
 import lens.{DataPath, VariantLens}
 import logic.Logic
-import math.{Add, Divide, Multiply, Subtract}
+import math.{Add, Divide, Multiply, Power, Subtract}
 
 import cats.data.{NonEmptySeq, NonEmptySet}
 import cats.implicits._
@@ -374,5 +374,17 @@ object Justified {
         numerator: Justified[N],
         denominator: Justified[D],
       ): Justified[O] = numerator.zipWith(denominator, "divide")(div0.divide(_, _): @nowarn)
+    }
+
+  implicit def power[B, E, O](
+    implicit
+    pow0: Power.Aux[B, E, O],
+  ): Power.Aux[Justified[B], Justified[E], Justified[O]] =
+    new Power[Justified[B], Justified[E]] {
+      override type Out = Justified[O]
+      override def power(
+        base: Justified[B],
+        exponent: Justified[E],
+      ): Justified[O] = base.zipWith(exponent, "power")(pow0.power(_, _): @nowarn)
     }
 }
