@@ -4,7 +4,7 @@ package algebra
 
 import data.ExtractValue.AsBoolean
 import data.{ExprState, Window}
-import logic.Negation
+import logic.{Conjunction, Disjunction, Negation}
 
 import cats.{Foldable, Functor}
 
@@ -60,7 +60,12 @@ object ExprResult {
     */
   trait Visitor[-PO, ~>:[-_, +_], OP[_]] {
 
-    def visitAnd[I](result: And[PO, I, OP])(implicit opO: OP[Boolean]): I ~>: Boolean
+    def visitAnd[I, B, F[+_]](
+      result: And[PO, I, B, F, OP],
+    )(implicit
+      logic: Conjunction[F, B, OP],
+      opO: OP[F[B]],
+    ): I ~>: F[B]
 
     def visitAndThen[AI, AO : OP, BI, BO : OP](
       result: AndThen[PO, AI, AO, BI, BO, OP],
@@ -90,9 +95,19 @@ object ExprResult {
 
     def visitMapEvery[C[_] : Functor, A, B](result: MapEvery[PO, C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~>: C[B]
 
-    def visitNot[I, O : Negation : OP](result: Not[PO, I, O, OP]): I ~>: O
+    def visitNot[I, B, F[+_]](
+      result: Not[PO, I, B, F, OP],
+    )(implicit
+      logic: Negation[F, B, OP],
+      opB: OP[F[B]],
+    ): I ~>: F[B]
 
-    def visitOr[I](result: Or[PO, I, OP])(implicit opO: OP[Boolean]): I ~>: Boolean
+    def visitOr[I, B, F[+_]](
+      result: Or[PO, I, B, F, OP],
+    )(implicit
+      logic: Disjunction[F, B, OP],
+      opO: OP[F[B]],
+    ): I ~>: F[B]
 
     def visitSelect[I, O : OP](result: Select[PO, I, O, OP]): I ~>: O
 
@@ -110,29 +125,31 @@ object ExprResult {
   /**
     * The result of running [[Expr.And]]
     */
-  final case class And[+PO, -I, OP[_]](
-    expr: Expr.And[I, OP],
-    state: ExprState[PO, Boolean],
-    leftResult: ExprResult[PO, I, Boolean, OP],
-    rightResult: ExprResult[PO, I, Boolean, OP],
+  final case class And[+PO, -I, +B, F[+_], OP[_]](
+    expr: Expr.And[I, B, F, OP],
+    state: ExprState[PO, F[B]],
+    leftResult: ExprResult[PO, I, F[B], OP],
+    rightResult: ExprResult[PO, I, F[B], OP], // TODO: Should I support short-circuiting by making this Optional?
   )(implicit
-    opO: OP[Boolean],
-  ) extends ExprResult[PO, I, Boolean, OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, Boolean] = v.visitAnd(this)
+    logic: Conjunction[F, B, OP],
+    opO: OP[F[B]],
+  ) extends ExprResult[PO, I, F[B], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, F[B]] = v.visitAnd(this)
   }
 
   /**
     * The result of running [[Expr.Or]]
     */
-  final case class Or[+PO, -I, OP[_]](
-    expr: Expr.Or[I, OP],
-    state: ExprState[PO, Boolean],
-    leftResult: ExprResult[PO, I, Boolean, OP],
-    rightResult: ExprResult[PO, I, Boolean, OP], // TODO: Should I force this to be strict or allow short-circuiting?
+  final case class Or[+PO, -I, +B, F[+_], OP[_]](
+    expr: Expr.Or[I, B, F, OP],
+    state: ExprState[PO, F[B]],
+    leftResult: ExprResult[PO, I, F[B], OP],
+    rightResult: ExprResult[PO, I, F[B], OP], // TODO: Should I support short-circuiting by making this Optional?
   )(implicit
-    opO: OP[Boolean],
-  ) extends ExprResult[PO, I, Boolean, OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, Boolean] = v.visitOr(this)
+    logic: Disjunction[F, B, OP],
+    opO: OP[F[B]],
+  ) extends ExprResult[PO, I, F[B], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, F[B]] = v.visitOr(this)
   }
 
   /**
@@ -243,12 +260,15 @@ object ExprResult {
   /**
     * The result of running [[Expr.Not]]
     */
-  final case class Not[+PO, -I, +O : Negation : OP, OP[_]](
-    expr: Expr.Not[I, O, OP],
-    state: ExprState[PO, O],
-    inputResult: ExprResult[PO, I, O, OP],
-  ) extends ExprResult[PO, I, O, OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitNot(this)
+  final case class Not[+PO, -I, +B, F[+_], OP[_]](
+    expr: Expr.Not[I, B, F, OP],
+    state: ExprState[PO, F[B]],
+    inputResult: ExprResult[PO, I, F[B], OP],
+  )(implicit
+    logic: Negation[F, B, OP],
+    opB: OP[F[B]],
+  ) extends ExprResult[PO, I, F[B], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, F[B]] = v.visitNot(this)
   }
 
   /**

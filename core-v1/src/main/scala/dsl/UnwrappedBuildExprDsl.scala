@@ -4,11 +4,13 @@ package dsl
 
 import algebra.{Expr, Extract, WindowComparable, WrapConst}
 import data.FactTypeSet
-import logic.Negation
+import logic.Logic
 
 import cats.{catsInstancesForId, Foldable, Functor}
 
 trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
+
+  override protected implicit final def boolLogic: Logic[W, Boolean, OP] = Logic.bool
 
   override protected implicit final def windowComparable: WindowComparable[W, OP] = WindowComparable.identity
 
@@ -22,14 +24,6 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
   protected def shortCircuit: Boolean = true
 
   override final def ident[I](implicit opI: OP[I]): Expr.Identity[I, OP] = Expr.Identity()
-
-  override final def not[I, O](
-    expr: I ~:> O,
-  )(implicit
-    opO: OP[O],
-    negation: Negation[O],
-  ): Expr.Not[I, O, OP] =
-    Expr.Not(expr)
 
   override final def valuesOfType[T](
     factTypeSet: FactTypeSet[T],

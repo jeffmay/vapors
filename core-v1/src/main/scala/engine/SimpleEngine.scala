@@ -6,7 +6,7 @@ import algebra.{EqualComparable, Expr, WindowComparable}
 import data.{ExprState, ExtractValue, FactTable, Window}
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
-import logic.Negation
+import logic.{Conjunction, Disjunction, Negation}
 
 import cats.{Foldable, Functor}
 
@@ -38,10 +38,15 @@ object SimpleEngine {
     ): InvokeAndReturn[E, OP, debugArgs.In, debugArgs.Out] =
       new InvokeAndReturn(DebugArgs[OP].of(expr)(debugArgs))
 
-    override def visitAnd[I](expr: Expr.And[I, OP])(implicit opO: OP[Boolean]): I => Boolean = { i =>
+    override def visitAnd[I, B, F[+_]](
+      expr: Expr.And[I, B, F, OP],
+    )(implicit
+      logic: Conjunction[F, B, OP],
+      opB: OP[F[B]],
+    ): I => F[B] = { i =>
       val lo = expr.leftExpr.visit(this)(i)
       val ro = expr.rightExpr.visit(this)(i)
-      val o = lo && ro
+      val o = logic.and(lo, ro)
       debugging(expr).invokeAndReturn(state((i, lo, ro), o))
     }
 
@@ -120,16 +125,26 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state(ca, cb))
     }
 
-    override def visitNot[I, O : Negation : OP](expr: Expr.Not[I, O, OP]): I => O = { i =>
+    override def visitNot[I, B, W[+_]](
+      expr: Expr.Not[I, B, W, OP],
+    )(implicit
+      logic: Negation[W, B, OP],
+      opB: OP[W[B]],
+    ): I => W[B] = { i =>
       val output = expr.innerExpr.visit(this)(i)
-      val negatedOutput = Negation[O].negation(output)
+      val negatedOutput = logic.not(output)
       debugging(expr).invokeAndReturn(state((i, output), negatedOutput))
     }
 
-    override def visitOr[I](expr: Expr.Or[I, OP])(implicit opO: OP[Boolean]): I => Boolean = { i =>
+    override def visitOr[I, B, F[+_]](
+      expr: Expr.Or[I, B, F, OP],
+    )(implicit
+      logic: Disjunction[F, B, OP],
+      opO: OP[F[B]],
+    ): I => F[B] = { i =>
       val lo = expr.leftExpr.visit(this)(i)
       val ro = expr.rightExpr.visit(this)(i)
-      val o = lo || ro
+      val o = logic.or(lo, ro)
       debugging(expr).invokeAndReturn(state((i, lo, ro), o))
     }
 

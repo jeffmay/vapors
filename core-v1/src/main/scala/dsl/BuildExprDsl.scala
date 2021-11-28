@@ -3,13 +3,14 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra._
-import data.{FactTypeSet, Window}
-import logic.Negation
-
 import cats.{Foldable, Functor, Order}
+import data.{FactTypeSet, Window}
+import logic.{Conjunction, Disjunction, Logic, Negation}
 
 trait BuildExprDsl extends DebugExprDsl {
   self: DslTypes =>
+
+  protected implicit def boolLogic: Logic[W, Boolean, OP]
 
   protected implicit def windowComparable: WindowComparable[W, OP]
 
@@ -21,14 +22,35 @@ trait BuildExprDsl extends DebugExprDsl {
 
   def ident[I](implicit opI: OP[W[I]]): Expr.Identity[W[I], OP]
 
-  def not[I, O](
-    expr: W[I] ~:> W[O],
-  )(implicit
-    opO: OP[W[O]],
-    negation: Negation[W[O]],
-  ): Expr.Not[W[I], W[O], OP]
-
   def valuesOfType[T](factTypeSet: FactTypeSet[T])(implicit opTs: OP[Seq[W[T]]]): Expr.ValuesOfType[T, W[T], OP]
+
+  implicit final def logical[I, B](expr: I ~:> W[B]): LogicalExprOps[I, B, W, OP] = new LogicalExprOps(expr)
+
+  final def and[I, B](
+    left: I ~:> W[B],
+    right: I ~:> W[B],
+  )(implicit
+    logic: Conjunction[W, B, OP],
+    opO: OP[W[B]],
+  ): Expr.And[I, B, W, OP] =
+    Expr.And(left, right)
+
+  final def or[I, B](
+    left: I ~:> W[B],
+    right: I ~:> W[B],
+  )(implicit
+    logic: Disjunction[W, B, OP],
+    opO: OP[W[B]],
+  ): Expr.Or[I, B, W, OP] =
+    Expr.Or(left, right)
+
+  final def not[I, B](
+    expr: I ~:> W[B],
+  )(implicit
+    negation: Negation[W, B, OP],
+    opO: OP[W[B]],
+  ): Expr.Not[I, B, W, OP] =
+    Expr.Not(expr)
 
   implicit final def wrap[A](value: A)(implicit constType: WrapConstType[W, A]): ConstExprBuilder[constType.Out, OP] =
     new ConstExprBuilder(constType(wrapConst.wrapConst(value)))
@@ -138,7 +160,7 @@ trait BuildExprDsl extends DebugExprDsl {
 
     def ===(rightExpr: I ~:> W[V]): Expr.IsEqual[I, V, W, OP] = Expr.IsEqual(leftExpr, rightExpr)
 
-    def =!=(rightExpr: I ~:> W[V])(implicit neg: Negation[W[Boolean]]): Expr.Not[I, W[Boolean], OP] =
+    def =!=(rightExpr: I ~:> W[V]): Expr.Not[I, Boolean, W, OP] =
       Expr.Not(Expr.IsEqual(leftExpr, rightExpr))
   }
 }
