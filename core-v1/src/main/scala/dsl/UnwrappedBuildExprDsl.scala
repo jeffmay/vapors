@@ -5,11 +5,13 @@ package dsl
 import algebra._
 import data.FactTypeSet
 import lens.VariantLens
-import logic.Negation
+import logic.{Logic, Negation}
 
 import cats.{catsInstancesForId, Foldable, Functor}
 
 trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
+
+  override protected implicit final def boolLogic: Logic[W, Boolean, OP] = Logic.bool
 
   override protected implicit final def windowComparable: WindowComparable[W, OP] = WindowComparable.identity
 

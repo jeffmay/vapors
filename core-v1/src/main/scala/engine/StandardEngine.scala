@@ -5,7 +5,7 @@ package engine
 import algebra.{EqualComparable, Expr, ExprResult, WindowComparable}
 import data.{ExprState, ExtractValue, Window}
 import debug.DebugArgs
-import logic.Negation
+import logic.{Conjunction, Disjunction, Negation}
 
 import cats.{Foldable, Functor}
 
@@ -48,17 +48,17 @@ object StandardEngine {
     ): DebugArgs.Invoker[E, OP, debugArgs.In, debugArgs.Out] =
       DebugArgs[OP].of(expr)(debugArgs)
 
-    override def visitAnd[I](
-      expr: Expr.And[I, OP],
+    override def visitAnd[I, B, F[+_]](
+      expr: Expr.And[I, B, F, OP],
     )(implicit
-      opO: OP[Boolean],
-    ): PO <:< I => ExprResult[PO, I, Boolean, OP] = { implicit evPOisI =>
+      logic: Conjunction[F, B, OP],
+      opO: OP[F[B]],
+    ): PO <:< I => ExprResult[PO, I, F[B], OP] = { implicit evPOisI =>
       val left = expr.leftExpr.visit(this)(implicitly)
       val right = expr.rightExpr.visit(this)(implicitly)
       val leftIsTrue = left.state.output
       val rightIsTrue = right.state.output
-      val output = leftIsTrue || rightIsTrue
-      // TODO: Do justification here
+      val output = logic.and(leftIsTrue, rightIsTrue)
       val finalState = state.swapAndReplaceOutput(output)
       debugging(expr).invokeDebugger(stateFromInput((_, leftIsTrue, rightIsTrue), finalState.output))
       ExprResult.And(expr, finalState, left, right)
@@ -176,17 +176,17 @@ object StandardEngine {
         ExprResult.Not(expr, finalState, booleanResult)
     }
 
-    override def visitOr[I](
-      expr: Expr.Or[I, OP],
+    override def visitOr[I, B, F[+_]](
+      expr: Expr.Or[I, B, F, OP],
     )(implicit
-      evO: OP[Boolean],
-    ): PO <:< I => ExprResult[PO, I, Boolean, OP] = { implicit evPOisI =>
+      logic: Disjunction[F, B, OP],
+      opO: OP[F[B]],
+    ): PO <:< I => ExprResult[PO, I, F[B], OP] = { implicit evPOisI =>
       val left = expr.leftExpr.visit(this)(implicitly)
       val right = expr.rightExpr.visit(this)(implicitly)
       val leftIsTrue = left.state.output
       val rightIsTrue = right.state.output
-      val output = leftIsTrue || rightIsTrue
-      // TODO: Do justification here
+      val output = logic.or(leftIsTrue, rightIsTrue)
       val finalState = state.swapAndReplaceOutput(output)
       debugging(expr).invokeDebugger(stateFromInput((_, leftIsTrue, rightIsTrue), finalState.output))
       ExprResult.Or(expr, finalState, left, right)

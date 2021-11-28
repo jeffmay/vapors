@@ -5,7 +5,7 @@ package dsl
 import algebra._
 import data.{FactTypeSet, Window}
 import lens.VariantLens
-import logic.Negation
+import logic.{Conjunction, Disjunction, Logic, Negation}
 
 import cats.{Foldable, Functor, Order}
 
@@ -13,6 +13,8 @@ import scala.annotation.nowarn
 
 trait BuildExprDsl extends DebugExprDsl {
   self: DslTypes =>
+
+  protected implicit def boolLogic: Logic[W, Boolean, OP]
 
   protected implicit def windowComparable: WindowComparable[W, OP]
 
@@ -32,6 +34,26 @@ trait BuildExprDsl extends DebugExprDsl {
   ): Expr.Not[W[I], W[O], OP]
 
   def valuesOfType[T](factTypeSet: FactTypeSet[T])(implicit opTs: OP[Seq[W[T]]]): Expr.ValuesOfType[T, W[T], OP]
+
+  implicit final def logical[I, B](expr: I ~:> W[B]): LogicalExprOps[I, B, W, OP] = new LogicalExprOps(expr)
+
+  final def and[I, B](
+    left: I ~:> W[B],
+    right: I ~:> W[B],
+  )(implicit
+    logic: Conjunction[W, B, OP],
+    opO: OP[W[B]],
+  ): Expr.And[I, B, W, OP] =
+    Expr.And(left, right)
+
+  final def or[I, B](
+    left: I ~:> W[B],
+    right: I ~:> W[B],
+  )(implicit
+    logic: Disjunction[W, B, OP],
+    opO: OP[W[B]],
+  ): Expr.Or[I, B, W, OP] =
+    Expr.Or(left, right)
 
   type SpecificSelectExprBuilder[-I, T] <: SelectExprBuilder[I, T]
 

@@ -5,7 +5,7 @@ package algebra
 import data.{ExtractValue, FactTypeSet, TypedFact, Window}
 import debug.{DebugArgs, Debugging, NoDebugging}
 import lens.VariantLens
-import logic.Negation
+import logic.{Conjunction, Disjunction, Negation}
 import math.Add
 
 import cats.data.NonEmptyList
@@ -157,7 +157,12 @@ object Expr {
     */
   trait Visitor[~:>[-_, +_], OP[_]] {
 
-    def visitAnd[I](expr: And[I, OP])(implicit opO: OP[Boolean]): I ~:> Boolean
+    def visitAnd[I, B, F[+_]](
+      expr: And[I, B, F, OP],
+    )(implicit
+      logic: Conjunction[F, B, OP],
+      opB: OP[F[B]],
+    ): I ~:> F[B]
 
     def visitAndThen[II, IO : OP, OI, OO : OP](expr: AndThen[II, IO, OI, OO, OP])(implicit evBI: IO <:< OI): II ~:> OO
 
@@ -184,7 +189,12 @@ object Expr {
 
     def visitNot[I, O : Negation : OP](expr: Not[I, O, OP]): I ~:> O
 
-    def visitOr[I](expr: Or[I, OP])(implicit evO: OP[Boolean]): I ~:> Boolean
+    def visitOr[I, B, F[+_]](
+      expr: Or[I, B, F, OP],
+    )(implicit
+      logic: Disjunction[F, B, OP],
+      opO: OP[F[B]],
+    ): I ~:> F[B]
 
     def visitSelect[I, O : OP](expr: Select[I, O, OP]): I ~:> O
 
@@ -200,7 +210,6 @@ object Expr {
     ): I ~:> F[Boolean]
   }
 
-  // TODO: Use ExtractValue.AsBoolean instead of Boolean here
   // TODO: Use a NonEmptyList of expressions?
   /**
     * Evaluates the left and right expression nodes and uses `&&` to combine the results.
@@ -208,19 +217,19 @@ object Expr {
     * @param leftExpr the left side of the `AND` operation
     * @param rightExpr the right side of the `AND` operation
     */
-  final case class And[-I, OP[_]](
-    leftExpr: Expr[I, Boolean, OP],
-    rightExpr: Expr[I, Boolean, OP],
+  final case class And[-I, +B, F[+_], OP[_]](
+    leftExpr: Expr[I, F[B], OP],
+    rightExpr: Expr[I, F[B], OP],
     private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
-    opO: OP[Boolean],
-  ) extends Expr[I, Boolean, OP]("and") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Boolean] = v.visitAnd(this)
-    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Expr[I, Boolean, OP] =
+    logic: Conjunction[F, B, OP],
+    opO: OP[F[B]],
+  ) extends Expr[I, F[B], OP]("and") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, F[B]] = v.visitAnd(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): And[I, B, F, OP] =
       copy(debugging = debugging)
   }
 
-  // TODO: Use ExtractValue.AsBoolean instead of Boolean here
   // TODO: Use a NonEmptyList of expressions?
   /**
     * Evaluates the left and right expression nodes and uses `||` to combine the results.
@@ -228,15 +237,16 @@ object Expr {
     * @param leftExpr the left side of the `OR` operation
     * @param rightExpr the right side of the `OR` operation
     */
-  final case class Or[-I, OP[_]](
-    leftExpr: Expr[I, Boolean, OP],
-    rightExpr: Expr[I, Boolean, OP],
+  final case class Or[-I, +B, F[+_], OP[_]](
+    leftExpr: Expr[I, F[B], OP],
+    rightExpr: Expr[I, F[B], OP],
     private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
-    opO: OP[Boolean],
-  ) extends Expr[I, Boolean, OP]("or") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Boolean] = v.visitOr(this)
-    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Expr[I, Boolean, OP] =
+    logic: Disjunction[F, B, OP],
+    opB: OP[F[B]],
+  ) extends Expr[I, F[B], OP]("or") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, F[B]] = v.visitOr(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Or[I, B, F, OP] =
       copy(debugging = debugging)
   }
 
