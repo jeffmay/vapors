@@ -1,6 +1,8 @@
 package com.rallyhealth.vapors.v1
 
-class SimpleJustifiedForAllFromConstSpec extends munit.FunSuite {
+import munit.FunSuite
+
+class SimpleJustifiedForAllFromConstSpec extends FunSuite {
 
   import dsl.simple.justified._
 

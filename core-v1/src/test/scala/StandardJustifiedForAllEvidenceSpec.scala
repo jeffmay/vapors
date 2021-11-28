@@ -19,7 +19,7 @@ class StandardJustifiedForAllEvidenceSpec extends FunSuite {
     assertEquals(output.evidence, NoEvidence)
   }
 
-  test("Justified[Seq[Int]].forall is true with multiple true results") {
+  test("Justified[Seq[Int]].forall is true when all true results") {
     val age21 = FactTypes.Age(21)
     val age23 = FactTypes.Age(23)
     val expr = valuesOfType(FactTypes.Age).forall {
