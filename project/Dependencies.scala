@@ -10,6 +10,7 @@ object Dependencies {
   private final val izumiReflectVersion = "1.1.3"
   private final val munitVersion = "0.7.28"
   private final val munitCatsEffectVersion = "1.0.5"
+  private final val munitScalaCheckVersion = "0.7.29"
   private final val scalacticVersion = "3.2.9"
   private final val scalaCheckVersion = "1.15.4"
   private final val scalaCheckOpsVersion = "2.7.1"
@@ -30,6 +31,7 @@ object Dependencies {
   private val izumiReflect = "dev.zio" %% "izumi-reflect" % izumiReflectVersion
   private val munit = "org.scalameta" %% "munit" % munitVersion
   private val munitCatsEffect = "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion
+  private val munitScalaCheck = "org.scalameta" %% "munit-scalacheck" % munitScalaCheckVersion
   private val scalaCheck = "org.scalacheck" %% "scalacheck" % scalaCheckVersion
   private val scalaCheckOps = "com.rallyhealth" %% "scalacheck-ops_1-15" % scalaCheckOpsVersion
   private val scalactic = "org.scalactic" %% "scalactic" % scalacticVersion
@@ -55,6 +57,7 @@ object Dependencies {
         // Test-only dependencies
         munit,
         munitCatsEffect,
+        munitScalaCheck,
         scalaCheck,
         scalaCheckOps,
         scalaTest,
@@ -76,6 +79,7 @@ object Dependencies {
         // Test-only dependencies
         munit,
         munitCatsEffect,
+        munitScalaCheck,
         scalaCheck,
         scalaCheckOps,
         scalaTest,
