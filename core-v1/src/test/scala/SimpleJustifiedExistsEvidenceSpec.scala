@@ -4,8 +4,9 @@ import data.{Evidence, FactTable, Justified, NoEvidence, Window}
 import example.FactTypes
 
 import cats.data.NonEmptyList
+import munit.FunSuite
 
-class SimpleJustifiedExistsEvidenceSpec extends munit.FunSuite {
+class SimpleJustifiedExistsEvidenceSpec extends FunSuite {
 
   import dsl.simple.justified._
 
@@ -18,7 +19,7 @@ class SimpleJustifiedExistsEvidenceSpec extends munit.FunSuite {
     assertEquals(output.evidence, NoEvidence)
   }
 
-  test("Justified[Seq[Int]].exists is false when all false") {
+  test("Justified[Seq[Int]].exists is false when all false results") {
     val age10 = FactTypes.Age(10)
     val age14 = FactTypes.Age(14)
     val expr = valuesOfType(FactTypes.Age).exists {

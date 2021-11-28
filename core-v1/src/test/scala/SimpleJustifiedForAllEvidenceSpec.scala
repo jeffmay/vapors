@@ -4,8 +4,9 @@ import data.{Evidence, FactTable, Justified, NoEvidence, Window}
 import example.FactTypes
 
 import cats.data.NonEmptyList
+import munit.FunSuite
 
-class SimpleJustifiedForAllEvidenceSpec extends munit.FunSuite {
+class SimpleJustifiedForAllEvidenceSpec extends FunSuite {
 
   import dsl.simple.justified._
 
@@ -18,7 +19,7 @@ class SimpleJustifiedForAllEvidenceSpec extends munit.FunSuite {
     assertEquals(output.evidence, NoEvidence)
   }
 
-  test("Justified[Seq[Int]].forall is true with multiple true results") {
+  test("Justified[Seq[Int]].forall is true when all true results") {
     val age21 = FactTypes.Age(21)
     val age23 = FactTypes.Age(23)
     val expr = valuesOfType(FactTypes.Age).forall {

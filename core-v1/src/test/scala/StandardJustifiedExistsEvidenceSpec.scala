@@ -19,7 +19,7 @@ class StandardJustifiedExistsEvidenceSpec extends FunSuite {
     assertEquals(output.evidence, NoEvidence)
   }
 
-  test("Justified[Seq[Int]].exists is false when all false") {
+  test("Justified[Seq[Int]].exists is false when all false results") {
     val age10 = FactTypes.Age(10)
     val age14 = FactTypes.Age(14)
     val expr = valuesOfType(FactTypes.Age).exists {
