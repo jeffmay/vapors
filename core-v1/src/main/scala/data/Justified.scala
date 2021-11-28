@@ -3,6 +3,8 @@ package com.rallyhealth.vapors.v1
 package data
 
 import algebra.EqualComparable
+import data.ExtractValue.AsBoolean
+import logic.Logic
 import math.Add
 
 import cats.data.{NonEmptyList, NonEmptySet}
@@ -174,6 +176,38 @@ object Justified {
       case _ =>
         val derived = f(fa.value)
         Justified.byInference("map", derived, NonEmptyList.of(fa))
+    }
+  }
+
+  private val anyBool = new BooleanLogic[Boolean](identity)
+
+  implicit def bool[OP[_]]: Logic[Justified, Boolean, OP] = anyBool.asInstanceOf[Logic[Justified, Boolean, OP]]
+
+  final class BooleanLogic[B : AsBoolean](fromBoolean: Boolean => B) extends Logic[Justified, B, Any] {
+
+    override def and(
+      left: Justified[B],
+      right: Justified[B],
+    )(implicit
+      opB: Any,
+    ): Justified[B] = {
+      val outcome = left.value && right.value
+      Justified.byInference("and", fromBoolean(outcome), NonEmptyList.of(left, right))
+    }
+
+    override def or(
+      left: Justified[B],
+      right: Justified[B],
+    )(implicit
+      opB: Any,
+    ): Justified[B] = {
+      val outcome = left.value || right.value
+      Justified.byInference("or", fromBoolean(outcome), NonEmptyList.of(left, right))
+    }
+
+    override def not(value: Justified[B])(implicit opB: Any): Justified[B] = {
+      val outcome = !value.value
+      Justified.byInference("not", fromBoolean(outcome), NonEmptyList.of(value))
     }
   }
 

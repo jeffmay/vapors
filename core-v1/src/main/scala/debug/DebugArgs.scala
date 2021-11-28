@@ -126,10 +126,10 @@ object DebugArgs {
       override type Out = OO
     }
 
-  implicit def debugAnd[I, OP[_]]: Aux[Expr.And[I, OP], OP, (I, Boolean, Boolean), Boolean] =
-    new DebugArgs[Expr.And[I, OP], OP] {
-      override type In = (I, Boolean, Boolean)
-      override type Out = Boolean
+  implicit def debugAnd[I, B, F[+_], OP[_]]: Aux[Expr.And[I, B, F, OP], OP, (I, F[B], F[B]), F[B]] =
+    new DebugArgs[Expr.And[I, B, F, OP], OP] {
+      override type In = (I, F[B], F[B])
+      override type Out = F[B]
     }
 
   implicit def debugCustomFunction[I, O, OP[_]]: Aux[Expr.CustomFunction[I, O, OP], OP, I, O] =
@@ -138,10 +138,10 @@ object DebugArgs {
       override type Out = O
     }
 
-  implicit def debugOr[I, OP[_]]: Aux[Expr.Or[I, OP], OP, (I, Boolean, Boolean), Boolean] =
-    new DebugArgs[Expr.Or[I, OP], OP] {
-      override type In = (I, Boolean, Boolean)
-      override type Out = Boolean
+  implicit def debugOr[I, B, F[+_], OP[_]]: Aux[Expr.Or[I, B, F, OP], OP, (I, F[B], F[B]), F[B]] =
+    new DebugArgs[Expr.Or[I, B, F, OP], OP] {
+      override type In = (I, F[B], F[B])
+      override type Out = F[B]
     }
 
   implicit def debugCombine[I, LI, LO, RI, RO, O, OP[_]](
@@ -172,10 +172,10 @@ object DebugArgs {
       override type Out = F[Boolean]
     }
 
-  implicit def debugNot[I, O, OP[_]]: Aux[Expr.Not[I, O, OP], OP, (I, O), O] =
-    new DebugArgs[Expr.Not[I, O, OP], OP] {
-      override type In = (I, O)
-      override type Out = O
+  implicit def debugNot[I, O, F[+_], OP[_]]: Aux[Expr.Not[I, O, F, OP], OP, (I, F[O]), F[O]] =
+    new DebugArgs[Expr.Not[I, O, F, OP], OP] {
+      override type In = (I, F[O])
+      override type Out = F[O]
     }
 
   implicit def debugExists[
