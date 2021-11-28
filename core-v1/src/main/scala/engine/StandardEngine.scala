@@ -166,14 +166,18 @@ object StandardEngine {
       ExprResult.MapEvery(expr, finalState, results)
     }
 
-    override def visitNot[I, O : Negation : OP](expr: Expr.Not[I, O, OP]): PO <:< I => ExprResult[PO, I, O, OP] = {
-      implicit evPOisI =>
-        val booleanResult = expr.innerExpr.visit(this)(implicitly)
-        val output = booleanResult.state.output
-        val negatedOutput = Negation[O].negation(output)
-        val finalState = state.swapAndReplaceOutput(negatedOutput)
-        debugging(expr).invokeDebugger(stateFromInput((_, output), finalState.output))
-        ExprResult.Not(expr, finalState, booleanResult)
+    override def visitNot[I, B, F[+_]](
+      expr: Expr.Not[I, B, F, OP],
+    )(implicit
+      logic: Negation[F, B, OP],
+      opB: OP[F[B]],
+    ): PO <:< I => ExprResult[PO, I, F[B], OP] = { implicit evPOisI =>
+      val booleanResult = expr.innerExpr.visit(this)(implicitly)
+      val output = booleanResult.state.output
+      val negatedOutput = logic.not(output)
+      val finalState = state.swapAndReplaceOutput(negatedOutput)
+      debugging(expr).invokeDebugger(stateFromInput((_, output), finalState.output))
+      ExprResult.Not(expr, finalState, booleanResult)
     }
 
     override def visitOr[I, B, F[+_]](

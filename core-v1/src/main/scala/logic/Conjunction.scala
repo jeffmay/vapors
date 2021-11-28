@@ -5,7 +5,7 @@ package logic
 import shapeless.Id
 
 // TODO: Should I allow short-circuiting?
-trait Conjunction[F[_], B, -OP[_]] {
+trait Conjunction[F[_], B, OP[_]] {
 
   def and(
     left: F[B],
@@ -17,5 +17,5 @@ trait Conjunction[F[_], B, -OP[_]] {
 
 object Conjunction {
 
-  @inline implicit final def bool: Conjunction[Id, Boolean, Any] = Logic.bool
+  @inline implicit final def bool[OP[_]]: Conjunction[Id, Boolean, OP] = Logic.bool
 }

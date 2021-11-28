@@ -87,7 +87,12 @@ object ExprResult {
 
     def visitMapEvery[C[_] : Functor, A, B](result: MapEvery[PO, C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~>: C[B]
 
-    def visitNot[I, O : Negation : OP](result: Not[PO, I, O, OP]): I ~>: O
+    def visitNot[I, B, F[+_]](
+      result: Not[PO, I, B, F, OP],
+    )(implicit
+      logic: Negation[F, B, OP],
+      opB: OP[F[B]],
+    ): I ~>: F[B]
 
     def visitOr[I, B, F[+_]](
       result: Or[PO, I, B, F, OP],
@@ -233,12 +238,15 @@ object ExprResult {
   /**
     * The result of running [[Expr.Not]]
     */
-  final case class Not[+PO, -I, +O : Negation : OP, OP[_]](
-    expr: Expr.Not[I, O, OP],
-    state: ExprState[PO, O],
-    inputResult: ExprResult[PO, I, O, OP],
-  ) extends ExprResult[PO, I, O, OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitNot(this)
+  final case class Not[+PO, -I, +B, F[+_], OP[_]](
+    expr: Expr.Not[I, B, F, OP],
+    state: ExprState[PO, F[B]],
+    inputResult: ExprResult[PO, I, F[B], OP],
+  )(implicit
+    logic: Negation[F, B, OP],
+    opB: OP[F[B]],
+  ) extends ExprResult[PO, I, F[B], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, F[B]] = v.visitNot(this)
   }
 
   /**

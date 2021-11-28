@@ -26,13 +26,6 @@ trait BuildExprDsl extends DebugExprDsl {
 
   final def ident[I : OP]: Expr.Identity[I, OP] = Expr.Identity()
 
-  def not[I, O](
-    expr: W[I] ~:> W[O],
-  )(implicit
-    opO: OP[W[O]],
-    negation: Negation[W[O]],
-  ): Expr.Not[W[I], W[O], OP]
-
   def valuesOfType[T](factTypeSet: FactTypeSet[T])(implicit opTs: OP[Seq[W[T]]]): Expr.ValuesOfType[T, W[T], OP]
 
   implicit final def logical[I, B](expr: I ~:> W[B]): LogicalExprOps[I, B, W, OP] = new LogicalExprOps(expr)
@@ -54,6 +47,14 @@ trait BuildExprDsl extends DebugExprDsl {
     opO: OP[W[B]],
   ): Expr.Or[I, B, W, OP] =
     Expr.Or(left, right)
+
+  final def not[I, B](
+    expr: I ~:> W[B],
+  )(implicit
+    negation: Negation[W, B, OP],
+    opO: OP[W[B]],
+  ): Expr.Not[I, B, W, OP] =
+    Expr.Not(expr)
 
   type SpecificSelectExprBuilder[-I, T] <: SelectExprBuilder[I, T]
 
@@ -195,10 +196,10 @@ trait BuildExprDsl extends DebugExprDsl {
 
     def ===(rightExpr: I ~:> W[V]): Expr.IsEqual[I, V, W, OP] = Expr.IsEqual(leftExpr, rightExpr)
 
-    def !==(literal: V)(implicit neg: Negation[W[Boolean]]): Expr.Not[I, W[Boolean], OP] =
+    def !==(literal: V): Expr.Not[I, Boolean, W, OP] =
       Expr.Not(Expr.IsEqual(leftExpr, Expr.Const(WrapConst[W].wrapConst(literal))))
 
-    def !==(rightExpr: I ~:> W[V])(implicit neg: Negation[W[Boolean]]): Expr.Not[I, W[Boolean], OP] =
+    def !==(rightExpr: I ~:> W[V]): Expr.Not[I, Boolean, W, OP] =
       Expr.Not(Expr.IsEqual(leftExpr, rightExpr))
   }
 }

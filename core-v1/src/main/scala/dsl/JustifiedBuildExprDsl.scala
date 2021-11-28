@@ -5,14 +5,14 @@ package dsl
 import algebra._
 import data.{FactTypeSet, Justified}
 import lens.VariantLens
-import logic.{Logic, Negation}
+import logic.Logic
 
 import cats.data.NonEmptyList
 import cats.{Foldable, Functor}
 
 trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
 
-  override protected implicit final def boolLogic: Logic[Justified, Boolean, OP] = Justified.bool
+  override protected implicit final def boolLogic: Logic[Justified, Boolean, OP] = Justified.bool[OP]
 
   override protected implicit final def windowComparable: WindowComparable[Justified, OP] = WindowComparable.justified
 
@@ -30,14 +30,6 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
 
   // TODO: Should this be visible outside this trait?
   protected def dontShortCircuit: Boolean = false
-
-  override def not[I, O](
-    expr: Justified[I] ~:> Justified[O],
-  )(implicit
-    opO: OP[Justified[O]],
-    negation: Negation[Justified[O]],
-  ): Expr.Not[Justified[I], Justified[O], OP] =
-    Expr.Not(expr)
 
   override def valuesOfType[T](
     factTypeSet: FactTypeSet[T],

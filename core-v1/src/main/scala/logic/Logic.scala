@@ -4,11 +4,13 @@ package logic
 
 import shapeless.Id
 
-trait Logic[F[_], B, -OP[_]] extends Conjunction[F, B, OP] with Disjunction[F, B, OP]
+trait Logic[F[_], B, OP[_]] extends Conjunction[F, B, OP] with Disjunction[F, B, OP] with Negation[F, B, OP]
 
 object Logic {
 
-  implicit final object bool extends Logic[Id, Boolean, Any] {
+  implicit def bool[OP[_]]: Logic[Id, Boolean, OP] = AnyBool.asInstanceOf[Logic[Id, Boolean, OP]]
+
+  final object AnyBool extends Logic[Id, Boolean, Any] {
 
     override def and(
       left: Boolean,
@@ -23,6 +25,8 @@ object Logic {
     )(implicit
       opB: Any,
     ): Boolean = left || right
+
+    override def not(value: Boolean)(implicit opB: Any): Boolean = !value
   }
 
 }

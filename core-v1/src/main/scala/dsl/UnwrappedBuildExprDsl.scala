@@ -5,7 +5,7 @@ package dsl
 import algebra._
 import data.FactTypeSet
 import lens.VariantLens
-import logic.{Logic, Negation}
+import logic.Logic
 
 import cats.{catsInstancesForId, Foldable, Functor}
 
@@ -23,14 +23,6 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
 
   // TODO: Should this be visible outside this trait?
   protected def shortCircuit: Boolean = true
-
-  override final def not[I, O](
-    expr: I ~:> O,
-  )(implicit
-    opO: OP[O],
-    negation: Negation[O],
-  ): Expr.Not[I, O, OP] =
-    Expr.Not(expr)
 
   override final def valuesOfType[T](
     factTypeSet: FactTypeSet[T],

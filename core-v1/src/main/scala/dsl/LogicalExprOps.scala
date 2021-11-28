@@ -3,9 +3,9 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra.Expr
-import logic.{Conjunction, Disjunction}
+import logic.{Conjunction, Disjunction, Negation}
 
-final class LogicalExprOps[-I, +B, F[+_], OP[_]](private val expr: Expr[I, F[B], OP]) extends AnyVal {
+final class LogicalExprOps[I, B, F[+_], OP[_]](private val expr: Expr[I, F[B], OP]) extends AnyVal {
 
   def &&[CI <: I, CB >: B](
     that: Expr[CI, F[CB], OP],
@@ -22,4 +22,11 @@ final class LogicalExprOps[-I, +B, F[+_], OP[_]](private val expr: Expr[I, F[B],
     opB: OP[F[CB]],
   ): Expr.Or[CI, CB, F, OP] =
     Expr.Or(expr, that)
+
+  def unary_!(
+    implicit
+    logic: Negation[F, B, OP],
+    opB: OP[F[B]],
+  ): Expr.Not[I, B, F, OP] =
+    Expr.Not(expr)
 }

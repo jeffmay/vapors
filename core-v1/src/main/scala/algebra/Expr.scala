@@ -120,17 +120,17 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
   def selectWith[OI >: O, OO : OP](lens: VariantLens[OI, OO]): Expr.AndThen[I, O, OI, OO, OP] =
     Expr.AndThen(this, Expr.Select(lens))
 
-  /**
-    * Negate the output of this expression using the implicit definition of [[Negation]].
-    *
-    * @param negation the definition for how to negate the output of this expression.
-    */
-  def unary_![RO >: O](
-    implicit
-    negation: Negation[RO],
-    opA: OP[RO],
-  ): Expr.Not[I, RO, OP] =
-    Expr.Not[I, RO, OP](this)
+//  /**
+//    * Negate the output of this expression using the implicit definition of [[Negation]].
+//    *
+//    * @param negation the definition for how to negate the output of this expression.
+//    */
+//  def unary_![RO >: O](
+//    implicit
+//    negation: Negation[RO],
+//    opA: OP[RO],
+//  ): Expr.Not[I, RO, OP] =
+//    Expr.Not[I, RO, OP](this)
 
   // TODO: Match on self and convert to string recursively as lazy val
   override def toString: String = s"$name[$hashCode]"
@@ -187,7 +187,12 @@ object Expr {
 
     def visitMapEvery[C[_] : Functor, A, B](expr: MapEvery[C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~:> C[B]
 
-    def visitNot[I, O : Negation : OP](expr: Not[I, O, OP]): I ~:> O
+    def visitNot[I, B, F[+_]](
+      expr: Not[I, B, F, OP],
+    )(implicit
+      logic: Negation[F, B, OP],
+      opB: OP[F[B]],
+    ): I ~:> F[B]
 
     def visitOr[I, B, F[+_]](
       expr: Or[I, B, F, OP],
@@ -448,12 +453,15 @@ object Expr {
     *
     * @param innerExpr the expression to negate
     */
-  final case class Not[-I, +O : Negation : OP, OP[_]](
-    innerExpr: Expr[I, O, OP],
+  final case class Not[-I, +B, F[+_], OP[_]](
+    innerExpr: Expr[I, F[B], OP],
     private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
-  ) extends Expr[I, O, OP]("not") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitNot(this)
-    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Not[I, O, OP] =
+  )(implicit
+    logic: Negation[F, B, OP],
+    opB: OP[F[B]],
+  ) extends Expr[I, F[B], OP]("not") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, F[B]] = v.visitNot(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Not[I, B, F, OP] =
       copy(debugging = debugging)
   }
 

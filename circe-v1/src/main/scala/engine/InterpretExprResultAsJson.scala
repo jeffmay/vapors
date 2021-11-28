@@ -113,8 +113,12 @@ object InterpretExprResultAsJson {
     ): ToJsonObject[C[A], C[B]] =
       encodeExprResult(result)
 
-    override def visitNot[I, O : Negation : OP](result: ExprResult.Not[PO, I, O, OP]): ToJsonObject[I, O] =
-      encodeExprResult(result)
+    override def visitNot[I, B, F[+_]](
+      result: ExprResult.Not[PO, I, B, F, OP],
+    )(implicit
+      logic: Negation[F, B, OP],
+      opB: OP[F[B]],
+    ): ToJsonObject[I, F[B]] = encodeExprResult(result)
 
     override def visitOr[I, B, F[+_]](
       result: ExprResult.Or[PO, I, B, F, OP],
@@ -218,8 +222,12 @@ object InterpretExprResultAsJson {
       opO: OP[C[B]],
     ): ToJsonObject[C[A], C[B]] = super.visitMapEvery(result).deepMerge(sourceInfo[C[B]])
 
-    override def visitNot[I, O : Negation : OP](result: ExprResult.Not[PO, I, O, OP]): ToJsonObject[I, O] =
-      super.visitNot(result).deepMerge(sourceInfo[O])
+    override def visitNot[I, B, F[+_]](
+      result: ExprResult.Not[PO, I, B, F, OP],
+    )(implicit
+      logic: Negation[F, B, OP],
+      opB: OP[F[B]],
+    ): ToJsonObject[I, F[B]] = super.visitNot(result).deepMerge(sourceInfo[F[B]])
 
     override def visitOr[I, B, F[+_]](
       result: ExprResult.Or[PO, I, B, F, OP],

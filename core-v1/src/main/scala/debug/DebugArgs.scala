@@ -175,10 +175,10 @@ object DebugArgs {
       override type Out = F[Boolean]
     }
 
-  implicit def debugNot[I, O, OP[_]]: Aux[Expr.Not[I, O, OP], OP, (I, O), O] =
-    new DebugArgs[Expr.Not[I, O, OP], OP] {
-      override type In = (I, O)
-      override type Out = O
+  implicit def debugNot[I, O, F[+_], OP[_]]: Aux[Expr.Not[I, O, F, OP], OP, (I, F[O]), F[O]] =
+    new DebugArgs[Expr.Not[I, O, F, OP], OP] {
+      override type In = (I, F[O])
+      override type Out = F[O]
     }
 
   implicit def debugExists[

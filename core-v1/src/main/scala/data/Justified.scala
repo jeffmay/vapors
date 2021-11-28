@@ -135,7 +135,9 @@ object Justified {
     }
   }
 
-  implicit val bool: Logic[Justified, Boolean, Any] = new BooleanLogic[Boolean](identity)
+  private val anyBool = new BooleanLogic[Boolean](identity)
+
+  implicit def bool[OP[_]]: Logic[Justified, Boolean, OP] = anyBool.asInstanceOf[Logic[Justified, Boolean, OP]]
 
   final class BooleanLogic[B : AsBoolean](fromBoolean: Boolean => B) extends Logic[Justified, B, Any] {
 
@@ -157,6 +159,11 @@ object Justified {
     ): Justified[B] = {
       val outcome = left.value || right.value
       Justified.byInference("or", fromBoolean(outcome), NonEmptyList.of(left, right))
+    }
+
+    override def not(value: Justified[B])(implicit opB: Any): Justified[B] = {
+      val outcome = !value.value
+      Justified.byInference("not", fromBoolean(outcome), NonEmptyList.of(value))
     }
   }
 

@@ -123,9 +123,14 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state(ca, cb))
     }
 
-    override def visitNot[I, O : Negation : OP](expr: Expr.Not[I, O, OP]): I => O = { i =>
+    override def visitNot[I, B, F[+_]](
+      expr: Expr.Not[I, B, F, OP],
+    )(implicit
+      logic: Negation[F, B, OP],
+      opB: OP[F[B]],
+    ): I => F[B] = { i =>
       val output = expr.innerExpr.visit(this)(i)
-      val negatedOutput = Negation[O].negation(output)
+      val negatedOutput = logic.not(output)
       debugging(expr).invokeAndReturn(state((i, output), negatedOutput))
     }
 
