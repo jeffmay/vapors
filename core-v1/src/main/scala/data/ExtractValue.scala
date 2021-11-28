@@ -5,7 +5,10 @@ package data
 /**
   * Extracts a value from some starting value.
   */
-trait ExtractValue[T, V] {
+trait ExtractValue[T, V] extends (T => V) {
+
+  override final def apply(v1: T): V = extractValue(v1)
+
   def extractValue(obj: T): V
 }
 
