@@ -103,7 +103,7 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
       inputExpr.andThen {
         Expr.ForAll[C, Justified[A], Justified[Boolean], OP](
           conditionExprBuilder(Expr.Identity()),
-          NonEmptyList
+          combineTrue = NonEmptyList
             .fromList(_)
             .map { justified =>
               Justified.byInference("forall", true, justified)
