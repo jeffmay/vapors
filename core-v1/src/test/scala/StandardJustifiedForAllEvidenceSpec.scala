@@ -12,7 +12,7 @@ class StandardJustifiedForAllEvidenceSpec extends FunSuite {
 
   test("Justified[Seq[Int]].forall is true when empty") {
     val expr = valuesOfType(FactTypes.Age).forall {
-      _ >= 18
+      _ >= 18.const
     }
     val output = expr.run().state.output
     assertEquals(output, Justified.byConst(true))
@@ -23,7 +23,7 @@ class StandardJustifiedForAllEvidenceSpec extends FunSuite {
     val age21 = FactTypes.Age(21)
     val age23 = FactTypes.Age(23)
     val expr = valuesOfType(FactTypes.Age).forall {
-      _ >= 18
+      _ >= 18.const
     }
     val output = expr.run(FactTable(age21, age23)).state.output
     assertEquals(
@@ -57,7 +57,7 @@ class StandardJustifiedForAllEvidenceSpec extends FunSuite {
   test("Justified[Seq[Int]].forall is false with a single false result") {
     val age10 = FactTypes.Age(10)
     val expr = valuesOfType(FactTypes.Age).forall {
-      _ >= 18
+      _ >= 18.const
     }
     val output = expr.run(FactTable(age10)).state.output
     assertEquals(

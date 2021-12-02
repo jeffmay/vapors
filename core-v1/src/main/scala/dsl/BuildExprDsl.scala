@@ -8,8 +8,6 @@ import logic.Negation
 
 import cats.{Foldable, Functor, Order}
 
-import scala.annotation.nowarn
-
 trait BuildExprDsl extends DebugExprDsl {
   self: DslTypes =>
 
@@ -102,30 +100,11 @@ trait BuildExprDsl extends DebugExprDsl {
         ),
       )
 
-    protected def compareLiteral(
-      @nowarn name: String, // this is unused but kept for consistency
-      that: V,
-    )(
-      using: V => Window[V],
-    ): I >=< V =
-      Expr.WithinWindow(
-        valueExpr,
-        Expr.Const[W[Window[V]], OP](WrapConst.wrap(using(that))),
-      )
-
-    def <(literal: V): I >=< V = compareLiteral("<", literal)(Window.lessThan(_))
-
     def <(expr: I ~:> W[V]): I >=< V = compareExpr("<", expr)(Window.lessThan(_))
-
-    def <=(literal: V): I >=< V = compareLiteral("<=", literal)(Window.lessThanOrEqual(_))
 
     def <=(expr: I ~:> W[V]): I >=< V = compareExpr("<=", expr)(Window.lessThanOrEqual(_))
 
-    def >(literal: V): I >=< V = compareLiteral(">", literal)(Window.greaterThan(_))
-
     def >(expr: I ~:> W[V]): I >=< V = compareExpr(">", expr)(Window.greaterThan(_))
-
-    def >=(literal: V): I >=< V = compareLiteral(">=", literal)(Window.greaterThanOrEqual(_))
 
     def >=(expr: I ~:> W[V]): I >=< V = compareExpr(">=", expr)(Window.greaterThanOrEqual(_))
 
