@@ -120,12 +120,9 @@ object DebugArgs {
       override type Out = O
     }
 
-  implicit def debugAndThen[II, IO, OI, OO, OP[_]](
-    implicit
-    evIOisOI: IO <:< OI,
-  ): Aux[Expr.AndThen[II, IO, OI, OO, OP], OP, (II, OI), OO] =
+  implicit def debugAndThen[II, IO, OI, OO, OP[_]]: Aux[Expr.AndThen[II, IO, OI, OO, OP], OP, (II, IO), OO] =
     new DebugArgs[Expr.AndThen[II, IO, OI, OO, OP], OP] {
-      override type In = (II, OI)
+      override type In = (II, IO)
       override type Out = OO
     }
 
