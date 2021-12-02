@@ -50,7 +50,7 @@ trait BuildExprDsl extends DebugExprDsl {
       opA: OP[W[A]],
       opB: OP[W[Boolean]],
       foldC: Foldable[C],
-    ): Ap[I, C[W[A]], W[Boolean]]
+    ): AndThen[I, C[W[A]], W[Boolean]]
 
     def forall(
       conditionExprBuilder: W[A] =~:> W[Boolean],
@@ -59,7 +59,7 @@ trait BuildExprDsl extends DebugExprDsl {
       opA: OP[W[A]],
       opB: OP[W[Boolean]],
       foldC: Foldable[C],
-    ): Ap[I, C[W[A]], W[Boolean]]
+    ): AndThen[I, C[W[A]], W[Boolean]]
 
     def map[B](
       mapExprBuilder: W[A] =~:> W[B],
@@ -68,7 +68,7 @@ trait BuildExprDsl extends DebugExprDsl {
       opA: OP[C[W[A]]],
       opB: OP[C[W[B]]],
       functorC: Functor[C],
-    ): Ap[I, C[W[A]], C[W[B]]]
+    ): AndThen[I, C[W[A]], C[W[B]]]
   }
 
   implicit def compare[I, V : Order : OP](

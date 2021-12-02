@@ -58,7 +58,7 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
       opA: OP[Justified[A]],
       opB: OP[Justified[Boolean]],
       foldC: Foldable[C],
-    ): Ap[I, C[Justified[A]], Justified[Boolean]] =
+    ): AndThen[I, C[Justified[A]], Justified[Boolean]] =
       inputExpr.andThen {
         Expr.Exists[C, Justified[A], Justified[Boolean], OP](
           conditionExprBuilder(Expr.Identity()),
@@ -85,7 +85,7 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
       opA: OP[Justified[A]],
       opB: OP[Justified[Boolean]],
       foldC: Foldable[C],
-    ): Ap[I, C[Justified[A]], Justified[Boolean]] =
+    ): AndThen[I, C[Justified[A]], Justified[Boolean]] =
       inputExpr.andThen {
         Expr.ForAll[C, Justified[A], Justified[Boolean], OP](
           conditionExprBuilder(Expr.Identity()),
@@ -111,7 +111,7 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
       opA: OP[C[Justified[A]]],
       opB: OP[C[Justified[B]]],
       functorC: Functor[C],
-    ): Ap[I, C[Justified[A]], C[Justified[B]]] =
+    ): AndThen[I, C[Justified[A]], C[Justified[B]]] =
       inputExpr.andThen(Expr.MapEvery[C, Justified[A], Justified[B], OP](mapExprBuilder(ident)))
 
   }
