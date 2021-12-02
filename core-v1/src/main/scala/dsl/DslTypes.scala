@@ -82,7 +82,7 @@ trait DslTypes extends Any {
   /**
     * Alias for a chained [[Expr.AndThen]] expression with `I ~:> M` followed by `M ~:> O`
     */
-  final type Ap[-I, M, +O] = Expr.AndThen[I, M, M, O, OP]
+  final type AndThen[-I, M, +O] = Expr.AndThen[I, M, M, O, OP]
 
   /**
     * Alias for an [[Expr.WithinWindow]] where the output of a value expression `I ~:> W[V]` is checked for whether

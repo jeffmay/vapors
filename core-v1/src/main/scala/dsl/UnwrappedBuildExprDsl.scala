@@ -50,7 +50,7 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
       opA: OP[A],
       opB: OP[Boolean],
       foldC: Foldable[C],
-    ): Ap[I, C[A], Boolean] =
+    ): AndThen[I, C[A], Boolean] =
       inputExpr.andThen(
         Expr.Exists[C, A, Boolean, OP](conditionExprBuilder(ident), _ => true, _ => false, shortCircuit),
       )
@@ -62,7 +62,7 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
       opA: OP[A],
       opB: OP[Boolean],
       foldC: Foldable[C],
-    ): Ap[I, C[A], Boolean] =
+    ): AndThen[I, C[A], Boolean] =
       inputExpr.andThen(
         Expr.ForAll[C, A, Boolean, OP](conditionExprBuilder(ident), _ => true, _ => false, shortCircuit),
       )
@@ -74,7 +74,7 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
       opA: OP[C[A]],
       opB: OP[C[B]],
       functorC: Functor[C],
-    ): Ap[I, C[A], C[B]] =
+    ): AndThen[I, C[A], C[B]] =
       inputExpr.andThen(Expr.MapEvery[C, A, B, OP](mapExprBuilder(ident)))
   }
 }
