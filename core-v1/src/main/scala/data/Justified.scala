@@ -9,18 +9,55 @@ import cats.{Functor, Order}
 
 import scala.annotation.nowarn
 
+/**
+  * Represents a result that contains a tree of justified inputs and operations, as well as the value
+  * for each operation along the way.
+  *
+  * Values can be justified by:
+  * - Constants embedded into the expression itself
+  * - Config values that are embedded into the expression but have a known configuration key / description
+  * - Facts from the [[FactTable]] used to compute this output
+  * - Inference by an operation defined by the [[dsl.JustifiedBuildExprDsl]] with references to all the
+  *   justified values used as inputs to the operation.
+  *
+  * By following the chain of justification, one can determine if there is any factual evidence for a value,
+  * or whether it is only supported by configs and constants (i.e. it is a default value and not one that is
+  * tailored based on the provided facts).
+  *
+  * @tparam V the type of value that is justified by this container
+  */
 sealed trait Justified[+V] extends Product {
 
+  /**
+    * The output value from the expression.
+    */
   def value: V
 
+  /**
+    * A short description for how the value is justified. Either a "const", "config", "fact", or the name of
+    * an operation based on other justified values.
+    */
   def reason: String
 
-  def visit[G[+_]](v: Justified.Visitor[G]): G[V]
-
+  /**
+    * Collects all the configuration keys used to produce this [[value]]
+    */
   def configs: Seq[(String, Option[String])] // TODO: How should this handle duplicate keys?
 
+  /**
+    * Collects all the [[Fact]]s used to produce this [[value]]
+    */
   def evidence: Evidence
 
+  /**
+    * Visit the tree of justified values with a tagless-final visitor.
+    */
+  def visit[G[+_]](v: Justified.Visitor[G]): G[V]
+
+  /**
+    * Justify the result of an operation by inference given the other justified value, a reason, and a function
+    * defining the operation.
+    */
   def zipWith[Y, Z](
     that: Justified[Y],
     reason: String,
@@ -35,8 +72,6 @@ sealed trait Justified[+V] extends Product {
 }
 
 object Justified {
-
-  def apply[V](value: V): Justified[V] = ByConst(value)
 
   trait Visitor[G[+_]] {
 
