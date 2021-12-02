@@ -6,7 +6,7 @@ class SimpleExistsFromConstSpec extends munit.FunSuite {
 
   test(".exists returns false when empty") {
     val expr = List.empty[Int].const.exists {
-      _ > 2
+      _ > 2.const
     }
     val result = expr.run()
     assert(!result)
@@ -14,7 +14,7 @@ class SimpleExistsFromConstSpec extends munit.FunSuite {
 
   test(".exists returns true when non-empty and condition is met") {
     val expr = List(1, 2, 3).const.exists {
-      _ > 2
+      _ > 2.const
     }
     val result = expr.run()
     assert(result)
@@ -22,7 +22,7 @@ class SimpleExistsFromConstSpec extends munit.FunSuite {
 
   test(".exists returns false when non-empty and condition is not met") {
     val expr = List(1, 2, 3).const.exists {
-      _ > 3
+      _ > 3.const
     }
     val result = expr.run()
     assert(!result)

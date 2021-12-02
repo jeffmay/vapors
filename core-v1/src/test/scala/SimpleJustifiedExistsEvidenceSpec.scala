@@ -11,7 +11,7 @@ class SimpleJustifiedExistsEvidenceSpec extends munit.FunSuite {
 
   test("Justified[Seq[Int]].exists is false when empty") {
     val expr = valuesOfType(FactTypes.Age).exists {
-      _ >= 18
+      _ >= 18.const
     }
     val output = expr.run()
     assertEquals(output, Justified.byConst(false))
@@ -22,7 +22,7 @@ class SimpleJustifiedExistsEvidenceSpec extends munit.FunSuite {
     val age10 = FactTypes.Age(10)
     val age14 = FactTypes.Age(14)
     val expr = valuesOfType(FactTypes.Age).exists {
-      _ >= 18
+      _ >= 18.const
     }
     val output = expr.run(FactTable(age10, age14))
     assertEquals(
@@ -56,7 +56,7 @@ class SimpleJustifiedExistsEvidenceSpec extends munit.FunSuite {
   test("Justified[Seq[Int]].exists is true with a single true result") {
     val age18 = FactTypes.Age(18)
     val expr = valuesOfType(FactTypes.Age).exists {
-      _ >= 18
+      _ >= 18.const
     }
     val output = expr.run(FactTable(age18))
     assertEquals(
