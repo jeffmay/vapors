@@ -9,9 +9,10 @@ class SimpleDivisionSpec extends FunSuite {
   // TODO: Should this return an Option[Int]? Maybe another method for this?
   test("Divide by zero") {
     val expr = 1.const / 0.const
-    interceptMessage[ArithmeticException]("/ by zero") {
+    val exc = intercept[ArithmeticException] {
       expr.run()
     }
+    assert(exc.getMessage contains "zero")
   }
 
   test("Int / Int (exact)") {
