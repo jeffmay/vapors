@@ -64,8 +64,10 @@ object Evidence {
 
   def none: Evidence = NoEvidence
 
-  def apply(factSet: FactOrFactSet): Evidence =
-    NonEmptySet.fromSet(SortedSet.from(factSet.toSet)).map(SomeEvidence).getOrElse(NoEvidence)
+  def apply(factSets: FactOrFactSet*): Evidence = {
+    val fullFactSet = factSets.foldLeft(Set.empty[Fact])(_ | _.toSet)
+    NonEmptySet.fromSet(SortedSet.from(fullFactSet)).map(SomeEvidence).getOrElse(NoEvidence)
+  }
 
 }
 
