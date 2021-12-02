@@ -17,6 +17,17 @@ import scala.annotation.nowarn
   *
   * @note there is an edge case for the `+` method because of the [[any2stringadd]] implicit conversion.
   *       This can go away after this is removed in Scala 3 (and possibly this whole class too!)
+  *
+  * @tparam I the input to both the left and right expressions
+  * @tparam LI the input to the left-side of the operation
+  * @tparam LO the output of the left-side expression (must be a subtype of `LI`)
+  * @tparam RI the input to the right-side of the operation
+  * @tparam RO the output of the right-side expression (must be a subtype of `RI`)
+  * @tparam O the output of the operation (and of the expression produced by [[toExpr]])
+  * @tparam OP the custom output param (see [[dsl.DslTypes.OP]])
+  *
+  * @param evLOisLI compiler-supplied evidence that `LO` is a subtype of `LI`
+  * @param evROisRI compiler-supplied evidence that `RO` is a subtype of `RI`
   */
 final class CombineHolder[-I, -LI, +LO : OP, -RI, +RO : OP, O, OP[_]](
   val left: Expr[I, LO, OP],
