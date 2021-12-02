@@ -127,10 +127,10 @@ object Justified {
     }
   }
 
-  implicit def add[L, R](
+  implicit def add[L, R, O](
     implicit
-    adder: Add[L, R],
-  ): Add.Aux[Justified[L], Justified[R], Justified[adder.Out]] = {
+    adder: Add.Aux[L, R, O],
+  ): Add.Aux[Justified[L], Justified[R], Justified[O]] = {
     new Add[Justified[L], Justified[R]] {
       override type Out = Justified[adder.Out]
       def combine(
