@@ -27,7 +27,7 @@ trait DslTypes extends Any {
     *
     *   object MyCustomParam {
     *     private final case class Impl[A](codec: Codec[A], show: Show[A]) extends MyCustomParam[A]
-    *     implicit def enc[A](implicit codec: Codec[A], show: HasShow[A]): MyCustomParam[A] = Impl(codec, show)
+    *     implicit def enc[A](implicit codec: Codec[A], show: HasShow[A]): MyCustomParam[A] = Impl(codec, show.show)
     *   }
     *
     *   object MyCustomDsl extends FullDsl with SimpleRunDsl with UnwrappedBuildExprDsl {
@@ -61,9 +61,18 @@ trait DslTypes extends Any {
   final type ~:>[-I, +O] = Expr[I, O, OP]
 
   /**
-    * Alias for a function from a starting `I ~:> I` expression and building a `I ~:> O` expression from that.
+    * @see [[ExprFunction]]
     */
-  final type =~:>[I, +O] = Expr.Identity[I, OP] => Expr[I, O, OP]
+  final type =~:>[I, +O] = ExprFunction[I, O]
+
+  /**
+    * A function that takes the identity expression `I ~:> I` as input and produces an expression of type `I ~:> O`
+    * as output.
+    *
+    * @tparam I the input (and output) type of the expression provided as input to the function
+    * @tparam O the output type of the expression returned by the function
+    */
+  final type ExprFunction[I, +O] = Expr.Identity[I, OP] => Expr[I, O, OP]
 
   /**
     * Alias for any expression with the `OP` type fixed by this DSL.

@@ -34,7 +34,8 @@ import scala.annotation.nowarn
   *
   * @tparam I the input value type
   * @tparam O the output value type
-  * @tparam OP the custom output parameter type constructor (defined by the imported DSL)
+  * @tparam OP the custom output parameter type constructor (defined by the imported DSL).
+  *            See [[dsl.DslTypes.OP]] for more details.
   */
 sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
 
@@ -106,6 +107,11 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
     * @param that the other expression to add
     * @param add the type-level definition of how to add this type of output to that type of element
     *
+    * @tparam CI a more specific input type to obey the laws of contravariance
+    * @tparam LI the left-input to the add operation must be a supertype of the output of `this` expression
+    * @tparam RI the right-input to the add operation must be a supertype of the output of `that` given expression
+    * @tparam RO the output of `that` given operation (must be a subtype of `RI`)
+    *
     * @return a [[CombineHolder]] to allow for type-level calculation of the return type
     */
   def +[CI <: I, LI >: O, RI >: RO, RO <: RI : OP](
@@ -119,6 +125,9 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) {
 
   /**
     * Negate the output of this expression using the implicit definition of [[Negation]].
+    *
+    * @tparam RO the output of the negation operation must be a supertype of `this` expression
+    *            to obey the laws of covariance.
     *
     * @param negation the definition for how to negate the output of this expression.
     */
