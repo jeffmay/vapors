@@ -19,7 +19,7 @@ trait BuildExprDsl extends DebugExprDsl {
 
   protected implicit def wrapConst: WrapConst[W]
 
-  final def ident[I : OP]: Expr.Identity[I, OP] = Expr.Identity()
+  def ident[I](implicit opI: OP[W[I]]): Expr.Identity[W[I], OP]
 
   def not[I, O](
     expr: W[I] ~:> W[O],
@@ -30,7 +30,7 @@ trait BuildExprDsl extends DebugExprDsl {
 
   def valuesOfType[T](factTypeSet: FactTypeSet[T])(implicit opTs: OP[Seq[W[T]]]): Expr.ValuesOfType[T, W[T], OP]
 
-  implicit def wrap[A](value: A)(implicit constType: WrapConstType[W, A]): ConstExprBuilder[constType.Out, OP] =
+  implicit final def wrap[A](value: A)(implicit constType: WrapConstType[W, A]): ConstExprBuilder[constType.Out, OP] =
     new ConstExprBuilder(constType(wrapConst.wrapConst(value)))
 
   implicit def hk[I, C[_], A](expr: I ~:> C[W[A]]): SpecificHkExprBuilder[I, C, A]

@@ -15,18 +15,18 @@ import shapeless.Id
   * This is primarily used by the [[Expr.WithinWindow]] interpreter to take the result of a value expression
   * and a window expression and perform the appropriate action to produce a wrapped boolean result.
   *
-  * @tparam F a wrapper type or effect to map over when performing the comparison
+  * @tparam W a wrapper type or effect to map over when performing the comparison
   * @tparam OP the output parameter of the input values and the output value
   */
-trait WindowComparable[F[_], OP[_]] {
+trait WindowComparable[W[_], OP[_]] {
 
   def withinWindow[V](
-    value: F[V],
-    window: F[Window[V]],
+    value: W[V],
+    window: W[Window[V]],
   )(implicit
-    opV: OP[F[V]],
-    opW: OP[F[Window[V]]],
-  ): F[Boolean]
+    opV: OP[W[V]],
+    opW: OP[W[Window[V]]],
+  ): W[Boolean]
 }
 
 object WindowComparable {

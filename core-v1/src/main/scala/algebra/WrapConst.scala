@@ -12,18 +12,18 @@ import shapeless.Id
   * This is similar to the `Pure` typeclass from alleycats, except more specific to the Vapors project.
   * It will only be used to construct wrapped constant values.
   *
-  * @tparam F the wrapper type to place the constant values into
+  * @tparam W the wrapper type to place the constant values into
   */
-trait WrapConst[F[_]] {
+trait WrapConst[W[_]] {
 
-  def wrapConst[A](value: A): F[A]
+  def wrapConst[A](value: A): W[A]
 }
 
 object WrapConst {
 
-  @inline final def apply[F[_] : WrapConst]: WrapConst[F] = implicitly
+  @inline final def apply[W[_] : WrapConst]: WrapConst[W] = implicitly
 
-  def wrap[F[_], V](value: V)(implicit wrap: WrapConst[F]): F[V] = wrap.wrapConst(value)
+  def wrap[W[_], V](value: V)(implicit wrap: WrapConst[W]): W[V] = wrap.wrapConst(value)
 
   implicit val identity: WrapConst[Id] = new WrapConst[Id] {
     override def wrapConst[A](value: A): A = value
