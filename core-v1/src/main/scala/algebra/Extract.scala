@@ -14,14 +14,14 @@ import shapeless.Id
   * It is simple enough to implement and it is required at the DSL import level, so it won't
   * be implemented very often by end users.
   */
-trait Extract[F[_]] {
+trait Extract[W[_]] {
 
-  def extract[A](fa: F[A]): A
+  def extract[A](fa: W[A]): A
 }
 
 object Extract {
 
-  @inline final def apply[F[_] : Extract]: Extract[F] = implicitly
+  @inline final def apply[W[_] : Extract]: Extract[W] = implicitly
 
   implicit val identity: Extract[Id] = new Extract[Id] {
     override def extract[A](fa: A): A = fa

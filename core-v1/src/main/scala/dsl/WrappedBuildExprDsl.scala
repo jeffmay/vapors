@@ -12,6 +12,8 @@ import scala.collection.Factory
 trait WrappedBuildExprDsl extends BuildExprDsl with MidPriorityWrappedBuildExprDsl {
   self: DslTypes =>
 
+  override def ident[I](implicit opI: OP[W[I]]): Expr.Identity[W[I], OP] = Expr.Identity()
+
   /**
     * Allows you to skip calling .const on a window to wrap it in a Expr.Const
     */
