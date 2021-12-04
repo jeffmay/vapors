@@ -19,7 +19,7 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
 
   override protected implicit final def wrapConst: WrapConst[Justified] = WrapConst.justified
 
-  override protected def wrapElement[C[_], A](
+  override protected final def wrapElement[C[_], A](
     outer: Justified[C[A]],
     element: A,
   ): Justified[A] =
@@ -28,7 +28,7 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
   // TODO: Should this be visible outside this trait?
   protected def dontShortCircuit: Boolean = false
 
-  override def not[I, O](
+  override final def not[I, O](
     expr: Justified[I] ~:> Justified[O],
   )(implicit
     opO: OP[Justified[O]],
@@ -36,16 +36,16 @@ trait JustifiedBuildExprDsl extends WrappedBuildExprDsl with JustifiedDslTypes {
   ): Expr.Not[Justified[I], Justified[O], OP] =
     Expr.Not(expr)
 
-  override def valuesOfType[T](
+  override final def valuesOfType[T](
     factTypeSet: FactTypeSet[T],
   )(implicit
     opTs: OP[Seq[Justified[T]]],
   ): Expr.ValuesOfType[T, Justified[T], OP] =
     Expr.ValuesOfType[T, Justified[T], OP](factTypeSet, Justified.ByFact(_))
 
-  override type SpecificHkExprBuilder[-I, C[_], A] = JustifiedHkExprBuilder[I, C, A]
+  override final type SpecificHkExprBuilder[-I, C[_], A] = JustifiedHkExprBuilder[I, C, A]
 
-  override implicit def hk[I, C[_], A](expr: I ~:> C[Justified[A]]): JustifiedHkExprBuilder[I, C, A] =
+  override implicit final def hk[I, C[_], A](expr: I ~:> C[Justified[A]]): JustifiedHkExprBuilder[I, C, A] =
     new JustifiedHkExprBuilder(expr)
 
   final class JustifiedHkExprBuilder[-I, C[_], A](override protected val inputExpr: I ~:> C[Justified[A]])
