@@ -215,12 +215,12 @@ object DebugArgs {
   implicit def debugWithinWindow[
     I,
     V,
-    F[+_],
+    W[+_],
     OP[_],
-  ]: Aux[Expr.WithinWindow[I, V, F, OP], OP, (I, F[V], F[Window[V]]), F[Boolean]] =
-    new DebugArgs[Expr.WithinWindow[I, V, F, OP], OP] {
-      override type In = (I, F[V], F[Window[V]])
-      override type Out = F[Boolean]
+  ]: Aux[Expr.WithinWindow[I, V, W, OP], OP, (I, W[V], W[Window[V]]), W[Boolean]] =
+    new DebugArgs[Expr.WithinWindow[I, V, W, OP], OP] {
+      override type In = (I, W[V], W[Window[V]])
+      override type Out = W[Boolean]
     }
 
 }

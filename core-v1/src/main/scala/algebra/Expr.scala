@@ -194,14 +194,14 @@ object Expr {
 
     def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~:> Seq[O]
 
-    def visitWithinWindow[I, V, F[+_]](
-      expr: WithinWindow[I, V, F, OP],
+    def visitWithinWindow[I, V, W[+_]](
+      expr: WithinWindow[I, V, W, OP],
     )(implicit
-      comparison: WindowComparable[F, OP],
-      opV: OP[F[V]],
-      opW: OP[F[Window[V]]],
-      opB: OP[F[Boolean]],
-    ): I ~:> F[Boolean]
+      comparison: WindowComparable[W, OP],
+      opV: OP[W[V]],
+      opW: OP[W[Window[V]]],
+      opB: OP[W[Boolean]],
+    ): I ~:> W[Boolean]
   }
 
   // TODO: Use ExtractValue.AsBoolean instead of Boolean here
@@ -478,21 +478,21 @@ object Expr {
     * @param windowExpr an expression returning a window from the starting input
     * @tparam I the input value type
     * @tparam V the window value type
-    * @tparam F a container type, used to carry along metadata beyond just true / false.
+    * @tparam W the wrapper type, used to carry along metadata beyond just true / false.
     *           This can also be an effect type, but it must be covariant on its inner type.
     */
-  final case class WithinWindow[-I, +V, F[+_], OP[_]](
-    valueExpr: Expr[I, F[V], OP],
-    windowExpr: Expr[I, F[Window[V]], OP],
+  final case class WithinWindow[-I, +V, W[+_], OP[_]](
+    valueExpr: Expr[I, W[V], OP],
+    windowExpr: Expr[I, W[Window[V]], OP],
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
-    comparison: WindowComparable[F, OP],
-    opV: OP[F[V]],
-    opW: OP[F[Window[V]]],
-    opB: OP[F[Boolean]],
-  ) extends Expr[I, F[Boolean], OP]("withinWindow") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, F[Boolean]] = v.visitWithinWindow(this)
-    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): WithinWindow[I, V, F, OP] =
+    comparison: WindowComparable[W, OP],
+    opV: OP[W[V]],
+    opW: OP[W[Window[V]]],
+    opB: OP[W[Boolean]],
+  ) extends Expr[I, W[Boolean], OP]("withinWindow") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[Boolean]] = v.visitWithinWindow(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): WithinWindow[I, V, W, OP] =
       copy(debugging = debugging)
   }
 

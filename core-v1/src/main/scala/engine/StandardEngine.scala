@@ -206,14 +206,14 @@ object StandardEngine {
       ExprResult.ValuesOfType(expr, finalState)
     }
 
-    override def visitWithinWindow[I, V, F[+_]](
-      expr: Expr.WithinWindow[I, V, F, OP],
+    override def visitWithinWindow[I, V, W[+_]](
+      expr: Expr.WithinWindow[I, V, W, OP],
     )(implicit
-      comparison: WindowComparable[F, OP],
-      opV: OP[F[V]],
-      opW: OP[F[Window[V]]],
-      opB: OP[F[Boolean]],
-    ): PO <:< I => ExprResult[PO, I, F[Boolean], OP] = { implicit evPOisI =>
+      comparison: WindowComparable[W, OP],
+      opV: OP[W[V]],
+      opW: OP[W[Window[V]]],
+      opB: OP[W[Boolean]],
+    ): PO <:< I => ExprResult[PO, I, W[Boolean], OP] = { implicit evPOisI =>
       val valueResult = expr.valueExpr.visit(this)(implicitly)
       val windowResult = expr.windowExpr.visit(this)(implicitly)
       val value = valueResult.state.output

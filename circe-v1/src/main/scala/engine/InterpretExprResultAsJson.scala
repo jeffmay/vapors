@@ -125,12 +125,12 @@ object InterpretExprResultAsJson {
       encodeExprResult(result)
         .add("factTypes", result.expr.factTypeSet.typeList.toList.map(_.name).asJson)
 
-    override def visitWithinWindow[I, V, F[+_]](
-      result: ExprResult.WithinWindow[PO, I, V, F, OP],
+    override def visitWithinWindow[I, V, W[+_]](
+      result: ExprResult.WithinWindow[PO, I, V, W, OP],
     )(implicit
-      comparison: WindowComparable[F, OP],
-      opB: OP[F[Boolean]],
-    ): ToJsonObject[I, F[Boolean]] = {
+      comparison: WindowComparable[W, OP],
+      opB: OP[W[Boolean]],
+    ): ToJsonObject[I, W[Boolean]] = {
       encodeExprResult(result)
     }
   }
@@ -219,13 +219,13 @@ object InterpretExprResultAsJson {
       opTs: OP[Seq[O]],
     ): ToJsonObject[Any, Seq[O]] = super.visitValuesOfType(result).deepMerge(sourceInfo[Seq[O]])
 
-    override def visitWithinWindow[I, V, F[+_]](
-      result: ExprResult.WithinWindow[PO, I, V, F, OP],
+    override def visitWithinWindow[I, V, W[+_]](
+      result: ExprResult.WithinWindow[PO, I, V, W, OP],
     )(implicit
-      comparison: WindowComparable[F, OP],
-      opB: OP[F[Boolean]],
-    ): ToJsonObject[I, F[Boolean]] =
-      super.visitWithinWindow(result).deepMerge(sourceInfo[F[Boolean]])
+      comparison: WindowComparable[W, OP],
+      opB: OP[W[Boolean]],
+    ): ToJsonObject[I, W[Boolean]] =
+      super.visitWithinWindow(result).deepMerge(sourceInfo[W[Boolean]])
   }
 
 }
