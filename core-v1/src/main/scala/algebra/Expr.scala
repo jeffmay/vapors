@@ -215,7 +215,7 @@ object Expr {
   final case class And[-I, OP[_]](
     leftExpr: Expr[I, Boolean, OP],
     rightExpr: Expr[I, Boolean, OP],
-    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
     opO: OP[Boolean],
   ) extends Expr[I, Boolean, OP]("and") {
@@ -235,7 +235,7 @@ object Expr {
   final case class Or[-I, OP[_]](
     leftExpr: Expr[I, Boolean, OP],
     rightExpr: Expr[I, Boolean, OP],
-    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
     opO: OP[Boolean],
   ) extends Expr[I, Boolean, OP]("or") {
@@ -261,7 +261,7 @@ object Expr {
   final case class AndThen[-II, +IO : OP, -OI, +OO : OP, OP[_]](
     inputExpr: Expr[II, IO, OP],
     outputExpr: Expr[OI, OO, OP],
-    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
     evIOisOI: IO <:< OI,
   ) extends Expr[II, OO, OP]("andThen") {
@@ -279,7 +279,7 @@ object Expr {
     */
   final case class Const[+O : OP, OP[_]](
     value: O,
-    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   ) extends Expr[Any, O, OP]("const") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[Any, O] = v.visitConst(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Const[O, OP] =
@@ -317,7 +317,7 @@ object Expr {
     rightExpr: Expr[I, RO, OP],
     operationName: String,
     operation: (LI, RI) => O,
-    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
     evLOisLI: LO <:< LI,
     evROisRI: RO <:< RI,
@@ -349,7 +349,7 @@ object Expr {
   final case class CustomFunction[-I, +O : OP, OP[_]](
     functionName: String,
     function: I => O,
-    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   ) extends Expr[I, O, OP]("customFunction") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitCustomFunction(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Expr[I, O, OP] =
@@ -372,7 +372,7 @@ object Expr {
     combineTrue: NonEmptyList[B] => B,
     combineFalse: List[B] => B,
     shortCircuit: Boolean,
-    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   ) extends Expr[C[A], B, OP]("exists") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], B] = v.visitExists(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Exists[C, A, B, OP] =
@@ -396,7 +396,7 @@ object Expr {
     combineTrue: List[B] => B,
     combineFalse: NonEmptyList[B] => B,
     shortCircuit: Boolean,
-    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   ) extends Expr[C[A], B, OP]("forall") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], B] = v.visitForAll(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): ForAll[C, A, B, OP] =
@@ -408,8 +408,9 @@ object Expr {
     *
     * You can think of this like the [[identity]] function.
     */
-  final case class Identity[I : OP, OP[_]](private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging)
-    extends Expr[I, I, OP]("identity") {
+  final case class Identity[I : OP, OP[_]](
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  ) extends Expr[I, I, OP]("identity") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, I] = v.visitIdentity(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Identity[I, OP] =
       copy[I, OP](debugging = debugging)
@@ -425,7 +426,7 @@ object Expr {
     */
   final case class MapEvery[C[_] : Functor, A, B, OP[_]](
     mapExpr: Expr[A, B, OP],
-    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
     opO: OP[C[B]],
   ) extends Expr[C[A], C[B], OP]("map") {
@@ -444,7 +445,7 @@ object Expr {
     */
   final case class Not[-I, +O : Negation : OP, OP[_]](
     innerExpr: Expr[I, O, OP],
-    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   ) extends Expr[I, O, OP]("not") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitNot(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Not[I, O, OP] =
@@ -460,7 +461,7 @@ object Expr {
   final case class ValuesOfType[T, +O, OP[_]](
     factTypeSet: FactTypeSet[T],
     transform: TypedFact[T] => O,
-    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
     opTs: OP[Seq[O]],
   ) extends Expr[Any, Seq[O], OP]("valuesOfType") {
@@ -483,7 +484,7 @@ object Expr {
   final case class WithinWindow[-I, +V, F[+_], OP[_]](
     valueExpr: Expr[I, F[V], OP],
     windowExpr: Expr[I, F[Window[V]], OP],
-    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
     comparison: WindowComparable[F, OP],
     opV: OP[F[V]],
@@ -502,7 +503,7 @@ object Expr {
     */
   final case class Select[-I, +O : OP, OP[_]](
     lens: VariantLens[I, O],
-    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   ) extends Expr[I, O, OP]("select") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitSelect(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Select[I, O, OP] =
