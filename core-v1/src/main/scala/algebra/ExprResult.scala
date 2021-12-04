@@ -90,12 +90,12 @@ object ExprResult {
 
     def visitValuesOfType[T, O](result: ValuesOfType[PO, T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~>: Seq[O]
 
-    def visitWithinWindow[I, V, F[+_]](
-      result: WithinWindow[PO, I, V, F, OP],
+    def visitWithinWindow[I, V, W[+_]](
+      result: WithinWindow[PO, I, V, W, OP],
     )(implicit
-      comparison: WindowComparable[F, OP],
-      opB: OP[F[Boolean]],
-    ): I ~>: F[Boolean]
+      comparison: WindowComparable[W, OP],
+      opB: OP[W[Boolean]],
+    ): I ~>: W[Boolean]
 
   }
 
@@ -254,15 +254,15 @@ object ExprResult {
   /**
     * The result of running [[Expr.WithinWindow]]
     */
-  final case class WithinWindow[+PO, -I, +V, F[+_], OP[_]](
-    expr: Expr.WithinWindow[I, V, F, OP],
-    state: ExprState[PO, F[Boolean]],
-    valueResult: ExprResult[PO, I, F[V], OP],
-    windowResult: ExprResult[PO, I, F[Window[V]], OP],
+  final case class WithinWindow[+PO, -I, +V, W[+_], OP[_]](
+    expr: Expr.WithinWindow[I, V, W, OP],
+    state: ExprState[PO, W[Boolean]],
+    valueResult: ExprResult[PO, I, W[V], OP],
+    windowResult: ExprResult[PO, I, W[Window[V]], OP],
   )(implicit
-    comparison: WindowComparable[F, OP],
-    opB: OP[F[Boolean]],
-  ) extends ExprResult[PO, I, F[Boolean], OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, F[Boolean]] = v.visitWithinWindow(this)
+    comparison: WindowComparable[W, OP],
+    opB: OP[W[Boolean]],
+  ) extends ExprResult[PO, I, W[Boolean], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, W[Boolean]] = v.visitWithinWindow(this)
   }
 }

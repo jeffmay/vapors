@@ -135,14 +135,14 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state(i, o))
     }
 
-    override def visitWithinWindow[I, V, F[+_]](
-      expr: Expr.WithinWindow[I, V, F, OP],
+    override def visitWithinWindow[I, V, W[+_]](
+      expr: Expr.WithinWindow[I, V, W, OP],
     )(implicit
-      comparison: WindowComparable[F, OP],
-      opV: OP[F[V]],
-      opW: OP[F[Window[V]]],
-      opB: OP[F[Boolean]],
-    ): I => F[Boolean] = { i =>
+      comparison: WindowComparable[W, OP],
+      opV: OP[W[V]],
+      opW: OP[W[Window[V]]],
+      opB: OP[W[Boolean]],
+    ): I => W[Boolean] = { i =>
       val value = expr.valueExpr.visit(this)(i)
       val window = expr.windowExpr.visit(this)(i)
       val o = comparison.withinWindow(value, window)
