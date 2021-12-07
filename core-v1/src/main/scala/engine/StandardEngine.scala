@@ -48,12 +48,12 @@ object StandardEngine {
     ): DebugArgs.Invoker[E, OP, debugArgs.In, debugArgs.Out] =
       DebugArgs[OP].of(expr)(debugArgs)
 
-    override def visitAnd[I, B, F[+_]](
-      expr: Expr.And[I, B, F, OP],
+    override def visitAnd[I, B, W[+_]](
+      expr: Expr.And[I, B, W, OP],
     )(implicit
-      logic: Conjunction[F, B, OP],
-      opO: OP[F[B]],
-    ): PO <:< I => ExprResult[PO, I, F[B], OP] = { implicit evPOisI =>
+      logic: Conjunction[W, B, OP],
+      opO: OP[W[B]],
+    ): PO <:< I => ExprResult[PO, I, W[B], OP] = { implicit evPOisI =>
       val exprs = expr.leftExpr +: expr.rightExpressions
       val results = exprs.map(_.visit(this)(implicitly))
       val resultOutputs = results.map(_.state.output)
@@ -192,12 +192,12 @@ object StandardEngine {
       ExprResult.Not(expr, finalState, booleanResult)
     }
 
-    override def visitOr[I, B, F[+_]](
-      expr: Expr.Or[I, B, F, OP],
+    override def visitOr[I, B, W[+_]](
+      expr: Expr.Or[I, B, W, OP],
     )(implicit
-      logic: Disjunction[F, B, OP],
-      opO: OP[F[B]],
-    ): PO <:< I => ExprResult[PO, I, F[B], OP] = { implicit evPOisI =>
+      logic: Disjunction[W, B, OP],
+      opO: OP[W[B]],
+    ): PO <:< I => ExprResult[PO, I, W[B], OP] = { implicit evPOisI =>
       val exprs = expr.leftExpr +: expr.rightExpressions
       val results = exprs.map(_.visit(this)(implicitly))
       val resultOutputs = results.map(_.state.output)

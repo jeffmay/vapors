@@ -148,12 +148,12 @@ object Expr {
     */
   trait Visitor[~:>[-_, +_], OP[_]] {
 
-    def visitAnd[I, B, F[+_]](
-      expr: And[I, B, F, OP],
+    def visitAnd[I, B, W[+_]](
+      expr: And[I, B, W, OP],
     )(implicit
-      logic: Conjunction[F, B, OP],
-      opB: OP[F[B]],
-    ): I ~:> F[B]
+      logic: Conjunction[W, B, OP],
+      opB: OP[W[B]],
+    ): I ~:> W[B]
 
     def visitAndThen[II, IO : OP, OI, OO : OP](expr: AndThen[II, IO, OI, OO, OP])(implicit evBI: IO <:< OI): II ~:> OO
 
@@ -191,12 +191,12 @@ object Expr {
       opB: OP[W[B]],
     ): I ~:> W[B]
 
-    def visitOr[I, B, F[+_]](
-      expr: Or[I, B, F, OP],
+    def visitOr[I, B, W[+_]](
+      expr: Or[I, B, W, OP],
     )(implicit
-      logic: Disjunction[F, B, OP],
-      opO: OP[F[B]],
-    ): I ~:> F[B]
+      logic: Disjunction[W, B, OP],
+      opO: OP[W[B]],
+    ): I ~:> W[B]
 
     def visitSelect[I, O : OP](expr: Select[I, O, OP]): I ~:> O
 
@@ -213,40 +213,48 @@ object Expr {
   }
 
   /**
-    * Evaluates the given expression nodes and uses `&&` to combine the results from left to right.
+    * Evaluates the given expression nodes and uses `&&` to combine the results from left to right
+    * using the provided definition of [[Conjunction]].
     *
     * @param leftExpr the left side of the `AND` operation
     * @param rightExpressions a non-empty vector of right side expressions to reduce with the `AND` operation
+    *
+    * @tparam B the output of the `AND` operation
+    * @tparam W the wrapper type (or effect) over which conjunction is performed
     */
-  final case class And[-I, +B, F[+_], OP[_]](
-    leftExpr: Expr[I, F[B], OP],
-    rightExpressions: NonEmptyVector[Expr[I, F[B], OP]],
+  final case class And[-I, +B, W[+_], OP[_]](
+    leftExpr: Expr[I, W[B], OP],
+    rightExpressions: NonEmptyVector[Expr[I, W[B], OP]],
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
-    logic: Conjunction[F, B, OP],
-    opO: OP[F[B]],
-  ) extends Expr[I, F[B], OP]("and") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, F[B]] = v.visitAnd(this)
-    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): And[I, B, F, OP] =
+    logic: Conjunction[W, B, OP],
+    opO: OP[W[B]],
+  ) extends Expr[I, W[B], OP]("and") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[B]] = v.visitAnd(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): And[I, B, W, OP] =
       copy(debugging = debugging)
   }
 
   /**
-    * Evaluates the given expression nodes and uses `||` to combine the results from left to right.
+    * Evaluates the given expression nodes and uses `||` to combine the results from left to right
+    * using the provided definition of [[Disjunction]].
     *
     * @param leftExpr the left side of the `OR` operation
     * @param rightExpressions a non-empty vector of right side expressions to reduce with the `OR` operation
+    *
+    * @tparam B the output of the `OR` operation
+    * @tparam W the wrapper type (or effect) over which disjunction is performed
     */
-  final case class Or[-I, +B, F[+_], OP[_]](
-    leftExpr: Expr[I, F[B], OP],
-    rightExpressions: NonEmptyVector[Expr[I, F[B], OP]],
+  final case class Or[-I, +B, W[+_], OP[_]](
+    leftExpr: Expr[I, W[B], OP],
+    rightExpressions: NonEmptyVector[Expr[I, W[B], OP]],
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
-    logic: Disjunction[F, B, OP],
-    opB: OP[F[B]],
-  ) extends Expr[I, F[B], OP]("or") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, F[B]] = v.visitOr(this)
-    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Or[I, B, F, OP] =
+    logic: Disjunction[W, B, OP],
+    opB: OP[W[B]],
+  ) extends Expr[I, W[B], OP]("or") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[B]] = v.visitOr(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Or[I, B, W, OP] =
       copy(debugging = debugging)
   }
 

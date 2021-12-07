@@ -7,28 +7,28 @@ import logic.{Conjunction, Disjunction, Negation}
 
 import cats.data.NonEmptyVector
 
-final class LogicalExprOps[I, B, F[+_], OP[_]](private val expr: Expr[I, F[B], OP]) extends AnyVal {
+final class LogicalExprOps[I, B, W[+_], OP[_]](private val expr: Expr[I, W[B], OP]) extends AnyVal {
 
   def &&[CI <: I, CB >: B](
-    that: Expr[CI, F[CB], OP],
+    that: Expr[CI, W[CB], OP],
   )(implicit
-    logic: Conjunction[F, CB, OP],
-    opB: OP[F[CB]],
-  ): Expr.And[CI, CB, F, OP] =
+    logic: Conjunction[W, CB, OP],
+    opB: OP[W[CB]],
+  ): Expr.And[CI, CB, W, OP] =
     Expr.And(expr, NonEmptyVector.one(that))
 
   def ||[CI <: I, CB >: B](
-    that: Expr[CI, F[CB], OP],
+    that: Expr[CI, W[CB], OP],
   )(implicit
-    logic: Disjunction[F, CB, OP],
-    opB: OP[F[CB]],
-  ): Expr.Or[CI, CB, F, OP] =
+    logic: Disjunction[W, CB, OP],
+    opB: OP[W[CB]],
+  ): Expr.Or[CI, CB, W, OP] =
     Expr.Or(expr, NonEmptyVector.one(that))
 
   def unary_!(
     implicit
-    logic: Negation[F, B, OP],
-    opB: OP[F[B]],
-  ): Expr.Not[I, B, F, OP] =
+    logic: Negation[W, B, OP],
+    opB: OP[W[B]],
+  ): Expr.Not[I, B, W, OP] =
     Expr.Not(expr)
 }

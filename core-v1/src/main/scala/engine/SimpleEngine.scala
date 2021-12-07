@@ -38,12 +38,12 @@ object SimpleEngine {
     ): InvokeAndReturn[E, OP, debugArgs.In, debugArgs.Out] =
       new InvokeAndReturn(DebugArgs[OP].of(expr)(debugArgs))
 
-    override def visitAnd[I, B, F[+_]](
-      expr: Expr.And[I, B, F, OP],
+    override def visitAnd[I, B, W[+_]](
+      expr: Expr.And[I, B, W, OP],
     )(implicit
-      logic: Conjunction[F, B, OP],
-      opB: OP[F[B]],
-    ): I => F[B] = { i =>
+      logic: Conjunction[W, B, OP],
+      opB: OP[W[B]],
+    ): I => W[B] = { i =>
       val exprs = expr.leftExpr +: expr.rightExpressions
       val results = exprs.map(_.visit(this)(i))
       val finalResult = results.reduceLeft { (acc, r) =>
@@ -138,12 +138,12 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state((i, output), negatedOutput))
     }
 
-    override def visitOr[I, B, F[+_]](
-      expr: Expr.Or[I, B, F, OP],
+    override def visitOr[I, B, W[+_]](
+      expr: Expr.Or[I, B, W, OP],
     )(implicit
-      logic: Disjunction[F, B, OP],
-      opO: OP[F[B]],
-    ): I => F[B] = { i =>
+      logic: Disjunction[W, B, OP],
+      opO: OP[W[B]],
+    ): I => W[B] = { i =>
       val exprs = expr.leftExpr +: expr.rightExpressions
       val results = exprs.map(_.visit(this)(i))
       val finalResult = results.reduceLeft { (acc, r) =>
