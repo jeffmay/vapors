@@ -54,14 +54,15 @@ object StandardEngine {
       logic: Conjunction[F, B, OP],
       opO: OP[F[B]],
     ): PO <:< I => ExprResult[PO, I, F[B], OP] = { implicit evPOisI =>
-      val left = expr.leftExpr.visit(this)(implicitly)
-      val right = expr.rightExpr.visit(this)(implicitly)
-      val leftIsTrue = left.state.output
-      val rightIsTrue = right.state.output
-      val output = logic.and(leftIsTrue, rightIsTrue)
+      val exprs = expr.leftExpr +: expr.rightExpressions
+      val results = exprs.map(_.visit(this)(implicitly))
+      val resultOutputs = results.map(_.state.output)
+      val output = resultOutputs.reduceLeft { (acc, r) =>
+        logic.and(acc, r)
+      }
       val finalState = state.swapAndReplaceOutput(output)
-      debugging(expr).invokeDebugger(stateFromInput((_, leftIsTrue, rightIsTrue), finalState.output))
-      ExprResult.And(expr, finalState, left, right)
+      debugging(expr).invokeDebugger(stateFromInput((_, resultOutputs), finalState.output))
+      ExprResult.And(expr, finalState, results)
     }
 
     override def visitAndThen[II, IO : OP, OI, OO : OP](
@@ -197,14 +198,15 @@ object StandardEngine {
       logic: Disjunction[F, B, OP],
       opO: OP[F[B]],
     ): PO <:< I => ExprResult[PO, I, F[B], OP] = { implicit evPOisI =>
-      val left = expr.leftExpr.visit(this)(implicitly)
-      val right = expr.rightExpr.visit(this)(implicitly)
-      val leftIsTrue = left.state.output
-      val rightIsTrue = right.state.output
-      val output = logic.or(leftIsTrue, rightIsTrue)
+      val exprs = expr.leftExpr +: expr.rightExpressions
+      val results = exprs.map(_.visit(this)(implicitly))
+      val resultOutputs = results.map(_.state.output)
+      val output = resultOutputs.reduceLeft { (acc, r) =>
+        logic.or(acc, r)
+      }
       val finalState = state.swapAndReplaceOutput(output)
-      debugging(expr).invokeDebugger(stateFromInput((_, leftIsTrue, rightIsTrue), finalState.output))
-      ExprResult.Or(expr, finalState, left, right)
+      debugging(expr).invokeDebugger(stateFromInput((_, resultOutputs), finalState.output))
+      ExprResult.Or(expr, finalState, results)
     }
 
     override def visitSelect[I, O : OP](expr: Expr.Select[I, O, OP]): PO <:< I => ExprResult[PO, I, O, OP] = {

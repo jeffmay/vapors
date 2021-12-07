@@ -44,10 +44,12 @@ object SimpleEngine {
       logic: Conjunction[F, B, OP],
       opB: OP[F[B]],
     ): I => F[B] = { i =>
-      val lo = expr.leftExpr.visit(this)(i)
-      val ro = expr.rightExpr.visit(this)(i)
-      val o = logic.and(lo, ro)
-      debugging(expr).invokeAndReturn(state((i, lo, ro), o))
+      val exprs = expr.leftExpr +: expr.rightExpressions
+      val results = exprs.map(_.visit(this)(i))
+      val finalResult = results.reduceLeft { (acc, r) =>
+        logic.and(acc, r)
+      }
+      debugging(expr).invokeAndReturn(state((i, results), finalResult))
     }
 
     override def visitAndThen[II, IO : OP, OI, OO : OP](
@@ -142,10 +144,12 @@ object SimpleEngine {
       logic: Disjunction[F, B, OP],
       opO: OP[F[B]],
     ): I => F[B] = { i =>
-      val lo = expr.leftExpr.visit(this)(i)
-      val ro = expr.rightExpr.visit(this)(i)
-      val o = logic.or(lo, ro)
-      debugging(expr).invokeAndReturn(state((i, lo, ro), o))
+      val exprs = expr.leftExpr +: expr.rightExpressions
+      val results = exprs.map(_.visit(this)(i))
+      val finalResult = results.reduceLeft { (acc, r) =>
+        logic.or(acc, r)
+      }
+      debugging(expr).invokeAndReturn(state((i, results), finalResult))
     }
 
     override def visitSelect[I, O : OP](expr: Expr.Select[I, O, OP]): I => O = { i =>

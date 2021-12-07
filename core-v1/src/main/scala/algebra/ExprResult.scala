@@ -6,6 +6,7 @@ import data.ExtractValue.AsBoolean
 import data.{ExprState, Window}
 import logic.{Conjunction, Disjunction, Negation}
 
+import cats.data.NonEmptyVector
 import cats.{Foldable, Functor}
 
 /**
@@ -128,8 +129,9 @@ object ExprResult {
   final case class And[+PO, -I, +B, F[+_], OP[_]](
     expr: Expr.And[I, B, F, OP],
     state: ExprState[PO, F[B]],
-    leftResult: ExprResult[PO, I, F[B], OP],
-    rightResult: ExprResult[PO, I, F[B], OP], // TODO: Should I support short-circuiting by making this Optional?
+    // TODO: Should I support short-circuiting allowing this to be less than the original length?
+    //       Maybe store the first false result and the index? Maybe a vector of optionals?
+    results: NonEmptyVector[ExprResult[PO, I, F[B], OP]],
   )(implicit
     logic: Conjunction[F, B, OP],
     opO: OP[F[B]],
@@ -143,8 +145,9 @@ object ExprResult {
   final case class Or[+PO, -I, +B, F[+_], OP[_]](
     expr: Expr.Or[I, B, F, OP],
     state: ExprState[PO, F[B]],
-    leftResult: ExprResult[PO, I, F[B], OP],
-    rightResult: ExprResult[PO, I, F[B], OP], // TODO: Should I support short-circuiting by making this Optional?
+    // TODO: Should I support short-circuiting allowing this to be less than the original length?
+    //       Maybe store the first false result and the index? Maybe a vector of optionals?
+    results: NonEmptyVector[ExprResult[PO, I, F[B], OP]],
   )(implicit
     logic: Disjunction[F, B, OP],
     opO: OP[F[B]],

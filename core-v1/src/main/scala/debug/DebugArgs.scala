@@ -6,7 +6,7 @@ import algebra.Expr
 import data.{ExprState, Window}
 import lens.VariantLens
 
-import cats.data.NonEmptyList
+import cats.data.{NonEmptyList, NonEmptyVector}
 import izumi.reflect.Tag
 
 import scala.reflect.ClassTag
@@ -126,9 +126,9 @@ object DebugArgs {
       override type Out = OO
     }
 
-  implicit def debugAnd[I, B, F[+_], OP[_]]: Aux[Expr.And[I, B, F, OP], OP, (I, F[B], F[B]), F[B]] =
+  implicit def debugAnd[I, B, F[+_], OP[_]]: Aux[Expr.And[I, B, F, OP], OP, (I, NonEmptyVector[F[B]]), F[B]] =
     new DebugArgs[Expr.And[I, B, F, OP], OP] {
-      override type In = (I, F[B], F[B])
+      override type In = (I, NonEmptyVector[F[B]])
       override type Out = F[B]
     }
 
@@ -138,9 +138,9 @@ object DebugArgs {
       override type Out = O
     }
 
-  implicit def debugOr[I, B, F[+_], OP[_]]: Aux[Expr.Or[I, B, F, OP], OP, (I, F[B], F[B]), F[B]] =
+  implicit def debugOr[I, B, F[+_], OP[_]]: Aux[Expr.Or[I, B, F, OP], OP, (I, NonEmptyVector[F[B]]), F[B]] =
     new DebugArgs[Expr.Or[I, B, F, OP], OP] {
-      override type In = (I, F[B], F[B])
+      override type In = (I, NonEmptyVector[F[B]])
       override type Out = F[B]
     }
 
