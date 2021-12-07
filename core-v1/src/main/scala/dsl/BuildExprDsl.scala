@@ -4,6 +4,7 @@ package dsl
 
 import algebra._
 import cats.{Foldable, Functor, Order}
+import cats.data.NonEmptyVector
 import data.{FactTypeSet, Window}
 import logic.{Conjunction, Disjunction, Logic, Negation}
 
@@ -29,20 +30,22 @@ trait BuildExprDsl extends DebugExprDsl {
   final def and[I, B](
     left: I ~:> W[B],
     right: I ~:> W[B],
+    more: I ~:> W[B]*,
   )(implicit
     logic: Conjunction[W, B, OP],
     opO: OP[W[B]],
   ): Expr.And[I, B, W, OP] =
-    Expr.And(left, right)
+    Expr.And(left, NonEmptyVector(right, more.toVector))
 
   final def or[I, B](
     left: I ~:> W[B],
     right: I ~:> W[B],
+    more: I ~:> W[B]*,
   )(implicit
     logic: Disjunction[W, B, OP],
     opO: OP[W[B]],
   ): Expr.Or[I, B, W, OP] =
-    Expr.Or(left, right)
+    Expr.Or(left, NonEmptyVector(right, more.toVector))
 
   final def not[I, B](
     expr: I ~:> W[B],

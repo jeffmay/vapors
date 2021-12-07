@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 import algebra.Expr
 import data.Justified
 
-import cats.data.NonEmptyList
+import cats.data.{NonEmptyList, NonEmptyVector}
 import munit.{FunSuite, Location}
 
 class SimpleJustifiedBooleanLogicSpec extends FunSuite {
@@ -11,26 +11,37 @@ class SimpleJustifiedBooleanLogicSpec extends FunSuite {
   import dsl.simple.justified._
 
   private def testLogic(
-    l: Any ~:> Justified[Boolean],
-    r: Any ~:> Justified[Boolean],
-    expected: Justified[Boolean],
+    head: Expr.Const[Justified[Boolean], OP],
+    tail: NonEmptyVector[Expr.Const[Justified[Boolean], OP]],
   )(
-    combine: (Any ~:> Justified[Boolean], Any ~:> Justified[Boolean]) => Any ~:> Justified[Boolean],
+    expect: NonEmptyVector[Justified[Boolean]] => Justified[Boolean],
+  )(
+    combine: (Any ~:> Justified[Boolean], NonEmptyVector[Any ~:> Justified[Boolean]]) => Any ~:> Justified[Boolean],
   )(implicit
     loc: Location,
   ): Unit = {
-    val obtained = combine(l, r).run()
+    val obtained = combine(head, tail).run()
+    val expected = expect((head +: tail).map(_.value))
     assertEquals(obtained, expected)
   }
 
   private def test_&&(
     l: Expr.Const[Justified[Boolean], OP],
     r: Expr.Const[Justified[Boolean], OP],
+    m: Expr.Const[Justified[Boolean], OP]*,
   )(implicit
     loc: Location,
   ): Unit = {
-    val justified = Justified.byInference("and", l.value.value && r.value.value, NonEmptyList.of(l.value, r.value))
-    testLogic(l, r, justified)(_ && _)
+    val tail = NonEmptyVector(r, m.toVector)
+    testLogic(l, tail) {
+      _.reduceLeft { (l, r) =>
+        Justified.byInference("and", l.value && r.value, NonEmptyList.of(l, r))
+      }
+    } { (h, t) =>
+      t.foldLeft(h) {
+        _ && _
+      }
+    }
   }
 
   test("true && true == true") {
@@ -49,14 +60,37 @@ class SimpleJustifiedBooleanLogicSpec extends FunSuite {
     test_&&(false.const, false.const)
   }
 
+  test("true && true && true == true") {
+    test_&&(true.const, true.const, true.const)
+  }
+
+  test("true && true && false == false") {
+    test_&&(true.const, true.const, false.const)
+  }
+
+  test("false && false && true == false") {
+    test_&&(false.const, false.const, true.const)
+  }
+
+  test("false && false && false == false") {
+    test_&&(false.const, false.const, false.const)
+  }
+
   private def test_and(
     l: Expr.Const[Justified[Boolean], OP],
     r: Expr.Const[Justified[Boolean], OP],
+    m: Expr.Const[Justified[Boolean], OP]*,
   )(implicit
     loc: Location,
   ): Unit = {
-    val justified = Justified.byInference("and", l.value.value && r.value.value, NonEmptyList.of(l.value, r.value))
-    testLogic(l, r, justified)(and(_, _))
+    val tail = NonEmptyVector(r, m.toVector)
+    testLogic(l, tail) {
+      _.reduceLeft { (l, r) =>
+        Justified.byInference("and", l.value && r.value, NonEmptyList.of(l, r))
+      }
+    } { (h, t) =>
+      and(h, t.head, t.tail: _*)
+    }
   }
 
   test("and(true, true) == true") {
@@ -75,14 +109,39 @@ class SimpleJustifiedBooleanLogicSpec extends FunSuite {
     test_and(false.const, false.const)
   }
 
+  test("and(true, true, true) == true") {
+    test_and(true.const, true.const, true.const)
+  }
+
+  test("and(true, true, false) == false") {
+    test_and(true.const, true.const, false.const)
+  }
+
+  test("and(false, false, true) == false") {
+    test_and(false.const, false.const, true.const)
+  }
+
+  test("and(false, false, false) == false") {
+    test_and(false.const, false.const, false.const)
+  }
+
   private def test_||(
     l: Expr.Const[Justified[Boolean], OP],
     r: Expr.Const[Justified[Boolean], OP],
+    m: Expr.Const[Justified[Boolean], OP]*,
   )(implicit
     loc: Location,
   ): Unit = {
-    val justified = Justified.byInference("or", l.value.value || r.value.value, NonEmptyList.of(l.value, r.value))
-    testLogic(l, r, justified)(_ || _)
+    val tail = NonEmptyVector(r, m.toVector)
+    testLogic(l, tail) {
+      _.reduceLeft { (l, r) =>
+        Justified.byInference("or", l.value || r.value, NonEmptyList.of(l, r))
+      }
+    } { (h, t) =>
+      t.foldLeft(h) {
+        _ || _
+      }
+    }
   }
 
   test("true || true == true") {
@@ -101,14 +160,37 @@ class SimpleJustifiedBooleanLogicSpec extends FunSuite {
     test_||(false.const, false.const)
   }
 
+  test("true || true || true == true") {
+    test_||(true.const, true.const, true.const)
+  }
+
+  test("true || true || false == true") {
+    test_||(true.const, true.const, false.const)
+  }
+
+  test("false || false || true == true") {
+    test_||(false.const, false.const, true.const)
+  }
+
+  test("false || false || false == false") {
+    test_||(false.const, false.const, false.const)
+  }
+
   private def test_or(
     l: Expr.Const[Justified[Boolean], OP],
     r: Expr.Const[Justified[Boolean], OP],
+    m: Expr.Const[Justified[Boolean], OP]*,
   )(implicit
     loc: Location,
   ): Unit = {
-    val justified = Justified.byInference("or", l.value.value || r.value.value, NonEmptyList.of(l.value, r.value))
-    testLogic(l, r, justified)(or(_, _))
+    val tail = NonEmptyVector(r, m.toVector)
+    testLogic(l, tail) {
+      _.reduceLeft { (l, r) =>
+        Justified.byInference("or", l.value || r.value, NonEmptyList.of(l, r))
+      }
+    } { (h, t) =>
+      or(h, t.head, t.tail: _*)
+    }
   }
 
   test("or(true, true) == true") {
@@ -125,6 +207,22 @@ class SimpleJustifiedBooleanLogicSpec extends FunSuite {
 
   test("or(false, false) == false") {
     test_or(false.const, false.const)
+  }
+
+  test("or(true, true, true) == true") {
+    test_or(true.const, true.const, true.const)
+  }
+
+  test("or(true, true, false) == true") {
+    test_or(true.const, true.const, false.const)
+  }
+
+  test("or(false, false, true) == true") {
+    test_or(false.const, false.const, true.const)
+  }
+
+  test("or(false, false, false) == false") {
+    test_or(false.const, false.const, false.const)
   }
 
   private def testNegation(

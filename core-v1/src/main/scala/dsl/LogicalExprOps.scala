@@ -5,6 +5,8 @@ package dsl
 import algebra.Expr
 import logic.{Conjunction, Disjunction, Negation}
 
+import cats.data.NonEmptyVector
+
 final class LogicalExprOps[I, B, F[+_], OP[_]](private val expr: Expr[I, F[B], OP]) extends AnyVal {
 
   def &&[CI <: I, CB >: B](
@@ -13,7 +15,7 @@ final class LogicalExprOps[I, B, F[+_], OP[_]](private val expr: Expr[I, F[B], O
     logic: Conjunction[F, CB, OP],
     opB: OP[F[CB]],
   ): Expr.And[CI, CB, F, OP] =
-    Expr.And(expr, that)
+    Expr.And(expr, NonEmptyVector.one(that))
 
   def ||[CI <: I, CB >: B](
     that: Expr[CI, F[CB], OP],
@@ -21,7 +23,7 @@ final class LogicalExprOps[I, B, F[+_], OP[_]](private val expr: Expr[I, F[B], O
     logic: Disjunction[F, CB, OP],
     opB: OP[F[CB]],
   ): Expr.Or[CI, CB, F, OP] =
-    Expr.Or(expr, that)
+    Expr.Or(expr, NonEmptyVector.one(that))
 
   def unary_!(
     implicit

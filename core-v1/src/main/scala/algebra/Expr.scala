@@ -8,7 +8,7 @@ import lens.VariantLens
 import logic.{Conjunction, Disjunction, Negation}
 import math.Add
 
-import cats.data.NonEmptyList
+import cats.data.{NonEmptyList, NonEmptyVector}
 import cats.{Foldable, Functor}
 
 import scala.annotation.nowarn
@@ -212,16 +212,15 @@ object Expr {
     ): I ~:> W[Boolean]
   }
 
-  // TODO: Use a NonEmptyList of expressions?
   /**
-    * Evaluates the left and right expression nodes and uses `&&` to combine the results.
+    * Evaluates the given expression nodes and uses `&&` to combine the results from left to right.
     *
     * @param leftExpr the left side of the `AND` operation
-    * @param rightExpr the right side of the `AND` operation
+    * @param rightExpressions a non-empty vector of right side expressions to reduce with the `AND` operation
     */
   final case class And[-I, +B, F[+_], OP[_]](
     leftExpr: Expr[I, F[B], OP],
-    rightExpr: Expr[I, F[B], OP],
+    rightExpressions: NonEmptyVector[Expr[I, F[B], OP]],
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
     logic: Conjunction[F, B, OP],
@@ -232,16 +231,15 @@ object Expr {
       copy(debugging = debugging)
   }
 
-  // TODO: Use a NonEmptyList of expressions?
   /**
-    * Evaluates the left and right expression nodes and uses `||` to combine the results.
+    * Evaluates the given expression nodes and uses `||` to combine the results from left to right.
     *
     * @param leftExpr the left side of the `OR` operation
-    * @param rightExpr the right side of the `OR` operation
+    * @param rightExpressions a non-empty vector of right side expressions to reduce with the `OR` operation
     */
   final case class Or[-I, +B, F[+_], OP[_]](
     leftExpr: Expr[I, F[B], OP],
-    rightExpr: Expr[I, F[B], OP],
+    rightExpressions: NonEmptyVector[Expr[I, F[B], OP]],
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
     logic: Disjunction[F, B, OP],

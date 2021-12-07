@@ -2,6 +2,7 @@ package com.rallyhealth.vapors.v1
 
 import algebra.Expr
 
+import cats.data.NonEmptyVector
 import munit.{FunSuite, Location}
 
 class StandardBooleanLogicSpec extends FunSuite {
@@ -9,24 +10,38 @@ class StandardBooleanLogicSpec extends FunSuite {
   import dsl.standard._
 
   private def testLogic(
-    l: Any ~:> Boolean,
-    r: Any ~:> Boolean,
-    expected: Boolean,
+    head: Expr.Const[Boolean, OP],
+    tail: NonEmptyVector[Expr.Const[Boolean, OP]],
   )(
-    combine: (Any ~:> Boolean, Any ~:> Boolean) => Any ~:> Boolean,
+    expect: NonEmptyVector[Boolean] => Boolean,
+  )(
+    combine: (Any ~:> Boolean, NonEmptyVector[Any ~:> Boolean]) => Any ~:> Boolean,
   )(implicit
     loc: Location,
   ): Unit = {
-    val obtained = combine(l, r).run()
+    val obtained = combine(head, tail).run()
+    val expected = expect((head +: tail).map(_.value))
     assertEquals(obtained.state.output, expected)
   }
 
   private def test_&&(
     l: Expr.Const[Boolean, OP],
     r: Expr.Const[Boolean, OP],
+    m: Expr.Const[Boolean, OP]*,
   )(implicit
     loc: Location,
-  ): Unit = testLogic(l, r, l.value && r.value)(_ && _)
+  ): Unit = {
+    val tail = NonEmptyVector(r, m.toVector)
+    testLogic(l, tail) {
+      _.reduceLeft {
+        _ && _
+      }
+    } { (h, t) =>
+      t.foldLeft(h) {
+        _ && _
+      }
+    }
+  }
 
   test("true && true == true") {
     test_&&(true.const, true.const)
@@ -44,12 +59,38 @@ class StandardBooleanLogicSpec extends FunSuite {
     test_&&(false.const, false.const)
   }
 
+  test("true && true && true == true") {
+    test_&&(true.const, true.const, true.const)
+  }
+
+  test("true && true && false == false") {
+    test_&&(true.const, true.const, false.const)
+  }
+
+  test("false && false && true == false") {
+    test_&&(false.const, false.const, true.const)
+  }
+
+  test("false && false && false == false") {
+    test_&&(false.const, false.const, false.const)
+  }
+
   private def test_and(
     l: Expr.Const[Boolean, OP],
     r: Expr.Const[Boolean, OP],
+    m: Expr.Const[Boolean, OP]*,
   )(implicit
     loc: Location,
-  ): Unit = testLogic(l, r, l.value && r.value)(and(_, _))
+  ): Unit = {
+    val tail = NonEmptyVector(r, m.toVector)
+    testLogic(l, tail) {
+      _.reduceLeft {
+        _ && _
+      }
+    } { (h, t) =>
+      and(h, t.head, t.tail: _*)
+    }
+  }
 
   test("and(true, true) == true") {
     test_and(true.const, true.const)
@@ -67,12 +108,40 @@ class StandardBooleanLogicSpec extends FunSuite {
     test_and(false.const, false.const)
   }
 
+  test("and(true, true, true) == true") {
+    test_and(true.const, true.const, true.const)
+  }
+
+  test("and(true, true, false) == false") {
+    test_and(true.const, true.const, false.const)
+  }
+
+  test("and(false, false, true) == false") {
+    test_and(false.const, false.const, true.const)
+  }
+
+  test("and(false, false, false) == false") {
+    test_and(false.const, false.const, false.const)
+  }
+
   private def test_||(
     l: Expr.Const[Boolean, OP],
     r: Expr.Const[Boolean, OP],
+    m: Expr.Const[Boolean, OP]*,
   )(implicit
     loc: Location,
-  ): Unit = testLogic(l, r, l.value || r.value)(_ || _)
+  ): Unit = {
+    val tail = NonEmptyVector(r, m.toVector)
+    testLogic(l, tail) {
+      _.reduceLeft {
+        _ || _
+      }
+    } { (h, t) =>
+      t.foldLeft(h) {
+        _ || _
+      }
+    }
+  }
 
   test("true || true == true") {
     test_||(true.const, true.const)
@@ -90,12 +159,38 @@ class StandardBooleanLogicSpec extends FunSuite {
     test_||(false.const, false.const)
   }
 
+  test("true || true || true == true") {
+    test_||(true.const, true.const, true.const)
+  }
+
+  test("true || true || false == true") {
+    test_||(true.const, true.const, false.const)
+  }
+
+  test("false || false || true == true") {
+    test_||(false.const, false.const, true.const)
+  }
+
+  test("false || false || false == false") {
+    test_||(false.const, false.const, false.const)
+  }
+
   private def test_or(
     l: Expr.Const[Boolean, OP],
     r: Expr.Const[Boolean, OP],
+    m: Expr.Const[Boolean, OP]*,
   )(implicit
     loc: Location,
-  ): Unit = testLogic(l, r, l.value || r.value)(or(_, _))
+  ): Unit = {
+    val tail = NonEmptyVector(r, m.toVector)
+    testLogic(l, tail) {
+      _.reduceLeft {
+        _ || _
+      }
+    } { (h, t) =>
+      or(h, t.head, t.tail: _*)
+    }
+  }
 
   test("or(true, true) == true") {
     test_or(true.const, true.const)
@@ -111,6 +206,22 @@ class StandardBooleanLogicSpec extends FunSuite {
 
   test("or(false, false) == false") {
     test_or(false.const, false.const)
+  }
+
+  test("or(true, true, true) == true") {
+    test_or(true.const, true.const, true.const)
+  }
+
+  test("or(true, true, false) == true") {
+    test_or(true.const, true.const, false.const)
+  }
+
+  test("or(false, false, true) == true") {
+    test_or(false.const, false.const, true.const)
+  }
+
+  test("or(false, false, false) == false") {
+    test_or(false.const, false.const, false.const)
   }
 
   test("!false == true") {
