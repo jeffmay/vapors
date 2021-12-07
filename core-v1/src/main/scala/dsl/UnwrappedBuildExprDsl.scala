@@ -3,10 +3,11 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra._
-import cats.{Foldable, Functor, FunctorFilter, Traverse}
 import data.{Extract, FactTypeSet}
 import lens.VariantLens
 import logic.Logic
+
+import cats.{Foldable, Functor, FunctorFilter, Traverse}
 import shapeless.<:!<
 
 trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with UnwrappedDslTypes {
@@ -125,6 +126,13 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
       functorC: Functor[C],
     ): AndThen[I, C[A], C[B]] =
       inputExpr.andThen(Expr.MapEvery[C, A, B, OP](mapExprBuilder(ident)))
+
+    override def sorted(
+      implicit
+      sortable: Sortable[C, A],
+      opAs: OP[C[A]],
+    ): AndThen[I, C[A], C[A]] =
+      inputExpr.andThen(Expr.Sorted())
   }
 }
 

@@ -3,10 +3,11 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra.Expr
-import cats.{Foldable, Functor, FunctorFilter}
 import data.{Extract, ExtractValue, FactTypeSet}
 import dsl.SelectOutputType.Aux
 import lens.VariantLens
+
+import cats.{Foldable, Functor, FunctorFilter}
 
 trait WrappedExprDsl extends BuildExprDsl {
   self: DslTypes with WrapImplicits =>
@@ -132,5 +133,12 @@ trait WrappedExprDsl extends BuildExprDsl {
       filterC: FunctorFilter[C],
     ): AndThen[I, C[W[A]], C[W[A]]] =
       inputExpr.andThen(Expr.Filter(conditionExprBuilder(Expr.Identity())))
+
+    override def sorted(
+      implicit
+      sortable: Sortable[C, W[A]],
+      opAs: OP[C[W[A]]],
+    ): AndThen[I, C[W[A]], C[W[A]]] =
+      inputExpr.andThen(Expr.Sorted())
   }
 }

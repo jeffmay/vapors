@@ -3,10 +3,12 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra._
-import cats.{Foldable, Functor, FunctorFilter}
-import data.{ExprState, Extract, ExtractValue, Window}
+import data.{ExprState, ExtractValue, Window}
 import debug.DebugArgs
+import dsl.Sortable
 import logic.{Conjunction, Disjunction, Negation}
+
+import cats.{Foldable, Functor, FunctorFilter}
 
 import scala.annotation.nowarn
 
@@ -232,6 +234,18 @@ object StandardEngine {
       val finalState = state.swapAndReplaceOutput(output)
       debugging(expr).invokeDebugger(finalState.mapInput((_, inputValue, expr.lens, selectOutput)))
       ExprResult.Select(expr, finalState)
+    }
+
+    override def visitSorted[C[_], A](
+      expr: Expr.Sorted[C, A, OP],
+    )(implicit
+      sortable: Sortable[C, A],
+      opAs: OP[C[A]],
+    ): PO <:< C[A] => ExprResult[PO, C[A], C[A], OP] = { implicit evPOisI =>
+      val sorted = sortable.sort(state.output)
+      val finalState = state.swapAndReplaceOutput(sorted)
+      debugging(expr).invokeDebugger(finalState)
+      ExprResult.Sorted(expr, finalState)
     }
 
     override def visitValuesOfType[T, O](

@@ -3,11 +3,13 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra.{EqualComparable, Expr, WindowComparable}
-import cats.{Foldable, Functor, FunctorFilter}
-import data.{ExprState, Extract, ExtractValue, FactTable, Window}
+import data.{ExprState, ExtractValue, FactTable, Window}
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
+import dsl.Sortable
 import logic.{Conjunction, Disjunction, Negation}
+
+import cats.{Foldable, Functor, FunctorFilter}
 
 /**
   * A vapors [[Expr]] interpreter that just builds a simple function without providing any post-processing.
@@ -166,6 +168,16 @@ object SimpleEngine {
       val b = expr.lens.get(a)
       val o = expr.wrapSelected(a, b)
       debugging(expr).invokeAndReturn(state((i, a, expr.lens, b), o))
+    }
+
+    override def visitSorted[C[_], A](
+      expr: Expr.Sorted[C, A, OP],
+    )(implicit
+      sortable: Sortable[C, A],
+      opAs: OP[C[A]],
+    ): C[A] => C[A] = { i =>
+      val o = sortable.sort(i)
+      debugging(expr).invokeAndReturn(state(i, o))
     }
 
     override def visitValuesOfType[T, O](

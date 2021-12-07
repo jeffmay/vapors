@@ -2,13 +2,15 @@ package com.rallyhealth.vapors.v1
 
 package algebra
 
-import cats.data.{NonEmptySeq, NonEmptyVector}
-import cats.{Foldable, Functor, FunctorFilter}
-import data.{Extract, ExtractValue, FactTypeSet, TypedFact, Window}
+import data.{ExtractValue, FactTypeSet, TypedFact, Window}
 import debug.{DebugArgs, Debugging, NoDebugging}
+import dsl.Sortable
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Negation}
 import math.Add
+
+import cats.data.{NonEmptySeq, NonEmptyVector}
+import cats.{Foldable, Functor, FunctorFilter}
 
 import scala.annotation.nowarn
 
@@ -208,6 +210,13 @@ object Expr {
     ): I ~:> W[B]
 
     def visitSelect[I, A, B, O : OP](expr: Select[I, A, B, O, OP]): I ~:> O
+
+    def visitSorted[C[_], A](
+      expr: Sorted[C, A, OP],
+    )(implicit
+      sortable: Sortable[C, A],
+      opAs: OP[C[A]],
+    ): C[A] ~:> C[A]
 
     def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~:> Seq[O]
 
@@ -587,6 +596,24 @@ object Expr {
   ) extends Expr[I, W[Boolean], OP]("isEqual") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[Boolean]] = v.visitIsEqual(this)
     override def withDebugging(debugging: Debugging[Nothing, Nothing]): IsEqual[I, V, W, OP] =
+      copy(debugging = debugging)
+  }
+
+  /**
+    * Applies the given [[Sortable]] for the elements of the input collection (or effect) of type [[A]] to produce
+    * a collection of the same type.
+    *
+    * @tparam C the higher-kinded container type provided as input
+    * @tparam A the type of every element of the input (and output)
+    */
+  final case class Sorted[C[_], A, OP[_]](
+    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    sortable: Sortable[C, A],
+    opAs: OP[C[A]],
+  ) extends Expr[C[A], C[A], OP]("sorted") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], C[A]] = v.visitSorted(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Sorted[C, A, OP] =
       copy(debugging = debugging)
   }
 
