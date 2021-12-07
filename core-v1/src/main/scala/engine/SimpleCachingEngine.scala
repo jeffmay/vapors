@@ -4,12 +4,15 @@ package engine
 
 import algebra.{EqualComparable, Expr, WindowComparable}
 import cats.data.NonEmptyVector
-import cats.{Eval, Foldable, Functor, FunctorFilter}
+import cats.{Eval, Foldable, Functor, FunctorFilter, Order}
 import data.ExtractValue.AsBoolean
 import data.{ExprState, Extract, ExtractValue, FactTable, Window}
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
+import dsl.Sortable
 import logic.{Conjunction, Disjunction, Negation}
+
+import scala.collection.Factory
 
 object SimpleCachingEngine {
 
@@ -276,6 +279,17 @@ object SimpleCachingEngine {
         val outputResult = CachedResult(o, inputResult.cacheState)
         debugging(expr).invokeAndReturn(state((i, a, expr.lens, b), outputResult))
       }
+
+    override def visitSorted[C[_], A](
+      expr: Expr.Sorted[C, A, OP],
+    )(implicit
+      sortable: Sortable[C, A],
+      opAs: OP[C[A]],
+    ): C[A] => CachedResult[C[A]] = memoize(expr, _) { i =>
+      val unsorted: C[A] = i
+      val sorted = sortable.sort(i)
+      debugging(expr).invokeAndReturn(state(unsorted, cached(sorted)))
+    }
 
     override def visitValuesOfType[T, O](
       expr: Expr.ValuesOfType[T, O, OP],

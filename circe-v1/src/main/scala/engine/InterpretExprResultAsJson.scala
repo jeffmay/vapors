@@ -3,12 +3,15 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra.{EqualComparable, ExprResult, WindowComparable}
-import cats.{Foldable, Functor, FunctorFilter}
+
+import cats.{Foldable, Functor, FunctorFilter, Order}
 import data.{ExprState, Extract}
 import data.ExtractValue.AsBoolean
 import debug.HasSourceCodeInfo
 import dsl.circe.HasEncoder
 import logic.{Conjunction, Disjunction, Negation}
+
+import com.rallyhealth.vapors.v1.dsl.Sortable
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -145,6 +148,14 @@ object InterpretExprResultAsJson {
     override def visitSelect[I, A, B, O : OP](result: ExprResult.Select[PO, I, A, B, O, OP]): ToJsonObject[I, O] =
       encodeExprResult(result)
 
+    override def visitSorted[C[_], A](
+      result: ExprResult.Sorted[PO, C, A, OP],
+    )(implicit
+      sortable: Sortable[C, A],
+      opO: OP[C[A]],
+    ): ToJsonObject[C[A], C[A]] =
+      encodeExprResult(result)
+
     override def visitValuesOfType[T, O](
       result: ExprResult.ValuesOfType[PO, T, O, OP],
     )(implicit
@@ -266,6 +277,13 @@ object InterpretExprResultAsJson {
 
     override def visitSelect[I, A, B, O : OP](result: ExprResult.Select[PO, I, A, B, O, OP]): ToJsonObject[I, O] =
       super.visitSelect(result).deepMerge(sourceInfo[O])
+
+    override def visitSorted[C[_], A](
+      result: ExprResult.Sorted[PO, C, A, OP],
+    )(implicit
+      sortable: Sortable[C, A],
+      opO: OP[C[A]],
+    ): ToJsonObject[C[A], C[A]] = super.visitSorted(result).deepMerge(sourceInfo[C[A]])
 
     override def visitValuesOfType[T, O](
       result: ExprResult.ValuesOfType[PO, T, O, OP],

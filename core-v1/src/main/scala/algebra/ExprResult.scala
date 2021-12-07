@@ -3,8 +3,10 @@ package com.rallyhealth.vapors.v1
 package algebra
 
 import data.ExtractValue.AsBoolean
-import data.{ExprState, Extract, Window}
+import data.{ExprState, Window}
+import dsl.Sortable
 import logic.{Conjunction, Disjunction, Negation}
+
 import cats.data.NonEmptyVector
 import cats.{Foldable, Functor, FunctorFilter}
 
@@ -117,6 +119,13 @@ object ExprResult {
     ): I ~>: W[B]
 
     def visitSelect[I, A, B, O : OP](result: Select[PO, I, A, B, O, OP]): I ~>: O
+
+    def visitSorted[C[_], A](
+      result: Sorted[PO, C, A, OP],
+    )(implicit
+      sortable: Sortable[C, A],
+      opO: OP[C[A]],
+    ): C[A] ~>: C[A]
 
     def visitValuesOfType[T, O](result: ValuesOfType[PO, T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~>: Seq[O]
 
@@ -300,6 +309,19 @@ object ExprResult {
     state: ExprState[PO, O],
   ) extends ExprResult[PO, I, O, OP] {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitSelect(this)
+  }
+
+  /**
+    * The result of running [[Expr.Sorted]]
+    */
+  final case class Sorted[+PO, C[_], A, OP[_]](
+    expr: Expr.Sorted[C, A, OP],
+    state: ExprState[PO, C[A]],
+  )(implicit
+    sortable: Sortable[C, A],
+    opAs: OP[C[A]],
+  ) extends ExprResult[PO, C[A], C[A], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[C[A], C[A]] = v.visitSorted(this)
   }
 
   /**

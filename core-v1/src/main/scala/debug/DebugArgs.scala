@@ -217,6 +217,12 @@ object DebugArgs {
       override type Out = O
     }
 
+  implicit def debugSorted[C[_], A, OP[_]]: Aux[Expr.Sorted[C, A, OP], OP, C[A], C[A]] =
+    new DebugArgs[Expr.Sorted[C, A, OP], OP] {
+      override type In = C[A]
+      override type Out = C[A]
+    }
+
   implicit def debugValuesOfType[T, O, OP[_]]: Aux[Expr.ValuesOfType[T, O, OP], OP, Any, Seq[O]] =
     new DebugArgs[Expr.ValuesOfType[T, O, OP], OP] {
       override type In = Any

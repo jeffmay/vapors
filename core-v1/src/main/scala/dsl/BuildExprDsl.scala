@@ -3,11 +3,12 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra._
-import cats.data.NonEmptyVector
-import cats.{Foldable, Functor, FunctorFilter, Order}
 import data.{Extract, FactTypeSet, Window}
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Logic, Negation}
+
+import cats.data.NonEmptyVector
+import cats.{Foldable, Functor, FunctorFilter, Order}
 
 trait BuildExprDsl extends DebugExprDsl {
   self: DslTypes with WrapImplicits =>
@@ -129,6 +130,12 @@ trait BuildExprDsl extends DebugExprDsl {
       opB: OP[C[W[B]]],
       functorC: Functor[C],
     ): AndThen[I, C[W[A]], C[W[B]]]
+
+    def sorted(
+      implicit
+      sortable: Sortable[C, W[A]],
+      opAs: OP[C[W[A]]],
+    ): AndThen[I, C[W[A]], C[W[A]]]
   }
 
   implicit def isInWindow[I, V : Order : OP](
