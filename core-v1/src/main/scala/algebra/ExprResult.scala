@@ -124,38 +124,6 @@ object ExprResult {
   }
 
   /**
-    * The result of running [[Expr.And]]
-    */
-  final case class And[+PO, -I, +B, W[+_], OP[_]](
-    expr: Expr.And[I, B, W, OP],
-    state: ExprState[PO, W[B]],
-    // TODO: Should I support short-circuiting allowing this to be less than the original length?
-    //       Maybe store the first false result and the index? Maybe a vector of optionals?
-    results: NonEmptyVector[ExprResult[PO, I, W[B], OP]],
-  )(implicit
-    logic: Conjunction[W, B, OP],
-    opO: OP[W[B]],
-  ) extends ExprResult[PO, I, W[B], OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, W[B]] = v.visitAnd(this)
-  }
-
-  /**
-    * The result of running [[Expr.Or]]
-    */
-  final case class Or[+PO, -I, +B, W[+_], OP[_]](
-    expr: Expr.Or[I, B, W, OP],
-    state: ExprState[PO, W[B]],
-    // TODO: Should I support short-circuiting allowing this to be less than the original length?
-    //       Maybe store the first false result and the index? Maybe a vector of optionals?
-    results: NonEmptyVector[ExprResult[PO, I, W[B], OP]],
-  )(implicit
-    logic: Disjunction[W, B, OP],
-    opO: OP[W[B]],
-  ) extends ExprResult[PO, I, W[B], OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, W[B]] = v.visitOr(this)
-  }
-
-  /**
     * The result of running [[Expr.AndThen]]
     */
   final case class AndThen[+PO, -II, +IO : OP, -OI, +OO : OP, OP[_]](
@@ -216,6 +184,52 @@ object ExprResult {
   }
 
   /**
+    * The result of running [[Expr.And]]
+    */
+  final case class And[+PO, -I, +B, W[+_], OP[_]](
+    expr: Expr.And[I, B, W, OP],
+    state: ExprState[PO, W[B]],
+    // TODO: Should I support short-circuiting allowing this to be less than the original length?
+    //       Maybe store the first false result and the index? Maybe a vector of optionals?
+    results: NonEmptyVector[ExprResult[PO, I, W[B], OP]],
+  )(implicit
+    logic: Conjunction[W, B, OP],
+    opO: OP[W[B]],
+  ) extends ExprResult[PO, I, W[B], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, W[B]] = v.visitAnd(this)
+  }
+
+  /**
+    * The result of running [[Expr.Or]]
+    */
+  final case class Or[+PO, -I, +B, W[+_], OP[_]](
+    expr: Expr.Or[I, B, W, OP],
+    state: ExprState[PO, W[B]],
+    // TODO: Should I support short-circuiting allowing this to be less than the original length?
+    //       Maybe store the first false result and the index? Maybe a vector of optionals?
+    results: NonEmptyVector[ExprResult[PO, I, W[B], OP]],
+  )(implicit
+    logic: Disjunction[W, B, OP],
+    opO: OP[W[B]],
+  ) extends ExprResult[PO, I, W[B], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, W[B]] = v.visitOr(this)
+  }
+
+  /**
+    * The result of running [[Expr.Not]]
+    */
+  final case class Not[+PO, -I, +B, W[+_], OP[_]](
+    expr: Expr.Not[I, B, W, OP],
+    state: ExprState[PO, W[B]],
+    inputResult: ExprResult[PO, I, W[B], OP],
+  )(implicit
+    logic: Negation[W, B, OP],
+    opB: OP[W[B]],
+  ) extends ExprResult[PO, I, W[B], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, W[B]] = v.visitNot(this)
+  }
+
+  /**
     * The result of running [[Expr.CustomFunction]]
     */
   final case class CustomFunction[+PO, -I, +O : OP, OP[_]](
@@ -258,20 +272,6 @@ object ExprResult {
     opO: OP[C[B]],
   ) extends ExprResult[PO, C[A], C[B], OP] {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[C[A], C[B]] = v.visitMapEvery(this)
-  }
-
-  /**
-    * The result of running [[Expr.Not]]
-    */
-  final case class Not[+PO, -I, +B, W[+_], OP[_]](
-    expr: Expr.Not[I, B, W, OP],
-    state: ExprState[PO, W[B]],
-    inputResult: ExprResult[PO, I, W[B], OP],
-  )(implicit
-    logic: Negation[W, B, OP],
-    opB: OP[W[B]],
-  ) extends ExprResult[PO, I, W[B], OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, W[B]] = v.visitNot(this)
   }
 
   /**
