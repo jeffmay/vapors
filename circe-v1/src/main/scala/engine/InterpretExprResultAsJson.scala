@@ -59,12 +59,12 @@ object InterpretExprResultAsJson {
       )
     }
 
-    override def visitAnd[I, B, F[+_]](
-      result: ExprResult.And[PO, I, B, F, OP],
+    override def visitAnd[I, B, W[+_]](
+      result: ExprResult.And[PO, I, B, W, OP],
     )(implicit
-      logic: Conjunction[F, B, OP],
-      opO: OP[F[B]],
-    ): ToJsonObject[I, F[B]] =
+      logic: Conjunction[W, B, OP],
+      opO: OP[W[B]],
+    ): ToJsonObject[I, W[B]] =
       encodeExprResult(result)
 
     override def visitAndThen[II, IO : OP, OI, OO : OP](
@@ -122,19 +122,19 @@ object InterpretExprResultAsJson {
     ): ToJsonObject[C[A], C[B]] =
       encodeExprResult(result)
 
-    override def visitNot[I, B, F[+_]](
-      result: ExprResult.Not[PO, I, B, F, OP],
+    override def visitNot[I, B, W[+_]](
+      result: ExprResult.Not[PO, I, B, W, OP],
     )(implicit
-      logic: Negation[F, B, OP],
-      opB: OP[F[B]],
-    ): ToJsonObject[I, F[B]] = encodeExprResult(result)
+      logic: Negation[W, B, OP],
+      opB: OP[W[B]],
+    ): ToJsonObject[I, W[B]] = encodeExprResult(result)
 
-    override def visitOr[I, B, F[+_]](
-      result: ExprResult.Or[PO, I, B, F, OP],
+    override def visitOr[I, B, W[+_]](
+      result: ExprResult.Or[PO, I, B, W, OP],
     )(implicit
-      logic: Disjunction[F, B, OP],
-      opO: OP[F[B]],
-    ): ToJsonObject[I, F[B]] =
+      logic: Disjunction[W, B, OP],
+      opO: OP[W[B]],
+    ): ToJsonObject[I, W[B]] =
       encodeExprResult(result)
 
     override def visitSelect[I, O : OP](result: ExprResult.Select[PO, I, O, OP]): ToJsonObject[I, O] =
@@ -181,12 +181,12 @@ object InterpretExprResultAsJson {
       HasSourceCodeInfo.fromContext[OP, O].asJsonObject
     }
 
-    override def visitAnd[I, B, F[+_]](
-      result: ExprResult.And[PO, I, B, F, OP],
+    override def visitAnd[I, B, W[+_]](
+      result: ExprResult.And[PO, I, B, W, OP],
     )(implicit
-      logic: Conjunction[F, B, OP],
-      opO: OP[F[B]],
-    ): ToJsonObject[I, F[B]] = super.visitAnd(result).deepMerge(sourceInfo[F[B]])
+      logic: Conjunction[W, B, OP],
+      opO: OP[W[B]],
+    ): ToJsonObject[I, W[B]] = super.visitAnd(result).deepMerge(sourceInfo[W[B]])
 
     override def visitAndThen[II, IO : OP, OI, OO : OP](
       result: ExprResult.AndThen[PO, II, IO, OI, OO, OP],
@@ -239,19 +239,19 @@ object InterpretExprResultAsJson {
       opO: OP[C[B]],
     ): ToJsonObject[C[A], C[B]] = super.visitMapEvery(result).deepMerge(sourceInfo[C[B]])
 
-    override def visitNot[I, B, F[+_]](
-      result: ExprResult.Not[PO, I, B, F, OP],
+    override def visitNot[I, B, W[+_]](
+      result: ExprResult.Not[PO, I, B, W, OP],
     )(implicit
-      logic: Negation[F, B, OP],
-      opB: OP[F[B]],
-    ): ToJsonObject[I, F[B]] = super.visitNot(result).deepMerge(sourceInfo[F[B]])
+      logic: Negation[W, B, OP],
+      opB: OP[W[B]],
+    ): ToJsonObject[I, W[B]] = super.visitNot(result).deepMerge(sourceInfo[W[B]])
 
-    override def visitOr[I, B, F[+_]](
-      result: ExprResult.Or[PO, I, B, F, OP],
+    override def visitOr[I, B, W[+_]](
+      result: ExprResult.Or[PO, I, B, W, OP],
     )(implicit
-      logic: Disjunction[F, B, OP],
-      opO: OP[F[B]],
-    ): ToJsonObject[I, F[B]] = super.visitOr(result).deepMerge(sourceInfo[F[B]])
+      logic: Disjunction[W, B, OP],
+      opO: OP[W[B]],
+    ): ToJsonObject[I, W[B]] = super.visitOr(result).deepMerge(sourceInfo[W[B]])
 
     override def visitSelect[I, O : OP](result: ExprResult.Select[PO, I, O, OP]): ToJsonObject[I, O] =
       super.visitSelect(result).deepMerge(sourceInfo[O])

@@ -61,12 +61,12 @@ object ExprResult {
     */
   trait Visitor[-PO, ~>:[-_, +_], OP[_]] {
 
-    def visitAnd[I, B, F[+_]](
-      result: And[PO, I, B, F, OP],
+    def visitAnd[I, B, W[+_]](
+      result: And[PO, I, B, W, OP],
     )(implicit
-      logic: Conjunction[F, B, OP],
-      opO: OP[F[B]],
-    ): I ~>: F[B]
+      logic: Conjunction[W, B, OP],
+      opO: OP[W[B]],
+    ): I ~>: W[B]
 
     def visitAndThen[AI, AO : OP, BI, BO : OP](
       result: AndThen[PO, AI, AO, BI, BO, OP],
@@ -96,19 +96,19 @@ object ExprResult {
 
     def visitMapEvery[C[_] : Functor, A, B](result: MapEvery[PO, C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~>: C[B]
 
-    def visitNot[I, B, F[+_]](
-      result: Not[PO, I, B, F, OP],
+    def visitNot[I, B, W[+_]](
+      result: Not[PO, I, B, W, OP],
     )(implicit
-      logic: Negation[F, B, OP],
-      opB: OP[F[B]],
-    ): I ~>: F[B]
+      logic: Negation[W, B, OP],
+      opB: OP[W[B]],
+    ): I ~>: W[B]
 
-    def visitOr[I, B, F[+_]](
-      result: Or[PO, I, B, F, OP],
+    def visitOr[I, B, W[+_]](
+      result: Or[PO, I, B, W, OP],
     )(implicit
-      logic: Disjunction[F, B, OP],
-      opO: OP[F[B]],
-    ): I ~>: F[B]
+      logic: Disjunction[W, B, OP],
+      opO: OP[W[B]],
+    ): I ~>: W[B]
 
     def visitSelect[I, O : OP](result: Select[PO, I, O, OP]): I ~>: O
 
@@ -126,33 +126,33 @@ object ExprResult {
   /**
     * The result of running [[Expr.And]]
     */
-  final case class And[+PO, -I, +B, F[+_], OP[_]](
-    expr: Expr.And[I, B, F, OP],
-    state: ExprState[PO, F[B]],
+  final case class And[+PO, -I, +B, W[+_], OP[_]](
+    expr: Expr.And[I, B, W, OP],
+    state: ExprState[PO, W[B]],
     // TODO: Should I support short-circuiting allowing this to be less than the original length?
     //       Maybe store the first false result and the index? Maybe a vector of optionals?
-    results: NonEmptyVector[ExprResult[PO, I, F[B], OP]],
+    results: NonEmptyVector[ExprResult[PO, I, W[B], OP]],
   )(implicit
-    logic: Conjunction[F, B, OP],
-    opO: OP[F[B]],
-  ) extends ExprResult[PO, I, F[B], OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, F[B]] = v.visitAnd(this)
+    logic: Conjunction[W, B, OP],
+    opO: OP[W[B]],
+  ) extends ExprResult[PO, I, W[B], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, W[B]] = v.visitAnd(this)
   }
 
   /**
     * The result of running [[Expr.Or]]
     */
-  final case class Or[+PO, -I, +B, F[+_], OP[_]](
-    expr: Expr.Or[I, B, F, OP],
-    state: ExprState[PO, F[B]],
+  final case class Or[+PO, -I, +B, W[+_], OP[_]](
+    expr: Expr.Or[I, B, W, OP],
+    state: ExprState[PO, W[B]],
     // TODO: Should I support short-circuiting allowing this to be less than the original length?
     //       Maybe store the first false result and the index? Maybe a vector of optionals?
-    results: NonEmptyVector[ExprResult[PO, I, F[B], OP]],
+    results: NonEmptyVector[ExprResult[PO, I, W[B], OP]],
   )(implicit
-    logic: Disjunction[F, B, OP],
-    opO: OP[F[B]],
-  ) extends ExprResult[PO, I, F[B], OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, F[B]] = v.visitOr(this)
+    logic: Disjunction[W, B, OP],
+    opO: OP[W[B]],
+  ) extends ExprResult[PO, I, W[B], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, W[B]] = v.visitOr(this)
   }
 
   /**
@@ -263,15 +263,15 @@ object ExprResult {
   /**
     * The result of running [[Expr.Not]]
     */
-  final case class Not[+PO, -I, +B, F[+_], OP[_]](
-    expr: Expr.Not[I, B, F, OP],
-    state: ExprState[PO, F[B]],
-    inputResult: ExprResult[PO, I, F[B], OP],
+  final case class Not[+PO, -I, +B, W[+_], OP[_]](
+    expr: Expr.Not[I, B, W, OP],
+    state: ExprState[PO, W[B]],
+    inputResult: ExprResult[PO, I, W[B], OP],
   )(implicit
-    logic: Negation[F, B, OP],
-    opB: OP[F[B]],
-  ) extends ExprResult[PO, I, F[B], OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, F[B]] = v.visitNot(this)
+    logic: Negation[W, B, OP],
+    opB: OP[W[B]],
+  ) extends ExprResult[PO, I, W[B], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, W[B]] = v.visitNot(this)
   }
 
   /**
