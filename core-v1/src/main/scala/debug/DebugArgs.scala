@@ -126,22 +126,10 @@ object DebugArgs {
       override type Out = OO
     }
 
-  implicit def debugAnd[I, B, W[+_], OP[_]]: Aux[Expr.And[I, B, W, OP], OP, (I, NonEmptyVector[W[B]]), W[B]] =
-    new DebugArgs[Expr.And[I, B, W, OP], OP] {
-      override type In = (I, NonEmptyVector[W[B]])
-      override type Out = W[B]
-    }
-
   implicit def debugCustomFunction[I, O, OP[_]]: Aux[Expr.CustomFunction[I, O, OP], OP, I, O] =
     new DebugArgs[Expr.CustomFunction[I, O, OP], OP] {
       override type In = I
       override type Out = O
-    }
-
-  implicit def debugOr[I, B, W[+_], OP[_]]: Aux[Expr.Or[I, B, W, OP], OP, (I, NonEmptyVector[W[B]]), W[B]] =
-    new DebugArgs[Expr.Or[I, B, W, OP], OP] {
-      override type In = (I, NonEmptyVector[W[B]])
-      override type Out = W[B]
     }
 
   implicit def debugCombine[I, LI, LO, RI, RO, O, OP[_]](
@@ -152,6 +140,24 @@ object DebugArgs {
     new DebugArgs[Expr.Combine[I, LI, LO, RI, RO, O, OP], OP] {
       override type In = (I, LI, RI)
       override type Out = O
+    }
+
+  implicit def debugAnd[I, B, W[+_], OP[_]]: Aux[Expr.And[I, B, W, OP], OP, (I, NonEmptyVector[W[B]]), W[B]] =
+    new DebugArgs[Expr.And[I, B, W, OP], OP] {
+      override type In = (I, NonEmptyVector[W[B]])
+      override type Out = W[B]
+    }
+
+  implicit def debugOr[I, B, W[+_], OP[_]]: Aux[Expr.Or[I, B, W, OP], OP, (I, NonEmptyVector[W[B]]), W[B]] =
+    new DebugArgs[Expr.Or[I, B, W, OP], OP] {
+      override type In = (I, NonEmptyVector[W[B]])
+      override type Out = W[B]
+    }
+
+  implicit def debugNot[I, O, W[+_], OP[_]]: Aux[Expr.Not[I, O, W, OP], OP, (I, W[O]), W[O]] =
+    new DebugArgs[Expr.Not[I, O, W, OP], OP] {
+      override type In = (I, W[O])
+      override type Out = W[O]
     }
 
   implicit def debugConst[O, OP[_]]: Aux[Expr.Const[O, OP], OP, Any, O] =
@@ -170,12 +176,6 @@ object DebugArgs {
     new DebugArgs[Expr.IsEqual[I, V, F, OP], OP] {
       override type In = (I, F[V], F[V])
       override type Out = F[Boolean]
-    }
-
-  implicit def debugNot[I, O, W[+_], OP[_]]: Aux[Expr.Not[I, O, W, OP], OP, (I, W[O]), W[O]] =
-    new DebugArgs[Expr.Not[I, O, W, OP], OP] {
-      override type In = (I, W[O])
-      override type Out = W[O]
     }
 
   implicit def debugExists[

@@ -213,52 +213,6 @@ object Expr {
   }
 
   /**
-    * Evaluates the given expression nodes and uses `&&` to combine the results from left to right
-    * using the provided definition of [[Conjunction]].
-    *
-    * @param leftExpr the left side of the `AND` operation
-    * @param rightExpressions a non-empty vector of right side expressions to reduce with the `AND` operation
-    *
-    * @tparam B the output of the `AND` operation
-    * @tparam W the wrapper type (or effect) over which conjunction is performed
-    */
-  final case class And[-I, +B, W[+_], OP[_]](
-    leftExpr: Expr[I, W[B], OP],
-    rightExpressions: NonEmptyVector[Expr[I, W[B], OP]],
-    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
-  )(implicit
-    logic: Conjunction[W, B, OP],
-    opO: OP[W[B]],
-  ) extends Expr[I, W[B], OP]("and") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[B]] = v.visitAnd(this)
-    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): And[I, B, W, OP] =
-      copy(debugging = debugging)
-  }
-
-  /**
-    * Evaluates the given expression nodes and uses `||` to combine the results from left to right
-    * using the provided definition of [[Disjunction]].
-    *
-    * @param leftExpr the left side of the `OR` operation
-    * @param rightExpressions a non-empty vector of right side expressions to reduce with the `OR` operation
-    *
-    * @tparam B the output of the `OR` operation
-    * @tparam W the wrapper type (or effect) over which disjunction is performed
-    */
-  final case class Or[-I, +B, W[+_], OP[_]](
-    leftExpr: Expr[I, W[B], OP],
-    rightExpressions: NonEmptyVector[Expr[I, W[B], OP]],
-    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
-  )(implicit
-    logic: Disjunction[W, B, OP],
-    opB: OP[W[B]],
-  ) extends Expr[I, W[B], OP]("or") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[B]] = v.visitOr(this)
-    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Or[I, B, W, OP] =
-      copy(debugging = debugging)
-  }
-
-  /**
     * Passes the output of the input expression as the input to the output expression and returns the output of the
     * output expression.
     *
@@ -338,6 +292,76 @@ object Expr {
   ) extends Expr[I, O, OP]("combine") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitCombine(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Combine[I, LI, LO, RI, RO, O, OP] =
+      copy(debugging = debugging)
+  }
+
+  /**
+    * Evaluates the given expression nodes and uses `&&` to combine the results from left to right
+    * using the provided definition of [[Conjunction]].
+    *
+    * @param leftExpr the left side of the `AND` operation
+    * @param rightExpressions a non-empty vector of right side expressions to reduce with the `AND` operation
+    *
+    * @tparam B the output of the `AND` operation
+    * @tparam W the wrapper type (or effect) over which conjunction is performed
+    */
+  final case class And[-I, +B, W[+_], OP[_]](
+    leftExpr: Expr[I, W[B], OP],
+    rightExpressions: NonEmptyVector[Expr[I, W[B], OP]],
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    logic: Conjunction[W, B, OP],
+    opO: OP[W[B]],
+  ) extends Expr[I, W[B], OP]("and") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[B]] = v.visitAnd(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): And[I, B, W, OP] =
+      copy(debugging = debugging)
+  }
+
+  /**
+    * Evaluates the given expression nodes and uses `||` to combine the results from left to right
+    * using the provided definition of [[Disjunction]].
+    *
+    * @param leftExpr the left side of the `OR` operation
+    * @param rightExpressions a non-empty vector of right side expressions to reduce with the `OR` operation
+    *
+    * @tparam B the output of the `OR` operation
+    * @tparam W the wrapper type (or effect) over which disjunction is performed
+    */
+  final case class Or[-I, +B, W[+_], OP[_]](
+    leftExpr: Expr[I, W[B], OP],
+    rightExpressions: NonEmptyVector[Expr[I, W[B], OP]],
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    logic: Disjunction[W, B, OP],
+    opB: OP[W[B]],
+  ) extends Expr[I, W[B], OP]("or") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[B]] = v.visitOr(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Or[I, B, W, OP] =
+      copy(debugging = debugging)
+  }
+
+  /**
+    * Negate the output of this expression using the implicit definition of [[Negation]].
+    *
+    * [[Negation]] is tricky to define properly using constructivist logic. It is defined in this library
+    * as the logical negation of the value with no change to the evidence.
+    *
+    * @param innerExpr the expression to negate
+    * @param logic the definition for how to negate the output of this expression.
+    *
+    * @tparam B the output of the negation operation
+    * @tparam W the wrapper type (or effect) over which negation is performed
+    */
+  final case class Not[-I, +B, W[+_], OP[_]](
+    innerExpr: Expr[I, W[B], OP],
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    logic: Negation[W, B, OP],
+    opB: OP[W[B]],
+  ) extends Expr[I, W[B], OP]("not") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[B]] = v.visitNot(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Not[I, B, W, OP] =
       copy(debugging = debugging)
   }
 
@@ -446,30 +470,6 @@ object Expr {
   ) extends Expr[C[A], C[B], OP]("map") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], C[B]] = v.visitMapEvery(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): MapEvery[C, A, B, OP] =
-      copy(debugging = debugging)
-  }
-
-  /**
-    * Negate the output of this expression using the implicit definition of [[Negation]].
-    *
-    * [[Negation]] is tricky to define properly using constructivist logic. It is defined in this library
-    * as the logical negation of the value with no change to the evidence.
-    *
-    * @param innerExpr the expression to negate
-    * @param logic the definition for how to negate the output of this expression.
-    *
-    * @tparam B the output of the negation operation
-    * @tparam W the wrapper type (or effect) over which negation is performed
-    */
-  final case class Not[-I, +B, W[+_], OP[_]](
-    innerExpr: Expr[I, W[B], OP],
-    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
-  )(implicit
-    logic: Negation[W, B, OP],
-    opB: OP[W[B]],
-  ) extends Expr[I, W[B], OP]("not") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[B]] = v.visitNot(this)
-    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Not[I, B, W, OP] =
       copy(debugging = debugging)
   }
 
