@@ -94,17 +94,15 @@ trait BuildExprDsl extends DebugExprDsl {
     ): AndThen[I, C[W[A]], C[W[B]]]
   }
 
-  // TODO: Rename to compareWithinWindow
-  implicit def compare[I, V : Order : OP](
+  implicit def isInWindow[I, V : Order : OP](
     valueExpr: I ~:> W[V],
   )(implicit
     opV: OP[W[V]],
     opW: OP[W[Window[V]]],
     opB: OP[W[Boolean]],
-  ): ComparisonExprBuilder[I, V] = new ComparisonExprBuilder(valueExpr)
+  ): WindowComparisonExprBuilder[I, V] = new WindowComparisonExprBuilder(valueExpr)
 
-  // TODO: Rename to WindowComparisonExprBuilder
-  class ComparisonExprBuilder[I, V : Order : OP](
+  class WindowComparisonExprBuilder[I, V : Order : OP](
     protected val valueExpr: I ~:> W[V],
   )(implicit
     opV: OP[W[V]],
@@ -144,7 +142,7 @@ trait BuildExprDsl extends DebugExprDsl {
     def >=<(expr: I ~:> W[Window[V]]): I >=< V = Expr.WithinWindow(valueExpr, expr)
   }
 
-  implicit def compareIsEqual[I, V : OP](
+  implicit def isEq[I, V : OP](
     valueExpr: I ~:> W[V],
   )(implicit
     compareV: EqualComparable[W, V, OP],
