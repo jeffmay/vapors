@@ -14,7 +14,7 @@ import scala.annotation.implicitNotFound
   */
 @implicitNotFound(
   """Cannot negate a value of type ${F}[${B}] with an output parameter of ${OP}. 
-If you want like to define negation (aka the NOT operation) for a custom type, you must define or import an instance of Negation[${F}, ${B}, ${OP}]""",
+To define negation for a custom type (aka the NOT operation), you must define or import an instance of Negation[${F}, ${B}, ${OP}]""",
 )
 trait Negation[F[_], B, OP[_]] {
 

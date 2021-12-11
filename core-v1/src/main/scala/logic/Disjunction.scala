@@ -19,7 +19,7 @@ import scala.annotation.implicitNotFound
   */
 @implicitNotFound(
   """Cannot perform a logical OR operation on values of type ${F}[${B}] with an output parameter of ${OP}. 
-If you want like to define disjunction (aka the OR operation) for a custom type, you must define or import an instance of Disjunction[${F}, ${B}, ${OP}]""",
+To define disjunction for a custom type (aka the OR operation), you must define or import an instance of Disjunction[${F}, ${B}, ${OP}]""",
 )
 trait Disjunction[F[_], B, OP[_]] {
 
