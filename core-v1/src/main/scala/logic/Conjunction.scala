@@ -19,7 +19,7 @@ import scala.annotation.implicitNotFound
   */
 @implicitNotFound(
   """Cannot perform a logical AND operation on values of type ${F}[${B}] with an output parameter of ${OP}. 
-If you want like to define conjunction (aka the AND operation) for a custom type, you must define or import an instance of Conjunction[${F}, ${B}, ${OP}]""",
+To define conjunction for a custom type (aka the AND operation), you must define or import an instance of Conjunction[${F}, ${B}, ${OP}]""",
 )
 trait Conjunction[F[_], B, OP[_]] {
 

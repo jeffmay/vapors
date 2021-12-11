@@ -17,7 +17,7 @@ import scala.annotation.implicitNotFound
   */
 @implicitNotFound(
   """Cannot perform a logical operations (like AND / OR / NOT) on values of type ${F}[${B}] with an output parameter of ${OP}. 
-If you want like to define the operations, you must define or import an instance of Logic[${F}, ${B}, ${OP}]""",
+To define the operations, you must define or import an instance of Logic[${F}, ${B}, ${OP}]""",
 )
 trait Logic[F[_], B, OP[_]] extends Conjunction[F, B, OP] with Disjunction[F, B, OP] with Negation[F, B, OP]
 
