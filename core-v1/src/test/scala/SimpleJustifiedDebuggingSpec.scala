@@ -1,23 +1,24 @@
 package com.rallyhealth.vapors.v1
 
 import algebra.Expr
-import com.rallyhealth.vapors.v1.example.NestedSelectable
-import com.rallyhealth.vapors.v1.lens.VariantLens
+import data.Justified
+import example.NestedSelectable
+import lens.VariantLens
 import munit._
 
-class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
+class SimpleJustifiedDebuggingSpec extends FunSuite with CommonDebuggingSpec {
 
-  override final val thisDsl = dsl.simple
+  override final val thisDsl = dsl.simple.justified
   import thisDsl._
 
   private val initialInput = "Test input"
   private val expectedInitialInput = Some(initialInput)
 
-  private val anySeqExpr: Any ~:> Seq[String] = Seq("generic", "expression").const
+  private val anySeqExpr: Any ~:> Seq[Justified[String]] = Seq("generic", "expression").const
 
   test("debug any expr syntax produces the correct output type") {
     anySeqExpr.debug { state =>
-      val o: Seq[String] = state.output
+      val o: Seq[Justified[String]] = state.output
     }
   }
 
@@ -27,20 +28,20 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
   test("debug const with input") {
     testExpr(constExpr).withInput(initialInput).verifyDebuggerCalledWith { state =>
       assertInputEquals(expectedInitialInput, state.input)
-      assertEquals(state.output, constValue)
+      assertEquals(state.output.value, constValue)
     }
   }
 
   test("debug const without initial input") {
     testExpr(constExpr).withNoInput.verifyDebuggerCalledWith { state =>
       assertInputEquals(None, state.input)
-      assertEquals(state.output, constValue)
+      assertEquals(state.output.value, constValue)
     }
   }
 
   test("debug const syntax produces the correct types") {
     constExpr.debug { state =>
-      val o: Int = state.output
+      val o: Justified[Int] = state.output
     }
   }
 
@@ -51,9 +52,9 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     val expr = combineHolder.debug { state =>
       val (i, a, b) = state.input
       assertInputEquals(expectedInitialInput, i)
-      assertEquals(a, 4)
-      assertEquals(b, 5)
-      assertEquals(state.output, combineHolderOutput)
+      assertEquals(a.value, 4)
+      assertEquals(b.value, 5)
+      assertEquals(state.output.value, combineHolderOutput)
     }
     expr.runWith(initialInput)
   }
@@ -62,9 +63,9 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     val expr = combineHolder.debug { state =>
       val (i, a, b) = state.input
       assertInputEquals(None, i)
-      assertEquals(a, 4)
-      assertEquals(b, 5)
-      assertEquals(state.output, combineHolderOutput)
+      assertEquals(a.value, 4)
+      assertEquals(b.value, 5)
+      assertEquals(state.output.value, combineHolderOutput)
     }
     expr.run()
   }
@@ -75,9 +76,9 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     testExpr(combineExpr).withInput(initialInput).verifyDebuggerCalledWith { state =>
       val (i, a, b) = state.input
       assertInputEquals(expectedInitialInput, i)
-      assertEquals(a, 4)
-      assertEquals(b, 5)
-      assertEquals(state.output, combineHolderOutput)
+      assertEquals(a.value, 4)
+      assertEquals(b.value, 5)
+      assertEquals(state.output.value, combineHolderOutput)
     }
   }
 
@@ -85,16 +86,16 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     testExpr(combineExpr).withNoInput.verifyDebuggerCalledWith { state =>
       val (i, a, b) = state.input
       assertInputEquals(None, i)
-      assertEquals(a, 4)
-      assertEquals(b, 5)
-      assertEquals(state.output, combineHolderOutput)
+      assertEquals(a.value, 4)
+      assertEquals(b.value, 5)
+      assertEquals(state.output.value, combineHolderOutput)
     }
   }
 
   test("debug combine syntax works") {
     combineExpr.debug { state =>
-      val (_, l: Int, r: Int) = state.input
-      val o: Int = state.output
+      val (_, l: Justified[Int], r: Justified[Int]) = state.input
+      val o: Justified[Int] = state.output
     }
   }
 
@@ -122,8 +123,8 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     testExpr(existsExpr).withInput(initialInput).verifyDebuggerCalledWith { state =>
       val (i, ca) = state.input
       assertInputEquals(expectedInitialInput, i)
-      assertEquals(ca, existsInput)
-      assertEquals(state.output, existsExprOutput)
+      assertEquals(ca.map(_.value), existsInput)
+      assertEquals(state.output.value, existsExprOutput)
     }
   }
 
@@ -131,15 +132,15 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     testExpr(existsExpr).withNoInput.verifyDebuggerCalledWith { state =>
       val (i, ca) = state.input
       assertInputEquals(None, i)
-      assertEquals(ca, existsInput)
-      assertEquals(state.output, existsExprOutput)
+      assertEquals(ca.map(_.value), existsInput)
+      assertEquals(state.output.value, existsExprOutput)
     }
   }
 
   test("debug exists syntax produces the correct types") {
     existsExpr.debug { state =>
-      val (_, ca: Seq[Boolean]) = state.input
-      val o: Boolean = state.output
+      val (_, ca: Seq[Justified[Boolean]]) = state.input
+      val o: Justified[Boolean] = state.output
     }
   }
 
@@ -151,8 +152,8 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     testExpr(forAllExpr).withInput(initialInput).verifyDebuggerCalledWith { state =>
       val (i, ca) = state.input
       assertInputEquals(expectedInitialInput, i)
-      assertEquals(ca, forAllInput)
-      assertEquals(state.output, forAllExprOutput)
+      assertEquals(ca.map(_.value), forAllInput)
+      assertEquals(state.output.value, forAllExprOutput)
     }
   }
 
@@ -160,15 +161,15 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     testExpr(forAllExpr).withNoInput.verifyDebuggerCalledWith { state =>
       val (i, ca) = state.input
       assertInputEquals(None, i)
-      assertEquals(ca, forAllInput)
-      assertEquals(state.output, forAllExprOutput)
+      assertEquals(ca.map(_.value), forAllInput)
+      assertEquals(state.output.value, forAllExprOutput)
     }
   }
 
   test("debug forall syntax produces the correct types") {
     forAllExpr.debug { state =>
-      val (_, ca: Seq[Boolean]) = state.input
-      val o: Boolean = state.output
+      val (_, ca: Seq[Justified[Boolean]]) = state.input
+      val o: Justified[Boolean] = state.output
     }
   }
 
@@ -180,8 +181,8 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     testExpr(mapEveryExpr).withInput(initialInput).verifyDebuggerCalledWith { state =>
       val (i, ca) = state.input
       assertInputEquals(expectedInitialInput, i)
-      assertEquals(ca, mapEveryInput)
-      assertEquals(state.output, mapEveryExprOutput)
+      assertEquals(ca.map(_.value), mapEveryInput)
+      assertEquals(state.output.map(_.value), mapEveryExprOutput)
     }
   }
 
@@ -190,15 +191,15 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     testExpr(mapEveryExpr).withNoInput.verifyDebuggerCalledWith { state =>
       val (i, ca) = state.input
       assertInputEquals(None, i)
-      assertEquals(ca, seq)
-      assertEquals(state.output, mapEveryExprOutput)
+      assertEquals(ca.map(_.value), seq)
+      assertEquals(state.output.map(_.value), mapEveryExprOutput)
     }
   }
 
   test("debug map syntax produces the correct types") {
     mapEveryExpr.debug { state =>
-      val (_, ca: Seq[Int]) = state.input
-      val o: Seq[Int] = state.output
+      val (_, ca: Seq[Justified[Int]]) = state.input
+      val o: Seq[Justified[Int]] = state.output
     }
   }
 
@@ -212,9 +213,9 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
       val (i, a, lens, b) = state.input
       assertInputEquals(expectedInitialInput, i)
       assertEquals(lens.path, selectExprLensPath)
-      assertEquals(a, selectInput)
+      assertEquals(a.value, selectInput)
       assertEquals(b, selectInput.opt)
-      assertEquals(state.output, selectExprOutput)
+      assertEquals(state.output.map(_.value), selectExprOutput)
     }
   }
 
@@ -223,9 +224,9 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
       val (i, a, lens, b) = state.input
       assertInputEquals(None, i)
       assertEquals(lens.path, selectExprLensPath)
-      assertEquals(a, selectInput)
+      assertEquals(a.value, selectInput)
       assertEquals(b, selectInput.opt)
-      assertEquals(state.output, selectExprOutput)
+      assertEquals(state.output.map(_.value), selectExprOutput)
     }
   }
 
@@ -233,11 +234,11 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     selectExpr.debug { state =>
       val (
         _,
-        a: NestedSelectable,
+        a: Justified[NestedSelectable],
         lens: VariantLens[NestedSelectable, Option[NestedSelectable]],
         b: Option[NestedSelectable],
       ) = state.input
-      val o: Option[NestedSelectable] = state.output
+      val o: Option[Justified[NestedSelectable]] = state.output
     }
   }
 }
