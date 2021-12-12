@@ -3,12 +3,12 @@ package com.rallyhealth.vapors.v1
 package data
 
 import algebra.EqualComparable
-import data.ExtractValue.AsBoolean
-import logic.Logic
-import math.Add
-
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.{Eq, Functor, Order}
+import data.ExtractValue.AsBoolean
+import dsl.{WrapConst, WrapSelected}
+import logic.Logic
+import math.Add
 
 import scala.annotation.nowarn
 
@@ -168,6 +168,23 @@ object Justified {
   implicit def orderByValue[V : Order]: Order[Justified[V]] = Order.by(_.value)
 
   implicit def extractValue[V]: ExtractValue[Justified[V], V] = _.value
+
+  implicit val wrapConst: WrapConst[Justified] = new WrapConst[Justified] {
+    override def wrapConst[A](value: A): Justified[A] = Justified.byConst(value)
+  }
+
+  private object WrapSelected extends WrapSelected[Justified, Any] {
+    override def wrapSelected[I, O](
+      container: Justified[I],
+      element: O,
+    )(implicit
+      opA: Any,
+      opB: Any,
+    ): Justified[O] =
+      Justified.byInference("elementOf", element, NonEmptyList.of(container))
+  }
+
+  implicit def wrapSelected[OP[_]]: WrapSelected[Justified, OP] = WrapSelected.asInstanceOf[WrapSelected[Justified, OP]]
 
   implicit val functor: Functor[Justified] = new Functor[Justified] {
     override def map[A, B](fa: Justified[A])(f: A => B): Justified[B] = fa match {

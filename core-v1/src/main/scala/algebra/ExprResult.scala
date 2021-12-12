@@ -22,7 +22,8 @@ import cats.{Foldable, Functor}
   * @tparam PO Previous Output
   * @tparam I Input
   * @tparam O Output
-  * @tparam OP Output Parameter (captured at the definition site for every output type in the expression tree)
+  * @tparam OP the custom output parameter type constructor (defined by the imported DSL).
+  *            See [[dsl.DslTypes.OP]] for more details.
   */
 sealed abstract class ExprResult[+PO, -I, +O : OP, OP[_]] {
 
@@ -110,7 +111,7 @@ object ExprResult {
       opO: OP[W[B]],
     ): I ~>: W[B]
 
-    def visitSelect[I, O : OP](result: Select[PO, I, O, OP]): I ~>: O
+    def visitSelect[I, W[+_] : Extract, A, B, O : OP](result: Select[PO, I, W, A, B, O, OP]): I ~>: O
 
     def visitValuesOfType[T, O](result: ValuesOfType[PO, T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~>: Seq[O]
 
@@ -277,8 +278,8 @@ object ExprResult {
   /**
     * The result of running [[Expr.Select]]
     */
-  final case class Select[+PO, -I, +O : OP, OP[_]](
-    expr: Expr.Select[I, O, OP],
+  final case class Select[+PO, -I, W[+_] : Extract, A, B, +O : OP, OP[_]](
+    expr: Expr.Select[I, W, A, B, O, OP],
     state: ExprState[PO, O],
   ) extends ExprResult[PO, I, O, OP] {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitSelect(this)

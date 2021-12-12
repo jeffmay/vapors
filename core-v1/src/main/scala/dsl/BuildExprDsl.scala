@@ -3,19 +3,22 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra._
-import cats.{Foldable, Functor, Order}
 import cats.data.NonEmptyVector
+import cats.{Foldable, Functor, Order}
 import data.{FactTypeSet, Window}
+import lens.VariantLens
 import logic.{Conjunction, Disjunction, Logic, Negation}
 
 trait BuildExprDsl extends DebugExprDsl {
-  self: DslTypes =>
+  self: DslTypes with WrapImplicits =>
 
   protected implicit def boolLogic: Logic[W, Boolean, OP]
 
   protected implicit def windowComparable: WindowComparable[W, OP]
 
   protected implicit def extract: Extract[W]
+
+  protected implicit def selectElement: WrapSelected[W, OP]
 
   protected implicit def functor: Functor[W]
 
@@ -55,16 +58,31 @@ trait BuildExprDsl extends DebugExprDsl {
   ): Expr.Not[I, B, W, OP] =
     Expr.Not(expr)
 
-  implicit final def wrap[A](value: A)(implicit constType: WrapConstType[W, A]): ConstExprBuilder[constType.Out, OP] =
-    new ConstExprBuilder(constType(wrapConst.wrapConst(value)))
+  implicit def const[A](
+    value: A,
+  )(implicit
+    constType: ConstOutputType[W, A],
+  ): ConstExprBuilder[constType.Out, OP]
 
-  implicit def hk[I, C[_], A](expr: I ~:> C[W[A]]): SpecificHkExprBuilder[I, C, A]
+  implicit def in[I, T](expr: I ~:> W[T]): SelectExprBuilder[I, T]
+
+  trait SelectExprBuilder[-I, A] {
+
+    def get[B : Wrappable, O](
+      selector: VariantLens.FromTo[A, B],
+    )(implicit
+      sot: SelectOutputType.Aux[W, A, B, O],
+      opO: OP[O],
+    ): Expr.Select[I, W, A, B, O, OP]
+
+    def getAs[C[_]]: GetAsWrapper[I, W, A, C, OP]
+  }
+
+  implicit def hk[I, C[_], A](expr: I ~:> C[W[A]])(implicit ne: NotEmpty[C, A]): SpecificHkExprBuilder[I, C, A]
 
   type SpecificHkExprBuilder[-I, C[_], A] <: HkExprBuilder[I, C, A]
 
-  trait HkExprBuilder[-I, C[_], A] extends Any {
-
-    protected def inputExpr: I ~:> C[W[A]]
+  abstract class HkExprBuilder[-I, C[_], A](proof: I ~:> C[W[A]]) {
 
     def exists(
       conditionExprBuilder: W[A] =~:> W[Boolean],

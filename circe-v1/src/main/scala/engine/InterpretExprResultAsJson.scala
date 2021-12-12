@@ -2,13 +2,12 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{EqualComparable, ExprResult, WindowComparable}
+import algebra.{EqualComparable, ExprResult, Extract, WindowComparable}
 import data.ExprState
 import data.ExtractValue.AsBoolean
 import debug.HasSourceCodeInfo
 import dsl.circe.HasEncoder
 import logic.{Conjunction, Disjunction, Negation}
-
 import cats.{Foldable, Functor}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -137,7 +136,9 @@ object InterpretExprResultAsJson {
     ): ToJsonObject[I, W[B]] =
       encodeExprResult(result)
 
-    override def visitSelect[I, O : OP](result: ExprResult.Select[PO, I, O, OP]): ToJsonObject[I, O] =
+    override def visitSelect[I, W[+_] : Extract, A, B, O : OP](
+      result: ExprResult.Select[PO, I, W, A, B, O, OP],
+    ): ToJsonObject[I, O] =
       encodeExprResult(result)
 
     override def visitValuesOfType[T, O](
@@ -253,8 +254,9 @@ object InterpretExprResultAsJson {
       opO: OP[W[B]],
     ): ToJsonObject[I, W[B]] = super.visitOr(result).deepMerge(sourceInfo[W[B]])
 
-    override def visitSelect[I, O : OP](result: ExprResult.Select[PO, I, O, OP]): ToJsonObject[I, O] =
-      super.visitSelect(result).deepMerge(sourceInfo[O])
+    override def visitSelect[I, W[+_] : Extract, A, B, O : OP](
+      result: ExprResult.Select[PO, I, W, A, B, O, OP],
+    ): ToJsonObject[I, O] = super.visitSelect(result).deepMerge(sourceInfo[O])
 
     override def visitValuesOfType[T, O](
       result: ExprResult.ValuesOfType[PO, T, O, OP],

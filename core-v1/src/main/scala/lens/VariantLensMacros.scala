@@ -7,6 +7,8 @@ import scala.reflect.macros.blackbox
 
 object VariantLensMacros {
 
+  final val InvalidDataPathMessage = "Can only extract term names from a chain of vals or parameterless methods"
+
   def selectImpl[A : c.WeakTypeTag, B : c.WeakTypeTag, C : c.WeakTypeTag](
     c: blackbox.Context,
   )(
@@ -43,7 +45,7 @@ object VariantLensMacros {
       // recursive case: selects the term from the result of the given expression
       case Select(init, TermName(last)) => loop(init, last :: fields)
       // if the expression does more than just select or apply zero parameter methods, then stop
-      case _ => c.abort(remaining.pos, "Can only extract term names from a chain of vals or parameterless methods")
+      case _ => c.abort(remaining.pos, InvalidDataPathMessage)
     }
     loop(tree, Nil)
   }

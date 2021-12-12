@@ -2,11 +2,10 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{EqualComparable, Expr, ExprResult, WindowComparable}
+import algebra._
 import data.{ExprState, ExtractValue, Window}
 import debug.DebugArgs
 import logic.{Conjunction, Disjunction, Negation}
-
 import cats.{Foldable, Functor}
 
 import scala.annotation.nowarn
@@ -209,12 +208,17 @@ object StandardEngine {
       ExprResult.Or(expr, finalState, results)
     }
 
-    override def visitSelect[I, O : OP](expr: Expr.Select[I, O, OP]): PO <:< I => ExprResult[PO, I, O, OP] = {
-      implicit evPOisI =>
-        val output = expr.lens.get(state.output)
-        val finalState = state.swapAndReplaceOutput(output)
-        debugging(expr).invokeDebugger(stateFromInput((_, expr.lens), finalState.output))
-        ExprResult.Select(expr, finalState)
+    override def visitSelect[I, W[+_] : Extract, A, B, O : OP](
+      expr: Expr.Select[I, W, A, B, O, OP],
+    ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evPOisI =>
+      val wrappedInputResult = expr.inputExpr.visit(this)(implicitly)
+      val wrappedInputValue = wrappedInputResult.state.output
+      val unwrappedInputValue = Extract[W].extract(wrappedInputValue)
+      val selectOutput = expr.lens.get(unwrappedInputValue)
+      val output = expr.wrapSelected(wrappedInputValue, selectOutput)
+      val finalState = state.swapAndReplaceOutput(output)
+      debugging(expr).invokeDebugger(finalState.mapInput((_, wrappedInputValue, expr.lens, selectOutput)))
+      ExprResult.Select(expr, finalState)
     }
 
     override def visitValuesOfType[T, O](

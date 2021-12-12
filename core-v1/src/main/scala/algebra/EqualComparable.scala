@@ -10,7 +10,7 @@ import shapeless.Id
   *
   * @tparam F the wrapper (or effect) type over which equality is computed
   * @tparam V the value type to compare for equality
-  * @tparam OP a custom output parameter type used by visitors to enable post-processing operations.
+  * @tparam OP the custom output parameter type constructor (defined by the imported DSL).
   *            See [[dsl.DslTypes.OP]] for more details.
   */
 trait EqualComparable[F[_], V, OP[_]] {
