@@ -2,13 +2,12 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{EqualComparable, Expr, WindowComparable}
-import data.{ExprState, ExtractValue, FactTable, Window}
-import debug.DebugArgs
-import debug.DebugArgs.Invoker
-import logic.{Conjunction, Disjunction, Negation}
-
 import cats.{Foldable, Functor}
+import com.rallyhealth.vapors.v1.algebra.{EqualComparable, Expr, Extract, WindowComparable}
+import com.rallyhealth.vapors.v1.data.{ExprState, ExtractValue, FactTable, Window}
+import com.rallyhealth.vapors.v1.debug.DebugArgs
+import com.rallyhealth.vapors.v1.debug.DebugArgs.Invoker
+import com.rallyhealth.vapors.v1.logic.{Conjunction, Disjunction, Negation}
 
 /**
   * A vapors [[Expr]] interpreter that just builds a simple function without providing any post-processing.
@@ -152,9 +151,12 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state((i, results), finalResult))
     }
 
-    override def visitSelect[I, O : OP](expr: Expr.Select[I, O, OP]): I => O = { i =>
-      val o = expr.lens.get(i)
-      debugging(expr).invokeAndReturn(state((i, expr.lens), o))
+    override def visitSelect[I, W[+_] : Extract, A, B, O : OP](expr: Expr.Select[I, W, A, B, O, OP]): I => O = { i =>
+      val wa = expr.inputExpr.visit(this)(i)
+      val a = Extract[W].extract(wa)
+      val b = expr.lens.get(a)
+      val o = expr.wrapSelected(wa, b)
+      debugging(expr).invokeAndReturn(state((i, wa, expr.lens, b), o))
     }
 
     override def visitValuesOfType[T, O](

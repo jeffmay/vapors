@@ -2,14 +2,13 @@ package com.rallyhealth.vapors.v1
 
 package algebra
 
+import cats.data.{NonEmptyList, NonEmptyVector}
+import cats.{Foldable, Functor}
 import data.{ExtractValue, FactTypeSet, TypedFact, Window}
 import debug.{DebugArgs, Debugging, NoDebugging}
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Negation}
 import math.Add
-
-import cats.data.{NonEmptyList, NonEmptyVector}
-import cats.{Foldable, Functor}
 
 import scala.annotation.nowarn
 
@@ -198,7 +197,7 @@ object Expr {
       opO: OP[W[B]],
     ): I ~:> W[B]
 
-    def visitSelect[I, O : OP](expr: Select[I, O, OP]): I ~:> O
+    def visitSelect[I, W[+_] : Extract, A, B, O : OP](expr: Select[I, W, A, B, O, OP]): I ~:> O
 
     def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~:> Seq[O]
 
@@ -474,6 +473,59 @@ object Expr {
   }
 
   /**
+    * Select or view a field of the given [[inputExpr]]'s output type using the specified [[VariantLens]].
+    *
+    * In order to maintain the wrapper type at the appropriate level, this expression node is fairly
+    * complex. It relies on type-level computation of the final output type as well as proof that the
+    * input expression is returning the correct type of output to apply the lens.
+    *
+    * @note This would be less complicated if we just required an input of type `W[A]`, however, then the
+    *       only way to construct this node would be to chain a previous operation with [[AndThen]]. This works
+    *       fine, however, it means that you can't attach a debugger to this [[Select]] node directly, and since
+    *       most of the complication of this expression is how the wrapper type is threaded through the output
+    *       of the applied lens, it makes sense to complicate this type to make it easier to debug custom
+    *       wrapper type logic.
+    * @note The type parameters [[A]] and [[B]] are invariant because of the [[wrapSelected]] function.
+    *       While invariant type parameters can be a hassle to work with from the interface user's perspective,
+    *       typically the caller only cares about the initial input type [[I]] or the final output type [[O]],
+    *       which both utilize variance.
+    *
+    *       The other option would have been to add an extra type parameter and rely on compiler provided
+    *       evidence that the types are compatible when the expression is constructed, but carrying around that
+    *       extra type parameter and compiler evidence is probably not worth its weight in code.
+    *
+    *       In any case where one would want to abstract over <i>specifically</i> the [[Select]] node, they
+    *       would have to accept a type parameter for the lens input type, because they cannot just operate
+    *       on the types [[Any]] / [[Nothing]]. This is most likely already the case, as those types are not
+    *       very useful, and if you don't care about the type, you can use the `_` wildcard.
+    *
+    *       It is a bit easier to add variance to a public interface than to take it away, so I opted to
+    *       make the input type parameter [[A]] invariant, rather than split it into two types.
+    * @param inputExpr  the expression to run before applying the [[lens]] and [[wrapSelected]] on the result
+    * @param wrapSelected a function that defines how to wrap the result of applying the [[lens]].
+    *                   If it is a higher-kinded Functor, wrap every element, otherwise wrap the single value directly.
+    * @param lens       a lens from the input type to some selected field
+    * @tparam W the wrapper type (or effect) over which the select operation will operate.
+    *           Additionally, the resulting value will either be directly wrapped OR
+    *           if the selected type is a higher-kinded Functor, it will map over the elements
+    *           to wrap each individual element.
+    * @tparam A the output of the input expression and the input to the lens
+    * @tparam B the output of the lens
+    * @tparam O the final computed output type with the wrapper type applied at the appropriate level
+    *           (computed using the [[SelectOutputType]] implicit)
+    */
+  final case class Select[-I, W[+_] : Extract, A, B, +O : OP, OP[_]](
+    inputExpr: Expr[I, W[A], OP],
+    lens: VariantLens[A, B],
+    wrapSelected: (W[A], B) => O,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  ) extends Expr[I, O, OP]("select") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitSelect(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Select[I, W, A, B, O, OP] =
+      copy(debugging = debugging)
+  }
+
+  /**
     * Grabs all facts of the given [[FactTypeSet]]'s type and returns them as output.
     *
     * @param factTypeSet a set of fact types that all share the same type (can be one or more types)
@@ -535,20 +587,6 @@ object Expr {
   ) extends Expr[I, W[Boolean], OP]("withinWindow") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[Boolean]] = v.visitWithinWindow(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): WithinWindow[I, V, W, OP] =
-      copy(debugging = debugging)
-  }
-
-  /**
-    * Select or view a field of the input type using the specified [[VariantLens]].
-    *
-    * @param lens a lens from the input type to some selected field
-    */
-  final case class Select[-I, +O : OP, OP[_]](
-    lens: VariantLens[I, O],
-    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
-  ) extends Expr[I, O, OP]("select") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitSelect(this)
-    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Select[I, O, OP] =
       copy(debugging = debugging)
   }
 }

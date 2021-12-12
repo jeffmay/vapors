@@ -12,6 +12,14 @@ trait DslTypes extends Any {
   /**
     * The type of output parameter to collect at each node of the expression.
     *
+    * These parameters are made available to the DSL subclasses when performing various computations and
+    * can provide extra context about the captured type of value.
+    *
+    * A couple use cases:
+    * - An implicit that captures the source code information of the node, such as filename and line number
+    * - An implicit encoder that defines how to serialize the value as Json
+    * - An implicit that captures information required to define [[algebra.WrapConst]]
+    *
     * It is generally a good idea to define a trait that has typeclass instances as members of the trait,
     * rather than putting the exact typeclass here.
     *

@@ -1,7 +1,8 @@
 package com.rallyhealth.vapors.v1
 
 import algebra.Expr
-
+import com.rallyhealth.vapors.v1.example.NestedSelectable
+import com.rallyhealth.vapors.v1.lens.VariantLens
 import munit._
 
 class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
@@ -198,6 +199,47 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     mapEveryExpr.debug { state =>
       val (_, ca: Seq[Int]) = state.input
       val o: Seq[Int] = state.output
+    }
+  }
+
+  // TODO: These would be more useful with a justified debugging spec
+
+  private val selectInput = NestedSelectable("optSelected", opt = Some(NestedSelectable("selected")))
+  private val selectExpr = selectInput.const.get(_.select(_.opt))
+  private val selectExprLensPath = VariantLens.id[NestedSelectable].select(_.opt).path
+  private val selectExprOutput = selectInput.opt
+
+  test("debug select with input") {
+    testExpr(selectExpr).withInput(initialInput).verifyDebuggerCalledWith { state =>
+      val (i, a, lens, b) = state.input
+      assertInputEquals(expectedInitialInput, i)
+      assertEquals(lens.path, selectExprLensPath)
+      assertEquals(a, selectInput)
+      assertEquals(b, selectInput.opt)
+      assertEquals(state.output, selectExprOutput)
+    }
+  }
+
+  test("debug select without initial input") {
+    testExpr(selectExpr).withNoInput.verifyDebuggerCalledWith { state =>
+      val (i, a, lens, b) = state.input
+      assertInputEquals(None, i)
+      assertEquals(lens.path, selectExprLensPath)
+      assertEquals(a, selectInput)
+      assertEquals(b, selectInput.opt)
+      assertEquals(state.output, selectExprOutput)
+    }
+  }
+
+  test("debug map syntax produces the correct types") {
+    selectExpr.debug { state =>
+      val (
+        _,
+        a: NestedSelectable,
+        lens: VariantLens[NestedSelectable, Option[NestedSelectable]],
+        b: Option[NestedSelectable],
+      ) = state.input
+      val o: Option[NestedSelectable] = state.output
     }
   }
 }

@@ -2,13 +2,13 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import algebra.{Expr, Extract, WindowComparable, WrapConst}
+import algebra._
+import cats.{catsInstancesForId, Foldable, Functor}
 import data.FactTypeSet
+import lens.VariantLens
 import logic.Logic
 
-import cats.{catsInstancesForId, Foldable, Functor}
-
-trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
+trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with UnwrappedDslTypes {
 
   override protected implicit final def boolLogic: Logic[W, Boolean, OP] = Logic.bool
 
@@ -19,6 +19,10 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
   override protected implicit final def functor: Functor[W] = catsInstancesForId
 
   override protected implicit final def wrapConst: WrapConst[W] = WrapConst.identity
+
+  override protected implicit final def selectElement: WrapSelected[W, OP] = WrapSelected.unwrapped
+
+  override protected final val defn: WrapDefinitions[W, OP] = new WrapDefinitions[W, OP]
 
   // TODO: Should this be visible outside this trait?
   protected def shortCircuit: Boolean = true
@@ -32,12 +36,34 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
   ): Expr.ValuesOfType[T, T, OP] =
     Expr.ValuesOfType(factTypeSet, _.value)
 
-  override implicit final def hk[I, C[_], A](expr: I ~:> C[A]): HkIdExprBuilder[I, C, A] = new HkIdExprBuilder(expr)
+  override implicit final def const[A](
+    value: A,
+  )(implicit
+    constType: ConstOutputType[W, A],
+  ): ConstExprBuilder[constType.Out, OP] =
+    new ConstExprBuilder(constType.wrapConst(value))
+
+  override implicit final def in[I, T](expr: I ~:> T): SelectIdExprBuilder[I, T] = new SelectIdExprBuilder(expr)
+
+  final class SelectIdExprBuilder[-I, A](inputExpr: I ~:> A) extends SelectExprBuilder[I, A] {
+
+    override def get[B : Wrappable, O](
+      selector: VariantLens.FromTo[A, B],
+    )(implicit
+      sot: SelectOutputType.Aux[W, A, B, O],
+      opO: OP[O],
+    ): Expr.Select[I, W, A, B, O, OP] =
+      Expr.Select[I, W, A, B, O, OP](inputExpr, selector(VariantLens.id[A]), sot.wrapSelected)
+
+    override def getAs[C[_]]: GetAsWrapper[I, W, A, C, OP] = new GetAsWrapper(inputExpr: I ~:> W[A])
+  }
+
+  override implicit final def hk[I, C[_], A](expr: I ~:> C[A])(implicit ne: NotEmpty[C, A]): HkIdExprBuilder[I, C, A] =
+    new HkIdExprBuilder(expr)
 
   override final type SpecificHkExprBuilder[-I, C[_], A] = HkIdExprBuilder[I, C, A]
 
-  final class HkIdExprBuilder[-I, C[_], A](override protected val inputExpr: I ~:> C[A])
-    extends HkExprBuilder[I, C, A] {
+  final class HkIdExprBuilder[-I, C[_], A](inputExpr: I ~:> C[A]) extends HkExprBuilder(inputExpr) {
 
     override def exists(
       conditionExprBuilder: A =~:> Boolean,
@@ -73,4 +99,25 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedDslTypes {
     ): AndThen[I, C[A], C[B]] =
       inputExpr.andThen(Expr.MapEvery[C, A, B, OP](mapExprBuilder(ident)))
   }
+}
+
+sealed trait UnwrappedImplicits extends WrapImplicits with LowPriorityUnwrappedImplicits {
+
+  implicit def selectFunctor[C[_] : Functor, I : OP, O : OP](
+    implicit
+    aot: SelectOutputType[W, I, O],
+  ): SelectOutputType.Aux[W, I, C[O], C[aot.Out]] = defn.selectFunctor[C, I, O](aot)
+
+  implicit def constFunctor[C[_] : Functor, O : OP](
+    implicit
+    aot: ConstOutputType[W, O],
+  ): ConstOutputType.Aux[W, C[O], C[aot.Out]] = defn.constFunctor[C, O](aot)
+
+}
+
+sealed trait LowPriorityUnwrappedImplicits extends LowPriorityWrapImplicits with UnwrappedDslTypes {
+
+  implicit def selectId[I : OP, O : OP]: SelectOutputType.Aux[W, I, O, O] = defn.selectId
+
+  implicit def constId[O : OP]: ConstOutputType.Aux[W, O, O] = defn.constId
 }
