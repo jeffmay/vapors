@@ -2,6 +2,8 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
+import com.rallyhealth.vapors.v1.lens.DataPath
+
 import scala.annotation.implicitNotFound
 
 /**
@@ -31,6 +33,7 @@ trait SelectOutputType[W[+_], I, A] {
     */
   def wrapSelected(
     wrapped: W[I],
+    path: DataPath,
     value: A,
   ): Out
 }

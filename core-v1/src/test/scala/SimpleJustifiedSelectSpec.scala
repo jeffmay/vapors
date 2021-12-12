@@ -16,7 +16,7 @@ class SimpleJustifiedSelectSpec extends FunSuite {
     val root = empty.const
     val expr = root.get(_.select(_.value))
     val expected = Justified.byInference(
-      "elementOf", // TODO: Put lens description here?
+      "select(_.value)",
       root.value.value.value,
       NonEmptyList.of(root.value),
     )
@@ -32,11 +32,11 @@ class SimpleJustifiedSelectSpec extends FunSuite {
     }
     val expected = Some(
       Justified.byInference(
-        "elementOf",
+        "select(_.value)",
         "empty",
         NonEmptyList.of(
           Justified.byInference(
-            "elementOf",
+            "select(_.opt)",
             empty,
             NonEmptyList.of(Justified.byConst(fixture)),
           ),
