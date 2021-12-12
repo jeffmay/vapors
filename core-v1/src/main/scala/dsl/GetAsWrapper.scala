@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra.{Expr, Extract}
-import lens.VariantLens
+import lens.{DataPath, VariantLens}
 
 import scala.collection.Factory
 
@@ -38,15 +38,17 @@ final class GetAsWrapper[-I, W[+_] : Extract : WrapConst, A, C[_], OP[_]](
         override type Out = C[W[B]]
         override def wrapSelected(
           wrapped: W[A],
+          path: DataPath,
           value: NF[B],
         ): C[W[B]] = {
           value.iterator
             .map { b =>
-              ws.wrapSelected(wrapped, b)
+              ws.wrapSelected(wrapped, path, b)
             }
             .to(factory)
         }
       }
-    Expr.Select[I, W, A, NF[B], C[W[B]], OP](inputExpr, selector(VariantLens.id[A]), sot.wrapSelected)
+    val lens = selector(VariantLens.id[A])
+    Expr.Select[I, W, A, NF[B], C[W[B]], OP](inputExpr, lens, sot.wrapSelected(_, lens.path, _))
   }
 }

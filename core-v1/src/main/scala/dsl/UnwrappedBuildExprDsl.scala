@@ -52,8 +52,10 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
     )(implicit
       sot: SelectOutputType.Aux[W, A, B, O],
       opO: OP[O],
-    ): Expr.Select[I, W, A, B, O, OP] =
-      Expr.Select[I, W, A, B, O, OP](inputExpr, selector(VariantLens.id[A]), sot.wrapSelected)
+    ): Expr.Select[I, W, A, B, O, OP] = {
+      val lens = selector(VariantLens.id[A])
+      Expr.Select[I, W, A, B, O, OP](inputExpr, lens, sot.wrapSelected(_, lens.path, _))
+    }
 
     override def getAs[C[_]]: GetAsWrapper[I, W, A, C, OP] = new GetAsWrapper(inputExpr: I ~:> W[A])
   }
