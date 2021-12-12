@@ -5,8 +5,10 @@ package data
 import algebra.EqualComparable
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.{Eq, Functor, Order}
+import cats.syntax.show._
 import data.ExtractValue.AsBoolean
 import dsl.{WrapConst, WrapSelected}
+import lens.DataPath
 import logic.Logic
 import math.Add
 
@@ -176,12 +178,13 @@ object Justified {
   private object WrapSelected extends WrapSelected[Justified, Any] {
     override def wrapSelected[I, O](
       container: Justified[I],
+      path: DataPath,
       element: O,
     )(implicit
       opA: Any,
       opB: Any,
     ): Justified[O] =
-      Justified.byInference("elementOf", element, NonEmptyList.of(container))
+      Justified.byInference(s"select(_${path.show})", element, NonEmptyList.of(container))
   }
 
   implicit def wrapSelected[OP[_]]: WrapSelected[Justified, OP] = WrapSelected.asInstanceOf[WrapSelected[Justified, OP]]

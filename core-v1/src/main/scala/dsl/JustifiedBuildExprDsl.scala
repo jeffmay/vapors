@@ -54,7 +54,10 @@ trait JustifiedBuildExprDsl extends BuildExprDsl with WrapJustifiedImplicits wit
     )(implicit
       sot: SelectOutputType.Aux[Justified, A, B, O],
       opO: OP[O],
-    ): Expr.Select[I, Justified, A, B, O, OP] = Expr.Select(inputExpr, selector(VariantLens.id[A]), sot.wrapSelected)
+    ): Expr.Select[I, Justified, A, B, O, OP] = {
+      val lens = selector(VariantLens.id[A])
+      Expr.Select(inputExpr, lens, sot.wrapSelected(_, lens.path, _))
+    }
 
     override def getAs[C[_]]: GetAsWrapper[I, Justified, A, C, OP] =
       new GetAsWrapper(inputExpr)

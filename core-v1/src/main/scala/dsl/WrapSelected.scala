@@ -2,6 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
+import com.rallyhealth.vapors.v1.lens.DataPath
 import shapeless.Id
 
 /**
@@ -26,6 +27,7 @@ trait WrapSelected[W[+_], OP[_]] {
     */
   def wrapSelected[I, O](
     container: W[I],
+    path: DataPath,
     element: O,
   )(implicit
     opA: OP[I],
@@ -38,6 +40,7 @@ object WrapSelected {
   private final object Unwrapped extends WrapSelected[Id, Any] {
     override def wrapSelected[A, B](
       container: A,
+      path: DataPath,
       element: B,
     )(implicit
       opA: Any,

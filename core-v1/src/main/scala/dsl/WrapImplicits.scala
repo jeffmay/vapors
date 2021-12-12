@@ -4,6 +4,7 @@ package dsl
 
 import cats.Functor
 import cats.implicits._
+import lens.DataPath
 
 /**
   * Extend this trait to provide the template for the standard implicit definitions (with appropriate priority).
@@ -60,10 +61,11 @@ final class WrapDefinitions[W[+_] : WrapConst, OP[_]](implicit wrapElementW: Wra
       override type Out = C[aot.Out]
       override def wrapSelected(
         wrapped: W[I],
+        path: DataPath,
         value: C[O],
       ): C[aot.Out] = {
         value.map { a =>
-          aot.wrapSelected(wrapped, a)
+          aot.wrapSelected(wrapped, path, a)
         }
       }
     }
@@ -79,7 +81,8 @@ final class WrapDefinitions[W[+_] : WrapConst, OP[_]](implicit wrapElementW: Wra
       override type Out = W[O]
       override def wrapSelected(
         wrapped: W[I],
+        path: DataPath,
         value: O,
-      ): W[O] = wrapElementW.wrapSelected(wrapped, value)
+      ): W[O] = wrapElementW.wrapSelected(wrapped, path, value)
     }
 }
