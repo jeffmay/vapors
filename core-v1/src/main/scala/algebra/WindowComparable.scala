@@ -16,7 +16,8 @@ import shapeless.Id
   * and a window expression and perform the appropriate action to produce a wrapped boolean result.
   *
   * @tparam W a wrapper type or effect to map over when performing the comparison
-  * @tparam OP the output parameter of the input values and the output value
+  * @tparam OP the custom output parameter type constructor (defined by the imported DSL).
+  *            See [[dsl.DslTypes.OP]] for more details.
   */
 trait WindowComparable[W[_], OP[_]] {
 

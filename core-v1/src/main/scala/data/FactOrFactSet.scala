@@ -15,6 +15,6 @@ object FactOrFactSet {
     new FactOrFactSet(Set.from(facts))
 
   def flatten(factOrFactSets: Iterable[FactOrFactSet]): FactSet = {
-    factOrFactSets.foldLeft(FactSet.empty)(_ | _.toSet)
+    FactSet.from(factOrFactSets.flatMap(_.toSet.iterator))
   }
 }

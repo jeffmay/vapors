@@ -1,13 +1,13 @@
 package com.rallyhealth.vapors.v1
 
-package algebra
-
-import data.Justified
+package dsl
 
 import shapeless.Id
 
 /**
-  * This typeclass defines the capability of this wrapper type being used to create wrapped values in a DSL traits.
+  * Wraps the given constant with the given wrapper type.
+  *
+  * Mirrors the [[ConstOutputType]] but implemented for when the appropriate leaf type has been found.
   *
   * This is similar to the `Pure` typeclass from alleycats, except more specific to the Vapors project.
   * It will only be used to construct wrapped constant values.
@@ -27,9 +27,5 @@ object WrapConst {
 
   implicit val identity: WrapConst[Id] = new WrapConst[Id] {
     override def wrapConst[A](value: A): A = value
-  }
-
-  implicit val justified: WrapConst[Justified] = new WrapConst[Justified] {
-    override def wrapConst[A](value: A): Justified[A] = Justified.byConst(value)
   }
 }
