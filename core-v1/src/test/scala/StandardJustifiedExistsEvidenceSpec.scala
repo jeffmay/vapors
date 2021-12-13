@@ -2,8 +2,7 @@ package com.rallyhealth.vapors.v1
 
 import data.{Evidence, FactTable, Justified, NoEvidence, Window}
 import example.FactTypes
-
-import cats.data.NonEmptyList
+import cats.data.NonEmptySeq
 import munit.FunSuite
 
 class StandardJustifiedExistsEvidenceSpec extends FunSuite {
@@ -31,11 +30,11 @@ class StandardJustifiedExistsEvidenceSpec extends FunSuite {
       Justified.byInference(
         "exists",
         false,
-        NonEmptyList.of(
+        NonEmptySeq.of(
           Justified.byInference(
             "_ >= 18",
             false,
-            NonEmptyList.of(
+            NonEmptySeq.of(
               Justified.byFact(age10),
               Justified.byConst(Window.greaterThanOrEqual(18)),
             ),
@@ -43,7 +42,7 @@ class StandardJustifiedExistsEvidenceSpec extends FunSuite {
           Justified.byInference(
             "_ >= 18",
             false,
-            NonEmptyList.of(
+            NonEmptySeq.of(
               Justified.byFact(age14),
               Justified.byConst(Window.greaterThanOrEqual(18)),
             ),
@@ -65,11 +64,11 @@ class StandardJustifiedExistsEvidenceSpec extends FunSuite {
       Justified.byInference(
         "exists",
         true,
-        NonEmptyList.of(
+        NonEmptySeq.of(
           Justified.byInference(
             "_ >= 18",
             true,
-            NonEmptyList.of(
+            NonEmptySeq.of(
               Justified.byFact(age18),
               Justified.byConst(Window.greaterThanOrEqual(18)),
             ),

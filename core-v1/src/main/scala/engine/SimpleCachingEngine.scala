@@ -256,17 +256,15 @@ object SimpleCachingEngine {
       debugging(expr).invokeAndReturn(state((i, inputs), result))
     }
 
-    override def visitSelect[I, W[+_] : Extract, A, B, O : OP](
-      expr: Expr.Select[I, W, A, B, O, OP],
-    ): I => CachedResult[O] = memoize(expr, _) { i =>
-      val inputResult = expr.inputExpr.visit(this)(i)
-      val wa = inputResult.value
-      val a = Extract[W].extract(wa)
-      val b = expr.lens.get(a)
-      val o = expr.wrapSelected(wa, b)
-      val outputResult = CachedResult(o, inputResult.cacheState)
-      debugging(expr).invokeAndReturn(state((i, wa, expr.lens, b), outputResult))
-    }
+    override def visitSelect[I, A, B, O : OP](expr: Expr.Select[I, A, B, O, OP]): I => CachedResult[O] =
+      memoize(expr, _) { i =>
+        val inputResult = expr.inputExpr.visit(this)(i)
+        val a = inputResult.value
+        val b = expr.lens.get(a)
+        val o = expr.wrapSelected(a, b)
+        val outputResult = CachedResult(o, inputResult.cacheState)
+        debugging(expr).invokeAndReturn(state((i, a, expr.lens, b), outputResult))
+      }
 
     override def visitValuesOfType[T, O](
       expr: Expr.ValuesOfType[T, O, OP],

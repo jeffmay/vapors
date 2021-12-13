@@ -2,8 +2,7 @@ package com.rallyhealth.vapors.v1
 
 import algebra.Expr
 import data.Justified
-
-import cats.data.{NonEmptyList, NonEmptyVector}
+import cats.data.{NonEmptySeq, NonEmptyVector}
 import munit.{FunSuite, Location}
 
 class SimpleJustifiedBooleanLogicSpec extends FunSuite {
@@ -35,7 +34,7 @@ class SimpleJustifiedBooleanLogicSpec extends FunSuite {
     val tail = NonEmptyVector(r, m.toVector)
     testLogic(l, tail) {
       _.reduceLeft { (l, r) =>
-        Justified.byInference("and", l.value && r.value, NonEmptyList.of(l, r))
+        Justified.byInference("and", l.value && r.value, NonEmptySeq.of(l, r))
       }
     } { (h, t) =>
       t.foldLeft(h) {
@@ -86,7 +85,7 @@ class SimpleJustifiedBooleanLogicSpec extends FunSuite {
     val tail = NonEmptyVector(r, m.toVector)
     testLogic(l, tail) {
       _.reduceLeft { (l, r) =>
-        Justified.byInference("and", l.value && r.value, NonEmptyList.of(l, r))
+        Justified.byInference("and", l.value && r.value, NonEmptySeq.of(l, r))
       }
     } { (h, t) =>
       and(h, t.head, t.tail: _*)
@@ -135,7 +134,7 @@ class SimpleJustifiedBooleanLogicSpec extends FunSuite {
     val tail = NonEmptyVector(r, m.toVector)
     testLogic(l, tail) {
       _.reduceLeft { (l, r) =>
-        Justified.byInference("or", l.value || r.value, NonEmptyList.of(l, r))
+        Justified.byInference("or", l.value || r.value, NonEmptySeq.of(l, r))
       }
     } { (h, t) =>
       t.foldLeft(h) {
@@ -186,7 +185,7 @@ class SimpleJustifiedBooleanLogicSpec extends FunSuite {
     val tail = NonEmptyVector(r, m.toVector)
     testLogic(l, tail) {
       _.reduceLeft { (l, r) =>
-        Justified.byInference("or", l.value || r.value, NonEmptyList.of(l, r))
+        Justified.byInference("or", l.value || r.value, NonEmptySeq.of(l, r))
       }
     } { (h, t) =>
       or(h, t.head, t.tail: _*)
@@ -233,7 +232,7 @@ class SimpleJustifiedBooleanLogicSpec extends FunSuite {
     loc: Location,
   ): Unit = {
     val expr = buildExpr(v)
-    val expected = Justified.byInference("not", !v.value.value, NonEmptyList.of(v.value))
+    val expected = Justified.byInference("not", !v.value.value, NonEmptySeq.of(v.value))
     val obtained = expr.run()
     assertEquals(obtained, expected)
   }

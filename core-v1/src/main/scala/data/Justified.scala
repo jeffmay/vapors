@@ -5,6 +5,10 @@ package data
 import algebra.EqualComparable
 import cats.data.{NonEmptyList, NonEmptySeq, NonEmptySet, NonEmptyVector}
 import cats.{Eq, Order}
+import cats.data.{NonEmptyList, NonEmptySeq, NonEmptySet}
+import cats.{Eq, Functor, Order}
+import cats.syntax.show._
+import data.ExtractValue.AsBoolean
 import dsl.{WrapConst, WrapFact, WrapQuantifier, WrapSelected}
 import lens.{DataPath, VariantLens}
 import logic.Logic
@@ -172,20 +176,6 @@ object Justified {
     sources: NonEmptySeq[Justified[Any]],
   ): Justified[V] = ByInference(reason, value, sources)
 
-  // TODO: Deprecate the other byInference methods below?
-
-  def byInference[V](
-    reason: String,
-    value: V,
-    sources: NonEmptyVector[Justified[Any]],
-  ): Justified[V] = ByInference(reason, value, NonEmptySeq.fromSeqUnsafe(sources.toVector))
-
-  def byInference[V](
-    reason: String,
-    value: V,
-    sources: NonEmptyList[Justified[Any]],
-  ): Justified[V] = ByInference(reason, value, NonEmptySeq.fromSeqUnsafe(sources.toList))
-
   final case class ByInference[+V](
     reason: String,
     value: V,
@@ -209,7 +199,7 @@ object Justified {
         opO: OP[Justified[Boolean]],
       ): Justified[Boolean] = {
         val isEqual = Eq[V].eqv(left.value, right.value)
-        Justified.byInference("isEqual", isEqual, NonEmptyList.of(left, right))
+        Justified.byInference("isEqual", isEqual, NonEmptySeq(left, Vector(right)))
       }
     }
 
@@ -312,7 +302,7 @@ object Justified {
       opB: Any,
     ): Justified[B] = {
       val outcome = left.value && right.value
-      Justified.byInference("and", fromBoolean(outcome), NonEmptyList.of(left, right))
+      Justified.byInference("and", fromBoolean(outcome), NonEmptySeq(left, Vector(right)))
     }
 
     override def or(
@@ -322,12 +312,12 @@ object Justified {
       opB: Any,
     ): Justified[B] = {
       val outcome = left.value || right.value
-      Justified.byInference("or", fromBoolean(outcome), NonEmptyList.of(left, right))
+      Justified.byInference("or", fromBoolean(outcome), NonEmptySeq(left, Vector(right)))
     }
 
     override def not(value: Justified[B])(implicit opB: Any): Justified[B] = {
       val outcome = !value.value
-      Justified.byInference("not", fromBoolean(outcome), NonEmptyList.of(value))
+      Justified.byInference("not", fromBoolean(outcome), NonEmptySeq.of(value))
     }
   }
 
