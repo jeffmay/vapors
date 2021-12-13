@@ -57,7 +57,7 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
       Expr.Select[I, W, A, B, O, OP](inputExpr, lens, sot.wrapSelected(_, lens.path, _))
     }
 
-    override def getAs[C[_]]: GetAsWrapper[I, W, A, C, OP] = new GetAsWrapper(inputExpr: I ~:> W[A])
+    override def getAs[C[_]]: GetAsUnwrapped[I, A, C, OP] = new GetAsUnwrapped(inputExpr)
   }
 
   override implicit final def hk[I, C[_], A](expr: I ~:> C[A])(implicit ne: NotEmpty[C, A]): HkIdExprBuilder[I, C, A] =

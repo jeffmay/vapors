@@ -48,5 +48,5 @@ object WrapSelected {
     ): B = element
   }
 
-  def unwrapped[OP[_]]: WrapSelected[Id, OP] = Unwrapped.asInstanceOf[WrapSelected[Id, OP]]
+  implicit def unwrapped[OP[_]]: WrapSelected[Id, OP] = Unwrapped.asInstanceOf[WrapSelected[Id, OP]]
 }
