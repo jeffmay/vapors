@@ -3,7 +3,9 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra.{Expr, Extract}
+import com.rallyhealth.vapors.v1.lens.VariantLens.FromTo
 import lens.{DataPath, VariantLens}
+import shapeless.Id
 
 import scala.collection.Factory
 
@@ -19,7 +21,7 @@ import scala.collection.Factory
   * @tparam OP the custom output parameter type constructor (defined by the imported DSL).
   *            See [[dsl.DslTypes.OP]] for more details.
   */
-final class GetAsWrapper[-I, W[+_] : Extract : WrapConst, A, C[_], OP[_]](
+class GetAsWrapper[-I, W[+_] : Extract : WrapConst, A, C[_], OP[_]](
   inputExpr: Expr[I, W[A], OP],
 )(implicit
   ws: WrapSelected[W, OP],
@@ -51,4 +53,17 @@ final class GetAsWrapper[-I, W[+_] : Extract : WrapConst, A, C[_], OP[_]](
     val lens = selector(VariantLens.id[A])
     Expr.Select[I, W, A, NF[B], C[W[B]], OP](inputExpr, lens, sot.wrapSelected(_, lens.path, _))
   }
+}
+
+final class GetAsUnwrapped[-I, A, C[_], OP[_]](inputExpr: Expr[I, A, OP])
+  extends GetAsWrapper[I, Id, A, C, OP](inputExpr) {
+
+  override def apply[NF[b] <: IterableOnce[b], B](
+    selector: FromTo[A, NF[B]],
+  )(implicit
+    factory: Factory[B, C[B]],
+    opA: OP[A],
+    opB: OP[B],
+    opO: OP[C[B]],
+  ): Expr.Select[I, Id, A, NF[B], C[B], OP] = super.apply[NF, B](selector)
 }
