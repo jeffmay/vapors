@@ -4,9 +4,8 @@ package algebra
 
 import data.{Justified, Window}
 import debug.HasShow
-
 import cats.Show
-import cats.data.NonEmptyList
+import cats.data.{NonEmptyList, NonEmptySeq}
 import shapeless.Id
 
 /**
@@ -48,7 +47,7 @@ object WindowComparable {
         }
         val comparison = Window.showWindowWithTerm[V]("_").show(window.value)
         val isWithinWindow = window.value.contains(value.value)
-        Justified.byInference(comparison, isWithinWindow, NonEmptyList.of(value, window))
+        Justified.byInference(comparison, isWithinWindow, NonEmptySeq(value, Vector(window)))
       }
     }
   }

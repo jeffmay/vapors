@@ -1,8 +1,7 @@
 package com.rallyhealth.vapors.v1
 
 import data.Justified
-
-import cats.data.NonEmptyList
+import cats.data.NonEmptySeq
 
 class SimpleJustifiedArithmeticSpec extends munit.FunSuite {
 
@@ -13,21 +12,21 @@ class SimpleJustifiedArithmeticSpec extends munit.FunSuite {
   test("Justified[Int] + Justified[Int]") {
     val expr = 1.const + 2.const
     val observed = expr.run()
-    val expected = Justified.byInference("add", 3, NonEmptyList.of(Justified.byConst(1), Justified.byConst(2)))
+    val expected = Justified.byInference("add", 3, NonEmptySeq.of(Justified.byConst(1), Justified.byConst(2)))
     assertEquals(observed, expected)
   }
 
   test("Justified[Long] + Justified[Int]") {
     val expr = 1L.const.+(2.const)
     val observed = expr.run()
-    val expected = Justified.byInference("add", 3L, NonEmptyList.of(Justified.byConst(1L), Justified.byConst(2)))
+    val expected = Justified.byInference("add", 3L, NonEmptySeq.of(Justified.byConst(1L), Justified.byConst(2)))
     assertEquals(observed, expected)
   }
 
   test("Justified[Int] + Justified[Long]") {
     val expr = 1.const + 2L.const
     val observed = expr.run()
-    val expected = Justified.byInference("add", 3L, NonEmptyList.of(Justified.byConst(1), Justified.byConst(2L)))
+    val expected = Justified.byInference("add", 3L, NonEmptySeq.of(Justified.byConst(1), Justified.byConst(2L)))
     assertEquals(observed, expected)
   }
 
@@ -39,7 +38,7 @@ class SimpleJustifiedArithmeticSpec extends munit.FunSuite {
     val expected = Justified.byInference(
       "add",
       now.plus(duration),
-      NonEmptyList.of(Justified.byConst(now), Justified.byConst(duration)),
+      NonEmptySeq.of(Justified.byConst(now), Justified.byConst(duration)),
     )
     assertEquals(observed, expected)
   }
@@ -52,7 +51,7 @@ class SimpleJustifiedArithmeticSpec extends munit.FunSuite {
     val expected = Justified.byInference(
       "add",
       now.plus(duration),
-      NonEmptyList.of(Justified.byConst(duration), Justified.byConst(now)),
+      NonEmptySeq.of(Justified.byConst(duration), Justified.byConst(now)),
     )
     assertEquals(observed, expected)
   }
