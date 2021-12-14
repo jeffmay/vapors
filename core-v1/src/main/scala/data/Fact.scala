@@ -73,7 +73,7 @@ object Fact {
   * @see [[Fact]]
   */
 sealed trait TypedFact[A] extends Fact {
-  type Value = A
+  override final type Value = A
 }
 
 object TypedFact {

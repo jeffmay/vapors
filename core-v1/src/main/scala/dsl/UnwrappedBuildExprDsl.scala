@@ -31,6 +31,7 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
   override final def valuesOfType[T](
     factTypeSet: FactTypeSet[T],
   )(implicit
+    opT: OP[T],
     opTs: OP[Seq[T]],
   ): Expr.ValuesOfType[T, T, OP] =
     Expr.ValuesOfType(factTypeSet, _.value)
@@ -45,7 +46,7 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
   override implicit final def in[I, T](expr: I ~:> T): UnwrappedSelectExprBuilder[I, T] =
     new UnwrappedSelectExprBuilder(expr)
 
-  final class UnwrappedSelectExprBuilder[-I, A](inputExpr: I ~:> A) extends SelectExprBuilder[I, A] {
+  final class UnwrappedSelectExprBuilder[-I, A](inputExpr: I ~:> A) extends SelectExprBuilder(inputExpr) {
 
     override def get[B : Wrappable, O](
       selector: VariantLens.FromTo[A, B],
