@@ -18,11 +18,11 @@ trait BuildExprDsl extends DebugExprDsl {
 
   protected implicit def extract: Extract[W]
 
-  protected implicit def selectElement: WrapSelected[W, OP]
-
   protected implicit def functor: Functor[W]
 
   protected implicit def wrapConst: WrapConst[W]
+
+  protected implicit def wrapSelected: WrapSelected[W, OP]
 
   def ident[I](implicit opI: OP[W[I]]): Expr.Identity[W[I], OP]
 

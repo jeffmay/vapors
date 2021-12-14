@@ -21,7 +21,7 @@ trait JustifiedBuildExprDsl extends BuildExprDsl with WrapJustifiedImplicits wit
 
   override protected implicit final def wrapConst: WrapConst[Justified] = Justified.wrapConst
 
-  override protected implicit final def selectElement: WrapSelected[Justified, OP] = Justified.wrapSelected
+  override protected implicit final def wrapSelected: WrapSelected[Justified, OP] = Justified.wrapSelected
 
   override protected final val defn: WrapDefinitions[Justified, OP] = new WrapDefinitions[Justified, OP]
 
