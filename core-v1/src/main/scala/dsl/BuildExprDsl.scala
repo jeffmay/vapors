@@ -18,7 +18,7 @@ trait BuildExprDsl extends DebugExprDsl {
 
   protected implicit def extract: Extract[W]
 
-  protected implicit def wrapConst: WrapConst[W]
+  protected implicit def wrapConst: WrapConst[W, OP]
 
   protected implicit def wrapSelected: WrapSelected[W, OP]
 
@@ -149,7 +149,7 @@ trait BuildExprDsl extends DebugExprDsl {
           case Expr.Const(wv, _) =>
             val v = Extract[W].extract(wv)
             val window = using(v)
-            val wrappedWindow = WrapConst.wrap(window)
+            val wrappedWindow = wrapConst.wrapConst(window)
             Expr.Const[W[Window[V]], OP](wrappedWindow)
           case _ =>
             Expr.Select[I, W[V], V, W[Window[V]], OP](
@@ -171,7 +171,8 @@ trait BuildExprDsl extends DebugExprDsl {
 
     def within(window: Window[V]): I >=< V = this >=< window
 
-    def >=<(window: Window[V]): I >=< V = Expr.WithinWindow(valueExpr, Expr.Const(WrapConst.wrap(window)))
+    def >=<(window: Window[V]): I >=< V =
+      Expr.WithinWindow(valueExpr, Expr.Const(wrapConst.wrapConst(window)))
 
     def within(expr: I ~:> W[Window[V]]): I >=< V = this >=< expr
 

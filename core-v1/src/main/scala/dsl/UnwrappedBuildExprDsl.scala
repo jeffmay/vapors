@@ -17,7 +17,7 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
 
   override protected implicit final def extract: Extract[W] = Extract.identity
 
-  override protected implicit final def wrapConst: WrapConst[W] = WrapConst.identity
+  override protected implicit final def wrapConst: WrapConst[W, OP] = WrapConst.unwrapped
 
   override protected implicit final def wrapSelected: WrapSelected[W, OP] = WrapSelected.unwrapped
 

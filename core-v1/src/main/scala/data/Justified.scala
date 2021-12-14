@@ -206,9 +206,11 @@ object Justified {
 
   implicit def extractValue[V]: ExtractValue[Justified[V], V] = _.value
 
-  implicit val wrapConst: WrapConst[Justified] = new WrapConst[Justified] {
-    override def wrapConst[A](value: A): Justified[A] = Justified.byConst(value)
+  private final case object WrapConstJustified extends WrapConst[Justified, Any] {
+    override def wrapConst[A](value: A)(implicit opA: Any): Justified[A] = Justified.byConst(value)
   }
+
+  implicit def wrapConst[OP[_]]: WrapConst[Justified, OP] = WrapConstJustified.asInstanceOf[WrapConst[Justified, OP]]
 
   private final case object WrapSelectedJustified extends WrapSelected[Justified, Any] {
     override def wrapSelected[I, O](

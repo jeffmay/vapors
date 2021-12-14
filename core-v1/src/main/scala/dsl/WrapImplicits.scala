@@ -60,9 +60,11 @@ trait LowPriorityWrapImplicits {
   protected def defn: WrapDefinitions[W, OP]
 }
 
-final class WrapDefinitions[W[+_] : WrapConst, OP[_]](implicit wrapElementW: WrapSelected[W, OP]) {
-
-  private val wrapConstW: WrapConst[W] = implicitly
+final class WrapDefinitions[W[+_], OP[_]](
+  implicit
+  wrapElementW: WrapSelected[W, OP],
+  wrapConstW: WrapConst[W, OP],
+) {
 
   def constFunctor[C[_] : Functor, O : OP](cot: ConstOutputType[W, O]): ConstOutputType.Aux[W, C[O], C[cot.Out]] =
     new ConstOutputType[W, C[O]] {
