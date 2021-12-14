@@ -5,7 +5,7 @@ package dsl
 import algebra._
 import cats.data.NonEmptyVector
 import cats.{Foldable, Functor, Order}
-import data.{FactTypeSet, Window}
+import data.{Extract, FactTypeSet, Window}
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Logic, Negation}
 

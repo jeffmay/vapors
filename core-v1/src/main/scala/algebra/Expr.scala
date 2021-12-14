@@ -4,7 +4,7 @@ package algebra
 
 import cats.data.{NonEmptyList, NonEmptyVector}
 import cats.{Foldable, Functor}
-import data.{ExtractValue, FactTypeSet, TypedFact, Window}
+import data.{Extract, ExtractValue, FactTypeSet, TypedFact, Window}
 import debug.{DebugArgs, Debugging, NoDebugging}
 import lens.{DataPath, VariantLens}
 import logic.{Conjunction, Disjunction, Negation}

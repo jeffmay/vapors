@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package data
 
-import algebra.{EqualComparable, Extract}
+import algebra.EqualComparable
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.{Eq, Order}
 import data.ExtractValue.AsBoolean

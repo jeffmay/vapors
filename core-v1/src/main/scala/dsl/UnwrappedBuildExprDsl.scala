@@ -4,7 +4,7 @@ package dsl
 
 import algebra._
 import cats.{Foldable, Functor, Traverse}
-import data.FactTypeSet
+import data.{Extract, FactTypeSet}
 import lens.VariantLens
 import logic.Logic
 import shapeless.<:!<

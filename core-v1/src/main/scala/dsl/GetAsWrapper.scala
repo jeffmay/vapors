@@ -2,7 +2,8 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import algebra.{Expr, Extract}
+import algebra.Expr
+import data.Extract
 import com.rallyhealth.vapors.v1.lens.VariantLens.FromTo
 import lens.VariantLens
 import shapeless.Id

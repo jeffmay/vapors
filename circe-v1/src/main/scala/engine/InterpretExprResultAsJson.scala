@@ -2,8 +2,8 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{EqualComparable, ExprResult, Extract, WindowComparable}
-import data.ExprState
+import algebra.{EqualComparable, ExprResult, WindowComparable}
+import data.{ExprState, Extract}
 import data.ExtractValue.AsBoolean
 import debug.HasSourceCodeInfo
 import dsl.circe.HasEncoder
