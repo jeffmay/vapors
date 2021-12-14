@@ -42,9 +42,10 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
   ): ConstExprBuilder[constType.Out, OP] =
     new ConstExprBuilder(constType.wrapConst(value))
 
-  override implicit final def in[I, T](expr: I ~:> T): SelectIdExprBuilder[I, T] = new SelectIdExprBuilder(expr)
+  override implicit final def in[I, T](expr: I ~:> T): UnwrappedSelectExprBuilder[I, T] =
+    new UnwrappedSelectExprBuilder(expr)
 
-  final class SelectIdExprBuilder[-I, A](inputExpr: I ~:> A) extends SelectExprBuilder[I, A] {
+  final class UnwrappedSelectExprBuilder[-I, A](inputExpr: I ~:> A) extends SelectExprBuilder[I, A] {
 
     override def get[B : Wrappable, O](
       selector: VariantLens.FromTo[A, B],
@@ -59,12 +60,16 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
     override def getAs[C[_]]: GetAsUnwrapped[I, A, C, OP] = new GetAsUnwrapped(inputExpr)
   }
 
-  override implicit final def hk[I, C[_], A](expr: I ~:> C[A])(implicit ne: NotEmpty[C, A]): HkIdExprBuilder[I, C, A] =
-    new HkIdExprBuilder(expr)
+  override implicit final def hk[I, C[_], A](
+    expr: I ~:> C[A],
+  )(implicit
+    ne: NotEmpty[C, A],
+  ): UnwrappedHkExprBuilder[I, C, A] =
+    new UnwrappedHkExprBuilder(expr)
 
-  override final type SpecificHkExprBuilder[-I, C[_], A] = HkIdExprBuilder[I, C, A]
+  override final type SpecificHkExprBuilder[-I, C[_], A] = UnwrappedHkExprBuilder[I, C, A]
 
-  final class HkIdExprBuilder[-I, C[_], A](inputExpr: I ~:> C[A]) extends HkExprBuilder(inputExpr) {
+  final class UnwrappedHkExprBuilder[-I, C[_], A](inputExpr: I ~:> C[A]) extends HkExprBuilder(inputExpr) {
 
     override def headOption(
       implicit
