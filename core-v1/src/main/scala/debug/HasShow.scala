@@ -30,10 +30,16 @@ object HasShow extends LowPriorityHasShow {
 
   private final case class Impl[V](show: Show[V]) extends HasShow[V]
 
-  implicit def hasShow[V](implicit show: Show[V]): HasShow[V] = Impl(show)
+  implicit def show[V](implicit s: Show[V]): HasShow[V] = Impl(s)
 }
 
 private[debug] sealed abstract class LowPriorityHasShow {
 
-  implicit def noShow[V]: HasShow[V] = HasShow.none
+  /**
+    * There is no [[Show]] instance available for this type, so just use `.toString`
+    *
+    * Similar to [[dsl.NoOP.~]], this method name is short because it will show up in a lot of places and
+    * it means that you can effectively ignore this parameter.
+    */
+  implicit def ~[V]: HasShow[V] = HasShow.none
 }
