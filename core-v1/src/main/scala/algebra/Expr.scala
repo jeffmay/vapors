@@ -549,7 +549,7 @@ object Expr {
   final case class IsEqual[-I, +V : OP, W[+_], OP[_]](
     leftExpr: Expr[I, W[V], OP],
     rightExpr: Expr[I, W[V], OP],
-    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
     eq: EqualComparable[W, V, OP],
     opV: OP[W[V]],
