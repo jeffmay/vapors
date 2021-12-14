@@ -2,8 +2,6 @@ package com.rallyhealth.vapors.v1
 
 package algebra
 
-import data.Justified
-
 import shapeless.Id
 
 /**
@@ -25,9 +23,5 @@ object Extract {
 
   implicit val identity: Extract[Id] = new Extract[Id] {
     override def extract[A](fa: A): A = fa
-  }
-
-  implicit val justified: Extract[Justified] = new Extract[Justified] {
-    override def extract[A](fa: Justified[A]): A = fa.value
   }
 }
