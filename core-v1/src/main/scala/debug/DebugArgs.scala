@@ -172,10 +172,10 @@ object DebugArgs {
       override type Out = I
     }
 
-  implicit def debugIsEqual[I, V, F[+_], OP[_]]: Aux[Expr.IsEqual[I, V, F, OP], OP, (I, F[V], F[V]), F[Boolean]] =
-    new DebugArgs[Expr.IsEqual[I, V, F, OP], OP] {
-      override type In = (I, F[V], F[V])
-      override type Out = F[Boolean]
+  implicit def debugIsEqual[I, V, W[+_], OP[_]]: Aux[Expr.IsEqual[I, V, W, OP], OP, (I, W[V], W[V]), W[Boolean]] =
+    new DebugArgs[Expr.IsEqual[I, V, W, OP], OP] {
+      override type In = (I, W[V], W[V])
+      override type Out = W[Boolean]
     }
 
   implicit def debugExists[

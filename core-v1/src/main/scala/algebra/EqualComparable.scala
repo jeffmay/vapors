@@ -8,20 +8,20 @@ import shapeless.Id
 /**
   * Defines equality over an effect type `F` with a provided param `OP`
   *
-  * @tparam F the wrapper (or effect) type over which equality is computed
+  * @tparam W the wrapper (or effect) type over which equality is computed
   * @tparam V the value type to compare for equality
   * @tparam OP the custom output parameter type constructor (defined by the imported DSL).
   *            See [[dsl.DslTypes.OP]] for more details.
   */
-trait EqualComparable[F[_], V, OP[_]] {
+trait EqualComparable[W[_], V, OP[_]] {
 
   def isEqual(
-    left: F[V],
-    right: F[V],
+    left: W[V],
+    right: W[V],
   )(implicit
-    opV: OP[F[V]],
-    opO: OP[F[Boolean]],
-  ): F[Boolean]
+    opV: OP[W[V]],
+    opO: OP[W[Boolean]],
+  ): W[Boolean]
 }
 
 object EqualComparable extends LowPriorityEqualComparable {
@@ -40,15 +40,15 @@ object EqualComparable extends LowPriorityEqualComparable {
 
 sealed trait LowPriorityEqualComparable {
 
-  implicit def semigroupalFunctorEq[F[_] : Functor : Semigroupal, V : Eq, OP[_]]: EqualComparable[F, V, OP] =
-    new EqualComparable[F, V, OP] {
+  implicit def semigroupalFunctorEq[W[_] : Functor : Semigroupal, V : Eq, OP[_]]: EqualComparable[W, V, OP] =
+    new EqualComparable[W, V, OP] {
       override final def isEqual(
-        left: F[V],
-        right: F[V],
+        left: W[V],
+        right: W[V],
       )(implicit
-        opV: OP[F[V]],
-        opO: OP[F[Boolean]],
-      ): F[Boolean] = {
+        opV: OP[W[V]],
+        opO: OP[W[Boolean]],
+      ): W[Boolean] = {
         import cats.syntax.apply._
         (left, right).mapN(Eq[V].eqv)
       }
