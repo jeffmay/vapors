@@ -175,7 +175,7 @@ object Justified {
     override def wrapConst[A](value: A): Justified[A] = Justified.byConst(value)
   }
 
-  private object WrapSelected extends WrapSelected[Justified, Any] {
+  private final case object WrapSelectedJustified extends WrapSelected[Justified, Any] {
     override def wrapSelected[I, O](
       container: Justified[I],
       path: DataPath,
@@ -187,7 +187,8 @@ object Justified {
       Justified.byInference(s"select(_${path.show})", element, NonEmptyList.of(container))
   }
 
-  implicit def wrapSelected[OP[_]]: WrapSelected[Justified, OP] = WrapSelected.asInstanceOf[WrapSelected[Justified, OP]]
+  implicit def wrapSelected[OP[_]]: WrapSelected[Justified, OP] =
+    WrapSelectedJustified.asInstanceOf[WrapSelected[Justified, OP]]
 
   implicit val functor: Functor[Justified] = new Functor[Justified] {
     override def map[A, B](fa: Justified[A])(f: A => B): Justified[B] = fa match {
