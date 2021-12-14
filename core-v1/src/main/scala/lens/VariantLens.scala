@@ -2,14 +2,14 @@ package com.rallyhealth.vapors.v1
 
 package lens
 
-import algebra.Extract
 import cats.arrow.Compose
 import cats.data.NonEmptySet
 import cats.kernel.Semigroup
+import data.Extract
 import shapeless.ops.hlist
 import shapeless.{Generic, HList}
 
-import scala.collection.{Factory, MapView, View}
+import scala.collection.{Factory, View}
 
 // TODO: Rename to NamedLens after old algebra removed
 /**

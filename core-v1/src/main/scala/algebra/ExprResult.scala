@@ -3,9 +3,8 @@ package com.rallyhealth.vapors.v1
 package algebra
 
 import data.ExtractValue.AsBoolean
-import data.{ExprState, Window}
+import data.{ExprState, Extract, Window}
 import logic.{Conjunction, Disjunction, Negation}
-
 import cats.data.NonEmptyVector
 import cats.{Foldable, Functor}
 

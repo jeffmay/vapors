@@ -2,9 +2,9 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{EqualComparable, Expr, Extract, WindowComparable}
+import algebra.{EqualComparable, Expr, WindowComparable}
 import cats.{Foldable, Functor}
-import data.{ExprState, ExtractValue, FactTable, Window}
+import data.{ExprState, Extract, ExtractValue, FactTable, Window}
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
 import logic.{Conjunction, Disjunction, Negation}

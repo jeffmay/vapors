@@ -2,9 +2,9 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import algebra.{Expr, Extract}
+import algebra.Expr
 import cats.{Foldable, Functor}
-import data.{ExtractValue, FactTypeSet}
+import data.{Extract, ExtractValue, FactTypeSet}
 import dsl.SelectOutputType.Aux
 import lens.VariantLens
 

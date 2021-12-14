@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra._
-import data.{ExprState, ExtractValue, Window}
+import data.{ExprState, Extract, ExtractValue, Window}
 import debug.DebugArgs
 import logic.{Conjunction, Disjunction, Negation}
 import cats.{Foldable, Functor}

@@ -4,7 +4,7 @@ package dsl
 
 import algebra._
 import cats.{Functor, Traverse}
-import data.{ExtractValue, Justified}
+import data.{Extract, ExtractValue, Justified}
 import logic.Logic
 import shapeless.<:!<
 

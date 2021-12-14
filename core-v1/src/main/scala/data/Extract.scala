@@ -1,16 +1,14 @@
-package com.rallyhealth.vapors.v1
-
-package algebra
+package com.rallyhealth.vapors.v1.data
 
 import shapeless.Id
 
 /**
-  * Extract the value from a context `F`.
+  * Extract the value from a context [[W]].
   *
   * Although this typeclass exists in alleycats, I don't want to force a dependency on it.
-  *
   * It is simple enough to implement and it is required at the DSL import level, so it won't
-  * be implemented very often by end users.
+  * be implemented very often by end users. Also it may need to evolve in a manner that doesn't
+  * align with the cats typeclass.
   */
 trait Extract[W[_]] {
 
