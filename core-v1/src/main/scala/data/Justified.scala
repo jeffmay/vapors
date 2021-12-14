@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package data
 
-import algebra.EqualComparable
+import algebra.{EqualComparable, Extract}
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.{Eq, Order}
 import data.ExtractValue.AsBoolean
@@ -203,6 +203,12 @@ object Justified {
   implicit def orderingByValue[V : Ordering]: Ordering[Justified[V]] = Ordering.by(_.value)
 
   implicit def orderByValue[V : Order]: Order[Justified[V]] = Order.by(_.value)
+
+  private final case object ExtractJustified extends Extract[Justified] {
+    override def extract[A](fa: Justified[A]): A = fa.value
+  }
+
+  implicit def extract: Extract[Justified] = ExtractJustified
 
   implicit def extractValue[V]: ExtractValue[Justified[V], V] = _.value
 

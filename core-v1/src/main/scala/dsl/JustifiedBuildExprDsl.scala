@@ -14,7 +14,7 @@ trait JustifiedBuildExprDsl extends WrappedExprDsl with WrapJustifiedImplicits w
 
   override protected implicit final def windowComparable: WindowComparable[Justified, OP] = WindowComparable.justified
 
-  override protected implicit final def extract: Extract[Justified] = Extract.justified
+  override protected implicit final def extract: Extract[Justified] = Justified.extract
 
   override protected implicit final def extractBool[
     B : ExtractValue.AsBoolean,
