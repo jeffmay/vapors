@@ -6,7 +6,7 @@ import algebra.EqualComparable
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.{Eq, Order}
 import data.ExtractValue.AsBoolean
-import dsl.{WrapConst, WrapSelected}
+import dsl.{WrapConst, WrapFact, WrapQuantifier, WrapSelected}
 import lens.{DataPath, VariantLens}
 import logic.Logic
 import math.Add
@@ -212,6 +212,12 @@ object Justified {
 
   implicit def wrapConst[OP[_]]: WrapConst[Justified, OP] = WrapConstJustified.asInstanceOf[WrapConst[Justified, OP]]
 
+  private final case object WrapFactJustified extends WrapFact[Justified, Any] {
+    override def wrapFact[O](fact: TypedFact[O])(implicit opO: Any): Justified[O] = Justified.byFact(fact)
+  }
+
+  implicit def wrapFact[OP[_]]: WrapFact[Justified, OP] = WrapFactJustified.asInstanceOf[WrapFact[Justified, OP]]
+
   private final case object WrapSelectedJustified extends WrapSelected[Justified, Any] {
     override def wrapSelected[I, O](
       container: Justified[I],
@@ -227,6 +233,52 @@ object Justified {
 
   implicit def wrapSelected[OP[_]]: WrapSelected[Justified, OP] =
     WrapSelectedJustified.asInstanceOf[WrapSelected[Justified, OP]]
+
+  private final object WrapQuantifierJustified extends WrapQuantifier[Justified, Any] {
+
+    // TODO: Pull this from config somehow?
+    override def shortCircuit: Boolean = false
+
+    override def wrapFalseForAll(
+      falseResults: NonEmptyList[Justified[Boolean]],
+    )(implicit
+      opB: Any,
+    ): Justified[Boolean] =
+      Justified.byInference("forall", false, falseResults)
+
+    override def wrapTrueForAll(trueResults: List[Justified[Boolean]])(implicit opB: Any): Justified[Boolean] = {
+      NonEmptyList
+        .fromList(trueResults)
+        .map { justified =>
+          Justified.byInference("forall", true, justified)
+        }
+        .getOrElse {
+          // forall in an empty collection is true
+          // TODO: Should I put a reason instead of just a const?
+          Justified.byConst(true)
+        }
+    }
+
+    override def wrapFalseExists(falseResults: List[Justified[Boolean]])(implicit opB: Any): Justified[Boolean] = {
+      NonEmptyList
+        .fromList(falseResults)
+        .map { justified =>
+          Justified.byInference("exists", false, justified)
+        }
+        .getOrElse {
+          // exists in an empty collection is false
+          // TODO: Should I put a reason instead of just a const?
+          //       Maybe I should pass the original value in these functions?
+          Justified.byConst(false)
+        }
+    }
+
+    override def wrapTrueExists(trueResults: NonEmptyList[Justified[Boolean]])(implicit opB: Any): Justified[Boolean] =
+      Justified.byInference("exists", true, trueResults)
+  }
+
+  implicit def wrapQuantifier[OP[_]]: WrapQuantifier[Justified, OP] =
+    WrapQuantifierJustified.asInstanceOf[WrapQuantifier[Justified, OP]]
 
   private val anyBool = new BooleanLogic[Boolean](identity)
 

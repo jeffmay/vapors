@@ -24,7 +24,12 @@ trait BuildExprDsl extends DebugExprDsl {
 
   def ident[I](implicit opI: OP[W[I]]): Expr.Identity[W[I], OP]
 
-  def valuesOfType[T](factTypeSet: FactTypeSet[T])(implicit opTs: OP[Seq[W[T]]]): Expr.ValuesOfType[T, W[T], OP]
+  def valuesOfType[T](
+    factTypeSet: FactTypeSet[T],
+  )(implicit
+    opT: OP[T],
+    opTs: OP[Seq[W[T]]],
+  ): Expr.ValuesOfType[T, W[T], OP]
 
   implicit final def logical[I, B](expr: I ~:> W[B]): LogicalExprOps[I, B, W, OP] = new LogicalExprOps(expr)
 
@@ -64,7 +69,7 @@ trait BuildExprDsl extends DebugExprDsl {
 
   implicit def in[I, T](expr: I ~:> W[T]): SelectExprBuilder[I, T]
 
-  trait SelectExprBuilder[-I, A] {
+  abstract class SelectExprBuilder[-I, A](proof: I ~:> W[A]) {
 
     def get[B : Wrappable, O](
       selector: VariantLens.FromTo[A, B],
