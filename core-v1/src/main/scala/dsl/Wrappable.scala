@@ -16,16 +16,34 @@ object Wrappable extends Wrappable[Any] {
     """
 Can't use the .get operation to select a field of type Array[${A}].
 
-This is because there is no Functor[Array] definition. You can use .getAs[Seq] to convert the value to a Seq before mapping over the results.""",
+This is because there is no Traverse[Array] definition. You can use .getAs[Seq] on the expression or .to(Seq) on the lens to convert the value to a Seq before mapping over the results.""",
   )
   implicit def arrayIsNotWrappable1[A]: Wrappable[Array[A]] = unexpected
   implicit def arrayIsNotWrappable2[A]: Wrappable[Array[A]] = unexpected
 
   @implicitAmbiguous(
     """
+Can't use the .get operation to select a field of type Iterable[${A}].
+
+This is because there is no Traverse[Iterable] definition. You can use .getAs[Seq] on the expression or .to(Seq) on the lens to convert the value to a Seq before mapping over the results.""",
+  )
+  implicit def iterableIsNotWrappable1[A]: Wrappable[Iterable[A]] = unexpected
+  implicit def iterableIsNotWrappable2[A]: Wrappable[Iterable[A]] = unexpected
+
+  @implicitAmbiguous(
+    """
+Can't use the .get operation to select a field of type IterableOnce[${A}].
+
+This is because there is no Traverse[IterableOnce] definition. You can use .getAs[Seq] on the expression or .to(Seq) on the lens to convert the value to a Seq before mapping over the results.""",
+  )
+  implicit def iterableOnceIsNotWrappable1[A]: Wrappable[IterableOnce[A]] = unexpected
+  implicit def iterableOnceIsNotWrappable2[A]: Wrappable[IterableOnce[A]] = unexpected
+
+  @implicitAmbiguous(
+    """
 Can't use the .get operation to select a field of type ${C}[${A}].
 
-This is because there is no Functor[${C}] definition. You can use .getAs[Seq] to convert the value to a Seq before mapping over the results.""",
+This is because there is no Traverse[${C}] definition. You can use .getAs[Seq] on the expression or .to(Seq) on the lens to convert the value to a Seq before mapping over the results.""",
   )
   implicit def setIsNotWrappable1[C[a] <: Set[a], A]: Wrappable[C[A]] = unexpected
   implicit def setIsNotWrappable2[C[a] <: Set[a], A]: Wrappable[C[A]] = unexpected

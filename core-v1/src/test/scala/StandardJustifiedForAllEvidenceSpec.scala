@@ -2,7 +2,6 @@ package com.rallyhealth.vapors.v1
 
 import data.{Evidence, FactTable, Justified, NoEvidence, Window}
 import example.FactTypes
-
 import cats.data.NonEmptyList
 import munit.FunSuite
 

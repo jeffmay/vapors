@@ -55,18 +55,19 @@ class SimpleSelectSpec extends FunSuite {
 
   test("Select a nested Map value of a const") {
     val fixture = NestedSelectable("mapDefined", map = Map("one" -> empty, "two" -> empty))
+    // TODO: Support a .mapPairs, .mapItems, or .mapKV method?
+    // TODO: Support a .mapValues method?
+    // TODO: Support a .mapKeys method?
     val expr = fixture.const.get(_.select(_.map)).map(_.get(_.select(_.value)))
     val observed = expr.run()
-    // TODO: Support a .mapPairs / .mapItems / .mapKV method
-    // TODO: Support other map operations
     val expected = fixture.map.map { case (k, v) => (k, v.value) }
     assertEquals(observed, expected)
   }
 
   test("Cannot use the Lens.select operation to map over elements of a Map") {
-    val fixture = NestedSelectable("seqDefined", seq = Seq(empty, empty))
-    val _ =
-      fixture.const.get(_.select(_.map)).map(_.get(_.select(_.value))) // correct
+    val fixture = NestedSelectable("mapDefined", map = Map("one" -> empty, "two" -> empty))
+    val expr = fixture.const.get(_.select(_.map))
+    val expr2 = expr.map(_.get(_.select(_.value))) // correct
     val message = compileErrors {
       "fixture.const.get(_.select(_.map.map { case (k, v) => (k, v.value) }))" // incorrect
     }
@@ -112,6 +113,6 @@ class SimpleSelectSpec extends FunSuite {
     val message = compileErrors {
       "fixture.const.get(_.select(_.map)).headOption"
     }
-    assert(message contains "Could not find an instance of Foldable for [+V]scala.collection.immutable.Map[String,V]")
+    assert(message contains "Could not find an instance of Foldable for [+V]Map[String,V]")
   }
 }

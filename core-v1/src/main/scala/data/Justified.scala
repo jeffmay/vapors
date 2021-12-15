@@ -4,11 +4,10 @@ package data
 
 import algebra.EqualComparable
 import cats.data.{NonEmptyList, NonEmptySet}
-import cats.{Eq, Functor, Order}
-import cats.syntax.show._
+import cats.{Eq, Order}
 import data.ExtractValue.AsBoolean
 import dsl.{WrapConst, WrapSelected}
-import lens.DataPath
+import lens.{DataPath, VariantLens}
 import logic.Logic
 import math.Add
 
@@ -37,6 +36,26 @@ sealed trait Justified[+V] extends Product {
     * The output value from the expression.
     */
   def value: V
+
+  /**
+    * Keep the same justification, but adjust the lens.
+    *
+    * Use this with caution. It should only be used in situations where the value is an obvious isomorphic
+    * transformation, such as a translation between a List and Vector, a value class and its value, a
+    * known subtype / supertype, a temporary storage for a wrapper type that is later unwrapped, etc.
+    */
+  def withView[U >: V, A](buildLens: VariantLens.FromTo[U, A]): Justified[A] = {
+    val thatLens = buildLens(VariantLens.id[U])
+    val thatValue = thatLens.get(value)
+    if (thatLens.path.isEmpty && thatValue == (this.value: Any)) this.asInstanceOf[Justified[A]]
+    else
+      this match {
+        case Justified.BySelection(_, thisPath, thisSource) =>
+          Justified.BySelection(thatValue, thisPath ++ thatLens.path, thisSource)
+        case _ =>
+          Justified.BySelection(thatValue, thatLens.path, this)
+      }
+  }
 
   /**
     * A short description for how the value is justified. Either a "const", "config", "fact", or the name of
@@ -87,16 +106,18 @@ object Justified {
     def visitFact[V](justified: ByFact[V]): G[V]
 
     def visitInference[V](justified: ByInference[V]): G[V]
+
+    def visitSelection[V](justified: BySelection[V]): G[V]
   }
 
   def byConst[V](value: V): Justified[V] = ByConst(value)
 
-  final case class ByConst[V](value: V) extends Justified[V] {
-    override def visit[G[+_]](v: Visitor[G]): G[V] = v.visitConstant(this)
-    override def evidence: NoEvidence.type = NoEvidence
-    override val reason: String = s"[const: $value]"
-    override def configs: Seq[(String, Option[String])] = Seq.empty
+  final case class ByConst[+V](value: V) extends Justified[V] {
     override def productPrefix: String = "Justified.ByConst"
+    override val reason: String = s"[const: $value]"
+    override def configs: Seq[(String, Option[String])] = Vector.empty
+    override def evidence: NoEvidence.type = NoEvidence
+    override def visit[G[+_]](v: Visitor[G]): G[V] = v.visitConstant(this)
   }
 
   def byConfig[V](
@@ -105,31 +126,45 @@ object Justified {
     configDescription: Option[String] = None,
   ): Justified[V] = ByConfig(value, configKey, configDescription)
 
-  final case class ByConfig[V](
+  final case class ByConfig[+V](
     value: V,
     configKey: String,
     configDescription: Option[String] = None,
   ) extends Justified[V] {
+    override def productPrefix: String = "Justified.ByConfig"
+    override val reason: String = s"[config: $configKey=$value]"
+    override def configs: Seq[(String, Option[String])] = Vector(configKey -> configDescription)
     override def evidence: NoEvidence.type = NoEvidence
     override def visit[G[+_]](v: Visitor[G]): G[V] = v.visitConfig(this)
-    override val reason: String = s"[config: $configKey=$value]"
-    override def configs: Seq[(String, Option[String])] = Seq(configKey -> configDescription)
-    override def productPrefix: String = "Justified.ByConfig"
   }
 
   def byFact[V](fact: TypedFact[V]): Justified[V] = ByFact(fact)
 
-  // TODO: Allow a lens for map operations? Many valuesOfType operations will be followed directly by a select
-  //       operation. By using a lens here, we can easily chain map and select into a single operation to avoid
-  //       more deeply nested Justified trees and save space / time when storing / interpreting them.
-  // TODO: Alternatively, should there be a ByLens or BySelect justification that can chain multiple selects?
   final case class ByFact[V](fact: TypedFact[V]) extends Justified[V] {
-    override val evidence: SomeEvidence = SomeEvidence(NonEmptySet.of(fact))
-    override def value: V = fact.value
-    override val reason: String = s"[fact: ${fact.typeInfo.name}=${fact.value}]"
-    override def visit[G[+_]](v: Visitor[G]): G[V] = v.visitFact(this)
-    override def configs: Seq[(String, Option[String])] = Seq.empty
     override def productPrefix: String = "Justified.ByFact"
+    override val reason: String = s"[fact: ${fact.typeInfo.name}=${fact.value}]"
+    override def value: V = fact.value
+    override def configs: Seq[(String, Option[String])] = Vector.empty
+    override val evidence: SomeEvidence = SomeEvidence(NonEmptySet.of(fact))
+    override def visit[G[+_]](v: Visitor[G]): G[V] = v.visitFact(this)
+  }
+
+  def bySelection[V](
+    value: V,
+    path: DataPath,
+    source: Justified[Any],
+  ): Justified[V] = BySelection(value, path, source)
+
+  final case class BySelection[+V](
+    value: V,
+    path: DataPath,
+    source: Justified[Any],
+  ) extends Justified[V] {
+    override def productPrefix: String = "Justified.BySelection"
+    override val reason: String = s"[select: _${path.asString}]"
+    override def configs: Seq[(String, Option[String])] = source.configs
+    override def evidence: Evidence = source.evidence
+    override def visit[G[+_]](v: Visitor[G]): G[V] = v.visitSelection(this)
   }
 
   def byInference[V](
@@ -138,17 +173,17 @@ object Justified {
     sources: NonEmptyList[Justified[Any]],
   ): Justified[V] = ByInference(reason, value, sources)
 
-  final case class ByInference[V](
+  final case class ByInference[+V](
     reason: String,
     value: V,
     sources: NonEmptyList[Justified[Any]],
   ) extends Justified[V] {
-    override def visit[G[+_]](v: Visitor[G]): G[V] = v.visitInference(this)
+    override def productPrefix: String = "Justified.ByInference"
     override lazy val configs: Seq[(String, Option[String])] =
       sources.map(_.configs).reduce // TODO: avoid clobbering duplicate keys
     override lazy val evidence: Evidence =
       sources.foldLeft(Evidence.none)(_ | _.evidence) // TODO: Is this even valid?
-    override def productPrefix: String = "Justified.ByInference"
+    override def visit[G[+_]](v: Visitor[G]): G[V] = v.visitInference(this)
   }
 
   implicit def eq[V : Eq, OP[_]]: EqualComparable[Justified, V, OP] =
@@ -183,22 +218,13 @@ object Justified {
     )(implicit
       opA: Any,
       opB: Any,
-    ): Justified[O] =
-      Justified.byInference(s"select(_${path.show})", element, NonEmptyList.of(container))
+    ): Justified[O] = {
+      container.withView((_: Any) => VariantLens(path, (_: Any) => element))
+    }
   }
 
   implicit def wrapSelected[OP[_]]: WrapSelected[Justified, OP] =
     WrapSelectedJustified.asInstanceOf[WrapSelected[Justified, OP]]
-
-  implicit val functor: Functor[Justified] = new Functor[Justified] {
-    override def map[A, B](fa: Justified[A])(f: A => B): Justified[B] = fa match {
-      case Justified.ByConst(v) => Justified.byConst(f(v))
-      case Justified.ByConfig(v, k, d) => Justified.byConfig(f(v), k, d)
-      case _ =>
-        val derived = f(fa.value)
-        Justified.byInference("map", derived, NonEmptyList.of(fa))
-    }
-  }
 
   private val anyBool = new BooleanLogic[Boolean](identity)
 

@@ -18,8 +18,6 @@ trait BuildExprDsl extends DebugExprDsl {
 
   protected implicit def extract: Extract[W]
 
-  protected implicit def functor: Functor[W]
-
   protected implicit def wrapConst: WrapConst[W]
 
   protected implicit def wrapSelected: WrapSelected[W, OP]
@@ -123,32 +121,45 @@ trait BuildExprDsl extends DebugExprDsl {
     valueExpr: I ~:> W[V],
   )(implicit
     opV: OP[W[V]],
-    opW: OP[W[Window[V]]],
+    opW: OP[Window[V]],
     opB: OP[W[Boolean]],
+    opO: OP[W[Window[V]]],
   ): WindowComparisonExprBuilder[I, V] = new WindowComparisonExprBuilder(valueExpr)
 
   class WindowComparisonExprBuilder[I, V : Order : OP](
     protected val valueExpr: I ~:> W[V],
   )(implicit
     opV: OP[W[V]],
-    opW: OP[W[Window[V]]],
     opB: OP[W[Boolean]],
+    opW: OP[Window[V]],
+    opO: OP[W[Window[V]]],
   ) {
 
-    // TODO: Use some kind of function metadata object instead of a separate name parameter
     private def compareExpr(
-      name: String,
+      name: String, // TODO: Add the name to the WithinWindow somehow?
       that: Expr[I, W[V], OP],
     )(
+      // TODO: Use a lens here? Maybe some kind of "wrap" operation?
       using: V => Window[V],
-    ): I >=< V =
+    ): I >=< V = {
+      val lens = VariantLens.id[W[V]].extractValue
       Expr.WithinWindow(
         valueExpr,
-        Expr.AndThen(
-          that,
-          Expr.CustomFunction[W[V], W[Window[V]], OP](name, Functor[W].map(_)(using)),
-        ),
+        that match {
+          case Expr.Const(wv, _) =>
+            val v = Extract[W].extract(wv)
+            val window = using(v)
+            val wrappedWindow = WrapConst.wrap(window)
+            Expr.Const[W[Window[V]], OP](wrappedWindow)
+          case _ =>
+            Expr.Select[I, W[V], V, W[Window[V]], OP](
+              that,
+              lens,
+              (wv, a) => wrapSelected.wrapSelected(wv, lens.path, using(a)),
+            )
+        },
       )
+    }
 
     def <(expr: I ~:> W[V]): I >=< V = compareExpr("<", expr)(Window.lessThan(_))
 

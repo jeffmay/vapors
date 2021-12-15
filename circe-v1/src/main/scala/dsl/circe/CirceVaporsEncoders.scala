@@ -30,6 +30,7 @@ trait CirceVaporsEncoders extends MidPrioritySourceInfoEncoders {
       case Justified.ByConfig(_, key, desc) => ("config", desc.fold(key)(d => s"$key ($d)"))
       case Justified.ByFact(fact) => ("fact", fact.typeInfo.nameAndFullType)
       case Justified.ByInference(reason, _, _) => ("inference", reason) // TODO: Serialize other justified reasons?
+      case Justified.BySelection(_, path, _) => ("selection", path.asString)
     }
     JsonObject(
       "value" -> justified.value.asJson,
