@@ -206,16 +206,9 @@ object DebugArgs {
       override type Out = C[B]
     }
 
-  implicit def debugSelect[
-    I,
-    W[+_],
-    A,
-    B,
-    O,
-    OP[_],
-  ]: Aux[Expr.Select[I, W, A, B, O, OP], OP, (I, W[A], VariantLens[A, B], B), O] =
-    new DebugArgs[Expr.Select[I, W, A, B, O, OP], OP] {
-      override type In = (I, W[A], VariantLens[A, B], B)
+  implicit def debugSelect[I, A, B, O, OP[_]]: Aux[Expr.Select[I, A, B, O, OP], OP, (I, A, VariantLens[A, B], B), O] =
+    new DebugArgs[Expr.Select[I, A, B, O, OP], OP] {
+      override type In = (I, A, VariantLens[A, B], B)
       override type Out = O
     }
 

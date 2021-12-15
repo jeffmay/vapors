@@ -51,6 +51,8 @@ final case class DataPath(nodes: Chain[DataPath.Node]) extends AnyVal {
   def atField(name: String): DataPath = DataPath(nodes :+ Field(name))
 
   def ++(that: DataPath): DataPath = DataPath(this.nodes ++ that.nodes)
+
+  def asString: String = DataPath.show.show(this)
 }
 
 object DataPath {

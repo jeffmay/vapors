@@ -34,7 +34,7 @@ class GetAsWrapper[-I, W[+_] : Extract : WrapConst, A, C[_], OP[_]](
     opA: OP[A],
     opB: OP[B],
     opO: OP[C[W[B]]],
-  ): Expr.Select[I, W, A, NF[B], C[W[B]], OP] = {
+  ): Expr.Select[I, W[A], NF[B], C[W[B]], OP] = {
     implicit val sot: SelectOutputType.Aux[W, A, NF[B], C[W[B]]] =
       new SelectOutputType[W, A, NF[B]] {
         override type Out = C[W[B]]
@@ -50,8 +50,8 @@ class GetAsWrapper[-I, W[+_] : Extract : WrapConst, A, C[_], OP[_]](
             .to(factory)
         }
       }
-    val lens = selector(VariantLens.id[A])
-    Expr.Select[I, W, A, NF[B], C[W[B]], OP](inputExpr, lens, sot.wrapSelected(_, lens.path, _))
+    val lens = VariantLens.id[W[A]].extractValue.andThen(selector(VariantLens.id[A]))
+    Expr.Select[I, W[A], NF[B], C[W[B]], OP](inputExpr, lens, sot.wrapSelected(_, lens.path, _))
   }
 }
 
@@ -65,5 +65,5 @@ final class GetAsUnwrapped[-I, A, C[_], OP[_]](inputExpr: Expr[I, A, OP])
     opA: OP[A],
     opB: OP[B],
     opO: OP[C[B]],
-  ): Expr.Select[I, Id, A, NF[B], C[B], OP] = super.apply[NF, B](selector)
+  ): Expr.Select[I, A, NF[B], C[B], OP] = super.apply[NF, B](selector)
 }

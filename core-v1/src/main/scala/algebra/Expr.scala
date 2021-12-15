@@ -197,7 +197,7 @@ object Expr {
       opO: OP[W[B]],
     ): I ~:> W[B]
 
-    def visitSelect[I, W[+_] : Extract, A, B, O : OP](expr: Select[I, W, A, B, O, OP]): I ~:> O
+    def visitSelect[I, A, B, O : OP](expr: Select[I, A, B, O, OP]): I ~:> O
 
     def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~:> Seq[O]
 
@@ -479,7 +479,7 @@ object Expr {
     * complex. It relies on type-level computation of the final output type as well as proof that the
     * input expression is returning the correct type of output to apply the lens.
     *
-    * @note This would be less complicated if we just required an input of type `W[A]`, however, then the
+    * @note This would be less complicated if we just required an input of type [[A]], however, then the
     *       only way to construct this node would be to chain a previous operation with [[AndThen]]. This works
     *       fine, however, it means that you can't attach a debugger to this [[Select]] node directly, and since
     *       most of the complication of this expression is how the wrapper type is threaded through the output
@@ -505,23 +505,19 @@ object Expr {
     * @param wrapSelected a function that defines how to wrap the result of applying the [[lens]].
     *                   If it is a higher-kinded Functor, wrap every element, otherwise wrap the single value directly.
     * @param lens       a lens from the input type to some selected field
-    * @tparam W the wrapper type (or effect) over which the select operation will operate.
-    *           Additionally, the resulting value will either be directly wrapped OR
-    *           if the selected type is a higher-kinded Functor, it will map over the elements
-    *           to wrap each individual element.
     * @tparam A the output of the input expression and the input to the lens
     * @tparam B the output of the lens
     * @tparam O the final computed output type with the wrapper type applied at the appropriate level
-    *           (computed using the [[SelectOutputType]] implicit)
+    *           (computed using the [[dsl.SelectOutputType]] implicit)
     */
-  final case class Select[-I, W[+_] : Extract, A, B, +O : OP, OP[_]](
-    inputExpr: Expr[I, W[A], OP],
+  final case class Select[-I, A, B, +O : OP, OP[_]](
+    inputExpr: Expr[I, A, OP],
     lens: VariantLens[A, B],
-    wrapSelected: (W[A], B) => O,
+    wrapSelected: (A, B) => O,
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   ) extends Expr[I, O, OP]("select") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitSelect(this)
-    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Select[I, W, A, B, O, OP] =
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Select[I, A, B, O, OP] =
       copy(debugging = debugging)
   }
 

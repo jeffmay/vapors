@@ -73,7 +73,7 @@ trait BuildExprDsl extends DebugExprDsl {
     )(implicit
       sot: SelectOutputType.Aux[W, A, B, O],
       opO: OP[O],
-    ): Expr.Select[I, W, A, B, O, OP]
+    ): Expr.Select[I, W[A], B, O, OP]
 
     def getAs[C[_]]: GetAsWrapper[I, W, A, C, OP]
   }
@@ -83,6 +83,13 @@ trait BuildExprDsl extends DebugExprDsl {
   type SpecificHkExprBuilder[-I, C[_], A] <: HkExprBuilder[I, C, A]
 
   abstract class HkExprBuilder[-I, C[_], A](proof: I ~:> C[W[A]]) {
+
+    def headOption(
+      implicit
+      foldableC: Foldable[C],
+      opA: OP[A],
+      opO: OP[Option[W[A]]],
+    ): Expr.Select[I, C[W[A]], Option[W[A]], Option[W[A]], OP]
 
     def exists(
       conditionExprBuilder: W[A] =~:> W[Boolean],
