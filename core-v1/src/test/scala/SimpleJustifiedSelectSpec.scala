@@ -138,4 +138,52 @@ class SimpleJustifiedSelectSpec extends FunSuite {
     }
     assert(message contains VariantLensMacros.InvalidDataPathMessage)
   }
+
+  test("Select a headOption from an Option") {
+    val expectedValueString = "firstElement"
+    val fixture = NestedSelectable("optDefined", opt = Some(NestedSelectable(expectedValueString)))
+    val expr = fixture.const.get(_.select(_.opt)).headOption
+    val observed = expr.run()
+    val expected = fixture.opt.map { v =>
+      Justified.byInference("select(_.opt)", v, NonEmptyList.of(Justified.byConst(fixture)))
+    }
+    assertEquals(expected.map(_.value.value), Some(expectedValueString))
+    assertEquals(observed, expected)
+  }
+
+  test("Select None from an empty Option") {
+    val fixture = NestedSelectable.empty
+    val expr = fixture.const.get(_.select(_.opt)).headOption
+    val observed = expr.run()
+    assertEquals(observed, None)
+  }
+
+  test("Select a headOption from a Seq") {
+    val expectedValueString = "firstElement"
+    val fixture = NestedSelectable("seqDefined", seq = Seq(NestedSelectable(expectedValueString), empty))
+    val expr = fixture.const.get(_.select(_.seq)).headOption
+    val observed = expr.run()
+    val expected = fixture.seq.headOption.map { v =>
+      // TODO: The Path should include the .headOption selection
+      // Justified.byInference("select(_.seq[0])", v, NonEmptyList.of(Justified.byConst(fixture)))
+      Justified.byInference("select(_.seq)", v, NonEmptyList.of(Justified.byConst(fixture)))
+    }
+    assertEquals(expected.map(_.value.value), Some(expectedValueString))
+    assertEquals(observed, expected)
+  }
+
+  test("Select None from an empty Seq") {
+    val fixture = NestedSelectable.empty
+    val expr = fixture.const.get(_.select(_.seq)).headOption
+    val observed = expr.run()
+    assertEquals(observed, None)
+  }
+
+  test("Cannot select a headOption from an unsorted Map") {
+    val fixture = NestedSelectable("mapDefined", map = Map("one" -> empty, "two" -> empty))
+    val message = compileErrors {
+      "fixture.const.get(_.select(_.map)).headOption"
+    }
+    assert(message contains "Could not find an instance of Foldable for [+V]scala.collection.immutable.Map[String,V]")
+  }
 }

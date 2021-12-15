@@ -208,16 +208,15 @@ object StandardEngine {
       ExprResult.Or(expr, finalState, results)
     }
 
-    override def visitSelect[I, W[+_] : Extract, A, B, O : OP](
-      expr: Expr.Select[I, W, A, B, O, OP],
+    override def visitSelect[I, A, B, O : OP](
+      expr: Expr.Select[I, A, B, O, OP],
     ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evPOisI =>
-      val wrappedInputResult = expr.inputExpr.visit(this)(implicitly)
-      val wrappedInputValue = wrappedInputResult.state.output
-      val unwrappedInputValue = Extract[W].extract(wrappedInputValue)
-      val selectOutput = expr.lens.get(unwrappedInputValue)
-      val output = expr.wrapSelected(wrappedInputValue, selectOutput)
+      val inputResult = expr.inputExpr.visit(this)(implicitly)
+      val inputValue = inputResult.state.output
+      val selectOutput = expr.lens.get(inputValue)
+      val output = expr.wrapSelected(inputValue, selectOutput)
       val finalState = state.swapAndReplaceOutput(output)
-      debugging(expr).invokeDebugger(finalState.mapInput((_, wrappedInputValue, expr.lens, selectOutput)))
+      debugging(expr).invokeDebugger(finalState.mapInput((_, inputValue, expr.lens, selectOutput)))
       ExprResult.Select(expr, finalState)
     }
 

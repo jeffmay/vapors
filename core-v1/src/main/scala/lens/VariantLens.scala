@@ -2,6 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package lens
 
+import algebra.Extract
 import cats.arrow.Compose
 import cats.data.NonEmptySet
 import cats.kernel.Semigroup
@@ -245,6 +246,19 @@ final case class VariantLens[-A, +B](
     */
   def as[V](implicit ev: B <:< V): VariantLens[A, V] =
     this.copy(get = this.get.andThen(ev))
+
+  /**
+    * Extracts the value of a wrapper without altering the [[path]]
+    *
+    * TODO: Is this a safe operation for all Extract types? Should there be a separate typeclass?
+    *
+    * @param ev evidence that this lens result is wrapped
+    * @tparam W the wrapper type
+    * @tparam V the wrapped value type
+    * @return a lens that extracts the value from the wrapped return value of this lens
+    */
+  def extractValue[W[_] : Extract, V](implicit ev: B <:< W[V]): VariantLens[A, V] =
+    this.copy(get = this.get.andThen(wv => Extract[W].extract(wv)))
 
   /**
     * Converts the result into an [[HList]] if possible.

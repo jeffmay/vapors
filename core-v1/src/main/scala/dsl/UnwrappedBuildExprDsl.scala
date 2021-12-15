@@ -52,9 +52,9 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
     )(implicit
       sot: SelectOutputType.Aux[W, A, B, O],
       opO: OP[O],
-    ): Expr.Select[I, W, A, B, O, OP] = {
+    ): Expr.Select[I, A, B, O, OP] = {
       val lens = selector(VariantLens.id[A])
-      Expr.Select[I, W, A, B, O, OP](inputExpr, lens, sot.wrapSelected(_, lens.path, _))
+      Expr.Select[I, A, B, O, OP](inputExpr, lens, sot.wrapSelected(_, lens.path, _))
     }
 
     override def getAs[C[_]]: GetAsUnwrapped[I, A, C, OP] = new GetAsUnwrapped(inputExpr)
@@ -66,6 +66,16 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
   override final type SpecificHkExprBuilder[-I, C[_], A] = HkIdExprBuilder[I, C, A]
 
   final class HkIdExprBuilder[-I, C[_], A](inputExpr: I ~:> C[A]) extends HkExprBuilder(inputExpr) {
+
+    override def headOption(
+      implicit
+      foldableC: Foldable[C],
+      opA: OP[A],
+      opO: OP[Option[A]],
+    ): Expr.Select[I, C[A], Option[A], Option[A], OP] = {
+      val lens = VariantLens.id[C[A]].at(0)
+      Expr.Select(inputExpr, lens, (_, opt) => opt)
+    }
 
     override def exists(
       conditionExprBuilder: A =~:> Boolean,

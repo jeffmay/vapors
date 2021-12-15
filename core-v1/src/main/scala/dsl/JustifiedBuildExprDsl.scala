@@ -54,8 +54,8 @@ trait JustifiedBuildExprDsl extends BuildExprDsl with WrapJustifiedImplicits wit
     )(implicit
       sot: SelectOutputType.Aux[Justified, A, B, O],
       opO: OP[O],
-    ): Expr.Select[I, Justified, A, B, O, OP] = {
-      val lens = selector(VariantLens.id[A])
+    ): Expr.Select[I, Justified[A], B, O, OP] = {
+      val lens = VariantLens.id[Justified[A]].extractValue.andThen(selector(VariantLens.id[A]))
       Expr.Select(inputExpr, lens, sot.wrapSelected(_, lens.path, _))
     }
 
@@ -74,6 +74,16 @@ trait JustifiedBuildExprDsl extends BuildExprDsl with WrapJustifiedImplicits wit
   override final type SpecificHkExprBuilder[-I, C[_], A] = JustifiedHkExprBuilder[I, C, A]
 
   final class JustifiedHkExprBuilder[-I, C[_], A](inputExpr: I ~:> C[Justified[A]]) extends HkExprBuilder(inputExpr) {
+
+    override def headOption(
+      implicit
+      foldableC: Foldable[C],
+      opA: OP[A],
+      opO: OP[Option[Justified[A]]],
+    ): Expr.Select[I, C[Justified[A]], Option[Justified[A]], Option[Justified[A]], OP] = {
+      val lens = VariantLens.id[C[Justified[A]]].at(0)
+      Expr.Select(inputExpr, lens, (cwa, opt) => opt)
+    }
 
     override def exists(
       conditionExprBuilder: Justified[A] =~:> Justified[Boolean],

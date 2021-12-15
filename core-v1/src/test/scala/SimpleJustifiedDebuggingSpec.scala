@@ -235,7 +235,7 @@ class SimpleJustifiedDebuggingSpec extends FunSuite with CommonDebuggingSpec {
       val (
         _,
         a: Justified[NestedSelectable],
-        lens: VariantLens[NestedSelectable, Option[NestedSelectable]],
+        lens: VariantLens[Justified[NestedSelectable], Option[NestedSelectable]],
         b: Option[NestedSelectable],
       ) = state.input
       val o: Option[Justified[NestedSelectable]] = state.output

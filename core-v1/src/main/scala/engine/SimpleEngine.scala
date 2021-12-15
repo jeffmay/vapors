@@ -151,12 +151,11 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state((i, results), finalResult))
     }
 
-    override def visitSelect[I, W[+_] : Extract, A, B, O : OP](expr: Expr.Select[I, W, A, B, O, OP]): I => O = { i =>
-      val wa = expr.inputExpr.visit(this)(i)
-      val a = Extract[W].extract(wa)
+    override def visitSelect[I, A, B, O : OP](expr: Expr.Select[I, A, B, O, OP]): I => O = { i =>
+      val a = expr.inputExpr.visit(this)(i)
       val b = expr.lens.get(a)
-      val o = expr.wrapSelected(wa, b)
-      debugging(expr).invokeAndReturn(state((i, wa, expr.lens, b), o))
+      val o = expr.wrapSelected(a, b)
+      debugging(expr).invokeAndReturn(state((i, a, expr.lens, b), o))
     }
 
     override def visitValuesOfType[T, O](
