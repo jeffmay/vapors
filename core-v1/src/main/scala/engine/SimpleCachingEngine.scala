@@ -12,7 +12,7 @@ import logic.{Conjunction, Disjunction, Negation}
 
 import cats.arrow.Arrow
 import cats.data.NonEmptyVector
-import cats.{Eval, Foldable, Functor, FunctorFilter}
+import cats.{Applicative, Eval, FlatMap, Foldable, Functor, FunctorFilter, Traverse}
 import shapeless.HList
 
 object SimpleCachingEngine {
@@ -30,8 +30,20 @@ object SimpleCachingEngine {
   )
 
   final object CachedResult {
-    implicit val instance: Extract[CachedResult] with Foldable[CachedResult] with Functor[CachedResult] =
-      new Extract[CachedResult] with Foldable[CachedResult] with Functor[CachedResult] {
+    implicit val instance: Applicative[CachedResult]
+      with Extract[CachedResult]
+      with Foldable[CachedResult]
+      with Functor[CachedResult] =
+      new Applicative[CachedResult] with Extract[CachedResult] with Foldable[CachedResult] with Functor[CachedResult] {
+
+        override def pure[A](x: A): CachedResult[A] = CachedResult(x, Map.empty)
+
+        override def ap[A, B](ff: CachedResult[A => B])(fa: CachedResult[A]): CachedResult[B] = {
+          val value = ff.value(fa.value)
+          // TODO: What if I just take the cache from fa?
+          val combinedCache = ff.cacheState ++ fa.cacheState
+          CachedResult(value, combinedCache)
+        }
 
         override final def extract[A](fa: CachedResult[A]): A = fa.value
 
@@ -229,6 +241,15 @@ object SimpleCachingEngine {
       debugging(expr).invokeAndReturn(state(input, cached(o)))
     }
 
+    override def visitFlatten[C[_] : FlatMap, A](
+      expr: Expr.Flatten[C, A, OP],
+    )(implicit
+      opCA: OP[C[A]],
+    ): C[C[A]] => CachedResult[C[A]] = memoize(expr, _) { cca =>
+      val ca = cca.flatMap(identity)
+      debugging(expr).invokeAndReturn(state(cca, cached(ca)))
+    }
+
     override def visitForAll[C[_] : Foldable, A, B : AsBoolean : OP](
       expr: Expr.ForAll[C, A, B, OP],
     ): C[A] => CachedResult[B] = memoize(expr, _) { ca =>
@@ -308,6 +329,17 @@ object SimpleCachingEngine {
         val outputResult = CachedResult(o, inputResult.cacheState)
         debugging(expr).invokeAndReturn(state((i, a, expr.lens, b), outputResult))
       }
+
+    override def visitSequence[C[+_] : Traverse, I, O](
+      expr: Expr.Sequence[C, I, O, OP],
+    )(implicit
+      opCO: OP[C[O]],
+    ): I => CachedResult[C[O]] = memoize(expr, _) { i =>
+      val co = expr.expressions.traverse { e =>
+        e.visit(this)(i)
+      }
+      debugging(expr).invokeAndReturn(state(i, co))
+    }
 
     override def visitSorted[C[_], A](
       expr: Expr.Sorted[C, A, OP],

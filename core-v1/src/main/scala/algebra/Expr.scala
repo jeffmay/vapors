@@ -10,7 +10,7 @@ import logic.{Conjunction, Disjunction, Negation}
 import math._
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
-import cats.{Foldable, Functor, FunctorFilter}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse}
 import shapeless.{::, HList, HNil}
 
 import scala.annotation.nowarn
@@ -295,6 +295,8 @@ object Expr {
       opO: OP[C[A]],
     ): C[A] ~:> C[A]
 
+    def visitFlatten[C[_] : FlatMap, A](expr: Flatten[C, A, OP])(implicit opCA: OP[C[A]]): C[C[A]] ~:> C[A]
+
     def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](expr: ForAll[C, A, B, OP]): C[A] ~:> B
 
     def visitIdentity[I : OP](expr: Identity[I, OP]): I ~:> I
@@ -324,6 +326,8 @@ object Expr {
     ): I ~:> W[B]
 
     def visitSelect[I, A, B, O : OP](expr: Select[I, A, B, O, OP]): I ~:> O
+
+    def visitSequence[C[+_] : Traverse, I, O](expr: Sequence[C, I, O, OP])(implicit opCO: OP[C[O]]): I ~:> C[O]
 
     def visitSorted[C[_], A](
       expr: Sorted[C, A, OP],
@@ -423,6 +427,9 @@ object Expr {
       opO: OP[C[A]],
     ): H[C[A], C[A]] = proxy(underlying.visitFilter(expr))
 
+    override def visitFlatten[C[_] : FlatMap, A](expr: Flatten[C, A, OP])(implicit opCA: OP[C[A]]): H[C[C[A]], C[A]] =
+      proxy(underlying.visitFlatten(expr))
+
     override def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
       expr: ForAll[C, A, B, OP],
     ): H[C[A], B] =
@@ -460,6 +467,12 @@ object Expr {
 
     override def visitSelect[I, A, B, O : OP](expr: Select[I, A, B, O, OP]): H[I, O] =
       proxy(underlying.visitSelect(expr))
+
+    override def visitSequence[C[+_] : Traverse, I, O](
+      expr: Sequence[C, I, O, OP],
+    )(implicit
+      opCO: OP[C[O]],
+    ): H[I, C[O]] = proxy(underlying.visitSequence(expr))
 
     override def visitSorted[C[_], A](
       expr: Sorted[C, A, OP],
@@ -740,6 +753,16 @@ object Expr {
       copy(debugging = debugging)
   }
 
+  final case class Flatten[C[_] : FlatMap, A, OP[_]](
+    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    opO: OP[C[A]],
+  ) extends Expr[C[C[A]], C[A], OP]("flatten") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[C[A]], C[A]] = v.visitFlatten(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Flatten[C, A, OP] =
+      copy(debugging = debugging)
+  }
+
   /**
     * Passes the input to this expression as its output.
     *
@@ -818,6 +841,17 @@ object Expr {
   ) extends Expr[I, O, OP]("select") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitSelect(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Select[I, A, B, O, OP] =
+      copy(debugging = debugging)
+  }
+
+  final case class Sequence[C[+_] : Traverse, -I, +O, OP[_]](
+    expressions: C[Expr[I, O, OP]],
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    opO: OP[C[O]],
+  ) extends Expr[I, C[O], OP]("sequence") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, C[O]] = v.visitSequence(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Sequence[C, I, O, OP] =
       copy(debugging = debugging)
   }
 

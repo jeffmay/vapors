@@ -201,6 +201,12 @@ object DebugArgs {
       override type Out = C[A]
     }
 
+  implicit def debugFlatten[C[_], A, OP[_]]: Aux[Expr.Flatten[C, A, OP], OP, C[C[A]], C[A]] =
+    new DebugArgs[Expr.Flatten[C, A, OP], OP] {
+      override type In = C[C[A]]
+      override type Out = C[A]
+    }
+
   implicit def debugForAll[
     C[_],
     A,
@@ -222,6 +228,12 @@ object DebugArgs {
     new DebugArgs[Expr.Select[I, A, B, O, OP], OP] {
       override type In = (I, A, VariantLens[A, B], B)
       override type Out = O
+    }
+
+  implicit def debugSequence[C[+_], I, O, OP[_]]: Aux[Expr.Sequence[C, I, O, OP], OP, I, C[O]] =
+    new DebugArgs[Expr.Sequence[C, I, O, OP], OP] {
+      override type In = I
+      override type Out = C[O]
     }
 
   implicit def debugSorted[C[_], A, OP[_]]: Aux[Expr.Sorted[C, A, OP], OP, C[A], C[A]] =

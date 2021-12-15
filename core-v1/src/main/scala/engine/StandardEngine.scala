@@ -8,7 +8,7 @@ import debug.DebugArgs
 import dsl.{Sortable, ZipToShortest}
 import logic.{Conjunction, Disjunction, Negation}
 
-import cats.{Foldable, Functor, FunctorFilter}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse}
 import shapeless.HList
 
 import scala.annotation.nowarn
@@ -150,6 +150,20 @@ object StandardEngine {
       ExprResult.Filter(expr, finalState)
     }
 
+    override def visitFlatten[C[_] : FlatMap, A](
+      expr: Expr.Flatten[C, A, OP],
+    )(implicit
+      opCA: OP[C[A]],
+    ): PO <:< C[C[A]] => ExprResult[PO, C[C[A]], C[A], OP] = { implicit evPOisCA =>
+      val cca: C[C[A]] = state.output
+      val ca = cca.flatMap { ca =>
+        ca
+      }
+      val finalState = state.swapAndReplaceOutput(ca)
+      debugging(expr).invokeDebugger(finalState)
+      ExprResult.Flatten(expr, finalState)
+    }
+
     override def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
       expr: Expr.ForAll[C, A, B, OP],
     ): PO <:< C[A] => ExprResult[PO, C[A], B, OP] = { implicit evPOisI =>
@@ -244,6 +258,19 @@ object StandardEngine {
       val finalState = state.swapAndReplaceOutput(output)
       debugging(expr).invokeDebugger(finalState.mapInput((_, inputValue, expr.lens, selectOutput)))
       ExprResult.Select(expr, finalState)
+    }
+
+    override def visitSequence[C[+_] : Traverse, I, O](
+      expr: Expr.Sequence[C, I, O, OP],
+    )(implicit
+      opCO: OP[C[O]],
+    ): PO <:< I => ExprResult[PO, I, C[O], OP] = { implicit evPOisI =>
+      val co = expr.expressions.map { e =>
+        e.visit(this)(implicitly)
+      }
+      val finalState = state.swapAndReplaceOutput(co.map(_.state.output))
+      debugging(expr).invokeDebugger(finalState)
+      ExprResult.Sequence(expr, finalState, co)
     }
 
     override def visitSorted[C[_], A](

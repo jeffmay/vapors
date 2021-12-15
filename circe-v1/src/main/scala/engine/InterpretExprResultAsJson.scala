@@ -4,7 +4,7 @@ package engine
 
 import algebra.{EqualComparable, ExprResult, WindowComparable}
 
-import cats.{Foldable, Functor, FunctorFilter, Order}
+import cats.{Foldable, Functor, FunctorFilter, Order, Traverse}
 import data.{ExprState, Extract}
 import data.ExtractValue.AsBoolean
 import debug.HasSourceCodeInfo
@@ -110,6 +110,12 @@ object InterpretExprResultAsJson {
       opO: OP[C[A]],
     ): ToJsonObject[C[A], C[A]] = encodeExprResult(result)
 
+    override def visitFlatten[C[_], A](
+      result: ExprResult.Flatten[PO, C, A, OP],
+    )(implicit
+      opO: OP[C[A]],
+    ): ToJsonObject[C[C[A]], C[A]] = encodeExprResult(result)
+
     override def visitForAll[C[_] : Foldable, A, B : AsBoolean : OP](
       result: ExprResult.ForAll[PO, C, A, B, OP],
     ): ToJsonObject[C[A], B] = encodeExprResult(result)
@@ -149,6 +155,13 @@ object InterpretExprResultAsJson {
       encodeExprResult(result)
 
     override def visitSelect[I, A, B, O : OP](result: ExprResult.Select[PO, I, A, B, O, OP]): ToJsonObject[I, O] =
+      encodeExprResult(result)
+
+    override def visitSequence[I, C[+_] : Traverse, O](
+      result: ExprResult.Sequence[PO, I, C, O, OP],
+    )(implicit
+      opO: OP[C[O]],
+    ): ToJsonObject[I, C[O]] =
       encodeExprResult(result)
 
     override def visitSorted[C[_], A](
@@ -249,6 +262,12 @@ object InterpretExprResultAsJson {
       opO: OP[C[A]],
     ): ToJsonObject[C[A], C[A]] = super.visitFilter(result).deepMerge(sourceInfo[C[A]])
 
+    override def visitFlatten[C[_], A](
+      result: ExprResult.Flatten[PO, C, A, OP],
+    )(implicit
+      opO: OP[C[A]],
+    ): ToJsonObject[C[C[A]], C[A]] = super.visitFlatten(result).deepMerge(sourceInfo[C[A]])
+
     override def visitForAll[C[_] : Foldable, A, B : AsBoolean : OP](
       result: ExprResult.ForAll[PO, C, A, B, OP],
     ): ToJsonObject[C[A], B] = super.visitForAll(result).deepMerge(sourceInfo[B])
@@ -286,6 +305,13 @@ object InterpretExprResultAsJson {
 
     override def visitSelect[I, A, B, O : OP](result: ExprResult.Select[PO, I, A, B, O, OP]): ToJsonObject[I, O] =
       super.visitSelect(result).deepMerge(sourceInfo[O])
+
+    override def visitSequence[I, C[+_] : Traverse, O](
+      result: ExprResult.Sequence[PO, I, C, O, OP],
+    )(implicit
+      opO: OP[C[O]],
+    ): ToJsonObject[I, C[O]] =
+      super.visitSequence(result).deepMerge(sourceInfo[C[O]])
 
     override def visitSorted[C[_], A](
       result: ExprResult.Sorted[PO, C, A, OP],

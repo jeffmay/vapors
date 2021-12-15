@@ -26,6 +26,23 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
 
   override def ident[I](implicit opI: OP[W[I]]): Expr.Identity[W[I], OP] = Expr.Identity()
 
+  override def valuesOfType[T](
+    factTypeSet: FactTypeSet[T],
+  )(implicit
+    opT: OP[T],
+    opTs: OP[Seq[W[T]]],
+  ): Expr.ValuesOfType[T, W[T], OP] =
+    Expr.ValuesOfType(factTypeSet, wrapFact.wrapFact(_))
+
+  override def pow[I, L, R](
+    leftExpr: I ~:> W[L],
+    rightExpr: I ~:> W[R],
+  )(implicit
+    opR: OP[W[R]],
+    pow: Power[W[L], W[R]],
+  ): CombineHolder[I, W[L], W[L], W[R], W[R], pow.Out, OP] =
+    (leftExpr ^ rightExpr)(opR, pow)
+
   override def when[I](condExpr: I ~:> W[Boolean]): WrappedWhenBuilder[I] = new WrappedWhenBuilder(condExpr)
 
   class WrappedWhenBuilder[-I](firstCondExpr: I ~:> W[Boolean]) extends WhenBuilder[I, W[Boolean]](firstCondExpr) {
@@ -55,23 +72,6 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
     ): Expr.When[EI, W[Boolean], EO, OP] =
       Expr.When(branches, elseExpr)
   }
-
-  override def valuesOfType[T](
-    factTypeSet: FactTypeSet[T],
-  )(implicit
-    opT: OP[T],
-    opTs: OP[Seq[W[T]]],
-  ): Expr.ValuesOfType[T, W[T], OP] =
-    Expr.ValuesOfType(factTypeSet, wrapFact.wrapFact(_))
-
-  override def pow[I, L, R](
-    leftExpr: I ~:> W[L],
-    rightExpr: I ~:> W[R],
-  )(implicit
-    opR: OP[W[R]],
-    pow: Power[W[L], W[R]],
-  ): CombineHolder[I, W[L], W[L], W[R], W[R], pow.Out, OP] =
-    (leftExpr ^ rightExpr)(opR, pow)
 
   override implicit def const[A](
     value: A,
