@@ -74,6 +74,15 @@ object VariantLens extends VariantLensLowPriorityImplicits {
   final class AsMapBuilder[A, K, V](private val lens: VariantLens[A, IterableOnce[(K, V)]]) extends AnyVal {
 
     /**
+      * Get the first element of this [[Map]], if it isn't empty.
+      */
+    def headOption: VariantLens[A, Option[(K, V)]] =
+      lens.copy(
+        path = lens.path.atHead,
+        get = lens.get.andThen(View.from(_).headOption),
+      )
+
+    /**
       * Returns the right-side of all the 2-tuples as an [[Iterable]] of values.
       */
     def values: VariantLens[A, Iterable[V]] = lens.copy(
@@ -83,8 +92,8 @@ object VariantLens extends VariantLensLowPriorityImplicits {
     /**
       * @see [[AsIterableBuilder.to]] but the values are 2-tuples
       */
-    def to[B](factory: Factory[(K, V), B]): VariantLens[A, B] =
-      lens.copy(get = lens.get.andThen(factory.fromSpecific(_)))
+    def to[C[_]](implicit factory: Factory[(K, V), C[(K, V)]]): VariantLens[A, C[(K, V)]] =
+      lens.copy(get = lens.get.andThen(factory.fromSpecific))
 
     /**
       * Group the 2-tuples by the left side and create a [[Map]].
@@ -92,29 +101,13 @@ object VariantLens extends VariantLensLowPriorityImplicits {
       * If there are duplicate keys, then the last entry in the sequence wins the spot and the others are dropped.
       */
     def toMap: VariantLens[A, Map[K, V]] = lens.copy(
-      get = lens.get.andThen(Map.from(_)),
-    )
-
-    /**
-      * Same as [[toMap]], but creates a lazy [[MapView]] instead.
-      */
-    def toMapView: VariantLens[A, MapView[K, V]] = lens.copy(
-      get = lens.get.andThen(Map.from(_).view),
+      get = lens.get.andThen(Map.from),
     )
   }
 
   // TODO: Make this more generally useful and convert back to a NamedLens implicitly
   // I think this can be folded into VariantLens now that it utilizes variance
-  final class AsIterableBuilder[A, C[x] <: IterableOnce[x], E](private val lens: VariantLens[A, C[E]]) extends AnyVal {
-
-    /**
-      * Use the given Scala collection companion object to convert this [[IterableOnce]] into the desired output.
-      *
-      * TODO: Should there be any path information for conversion?
-      *       List => Map seems important information as values with duplicate keys could be dropped
-      */
-    def to[B](factory: Factory[E, B]): VariantLens[A, B] =
-      lens.copy(get = lens.get.andThen(factory.fromSpecific(_)))
+  final class AsIterableBuilder[A, E](private val lens: VariantLens[A, IterableOnce[E]]) extends AnyVal {
 
     /**
       * Get the first element of this [[IterableOnce]], if it isn't empty.
@@ -122,8 +115,17 @@ object VariantLens extends VariantLensLowPriorityImplicits {
     def headOption: VariantLens[A, Option[E]] =
       lens.copy(
         path = lens.path.atHead,
-        get = lens.get.andThen(b => View.from[E](b).headOption),
+        get = lens.get.andThen(View.from(_).headOption),
       )
+
+    /**
+      * Use the given Scala collection companion object to convert this [[IterableOnce]] into the desired output.
+      *
+      * TODO: Should there be any path information for conversion?
+      *       List => Map seems important information as values with duplicate keys could be dropped
+      */
+    def to[C[_]](implicit factory: Factory[E, C[E]]): VariantLens[A, C[E]] =
+      lens.copy(get = lens.get.andThen(factory.fromSpecific))
   }
 
   implicit final class AsHListBuilder[A, L <: HList](private val lens: VariantLens[A, L]) extends AnyVal {
@@ -144,12 +146,12 @@ sealed trait VariantLensLowPriorityImplicits {
   /**
     * Wrap the result of this lens with an [[AsIterableBuilder]] for helper operations on [[IterableOnce]] types.
     */
-  implicit def asIterable[A, B, C[x] <: IterableOnce[x], E](
+  implicit def asIterable[A, B, E](
     lens: VariantLens[A, B],
   )(implicit
-    ev: B <:< C[E],
-  ): VariantLens.AsIterableBuilder[A, C, E] =
-    new VariantLens.AsIterableBuilder(lens.as[C[E]])
+    ev: B <:< IterableOnce[E],
+  ): VariantLens.AsIterableBuilder[A, E] =
+    new VariantLens.AsIterableBuilder(lens.as[IterableOnce[E]])
 }
 
 /**

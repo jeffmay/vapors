@@ -3,10 +3,11 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra._
-import cats.{catsInstancesForId, Foldable, Functor}
+import cats.{Foldable, Functor, Traverse}
 import data.FactTypeSet
 import lens.VariantLens
 import logic.Logic
+import shapeless.<:!<
 
 trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with UnwrappedDslTypes {
 
@@ -15,8 +16,6 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
   override protected implicit final def windowComparable: WindowComparable[W, OP] = WindowComparable.identity
 
   override protected implicit final def extract: Extract[W] = Extract.identity
-
-  override protected implicit final def functor: Functor[W] = catsInstancesForId
 
   override protected implicit final def wrapConst: WrapConst[W] = WrapConst.identity
 
@@ -113,23 +112,32 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
   }
 }
 
-sealed trait UnwrappedImplicits extends WrapImplicits with LowPriorityUnwrappedImplicits {
+sealed trait UnwrappedImplicits extends MidPriorityUnwrappedImplicits with WrapImplicits {
 
-  implicit def selectFunctor[C[_] : Functor, I : OP, O : OP](
+  override implicit final def constFunctor[C[_] : Functor, O : OP](
     implicit
-    aot: SelectOutputType[W, I, O],
-  ): SelectOutputType.Aux[W, I, C[O], C[aot.Out]] = defn.selectFunctor[C, I, O](aot)
+    cot: ConstOutputType[W, O],
+  ): ConstOutputType.Aux[W, C[O], C[cot.Out]] = defn.constFunctor[C, O](cot)
 
-  implicit def constFunctor[C[_] : Functor, O : OP](
+  override implicit final def selectOption[I : OP, O : OP](
     implicit
-    aot: ConstOutputType[W, O],
-  ): ConstOutputType.Aux[W, C[O], C[aot.Out]] = defn.constFunctor[C, O](aot)
+    sot: SelectOutputType[W, I, O],
+  ): SelectOutputType.Aux[W, I, Option[O], Option[sot.Out]] = defn.selectOption(sot)
 
+}
+
+sealed trait MidPriorityUnwrappedImplicits extends LowPriorityUnwrappedImplicits with MidPriorityWrapImplicits {
+
+  override implicit final def selectTraverse[C[_] : Traverse, I : OP, O : OP](
+    implicit
+    sot: SelectOutputType[W, I, O],
+    nt: C[O] <:!< Product,
+  ): SelectOutputType.Aux[W, I, C[O], C[sot.Out]] = defn.selectTraverse(sot)
 }
 
 sealed trait LowPriorityUnwrappedImplicits extends LowPriorityWrapImplicits with UnwrappedDslTypes {
 
-  implicit def selectId[I : OP, O : OP]: SelectOutputType.Aux[W, I, O, O] = defn.selectId
+  override implicit final def selectId[I : OP, O : OP]: SelectOutputType.Aux[W, I, O, O] = defn.selectId
 
-  implicit def constId[O : OP]: ConstOutputType.Aux[W, O, O] = defn.constId
+  override implicit final def constId[O : OP]: ConstOutputType.Aux[W, O, O] = defn.constId
 }

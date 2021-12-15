@@ -4,7 +4,7 @@ package dsl
 
 import algebra.{Expr, Extract}
 import com.rallyhealth.vapors.v1.lens.VariantLens.FromTo
-import lens.{DataPath, VariantLens}
+import lens.VariantLens
 import shapeless.Id
 
 import scala.collection.Factory
@@ -21,7 +21,7 @@ import scala.collection.Factory
   * @tparam OP the custom output parameter type constructor (defined by the imported DSL).
   *            See [[dsl.DslTypes.OP]] for more details.
   */
-class GetAsWrapper[-I, W[+_] : Extract : WrapConst, A, C[_], OP[_]](
+class GetAsWrapper[-I, W[+_] : Extract, A, C[_], OP[_]](
   inputExpr: Expr[I, W[A], OP],
 )(implicit
   ws: WrapSelected[W, OP],
@@ -35,23 +35,12 @@ class GetAsWrapper[-I, W[+_] : Extract : WrapConst, A, C[_], OP[_]](
     opB: OP[B],
     opO: OP[C[W[B]]],
   ): Expr.Select[I, W[A], NF[B], C[W[B]], OP] = {
-    implicit val sot: SelectOutputType.Aux[W, A, NF[B], C[W[B]]] =
-      new SelectOutputType[W, A, NF[B]] {
-        override type Out = C[W[B]]
-        override def wrapSelected(
-          wrapped: W[A],
-          path: DataPath,
-          value: NF[B],
-        ): C[W[B]] = {
-          value.iterator
-            .map { b =>
-              ws.wrapSelected(wrapped, path, b)
-            }
-            .to(factory)
-        }
-      }
     val lens = VariantLens.id[W[A]].extractValue.andThen(selector(VariantLens.id[A]))
-    Expr.Select[I, W[A], NF[B], C[W[B]], OP](inputExpr, lens, sot.wrapSelected(_, lens.path, _))
+    Expr.Select[I, W[A], NF[B], C[W[B]], OP](inputExpr, lens, { (wa, cb) =>
+      cb.iterator
+        .map(ws.wrapSelected(wa, lens.path, _))
+        .to(factory)
+    })
   }
 }
 

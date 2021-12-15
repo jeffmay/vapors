@@ -4,10 +4,11 @@ package dsl
 
 import algebra._
 import cats.data.NonEmptyList
-import cats.{Foldable, Functor}
+import cats.{Foldable, Functor, Traverse}
 import data.{FactTypeSet, Justified}
 import lens.VariantLens
 import logic.Logic
+import shapeless.<:!<
 
 trait JustifiedBuildExprDsl extends BuildExprDsl with WrapJustifiedImplicits with JustifiedDslTypes {
 
@@ -16,8 +17,6 @@ trait JustifiedBuildExprDsl extends BuildExprDsl with WrapJustifiedImplicits wit
   override protected implicit final def windowComparable: WindowComparable[Justified, OP] = WindowComparable.justified
 
   override protected implicit final def extract: Extract[Justified] = Extract.justified
-
-  override protected implicit final def functor: Functor[Justified] = Justified.functor
 
   override protected implicit final def wrapConst: WrapConst[Justified] = Justified.wrapConst
 
@@ -35,7 +34,7 @@ trait JustifiedBuildExprDsl extends BuildExprDsl with WrapJustifiedImplicits wit
   )(implicit
     opTs: OP[Seq[Justified[T]]],
   ): Expr.ValuesOfType[T, Justified[T], OP] =
-    Expr.ValuesOfType[T, Justified[T], OP](factTypeSet, Justified.ByFact(_))
+    Expr.ValuesOfType[T, Justified[T], OP](factTypeSet, Justified.byFact)
 
   override implicit def const[A](
     value: A,
@@ -151,22 +150,32 @@ trait JustifiedBuildExprDsl extends BuildExprDsl with WrapJustifiedImplicits wit
   }
 }
 
-sealed trait WrapJustifiedImplicits extends WrapImplicits with LowPriorityJustifiedWrapImplicits {
+sealed trait WrapJustifiedImplicits extends WrapImplicits with MidPriorityJustifiedWrapImplicits {
 
   override implicit def constFunctor[C[_] : Functor, O : OP](
     implicit
-    aot: ConstOutputType[Justified, O],
-  ): ConstOutputType.Aux[Justified, C[O], C[aot.Out]] = defn.constFunctor(aot)
+    cot: ConstOutputType[Justified, O],
+  ): ConstOutputType.Aux[Justified, C[O], C[cot.Out]] = defn.constFunctor(cot)
 
-  override implicit def selectFunctor[C[_] : Functor, I : OP, O : OP](
+  override implicit def selectOption[I : OP, O : OP](
     implicit
-    aot: SelectOutputType[Justified, I, O],
-  ): SelectOutputType.Aux[Justified, I, C[O], C[aot.Out]] = defn.selectFunctor(aot)
+    sot: SelectOutputType[Justified, I, O],
+  ): SelectOutputType.Aux[Justified, I, Option[O], Option[sot.Out]] = defn.selectOption(sot)
+}
+
+sealed trait MidPriorityJustifiedWrapImplicits extends MidPriorityWrapImplicits with LowPriorityJustifiedWrapImplicits {
+
+  override implicit final def selectTraverse[C[_] : Traverse, I : OP, O : OP](
+    implicit
+    sot: SelectOutputType[Justified, I, O],
+    nt: C[O] <:!< Product,
+  ): SelectOutputType.Aux[Justified, I, C[O], C[sot.Out]] = defn.selectTraverse(sot)
 }
 
 sealed trait LowPriorityJustifiedWrapImplicits extends LowPriorityWrapImplicits with JustifiedDslTypes {
 
-  override implicit def constId[O : OP]: ConstOutputType.Aux[Justified, O, Justified[O]] = defn.constId
+  override implicit final def constId[O : OP]: ConstOutputType.Aux[Justified, O, Justified[O]] = defn.constId
 
-  override implicit def selectId[I : OP, O : OP]: SelectOutputType.Aux[Justified, I, O, Justified[O]] = defn.selectId
+  override implicit final def selectId[I : OP, O : OP]: SelectOutputType.Aux[Justified, I, O, Justified[O]] =
+    defn.selectId
 }

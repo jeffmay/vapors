@@ -2,9 +2,9 @@ package com.rallyhealth.vapors.v1
 
 import data.Justified
 import example.NestedSelectable
-import cats.data.NonEmptyList
-import lens.VariantLensMacros
+import lens.{DataPath, VariantLensMacros}
 import munit.FunSuite
+import shapeless.Nat
 
 class SimpleJustifiedSelectSpec extends FunSuite {
 
@@ -13,38 +13,28 @@ class SimpleJustifiedSelectSpec extends FunSuite {
   import NestedSelectable.empty
 
   test("Select a value of a const") {
-    val root = empty.const
-    val expr = root.get(_.select(_.value))
-    val expected = Justified.byInference(
-      "select(_.value)",
-      root.value.value.value,
-      NonEmptyList.of(root.value),
-    )
+    val expected = NestedSelectable("expectedValue")
+    val expr = expected.const.get(_.select(_.value))
+    val expectedWrapped = Justified.bySelection(expected.value, expr.lens.path, Justified.byConst(expected))
     val obtained = expr.run()
-    assertEquals(obtained, expected)
+    assertEquals(obtained, expectedWrapped)
   }
 
   test("Select a nested Option value of a const") {
-    val fixture = NestedSelectable("optional", Some(empty))
-    val root = NestedSelectable("optional", Some(empty)).const
-    val expr = root.get(_.select(_.opt)).map {
+    val expected = NestedSelectable("expectedValue")
+    val fixture = NestedSelectable("optional", Some(expected))
+    val expr = fixture.const.get(_.select(_.opt)).map {
       _.get(_.select(_.value))
     }
-    val expected = Some(
-      Justified.byInference(
-        "select(_.value)",
-        "empty",
-        NonEmptyList.of(
-          Justified.byInference(
-            "select(_.opt)",
-            empty,
-            NonEmptyList.of(Justified.byConst(fixture)),
-          ),
-        ),
+    val expectedWrapped = Some(
+      Justified.bySelection(
+        expected.value,
+        DataPath.empty.atField("opt").atIndex(0).atField("value"),
+        Justified.byConst(fixture),
       ),
     )
     val obtained = expr.run()
-    assertEquals(obtained, expected)
+    assertEquals(obtained, expectedWrapped)
   }
 
   test("Cannot use the Lens.select operation to map over elements of an Option") {
@@ -58,31 +48,21 @@ class SimpleJustifiedSelectSpec extends FunSuite {
   }
 
   test("Select a nested Seq value of a const") {
-    val fixture = NestedSelectable("seqDefined", seq = Seq(empty, empty))
+    val firstValue = NestedSelectable("firstValue")
+    val secondValue = NestedSelectable("secondValue")
+    val fixture = NestedSelectable("seqDefined", seq = Seq(firstValue, secondValue))
     val expr = fixture.const.get(_.select(_.seq)).map(_.get(_.select(_.value)))
     val observed = expr.run()
     val expected = Seq(
-      Justified.byInference(
-        "select(_.value)",
-        "empty",
-        NonEmptyList.of(
-          Justified.byInference(
-            "select(_.seq)",
-            empty,
-            NonEmptyList.of(Justified.byConst(fixture)),
-          ),
-        ),
+      Justified.bySelection(
+        firstValue.value,
+        DataPath.empty.atField("seq").atIndex(0).atField("value"),
+        Justified.byConst(fixture),
       ),
-      Justified.byInference(
-        "select(_.value)",
-        "empty",
-        NonEmptyList.of(
-          Justified.byInference(
-            "select(_.seq)",
-            empty,
-            NonEmptyList.of(Justified.byConst(fixture)),
-          ),
-        ),
+      Justified.bySelection(
+        secondValue.value,
+        DataPath.empty.atField("seq").atIndex(1).atField("value"),
+        Justified.byConst(fixture),
       ),
     )
     assertEquals(observed, expected)
@@ -98,57 +78,52 @@ class SimpleJustifiedSelectSpec extends FunSuite {
     assert(message contains VariantLensMacros.InvalidDataPathMessage)
   }
 
-  test("Select a nested Map value of a const") {
-    val fixture = NestedSelectable("mapDefined", map = Map("one" -> empty, "two" -> empty))
-    val expr = fixture.const.get(_.select(_.map)).map(_.get(_.select(_.value)))
+  test("Select the values of a nested Map value of a const") {
+    val first = NestedSelectable("firstValue")
+    val second = NestedSelectable("secondValue")
+    val fixture = NestedSelectable("mapDefined", map = Map("one" -> first, "two" -> second))
+    val expr = fixture.const.get(_.select(_.map).to[Seq]).map { kv =>
+      kv.get(_.at(Nat._1).select(_.value))
+    }
     val observed = expr.run()
-    val expected = Map(
-      "one" -> Justified.byInference(
-        "select(_.value)",
-        "empty",
-        NonEmptyList.of(
-          Justified.byInference(
-            "select(_.map)",
-            empty,
-            NonEmptyList.of(Justified.byConst(fixture)),
-          ),
-        ),
+    val expectedWrapped = Seq(
+      Justified.bySelection(
+        first.value,
+        // TODO: How to keep the original map keys / remove the tuple keys here?
+        DataPath.empty.atField("map").atIndex(0).atKey("1").atField("value"),
+        Justified.byConst(fixture),
       ),
-      "two" -> Justified.byInference(
-        "select(_.value)",
-        "empty",
-        NonEmptyList.of(
-          Justified.byInference(
-            "select(_.map)",
-            empty,
-            NonEmptyList.of(Justified.byConst(fixture)),
-          ),
-        ),
+      Justified.bySelection(
+        second.value,
+        // TODO: How to keep the original map keys / remove the tuple keys here?
+        DataPath.empty.atField("map").atIndex(1).atKey("1").atField("value"),
+        Justified.byConst(fixture),
       ),
     )
-    assertEquals(observed, expected)
+    assertEquals(observed, expectedWrapped)
   }
 
   test("Cannot use the Lens.select operation to map over elements of a Map") {
     val fixture = NestedSelectable("seqDefined", seq = Seq(empty, empty))
     val _ =
-      fixture.const.get(_.select(_.map)).map(_.get(_.select(_.value))) // correct
+      fixture.const.get(_.select(_.map).to[Seq]).map(_.get(_.at(Nat._1).select(_.value))) // correct
     val message = compileErrors {
-      "fixture.const.get(_.select(_.map.map { case (k, v) => (k, v.value) }))" // incorrect
+      "fixture.const.get(_.select(_.map.map(_._2.value)))" // incorrect
     }
     assert(message contains VariantLensMacros.InvalidDataPathMessage)
   }
 
   test("Select a headOption from an Option") {
-    val expectedValueString = "firstElement"
-    val fixture = NestedSelectable("optDefined", opt = Some(NestedSelectable(expectedValueString)))
+    val expected = NestedSelectable("firstElement")
+    val fixture = NestedSelectable("optDefined", opt = Some(expected))
     val expr = fixture.const.get(_.select(_.opt)).headOption
     val observed = expr.run()
-    val expected = fixture.opt.map { v =>
-      Justified.byInference("select(_.opt)", v, NonEmptyList.of(Justified.byConst(fixture)))
+    val expectedWrapped = fixture.opt.map { v =>
+      // TODO: Should this include the index for headOption on an Option?
+      Justified.bySelection(v, DataPath.empty.atField("opt").atIndex(0), Justified.byConst(fixture))
     }
-    assertEquals(expected.map(_.value.value), Some(expectedValueString))
-    assertEquals(observed, expected)
+    assertEquals(expectedWrapped.map(_.value), Some(expected))
+    assertEquals(observed, expectedWrapped)
   }
 
   test("Select None from an empty Option") {
@@ -159,17 +134,15 @@ class SimpleJustifiedSelectSpec extends FunSuite {
   }
 
   test("Select a headOption from a Seq") {
-    val expectedValueString = "firstElement"
-    val fixture = NestedSelectable("seqDefined", seq = Seq(NestedSelectable(expectedValueString), empty))
+    val expected = NestedSelectable("firstElement")
+    val fixture = NestedSelectable("seqDefined", seq = Seq(expected, empty))
     val expr = fixture.const.get(_.select(_.seq)).headOption
     val observed = expr.run()
-    val expected = fixture.seq.headOption.map { v =>
-      // TODO: The Path should include the .headOption selection
-      // Justified.byInference("select(_.seq[0])", v, NonEmptyList.of(Justified.byConst(fixture)))
-      Justified.byInference("select(_.seq)", v, NonEmptyList.of(Justified.byConst(fixture)))
+    val expectedWrapped = fixture.seq.headOption.map { v =>
+      Justified.bySelection(v, DataPath.empty.atField("seq").atIndex(0), Justified.byConst(fixture))
     }
-    assertEquals(expected.map(_.value.value), Some(expectedValueString))
-    assertEquals(observed, expected)
+    assertEquals(expectedWrapped.map(_.value), Some(expected))
+    assertEquals(observed, expectedWrapped)
   }
 
   test("Select None from an empty Seq") {
@@ -184,6 +157,6 @@ class SimpleJustifiedSelectSpec extends FunSuite {
     val message = compileErrors {
       "fixture.const.get(_.select(_.map)).headOption"
     }
-    assert(message contains "Could not find an instance of Foldable for [+V]scala.collection.immutable.Map[String,V]")
+    assert(message contains "value headOption is not a member")
   }
 }
