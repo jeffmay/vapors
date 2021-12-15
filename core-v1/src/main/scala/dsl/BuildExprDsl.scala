@@ -9,7 +9,7 @@ import logic.{Conjunction, Disjunction, Logic, Negation}
 import math.Power
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
-import cats.{Foldable, Functor, FunctorFilter, Order}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Order, Traverse}
 import shapeless.{Generic, HList}
 
 trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
@@ -32,6 +32,18 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
 
   def ident[I](implicit opI: OP[W[I]]): Expr.Identity[W[I], OP]
 
+  final def concat[I, A](
+    expressions: I ~:> Seq[A]*,
+  )(implicit
+    opSSA: OP[Seq[Seq[A]]],
+    opSA: OP[Seq[A]],
+  ): AndThen[I, Seq[Seq[A]], Seq[A]] = {
+    Expr.Sequence(expressions).andThen(Expr.Flatten())
+  }
+
+  def flatten[I, C[+_] : FlatMap, A](expr: I ~:> C[C[A]])(implicit opCA: OP[C[A]]): AndThen[I, C[C[A]], C[A]] =
+    expr.andThen(Expr.Flatten())
+
   def valuesOfType[T](
     factTypeSet: FactTypeSet[T],
   )(implicit
@@ -46,6 +58,13 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
     opR: OP[W[R]],
     pow: Power[W[L], W[R]],
   ): CombineHolder[I, W[L], W[L], W[R], W[R], pow.Out, OP]
+
+  final def wrapAll[C[+_] : Traverse, I, O](
+    expressions: C[I ~:> O],
+  )(implicit
+    opCO: OP[C[O]],
+  ): Expr.Sequence[C, I, O, OP] =
+    Expr.Sequence(expressions)
 
   def when[I](condExpr: I ~:> W[Boolean]): WhenBuilder[I, W[Boolean]]
 

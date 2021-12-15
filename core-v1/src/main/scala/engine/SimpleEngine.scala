@@ -9,7 +9,7 @@ import debug.DebugArgs.Invoker
 import dsl.{Sortable, ZipToShortest}
 import logic.{Conjunction, Disjunction, Negation}
 
-import cats.{Foldable, Functor, FunctorFilter}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse}
 import shapeless.HList
 
 /**
@@ -109,6 +109,15 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state(input, o))
     }
 
+    override def visitFlatten[C[_] : FlatMap, A](
+      expr: Expr.Flatten[C, A, OP],
+    )(implicit
+      opCA: OP[C[A]],
+    ): C[C[A]] => C[A] = { cca =>
+      val ca = cca.flatMap(identity)
+      debugging(expr).invokeAndReturn(state(cca, ca))
+    }
+
     override def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
       expr: Expr.ForAll[C, A, B, OP],
     ): C[A] => B = { ca =>
@@ -174,6 +183,17 @@ object SimpleEngine {
       val b = expr.lens.get(a)
       val o = expr.wrapSelected(a, b)
       debugging(expr).invokeAndReturn(state((i, a, expr.lens, b), o))
+    }
+
+    override def visitSequence[C[+_] : Traverse, I, O](
+      expr: Expr.Sequence[C, I, O, OP],
+    )(implicit
+      opCO: OP[C[O]],
+    ): I => C[O] = { i =>
+      val co = expr.expressions.map { e =>
+        e.visit(this)(i)
+      }
+      debugging(expr).invokeAndReturn(state(i, co))
     }
 
     override def visitSorted[C[_], A](

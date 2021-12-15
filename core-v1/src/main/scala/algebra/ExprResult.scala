@@ -8,7 +8,7 @@ import dsl.Sortable
 import logic.{Conjunction, Disjunction, Negation}
 
 import cats.data.NonEmptyVector
-import cats.{Foldable, Functor, FunctorFilter}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse}
 
 /**
   * The result of running the associated [[Expr]] of the same name.
@@ -92,6 +92,8 @@ object ExprResult {
       opO: OP[C[A]],
     ): C[A] ~>: C[A]
 
+    def visitFlatten[C[_], A](result: Flatten[PO, C, A, OP])(implicit opO: OP[C[A]]): C[C[A]] ~>: C[A]
+
     def visitForAll[C[_] : Foldable, A, B : AsBoolean : OP](result: ForAll[PO, C, A, B, OP]): C[A] ~>: B
 
     def visitIdentity[I : OP](result: Identity[PO, I, OP]): I ~>: I
@@ -121,6 +123,8 @@ object ExprResult {
     ): I ~>: W[B]
 
     def visitSelect[I, A, B, O : OP](result: Select[PO, I, A, B, O, OP]): I ~>: O
+
+    def visitSequence[I, C[+_] : Traverse, O](result: Sequence[PO, I, C, O, OP])(implicit opO: OP[C[O]]): I ~>: C[O]
 
     def visitSorted[C[_], A](
       result: Sorted[PO, C, A, OP],
@@ -303,6 +307,18 @@ object ExprResult {
   }
 
   /**
+    * The result of running [[Expr.Flatten]]
+    */
+  final case class Flatten[+PO, C[_] : FlatMap, A, OP[_]](
+    expr: Expr.Flatten[C, A, OP],
+    state: ExprState[PO, C[A]],
+  )(implicit
+    opO: OP[C[A]],
+  ) extends ExprResult[PO, C[C[A]], C[A], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[C[C[A]], C[A]] = v.visitFlatten(this)
+  }
+
+  /**
     * The result of running [[Expr.MapEvery]]
     */
   final case class MapEvery[+PO, C[_] : Functor, A, B, OP[_]](
@@ -323,6 +339,19 @@ object ExprResult {
     state: ExprState[PO, O],
   ) extends ExprResult[PO, I, O, OP] {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitSelect(this)
+  }
+
+  /**
+    * The result of running [[Expr.Sequence]]
+    */
+  final case class Sequence[+PO, -I, C[+_] : Traverse, +O, OP[_]](
+    expr: Expr.Sequence[C, I, O, OP],
+    state: ExprState[PO, C[O]],
+    innerResults: C[ExprResult[PO, I, O, OP]],
+  )(implicit
+    opO: OP[C[O]],
+  ) extends ExprResult[PO, I, C[O], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, C[O]] = v.visitSequence(this)
   }
 
   /**
