@@ -12,7 +12,7 @@ import cats.data.NonEmptyVector
 import cats.{Foldable, Functor, FunctorFilter, Order}
 import shapeless.{Generic, HList}
 
-trait BuildExprDsl extends DebugExprDsl {
+trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
   self: DslTypes with ExprHListDslImplicits with OutputTypeImplicits =>
 
   /**

@@ -3,6 +3,7 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra.Expr
+import shapeless.HList
 
 /**
   * All type aliases defined by the [[FullDsl]] subclasses.
@@ -100,4 +101,9 @@ trait DslTypes extends Any {
     *       as well as the boundaries of a closed range.
     */
   final type >=<[-I, +V] = Expr.WithinWindow[I, V, W, OP]
+
+  final type XHL[-I, L <: HList] = ExprHList[I, L, OP]
+
+  final type XHNil = ExprHNil[OP]
+  @inline final def XHNil: XHNil = ExprHNil[OP]
 }
