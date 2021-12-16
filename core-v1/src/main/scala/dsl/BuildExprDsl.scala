@@ -174,11 +174,6 @@ trait BuildExprDsl extends DebugExprDsl {
 
     def >=(expr: I ~:> W[V]): I >=< V = compareExpr(">=", expr)(Window.greaterThanOrEqual(_))
 
-    def within(window: Window[V]): I >=< V = this >=< window
-
-    def >=<(window: Window[V]): I >=< V =
-      Expr.WithinWindow(valueExpr, Expr.Const(wrapConst.wrapConst(window)))
-
     def within(expr: I ~:> W[Window[V]]): I >=< V = this >=< expr
 
     def >=<(expr: I ~:> W[Window[V]]): I >=< V = Expr.WithinWindow(valueExpr, expr)
