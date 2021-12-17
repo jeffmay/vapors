@@ -8,10 +8,14 @@ import lens.VariantLens
 import logic.Logic
 import math.Power
 
-import cats.{catsInstancesForId, Foldable, Functor, FunctorFilter, Semigroupal, Traverse}
-import shapeless.{<:!<, Generic, HList}
+import cats.{Foldable, Functor, FunctorFilter}
+import shapeless.{Generic, HList}
 
-trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with UnwrappedDslTypes {
+trait UnwrappedBuildExprDsl
+  extends BuildExprDsl
+  with DefaultUnwrappedExprHListImplicits
+  with DefaultUnwrappedOutputTypeImplicits
+  with UnwrappedDslTypes {
 
   override protected implicit final def boolLogic: Logic[W, Boolean, OP] = Logic.bool
 
@@ -19,15 +23,9 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
 
   override protected implicit final def extract: Extract[W] = Extract.identity
 
-  override protected implicit def functor: Functor[W] = catsInstancesForId
-
-  override protected implicit def semigroupal: Semigroupal[W] = catsInstancesForId
-
   override protected implicit final def wrapConst: WrapConst[W, OP] = WrapConst.unwrapped
 
   override protected implicit final def wrapSelected: WrapSelected[W, OP] = WrapSelected.unwrapped
-
-  override protected final val defn: WrapDefinitions[W, OP] = new WrapDefinitions[W, OP]
 
   // TODO: Should this be visible outside this trait?
   protected final def shortCircuit: Boolean = true
@@ -91,12 +89,13 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
       expr: I ~:> UL // let the compiler prove that W[UL] == UL after computing the correct mapN implicit above
     }
 
+    // IntelliJ highlights this as an error, but it compiles and it provides better type inference for the return type
     override def zipToShortest[C[+_], UL <: HList](
       implicit
-      zip: ZipToShortest.Aux[CW[C, W, +*], WL, OP, UL],
+      zip: ZipToShortest.Aux[C, WL, OP, UL],
       opO: OP[C[UL]],
     ): I ~:> C[UL] = {
-      val expr = Expr.ZipToShortestHList[I, CW[C, W, +*], WL, UL, OP](inputExprHList)(zip, opO)
+      val expr = Expr.ZipToShortestHList[I, C, WL, UL, OP](inputExprHList)(zip, opO)
       expr: I ~:> C[UL] // let the compiler prove that C[W[UL]] == C[UL] after computing the correct mapN implicit above
     }
   }
@@ -190,35 +189,4 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
     ): AndThen[I, C[A], C[A]] =
       inputExpr.andThen(Expr.Sorted())
   }
-}
-
-sealed trait UnwrappedImplicits extends MidPriorityUnwrappedImplicits with WrapImplicits {
-
-  override implicit def constTraverse[C[_] : Traverse, O](
-    implicit
-    sot: SelectOutputType[W, C[O], O],
-    opCO: OP[C[O]],
-  ): ConstOutputType.Aux[W, C[O], C[sot.Out]] = defn.constTraverse(sot)
-
-  override implicit final def selectOption[I : OP, O : OP](
-    implicit
-    sot: SelectOutputType[W, I, O],
-  ): SelectOutputType.Aux[W, I, Option[O], Option[sot.Out]] = defn.selectOption(sot)
-
-}
-
-sealed trait MidPriorityUnwrappedImplicits extends LowPriorityUnwrappedImplicits with MidPriorityWrapImplicits {
-
-  override implicit final def selectTraverse[C[_] : Traverse, I : OP, O : OP](
-    implicit
-    sot: SelectOutputType[W, I, O],
-    nt: C[O] <:!< Product,
-  ): SelectOutputType.Aux[W, I, C[O], C[sot.Out]] = defn.selectTraverse[C, I, O](sot)
-}
-
-sealed trait LowPriorityUnwrappedImplicits extends LowPriorityWrapImplicits with UnwrappedDslTypes {
-
-  override implicit final def selectId[I : OP, O : OP]: SelectOutputType.Aux[W, I, O, O] = defn.selectId
-
-  override implicit final def constId[O : OP]: ConstOutputType.Aux[W, O, O] = defn.constId
 }

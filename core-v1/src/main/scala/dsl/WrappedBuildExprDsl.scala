@@ -10,8 +10,8 @@ import math.Power
 import cats.{Foldable, Functor, FunctorFilter}
 import shapeless.{Generic, HList}
 
-trait WrappedExprDsl extends BuildExprDsl {
-  self: DslTypes with WrapImplicits =>
+trait WrappedBuildExprDsl extends BuildExprDsl {
+  self: DslTypes with WrappedExprHListDslImplicits with OutputTypeImplicits =>
 
   protected implicit def extract: Extract[W]
 

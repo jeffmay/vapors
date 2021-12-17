@@ -9,21 +9,22 @@ import logic.{Conjunction, Disjunction, Logic, Negation}
 import math.Power
 
 import cats.data.NonEmptyVector
-import cats.{Foldable, Functor, FunctorFilter, Order, Semigroupal}
+import cats.{Foldable, Functor, FunctorFilter, Order}
 import shapeless.{Generic, HList}
 
 trait BuildExprDsl extends DebugExprDsl {
-  self: DslTypes with WrapImplicits =>
+  self: DslTypes with ExprHListDslImplicits with OutputTypeImplicits =>
+
+  /**
+    * Use this to implement all implicit `def`s defined by [[ExprHListDslImplicits]]
+    */
+  protected def defn: DslImplicitDefinitions[W, OP]
 
   protected implicit def boolLogic: Logic[W, Boolean, OP]
 
   protected implicit def windowComparable: WindowComparable[W, OP]
 
   protected implicit def extract: Extract[W]
-
-  protected implicit def functor: Functor[W]
-
-  protected implicit def semigroupal: Semigroupal[W]
 
   protected implicit def wrapConst: WrapConst[W, OP]
 
