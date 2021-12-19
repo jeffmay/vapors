@@ -167,6 +167,9 @@ object InterpretExprResultAsJson {
       encodeExprResult(result)
         .add("factTypes", result.expr.factTypeSet.typeList.toList.map(_.name).asJson)
 
+    override def visitWhen[I, B, O : OP](result: ExprResult.When[PO, I, B, O, OP]): ToJsonObject[I, O] =
+      encodeExprResult(result)
+
     override def visitWithinWindow[I, V, W[+_]](
       result: ExprResult.WithinWindow[PO, I, V, W, OP],
     )(implicit
@@ -296,6 +299,9 @@ object InterpretExprResultAsJson {
     )(implicit
       opTs: OP[Seq[O]],
     ): ToJsonObject[Any, Seq[O]] = super.visitValuesOfType(result).deepMerge(sourceInfo[Seq[O]])
+
+    override def visitWhen[I, B, O : OP](result: ExprResult.When[PO, I, B, O, OP]): ToJsonObject[I, O] =
+      super.visitWhen(result).deepMerge(sourceInfo[O])
 
     override def visitWithinWindow[I, V, W[+_]](
       result: ExprResult.WithinWindow[PO, I, V, W, OP],

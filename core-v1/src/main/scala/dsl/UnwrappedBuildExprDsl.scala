@@ -8,6 +8,7 @@ import lens.VariantLens
 import logic.Logic
 import math.Power
 
+import cats.data.NonEmptySeq
 import cats.{Foldable, Functor, FunctorFilter}
 import shapeless.{Generic, HList}
 
@@ -48,6 +49,35 @@ trait UnwrappedBuildExprDsl
     pow: Power[L, R],
   ): CombineHolder[I, L, L, R, R, pow.Out, OP] =
     (leftExpr ^ rightExpr)(opR, pow)
+
+  override final def when[I](condExpr: I ~:> Boolean): UnwrappedWhenBuilder[I] = new UnwrappedWhenBuilder(condExpr)
+
+  final class UnwrappedWhenBuilder[-I](condExpr: I ~:> Boolean) extends WhenBuilder[I, Boolean](condExpr) {
+    override def thenReturn[TI <: I, TO](thenExpr: TI ~:> TO): UnwrappedWhenElseBuilder[TI, TO] =
+      new UnwrappedWhenElseBuilder(NonEmptySeq.of(Expr.ConditionBranch(condExpr, thenExpr)))
+  }
+
+  final class UnwrappedWhenElifBuilder[-I, +O](
+    branches: NonEmptySeq[Expr.ConditionBranch[I, Boolean, O, OP]],
+    nextCondExpr: I ~:> Boolean,
+  ) extends WhenElifBuilder[I, Boolean, O](branches, nextCondExpr) {
+    override def thenReturn[TI <: I, TO](thenExpr: TI ~:> TO): UnwrappedWhenElseBuilder[TI, TO] =
+      new UnwrappedWhenElseBuilder(NonEmptySeq.of(Expr.ConditionBranch(nextCondExpr, thenExpr)))
+  }
+
+  final class UnwrappedWhenElseBuilder[-I, +O](branches: NonEmptySeq[Expr.ConditionBranch[I, Boolean, O, OP]])
+    extends WhenElseBuilder(branches) {
+
+    override def elif[CI <: I](nextCondExpr: CI ~:> W[Boolean]): UnwrappedWhenElifBuilder[CI, O] =
+      new UnwrappedWhenElifBuilder(branches, nextCondExpr)
+
+    override def elseReturn[EI <: I, EO >: O](
+      elseExpr: EI ~:> EO,
+    )(implicit
+      opO: OP[EO],
+    ): Expr.When[EI, Boolean, EO, OP] =
+      Expr.When(branches, elseExpr)
+  }
 
   override implicit final def const[A](
     value: A,

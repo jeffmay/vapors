@@ -12,6 +12,7 @@ import cats.{Foldable, Functor, FunctorFilter}
 import shapeless.HList
 
 import scala.annotation.nowarn
+import scala.collection.mutable
 
 // TODO: Rename all DSLs and this engine from "standard" to "lossless", "mirror", or something more descriptive
 //       rather than prescriptive. Many users will not find a full copy of the entire expression tree to be
@@ -267,6 +268,32 @@ object StandardEngine {
       val finalState = state.swapAndReplaceOutput(matchingValues)
       debugging(expr).invokeDebugger(finalState)
       ExprResult.ValuesOfType(expr, finalState)
+    }
+
+    override def visitWhen[I, B : ExtractValue.AsBoolean, O : OP](
+      expr: Expr.When[I, B, O, OP],
+    ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evPOisI =>
+      val initFalseResults: Seq[ExprResult[PO, I, B, OP]] =
+        new Array[ExprResult[PO, I, B, OP]](expr.conditionBranches.length).toSeq
+      val initFoundResult: Option[(Option[ExprResult[PO, I, B, OP]], ExprResult[PO, I, O, OP], Int)] = None
+      val (falseResults, foundResult) =
+        expr.conditionBranches.toSeq.zipWithIndex.foldLeft((initFalseResults, initFoundResult)) {
+          case ((results, None), (cb, idx)) =>
+            val condResult = cb.whenExpr.visit(this)(implicitly)
+            val condIsMet = ExtractValue.asBoolean(condResult.state.output)
+            if (condIsMet) {
+              (results, Some((Some(condResult), cb.thenExpr.visit(this)(implicitly), idx)))
+            } else {
+              (results :+ condResult, None)
+            }
+          case (found @ (_, Some(_)), _) => found
+        }
+      val (matchingCondResult, outputResult, thenExprIndex) = foundResult.getOrElse {
+        (None, expr.defaultExpr.visit(this)(implicitly), expr.conditionBranches.length)
+      }
+      val finalState = state.swapAndReplaceOutput(outputResult.state.output)
+      debugging(expr).invokeDebugger(finalState.mapInput((_, thenExprIndex)))
+      ExprResult.When(expr, finalState, thenExprIndex, falseResults, matchingCondResult, outputResult)
     }
 
     override def visitWithinWindow[I, V, W[+_]](

@@ -3,12 +3,12 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra._
-import data.{Extract, FactTypeSet, Window}
+import data.{Extract, ExtractValue, FactTypeSet, Window}
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Logic, Negation}
 import math.Power
 
-import cats.data.NonEmptyVector
+import cats.data.{NonEmptySeq, NonEmptyVector}
 import cats.{Foldable, Functor, FunctorFilter, Order}
 import shapeless.{Generic, HList}
 
@@ -46,6 +46,32 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
     opR: OP[W[R]],
     pow: Power[W[L], W[R]],
   ): CombineHolder[I, W[L], W[L], W[R], W[R], pow.Out, OP]
+
+  def when[I](condExpr: I ~:> W[Boolean]): WhenBuilder[I, W[Boolean]]
+
+  abstract class WhenBuilder[-I, B : ExtractValue.AsBoolean](firstCondExpr: I ~:> B) {
+    def thenReturn[TI <: I, O](thenExpr: TI ~:> O): WhenElseBuilder[TI, B, O]
+  }
+
+  abstract class WhenElifBuilder[-I, B : ExtractValue.AsBoolean, +O](
+    branches: NonEmptySeq[Expr.ConditionBranch[I, B, O, OP]],
+    nextCondExpr: I ~:> B,
+  ) {
+    def thenReturn[TI <: I, TO >: O](thenExpr: TI ~:> TO): WhenElseBuilder[TI, B, TO]
+  }
+
+  abstract class WhenElseBuilder[-I, B : ExtractValue.AsBoolean, +O](
+    branches: NonEmptySeq[Expr.ConditionBranch[I, B, O, OP]],
+  ) {
+
+    def elif[CI <: I](nextCondExpr: CI ~:> B): WhenElifBuilder[CI, B, O]
+
+    def elseReturn[TI <: I, TO >: O](
+      elseExpr: TI ~:> TO,
+    )(implicit
+      opO: OP[TO],
+    ): Expr.When[TI, W[Boolean], TO, OP]
+  }
 
   implicit final def logical[I, B](expr: I ~:> W[B]): LogicalExprOps[I, B, W, OP] = new LogicalExprOps(expr)
 

@@ -7,6 +7,7 @@ import data.{Extract, ExtractValue, FactTypeSet}
 import lens.VariantLens
 import math.Power
 
+import cats.data.NonEmptySeq
 import cats.{Foldable, Functor, FunctorFilter}
 import shapeless.{Generic, HList}
 
@@ -24,6 +25,36 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
   protected implicit def wrapSelected: WrapSelected[W, OP]
 
   override def ident[I](implicit opI: OP[W[I]]): Expr.Identity[W[I], OP] = Expr.Identity()
+
+  override def when[I](condExpr: I ~:> W[Boolean]): WrappedWhenBuilder[I] = new WrappedWhenBuilder(condExpr)
+
+  class WrappedWhenBuilder[-I](firstCondExpr: I ~:> W[Boolean]) extends WhenBuilder[I, W[Boolean]](firstCondExpr) {
+    override def thenReturn[TI <: I, TO](thenExpr: TI ~:> TO): WrappedWhenElseBuilder[TI, TO] =
+      new WrappedWhenElseBuilder(NonEmptySeq.of(Expr.ConditionBranch(firstCondExpr, thenExpr)))
+  }
+
+  class WrappedWhenElifBuilder[-I, +O](
+    branches: NonEmptySeq[Expr.ConditionBranch[I, W[Boolean], O, OP]],
+    nextCondExpr: I ~:> W[Boolean],
+  ) extends WhenElifBuilder(branches, nextCondExpr) {
+
+    override def thenReturn[TI <: I, TO >: O](thenExpr: TI ~:> TO): WrappedWhenElseBuilder[TI, TO] =
+      new WrappedWhenElseBuilder(branches :+ Expr.ConditionBranch(nextCondExpr, thenExpr))
+  }
+
+  class WrappedWhenElseBuilder[-I, +O](branches: NonEmptySeq[Expr.ConditionBranch[I, W[Boolean], O, OP]])
+    extends WhenElseBuilder(branches) {
+
+    override def elif[CI <: I](nextCondExpr: CI ~:> W[Boolean]): WrappedWhenElifBuilder[CI, O] =
+      new WrappedWhenElifBuilder(branches, nextCondExpr)
+
+    override def elseReturn[EI <: I, EO >: O](
+      elseExpr: EI ~:> EO,
+    )(implicit
+      opO: OP[EO],
+    ): Expr.When[EI, W[Boolean], EO, OP] =
+      Expr.When(branches, elseExpr)
+  }
 
   override def valuesOfType[T](
     factTypeSet: FactTypeSet[T],

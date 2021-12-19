@@ -236,6 +236,12 @@ object DebugArgs {
       override type Out = Seq[O]
     }
 
+  implicit def debugWhen[I, B, O, OP[_]]: Aux[Expr.When[I, B, O, OP], OP, (I, Int), O] =
+    new DebugArgs[Expr.When[I, B, O, OP], OP] {
+      override type In = (I, Int)
+      override type Out = O
+    }
+
   implicit def debugWithinWindow[
     I,
     V,
