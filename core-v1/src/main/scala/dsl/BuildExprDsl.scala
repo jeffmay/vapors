@@ -277,6 +277,14 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
       functorC: Functor[C],
     ): AndThen[I, C[W[A]], C[W[B]]]
 
+    def flatMap[D[a] >: C[a] : FlatMap, O](
+      exprBuilder: W[A] =~:> D[W[O]],
+    )(implicit
+      opA: OP[W[A]],
+      opDDO: OP[D[D[W[O]]]],
+      opDO: OP[D[W[O]]],
+    ): AndThen[I, D[D[W[O]]], D[W[O]]]
+
     def sorted(
       implicit
       sortable: Sortable[C, W[A]],

@@ -13,4 +13,15 @@ class SimpleFlattenSpec extends FunSuite {
     val observed = expr.run()
     assertEquals(observed, expected)
   }
+
+  test("Vector[Int].flatMap(Seq[Int])") {
+    val values = Vector(1, 2, 3)
+    val innerValues = Seq(2, 3, 4)
+    val expr = values.const.flatMap { _ =>
+      innerValues.const
+    }
+    val observed = expr.run()
+    val expected = values.flatMap(_ => innerValues)
+    assertEquals(observed, expected)
+  }
 }

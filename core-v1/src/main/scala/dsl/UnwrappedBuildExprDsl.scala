@@ -9,7 +9,7 @@ import logic.Logic
 import math.Power
 
 import cats.data.NonEmptySeq
-import cats.{Foldable, Functor, FunctorFilter}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter}
 import shapeless.{Generic, HList}
 
 trait UnwrappedBuildExprDsl
@@ -211,6 +211,15 @@ trait UnwrappedBuildExprDsl
       functorC: Functor[C],
     ): AndThen[I, C[A], C[B]] =
       inputExpr.andThen(Expr.MapEvery[C, A, B, OP](mapExprBuilder(ident)))
+
+    override def flatMap[D[a] >: C[a] : FlatMap, O](
+      exprBuilder: A =~:> D[O],
+    )(implicit
+      opA: OP[A],
+      opDDO: OP[D[D[O]]],
+      opDO: OP[D[O]],
+    ): AndThen[I, D[D[O]], D[O]] =
+      inputExpr.andThen(Expr.MapEvery[D, A, D[O], OP](exprBuilder(ident))).andThen(Expr.Flatten())
 
     override def sorted(
       implicit
