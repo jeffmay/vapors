@@ -8,7 +8,7 @@ import lens.VariantLens
 import math.Power
 
 import cats.data.NonEmptySeq
-import cats.{Foldable, Functor, FunctorFilter}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter}
 import shapeless.{Generic, HList}
 
 trait WrappedBuildExprDsl extends BuildExprDsl {
@@ -212,6 +212,15 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
       filterC: FunctorFilter[C],
     ): AndThen[I, C[W[A]], C[W[A]]] =
       inputExpr.andThen(Expr.Filter(conditionExprBuilder(Expr.Identity())))
+
+    override def flatMap[D[a] >: C[a] : FlatMap, O](
+      exprBuilder: W[A] =~:> D[W[O]],
+    )(implicit
+      opA: OP[W[A]],
+      opDDO: OP[D[D[W[O]]]],
+      opDO: OP[D[W[O]]],
+    ): AndThen[I, D[D[W[O]]], D[W[O]]] =
+      inputExpr.andThen(Expr.MapEvery[D, W[A], D[W[O]], OP](exprBuilder(ident))).andThen(Expr.Flatten())
 
     override def sorted(
       implicit
