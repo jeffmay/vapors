@@ -4,10 +4,10 @@ package lens
 
 import data.Extract
 
-import cats.Foldable
 import cats.arrow.Compose
 import cats.data.NonEmptySet
 import cats.kernel.Semigroup
+import cats.{Eval, Foldable, Reducible}
 import shapeless.ops.hlist
 import shapeless.{Generic, HList}
 
@@ -228,6 +228,19 @@ final case class VariantLens[-A, +B](
       get = get.andThen(b => CI.get(b)(key)),
     )
   }
+
+  def head[C[_] : Reducible, V](implicit ev: B <:< C[V]): VariantLens[A, V] =
+    copy(
+      path = path.atHead,
+      get = get.andThen { b =>
+        import cats.implicits._
+        val cv: C[V] = b
+        val head = cv.reduceRight { (head, _) =>
+          Eval.now(head)
+        }
+        head.value
+      },
+    )
 
   /**
     * Filters the given set of keys from this indexable object.

@@ -1,8 +1,10 @@
 package com.rallyhealth.vapors.v1
 
-import com.rallyhealth.vapors.v1.lens.VariantLensMacros
+import lens.VariantLensMacros
 import example.NestedSelectable
 import example.NestedSelectable.empty
+
+import cats.data.NonEmptySeq
 import munit.FunSuite
 
 class SimpleSelectSpec extends FunSuite {
@@ -114,5 +116,20 @@ class SimpleSelectSpec extends FunSuite {
       "fixture.const.get(_.select(_.map)).headOption"
     }
     assert(message contains "Could not find an instance of Foldable for [+V]Map[String,V]")
+  }
+
+  test("Select a head from a NonEmptySeq") {
+    val fixture = NonEmptySeq.of(1, 2, 3)
+    val expr = fixture.const.head
+    val observed = expr.run()
+    assertEquals(observed, fixture.head)
+  }
+
+  test("Cannot select a head from a Seq, even if non-empty") {
+    val fixture = Seq(1, 2, 3)
+    val message = compileErrors {
+      "fixture.const.head"
+    }
+    assert(message contains "Could not find an instance of Reducible for Seq")
   }
 }

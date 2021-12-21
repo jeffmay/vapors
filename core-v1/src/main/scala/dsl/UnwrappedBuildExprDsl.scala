@@ -9,7 +9,7 @@ import logic.Logic
 import math.Power
 
 import cats.data.NonEmptySeq
-import cats.{FlatMap, Foldable, Functor, FunctorFilter}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Reducible}
 import shapeless.{Generic, HList, Nat}
 
 trait UnwrappedBuildExprDsl
@@ -157,6 +157,15 @@ trait UnwrappedBuildExprDsl
   override final type SpecificHkExprBuilder[-I, C[_], A] = UnwrappedHkExprBuilder[I, C, A]
 
   final class UnwrappedHkExprBuilder[-I, C[_], A](inputExpr: I ~:> C[A]) extends HkExprBuilder(inputExpr) {
+
+    override def head(
+      implicit
+      reducibleC: Reducible[C],
+      opA: OP[A],
+    ): Expr.Select[I, C[A], A, A, OP] = {
+      val lens = VariantLens.id[C[A]].head
+      Expr.Select(inputExpr, lens, (_, head) => head)
+    }
 
     override def headOption(
       implicit

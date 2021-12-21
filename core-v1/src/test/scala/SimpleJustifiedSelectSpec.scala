@@ -3,6 +3,8 @@ package com.rallyhealth.vapors.v1
 import data.Justified
 import example.NestedSelectable
 import lens.{DataPath, VariantLensMacros}
+
+import cats.data.NonEmptySeq
 import munit.FunSuite
 import shapeless.Nat
 
@@ -158,5 +160,22 @@ class SimpleJustifiedSelectSpec extends FunSuite {
       "fixture.const.get(_.select(_.map)).headOption"
     }
     assert(message contains "value headOption is not a member")
+  }
+
+  test("Select a head from a NonEmptySeq") {
+    val fixture = NonEmptySeq.of(1, 2, 3)
+    val expr = fixture.const.head
+    val observed = expr.run()
+    val expected =
+      Justified.bySelection(fixture.head, DataPath.empty.atIndex(0), Justified.byConst(fixture))
+    assertEquals(observed, expected)
+  }
+
+  test("Cannot select a head from a Seq, even if non-empty") {
+    val fixture = Seq(1, 2, 3)
+    val message = compileErrors {
+      "fixture.const.head"
+    }
+    assert(message contains "Could not find an instance of Reducible for Seq")
   }
 }
