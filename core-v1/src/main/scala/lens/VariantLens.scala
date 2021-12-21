@@ -6,6 +6,8 @@ import cats.arrow.Compose
 import cats.data.NonEmptySet
 import cats.kernel.Semigroup
 import data.Extract
+
+import cats.{Eval, Foldable, Reducible}
 import shapeless.ops.hlist
 import shapeless.{Generic, HList}
 
@@ -144,7 +146,19 @@ object VariantLens extends VariantLensLowPriorityImplicits {
 sealed trait VariantLensLowPriorityImplicits {
 
   /**
-    * Wrap the result of this lens with an [[AsIterableBuilder]] for helper operations on [[IterableOnce]] types.
+    * Wrap the result of this lens with an [[VariantLens.AsIterableBuilder]] for helper operations
+    * on [[IterableOnce]] types.
+    */
+  implicit def asFoldableIterable[A, B, C[_] : Foldable, E](
+    lens: VariantLens[A, B],
+  )(implicit
+    ev: B <:< C[E],
+  ): VariantLens.AsIterableBuilder[A, E] =
+    new VariantLens.AsIterableBuilder(lens.asIterable)
+
+  /**
+    * Wrap the result of this lens with an [[VariantLens.AsIterableBuilder]] for helper operations
+    * on [[IterableOnce]] types.
     */
   implicit def asIterable[A, B, E](
     lens: VariantLens[A, B],
@@ -248,6 +262,14 @@ final case class VariantLens[-A, +B](
     */
   def as[V](implicit ev: B <:< V): VariantLens[A, V] =
     this.copy(get = this.get.andThen(ev))
+
+  /**
+    * Convert the [[Foldable]] higher-kinded type into a [[LazyList]].
+    */
+  def asIterable[C[_] : Foldable, E](implicit ev: B <:< C[E]): VariantLens[A, Iterable[E]] =
+    this.copy(
+      get = this.get.andThen(ev).andThen(Foldable[C].toIterable),
+    )
 
   /**
     * Extracts the value of a wrapper without altering the [[path]]

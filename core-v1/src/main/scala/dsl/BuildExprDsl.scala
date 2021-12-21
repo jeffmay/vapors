@@ -32,13 +32,17 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
 
   def ident[I](implicit opI: OP[W[I]]): Expr.Identity[W[I], OP]
 
-  final def concat[I, A](
-    expressions: I ~:> Seq[A]*,
+  final def concat[C[_] : Foldable, I, A](
+    expressions: I ~:> C[A]*,
   )(implicit
     opSSA: OP[Seq[Seq[A]]],
     opSA: OP[Seq[A]],
   ): AndThen[I, Seq[Seq[A]], Seq[A]] = {
-    Expr.Sequence(expressions).andThen(Expr.Flatten())
+    Expr
+      .Sequence(expressions.map {
+        Expr.Select(_, VariantLens.id[C[A]].asIterable.to[Seq], (_: C[A], sa: Seq[A]) => sa)
+      })
+      .andThen(Expr.Flatten())
   }
 
   def flatten[I, C[+_] : FlatMap, A](expr: I ~:> C[C[A]])(implicit opCA: OP[C[A]]): AndThen[I, C[C[A]], C[A]] =
