@@ -118,6 +118,15 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state(cca, ca))
     }
 
+    override def visitFoldLeft[I, C[_] : Foldable, A, B : OP](expr: Expr.FoldLeft[I, C, A, B, OP]): I => B = { i =>
+      val ca = expr.inputExpr.visit(this)(i)
+      val initB = expr.initExpr.visit(this)(i)
+      val finalB = ca.foldLeft(initB) { (b, a) =>
+        expr.foldExpr.visit(this)((b, a))
+      }
+      debugging(expr).invokeAndReturn(state((i, ca, initB), finalB))
+    }
+
     override def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
       expr: Expr.ForAll[C, A, B, OP],
     ): C[A] => B = { ca =>

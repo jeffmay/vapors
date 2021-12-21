@@ -164,6 +164,10 @@ object StandardEngine {
       ExprResult.Flatten(expr, finalState)
     }
 
+    override def visitFoldLeft[I, C[_] : Foldable, A, B : OP](
+      expr: Expr.FoldLeft[I, C, A, B, OP],
+    ): PO <:< I => ExprResult[PO, I, B, OP] = ???
+
     override def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
       expr: Expr.ForAll[C, A, B, OP],
     ): PO <:< C[A] => ExprResult[PO, C[A], B, OP] = { implicit evPOisI =>

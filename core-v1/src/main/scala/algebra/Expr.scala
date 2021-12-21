@@ -297,6 +297,8 @@ object Expr {
 
     def visitFlatten[C[_] : FlatMap, A](expr: Flatten[C, A, OP])(implicit opCA: OP[C[A]]): C[C[A]] ~:> C[A]
 
+    def visitFoldLeft[I, C[_] : Foldable, A, B : OP](expr: FoldLeft[I, C, A, B, OP]): I ~:> B
+
     def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](expr: ForAll[C, A, B, OP]): C[A] ~:> B
 
     def visitIdentity[I : OP](expr: Identity[I, OP]): I ~:> I
@@ -429,6 +431,9 @@ object Expr {
 
     override def visitFlatten[C[_] : FlatMap, A](expr: Flatten[C, A, OP])(implicit opCA: OP[C[A]]): H[C[C[A]], C[A]] =
       proxy(underlying.visitFlatten(expr))
+
+    override def visitFoldLeft[I, C[_] : Foldable, A, B : OP](expr: FoldLeft[I, C, A, B, OP]): H[I, B] =
+      proxy(underlying.visitFoldLeft(expr))
 
     override def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
       expr: ForAll[C, A, B, OP],
@@ -885,6 +890,40 @@ object Expr {
   ) extends Expr[I, C[O], OP]("sequence") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, C[O]] = v.visitSequence(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Sequence[C, I, O, OP] =
+      copy(debugging = debugging)
+  }
+
+  /**
+    * As a general-purpose looping construct that can implement many different operations, the fold left
+    * operation is used to apply a function continuously to an accumulating value (the "left" side) and
+    * every element of a [[Foldable]] collection (passed in as the "right" side of the function).
+    *
+    * @note The fold operation is the swiss army knife of functional programming. It can be used to implement
+    *       all kinds of operations. This utility comes at the possible cost of obfuscating the goal of the
+    *       operation. You should try to favor more direct approaches when possible, but this exists as both
+    *       an escape hatch for some more complex operations as well as the best way to implement a loop in
+    *       a declarative way.
+    *
+    * @param inputExpr an expression that produces a [[Foldable]] output
+    * @param initExpr an expression that produces an initial value for the accumulator (the "left" side)
+    * @param foldExpr an expression that operates on a tuple of the accumulated ("left" side) and the next
+    *                 element of the [[Foldable]] inputExpr result ("right" side) to produce a final output
+    *                 of the accumulated value.
+    *
+    * @tparam C the [[Foldable]] collection type
+    * @tparam A the element type
+    * @tparam B the accumulator type, initial value, and return type
+    */
+  final case class FoldLeft[-I, C[_] : Foldable, A, B, OP[_]](
+    inputExpr: Expr[I, C[A], OP],
+    initExpr: Expr[I, B, OP],
+    foldExpr: Expr[(B, A), B, OP],
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    opO: OP[B],
+  ) extends Expr[I, B, OP]("foldLeft") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, B] = v.visitFoldLeft(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): FoldLeft[I, C, A, B, OP] =
       copy(debugging = debugging)
   }
 

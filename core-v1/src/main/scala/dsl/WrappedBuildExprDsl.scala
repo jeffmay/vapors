@@ -9,7 +9,7 @@ import math.Power
 
 import cats.data.NonEmptySeq
 import cats.{FlatMap, Foldable, Functor, FunctorFilter}
-import shapeless.{Generic, HList}
+import shapeless.{Generic, HList, Nat}
 
 trait WrappedBuildExprDsl extends BuildExprDsl {
   self: DslTypes with WrappedExprHListDslImplicits with OutputTypeImplicits =>
@@ -191,6 +191,24 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
           wrapQuantifier.shortCircuit,
         ),
       )
+    }
+
+    override def foldLeft[CI <: I, B](
+      initExpr: CI ~:> W[B],
+    )(
+      foldExprBuilder: ((W[B], W[A]) ~:> W[B], (W[B], W[A]) ~:> W[A]) => ((W[B], W[A]) ~:> W[B]),
+    )(implicit
+      foldableC: Foldable[C],
+      opBA: OP[(W[B], W[A])],
+      opA: OP[W[A]],
+      opB: OP[W[B]],
+    ): Expr.FoldLeft[CI, C, W[A], W[B], OP] = {
+      val initLensExpr = Expr.Identity[(W[B], W[A]), OP]()
+      val initLens = VariantLens.id[(W[B], W[A])]
+      val b = Expr.Select(initLensExpr, initLens.at(Nat._0), (_: (W[B], W[A]), wb: W[B]) => wb)
+      val a = Expr.Select(initLensExpr, initLens.at(Nat._1), (_: (W[B], W[A]), wa: W[A]) => wa)
+      val foldExpr = foldExprBuilder(b, a)
+      Expr.FoldLeft(inputExpr, initExpr, foldExpr)
     }
 
     override def map[B](

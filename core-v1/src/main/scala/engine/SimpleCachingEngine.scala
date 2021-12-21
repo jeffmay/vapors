@@ -248,6 +248,18 @@ object SimpleCachingEngine {
       debugging(expr).invokeAndReturn(state(cca, cached(ca)))
     }
 
+    override def visitFoldLeft[I, C[_] : Foldable, A, B : OP](
+      expr: Expr.FoldLeft[I, C, A, B, OP],
+    ): I => CachedResult[B] = memoize(expr, _) { i =>
+      val CachedResult(ca, inputResultState) = expr.inputExpr.visit(this)(i)
+      val initB = visitWithUpdatedCache(i, expr.initExpr, inputResultState)
+      val finalB = ca.foldLeft(initB) {
+        case (CachedResult(b, lastCacheState), a) =>
+          visitWithUpdatedCache((b, a), expr.foldExpr, lastCacheState)
+      }
+      debugging(expr).invokeAndReturn(state((i, ca, initB.value), finalB))
+    }
+
     override def visitForAll[C[_] : Foldable, A, B : AsBoolean : OP](
       expr: Expr.ForAll[C, A, B, OP],
     ): C[A] => CachedResult[B] = memoize(expr, _) { ca =>
