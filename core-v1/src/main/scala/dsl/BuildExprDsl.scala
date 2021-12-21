@@ -45,6 +45,12 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
       .andThen(Expr.Flatten())
   }
 
+  final def seq[I, O](expressions: I ~:> O*)(implicit opO: OP[Seq[O]]): I ~:> Seq[O] =
+    wrapAll(expressions)
+
+  final def some[I, O](expr: I ~:> O)(implicit opO: OP[Option[O]]): I ~:> Option[O] =
+    wrapAll(Option(expr))
+
   def valuesOfType[T](
     factTypeSet: FactTypeSet[T],
   )(implicit
