@@ -8,7 +8,7 @@ import lens.VariantLens
 import math.Power
 
 import cats.data.NonEmptySeq
-import cats.{FlatMap, Foldable, Functor, FunctorFilter}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Reducible}
 import shapeless.{Generic, HList, Nat}
 
 trait WrappedBuildExprDsl extends BuildExprDsl {
@@ -145,6 +145,15 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
 
   class WrappedHkExprBuilder[-I, C[_], A](inputExpr: I ~:> C[W[A]]) extends HkExprBuilder(inputExpr) {
 
+    override def head(
+      implicit
+      reducibleC: Reducible[C],
+      opA: OP[W[A]],
+    ): Expr.Select[I, C[W[A]], W[A], W[A], OP] = {
+      val lens = VariantLens.id[C[W[A]]].head
+      Expr.Select(inputExpr, lens, (_, head) => head)
+    }
+
     override def headOption(
       implicit
       foldableC: Foldable[C],
@@ -152,7 +161,7 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
       opO: OP[Option[W[A]]],
     ): Expr.Select[I, C[W[A]], Option[W[A]], Option[W[A]], OP] = {
       val lens = VariantLens.id[C[W[A]]].at(0)
-      Expr.Select(inputExpr, lens, (cwa, opt) => opt)
+      Expr.Select(inputExpr, lens, (_, opt) => opt)
     }
 
     override def exists(

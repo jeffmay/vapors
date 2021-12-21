@@ -9,7 +9,7 @@ import logic.{Conjunction, Disjunction, Logic, Negation}
 import math.Power
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Order, Traverse}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Order, Reducible, Traverse}
 import shapeless.{Generic, HList}
 
 trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
@@ -257,6 +257,12 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
   type SpecificHkExprBuilder[-I, C[_], A] <: HkExprBuilder[I, C, A]
 
   abstract class HkExprBuilder[-I, C[_], A](proof: I ~:> C[W[A]]) {
+
+    def head(
+      implicit
+      reducibleC: Reducible[C],
+      opA: OP[W[A]],
+    ): Expr.Select[I, C[W[A]], W[A], W[A], OP]
 
     def headOption(
       implicit
