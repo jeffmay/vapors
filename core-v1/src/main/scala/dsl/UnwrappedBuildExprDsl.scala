@@ -3,13 +3,13 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra._
-import data.{Extract, FactTypeSet}
+import data.{Extract, FactType, FactTypeSet, TypedFact}
 import lens.VariantLens
 import logic.Logic
 import math.Power
 
 import cats.data.NonEmptySeq
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Reducible}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Reducible}
 import shapeless.{Generic, HList, Nat}
 
 trait UnwrappedBuildExprDsl
@@ -39,6 +39,42 @@ trait UnwrappedBuildExprDsl
   override final def some[I, O](expr: I ~:> O)(implicit opO: OP[Option[O]]): I ~:> Option[O] = super.some[I, O](expr)
 
   override final def none[O](implicit opO: OP[Option[O]]): Any ~:> Option[O] = super.none[O]
+
+  override def define[T](factType: FactType[T]): UnwrappedDefineBuilder[T] = new UnwrappedDefineBuilder(factType)
+
+  final class UnwrappedDefineBuilder[T](factType: FactType[T]) extends DefineBuilder(factType) {
+
+    override def oneFrom(
+      defnExpr: Any ~:> T,
+    )(implicit
+      opWT: OP[T],
+      opT: OP[T],
+      opF: OP[Seq[TypedFact[T]]],
+    ): Expr.Define[Any, Id, T, OP] =
+      Expr.Define(factType, defnExpr: Any ~:> Id[T])
+
+    override def from[C[_] : Functor : Foldable](
+      defnExpr: Any ~:> C[T],
+    )(implicit
+      opWT: OP[T],
+      opCT: OP[C[T]],
+      opT: OP[T],
+      opF: OP[Seq[TypedFact[T]]],
+    ): Expr.Define[Any, C, T, OP] =
+      Expr.Define(factType, defnExpr)
+
+    override def fromInput[I, C[_] : Functor : Foldable](
+      buildDefnExpr: I =~:> C[T],
+    )(implicit
+      opI: OP[I],
+      opWT: OP[T],
+      opCT: OP[C[T]],
+      opT: OP[T],
+      opF: OP[Seq[TypedFact[T]]],
+    ): Expr.Define[I, C, T, OP] =
+      Expr.Define(factType, buildDefnExpr(Expr.Identity()))
+
+  }
 
   override final def valuesOfType[T](
     factTypeSet: FactTypeSet[T],

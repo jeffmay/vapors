@@ -6,15 +6,22 @@ import data.FactType
 
 import cats.Order
 
-import java.time.{Clock, Instant}
+import java.time.{Clock, Instant, LocalDate}
 import scala.collection.immutable.SortedSet
 
-object FactTypes {
+object FactTypes extends OrderTimeImplicits {
 
   final val Age = FactType[Int]("age")
+  final val DateOfBirth = FactType[LocalDate]("date_of_birth")
   final val CombinedTags = FactType[CombinedTags]("combined_tags")
   final val GeoLocation = FactType[GeoLocation]("geolocation")
-  final val Weight = FactType[Int]("weight")
+  final val WeightLbs = FactType[Double]("weight_lbs")
+  final val WeightKg = FactType[Double]("weight_kg")
+}
+
+trait OrderTimeImplicits {
+
+  implicit val recentFirstLocalDate: Order[LocalDate] = Order.reverse(Order.fromLessThan(_.isBefore(_)))
 }
 
 final case class CombinedTags(

@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra._
-import data.{ExprState, ExtractValue, Window}
+import data.{ExprState, ExtractValue, TypedFact, Window}
 import debug.DebugArgs
 import dsl.{Sortable, ZipToShortest}
 import logic.{Conjunction, Disjunction, Negation}
@@ -121,6 +121,12 @@ object StandardEngine {
       debugging(expr).invokeDebugger(finalState)
       ExprResult.CustomFunction(expr, finalState)
     }
+
+    override def visitDefine[I, C[_] : Foldable, T](
+      expr: Expr.Define[I, C, T, OP],
+    )(implicit
+      opF: OP[Seq[TypedFact[T]]],
+    ): PO <:< I => ExprResult[PO, I, Seq[TypedFact[T]], OP] = ???
 
     override def visitExists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
       expr: Expr.Exists[C, A, B, OP],
@@ -294,6 +300,10 @@ object StandardEngine {
       debugging(expr).invokeDebugger(finalState)
       ExprResult.Sorted(expr, finalState)
     }
+
+    override def visitUsingDefinitions[I, O : OP](
+      expr: Expr.UsingDefinitions[I, O, OP],
+    ): PO <:< I => ExprResult[PO, I, O, OP] = ???
 
     override def visitValuesOfType[T, O](
       expr: Expr.ValuesOfType[T, O, OP],

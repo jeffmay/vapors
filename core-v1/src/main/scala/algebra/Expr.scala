@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package algebra
 
-import data.{ExtractValue, FactTypeSet, TypedFact, Window}
+import data._
 import debug.{DebugArgs, Debugging, NoDebugging}
 import dsl.{ExprHList, ExprHNil, Sortable, ZipToShortest}
 import lens.VariantLens
@@ -287,6 +287,12 @@ object Expr {
 
     def visitCustomFunction[I, O : OP](expr: CustomFunction[I, O, OP]): I ~:> O
 
+    def visitDefine[I, C[_] : Foldable, T](
+      expr: Define[I, C, T, OP],
+    )(implicit
+      opF: OP[Seq[TypedFact[T]]],
+    ): I ~:> Seq[TypedFact[T]]
+
     def visitExists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](expr: Exists[C, A, B, OP]): C[A] ~:> B
 
     def visitFilter[C[_] : FunctorFilter, A, B : ExtractValue.AsBoolean : OP](
@@ -343,6 +349,8 @@ object Expr {
       sortable: Sortable[C, A],
       opAs: OP[C[A]],
     ): C[A] ~:> C[A]
+
+    def visitUsingDefinitions[I, O : OP](expr: UsingDefinitions[I, O, OP]): I ~:> O
 
     def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~:> Seq[O]
 
@@ -424,6 +432,12 @@ object Expr {
     override def visitCustomFunction[I, O : OP](expr: CustomFunction[I, O, OP]): H[I, O] =
       proxy(underlying.visitCustomFunction(expr))
 
+    override def visitDefine[I, C[_] : Foldable, T](
+      expr: Define[I, C, T, OP],
+    )(implicit
+      opF: OP[Seq[TypedFact[T]]],
+    ): H[I, Seq[TypedFact[T]]] = proxy(underlying.visitDefine(expr))
+
     override def visitExists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
       expr: Exists[C, A, B, OP],
     ): H[C[A], B] =
@@ -497,6 +511,9 @@ object Expr {
     )(implicit
       compare: SizeComparable[I, N, B],
     ): H[I, B] = proxy(underlying.visitSizeIs(expr))
+
+    override def visitUsingDefinitions[I, O : OP](expr: UsingDefinitions[I, O, OP]): H[I, O] =
+      proxy(underlying.visitUsingDefinitions(expr))
 
     override def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): H[Any, Seq[O]] =
       proxy(underlying.visitValuesOfType(expr))
@@ -1020,6 +1037,56 @@ object Expr {
   ) extends Expr[C[A], C[A], OP]("sorted") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], C[A]] = v.visitSorted(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Sorted[C, A, OP] =
+      copy(debugging = debugging)
+  }
+
+  /**
+    * A simplified trait for [[Define]] with less type parameters, so that it is easier to refer to.
+    *
+    * It produces a Seq of [[Fact]], rather than [[TypedFact]]s, since you don't need the type information
+    * until you extract the facts from the [[FactTable]].
+    */
+  sealed trait Definition[-I, OP[_]] extends Expr[I, Seq[Fact], OP]
+
+  /**
+    * Defines an expression that produces values of the given [[factType]].
+    *
+    * @param factType the [[FactType]] defining the type of values needed to produce instances of these facts
+    * @param defnExpr the expression used to produce the facts
+    *
+    * @tparam C a [[Foldable]] collection type that can be used to fold the resulting [[Fact]]s into a single List
+    * @tparam T the type of values used to produce [[TypedFact]] instances of the given [[factType]]
+    */
+  final case class Define[-I, C[_] : Foldable, T, OP[_]](
+    factType: FactType[T],
+    defnExpr: Expr[I, C[T], OP],
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    opF: OP[Seq[TypedFact[T]]],
+  ) extends Expr[I, Seq[TypedFact[T]], OP]("define")
+    with Definition[I, OP] {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Seq[TypedFact[T]]] = v.visitDefine(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Define[I, C, T, OP] =
+      copy(debugging = debugging)
+  }
+
+  /**
+    * Adds the facts produced by the given definitions to the [[FactTable]] before computing the given [[thenExpr]].
+    *
+    * @note While this accepts a [[Seq]] of definitions, this only affects the order in which the facts are produced
+    *       to ensure consistent behavior. All facts will be available before evaluating the [[thenExpr]].
+    *
+    * @param definitions a sequence of definitions to compute to create the facts to add to the [[FactTable]]
+    * @param thenExpr the expression to compute after the facts produced by the definitions are all available
+    *                 in the [[FactTable]]
+    */
+  final case class UsingDefinitions[-I, +O : OP, OP[_]](
+    definitions: Seq[Definition[I, OP]],
+    thenExpr: Expr[I, O, OP],
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  ) extends Expr[I, O, OP]("usingDefinitions") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitUsingDefinitions(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): UsingDefinitions[I, O, OP] =
       copy(debugging = debugging)
   }
 

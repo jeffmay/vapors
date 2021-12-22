@@ -20,7 +20,7 @@ final case class FactTable(factsByName: SortedMap[String, FactSet]) extends AnyV
 
   def addAll(facts: Iterable[Fact]): FactTable = {
     import cats.syntax.semigroup._
-    val newFactTable = FactTable(facts)
+    val newFactTable = FactTable.fromSet(facts.toSet)
     new FactTable(this.factsByName |+| newFactTable.factsByName)
   }
 
@@ -55,6 +55,10 @@ object FactTable {
 
   def apply(facts: FactOrFactSet*): FactTable = {
     val factSet = FactOrFactSet.flatten(facts)
+    fromSet(factSet)
+  }
+
+  def fromSet(factSet: FactSet): FactTable = {
     if (factSet.isEmpty) empty
     else new FactTable(SortedMap.from(factSet.groupBy(_.typeInfo.nameAndFullType)))
   }

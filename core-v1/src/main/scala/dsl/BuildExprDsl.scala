@@ -3,13 +3,13 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra._
-import data.{Extract, ExtractValue, FactTypeSet, Window}
+import data._
 import lens.VariantLens
 import logic.{Conjunction, Disjunction, Logic, Negation}
 import math.Power
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Order, Reducible, Traverse}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Order, Reducible, Traverse}
 import shapeless.{Generic, HList}
 
 trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
@@ -52,6 +52,66 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
     wrapAll(Option(expr))
 
   def none[O](implicit opO: OP[Option[W[O]]]): Any ~:> Option[W[O]] = Expr.Const(None: Option[W[O]])
+
+  def define[T](factType: FactType[T]): DefineBuilder[T]
+
+  abstract class DefineBuilder[T](factType: FactType[T]) {
+
+    // TODO: fromSources() with arity function support
+
+    def oneFrom(
+      defnExpr: Any ~:> W[T],
+    )(implicit
+      opWT: OP[W[T]],
+      opT: OP[T],
+      opF: OP[Seq[TypedFact[T]]],
+    ): Expr.Define[Any, Id, T, OP]
+
+    def from[C[_] : Functor : Foldable](
+      defnExpr: Any ~:> C[W[T]],
+    )(implicit
+      opWT: OP[W[T]],
+      opCT: OP[C[T]],
+      opT: OP[T],
+      opF: OP[Seq[TypedFact[T]]],
+    ): Expr.Define[Any, C, T, OP]
+
+    def fromInput[I, C[_] : Functor : Foldable](
+      buildDefnExpr: I =~:> C[W[T]],
+    )(implicit
+      opI: OP[I],
+      opWT: OP[W[T]],
+      opCT: OP[C[T]],
+      opT: OP[T],
+      opF: OP[Seq[TypedFact[T]]],
+    ): Expr.Define[I, C, T, OP]
+
+    final def oneFromConst(
+      value: T,
+    )(implicit
+      opCT: OP[T],
+      opF: OP[Seq[TypedFact[T]]],
+    ): Expr.Define[Any, Id, T, OP] =
+      Expr.Define(factType, Expr.Const(value): Any ~:> Id[T])
+
+    final def fromConst[C[_] : Foldable](
+      values: C[T],
+    )(implicit
+      opT: OP[Seq[T]],
+      opF: OP[Seq[TypedFact[T]]],
+    ): Expr.Define[Any, Seq, T, OP] =
+      Expr.Define(factType, Expr.Const(Foldable[C].toList(values): Seq[T]))
+  }
+
+  // TODO: Support function builder syntax
+  final def usingDefinitions[I, O](
+    definitions: Expr.Definition[I, OP]*,
+  )(
+    thenExpr: Any ~:> O,
+  )(implicit
+    opO: OP[O],
+  ): Expr.UsingDefinitions[I, O, OP] =
+    Expr.UsingDefinitions(definitions, thenExpr)
 
   def valuesOfType[T](
     factTypeSet: FactTypeSet[T],

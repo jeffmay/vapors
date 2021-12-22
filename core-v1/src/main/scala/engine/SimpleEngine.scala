@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra.{EqualComparable, Expr, SizeComparable, WindowComparable}
-import data.{ExprState, ExtractValue, FactTable, Window}
+import data._
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
 import dsl.{Sortable, ZipToShortest}
@@ -31,6 +31,7 @@ object SimpleEngine {
     protected def state[I, O](
       input: I,
       output: O,
+      factTable: FactTable = this.factTable,
     ): ExprState[I, O] = ExprState(factTable, Some(input), Some(output))
 
     protected def debugging[E <: Expr.AnyWith[OP]](
@@ -89,6 +90,16 @@ object SimpleEngine {
     override def visitCustomFunction[I, O : OP](expr: Expr.CustomFunction[I, O, OP]): I => O = { i =>
       val o = expr.function(i)
       debugging(expr).invokeAndReturn(state(i, o))
+    }
+
+    override def visitDefine[I, C[_] : Foldable, T](
+      expr: Expr.Define[I, C, T, OP],
+    )(implicit
+      opF: OP[Seq[TypedFact[T]]],
+    ): I => Seq[TypedFact[T]] = { i =>
+      val factValues = expr.defnExpr.visit(this)(i)
+      val facts = factValues.toList.map(expr.factType(_))
+      debugging(expr).invokeAndReturn(state((i, factValues), facts))
     }
 
     override def visitExists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](
@@ -223,6 +234,15 @@ object SimpleEngine {
     ): C[A] => C[A] = { i =>
       val o = sortable.sort(i)
       debugging(expr).invokeAndReturn(state(i, o))
+    }
+
+    override def visitUsingDefinitions[I, O : OP](expr: Expr.UsingDefinitions[I, O, OP]): I => O = { i =>
+      val factSet = expr.definitions.flatMap { defn =>
+        defn.visit(this)(i)
+      }.toSet
+      val updatedFactTable = factTable.addAll(factSet)
+      val o = expr.thenExpr.visit(new Visitor[OP](updatedFactTable))(i)
+      debugging(expr).invokeAndReturn(state((i, factSet), o, updatedFactTable))
     }
 
     override def visitValuesOfType[T, O](
