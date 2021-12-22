@@ -14,6 +14,7 @@ import shapeless.{Generic, HList, Nat}
 
 trait UnwrappedBuildExprDsl
   extends BuildExprDsl
+  with UnwrappedUsingDefinitionArityMethods
   with DefaultUnwrappedExprHListImplicits
   with DefaultUnwrappedOutputTypeImplicits
   with UnwrappedDslTypes {

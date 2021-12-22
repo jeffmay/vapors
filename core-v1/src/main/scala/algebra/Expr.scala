@@ -731,7 +731,7 @@ object Expr {
     * @tparam A the type of every element of the input
     * @tparam B the condition result type, which must define a way to be viewed as a `Boolean`
     */
-  final case class Exists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP, OP[_]](
+  final case class Exists[-C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP, OP[_]](
     conditionExpr: Expr[A, B, OP],
     combineTrue: NonEmptySeq[B] => B,
     combineFalse: Seq[B] => B,
@@ -755,7 +755,7 @@ object Expr {
     * @tparam A the type of every element of the input
     * @tparam B the condition result type, which must define a way to be viewed as a `Boolean`
     */
-  final case class ForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP, OP[_]](
+  final case class ForAll[-C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP, OP[_]](
     conditionExpr: Expr[A, B, OP],
     combineTrue: Seq[B] => B,
     combineFalse: NonEmptySeq[B] => B,
@@ -911,7 +911,7 @@ object Expr {
     * @param expressions the sequence of expressions to evaluate in order to create the same sequence of results
     * @tparam C the traversable collection
     */
-  final case class Sequence[C[+_] : Traverse, -I, +O, OP[_]](
+  final case class Sequence[+C[+_] : Traverse, -I, +O, OP[_]](
     expressions: C[Expr[I, O, OP]],
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
@@ -943,7 +943,7 @@ object Expr {
     * @tparam A the element type
     * @tparam O the accumulator type, initial value, and output type
     */
-  final case class FoldLeft[-I, C[_] : Foldable, A, O : OP, OP[_]](
+  final case class FoldLeft[-I, +C[_] : Foldable, A, O : OP, OP[_]](
     inputExpr: Expr[I, C[A], OP],
     initExpr: Expr[I, O, OP],
     foldExpr: Expr[(O, A), O, OP],
@@ -1057,7 +1057,7 @@ object Expr {
     * @tparam C a [[Foldable]] collection type that can be used to fold the resulting [[Fact]]s into a single List
     * @tparam T the type of values used to produce [[TypedFact]] instances of the given [[factType]]
     */
-  final case class Define[-I, C[_] : Foldable, T, OP[_]](
+  final case class Define[-I, +C[_] : Foldable, T, OP[_]](
     factType: FactType[T],
     defnExpr: Expr[I, C[T], OP],
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,

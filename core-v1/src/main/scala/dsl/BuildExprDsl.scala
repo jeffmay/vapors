@@ -12,7 +12,7 @@ import cats.data.{NonEmptySeq, NonEmptyVector}
 import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Order, Reducible, Traverse}
 import shapeless.{Generic, HList}
 
-trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
+trait BuildExprDsl extends DebugExprDsl with WrapArityMethods with UsingDefinitionArityMethods {
   self: DslTypes with ExprHListDslImplicits with OutputTypeImplicits =>
 
   /**
@@ -56,8 +56,6 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
   def define[T](factType: FactType[T]): DefineBuilder[T]
 
   abstract class DefineBuilder[T](factType: FactType[T]) {
-
-    // TODO: fromSources() with arity function support
 
     def oneFrom(
       defnExpr: Any ~:> W[T],
@@ -103,7 +101,11 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
       Expr.Define(factType, Expr.Const(Foldable[C].toList(values): Seq[T]))
   }
 
-  // TODO: Support function builder syntax
+  @deprecated(
+    """You should use the using().thenReturn(...) DSL method instead.
+    
+You should prefer put your declaration of dependency on definitions close to where you actually use them.""",
+  )
   final def usingDefinitions[I, O](
     definitions: Expr.Definition[I, OP]*,
   )(
