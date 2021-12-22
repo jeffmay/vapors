@@ -1,5 +1,6 @@
 package com.rallyhealth.vapors.v1
 
+import algebra.Expr
 import data.{FactTable, Justified}
 import example.FactTypes
 
@@ -14,13 +15,13 @@ class SimpleJustifiedUsingDefinitionsSpec extends FunSuite {
   test("Derive Kg from Lbs") {
     val weightLbs = FactTypes.WeightLbs(150)
     val lbsPerKg = 2.205
-    val defineWeightKg = define(FactTypes.WeightKg).from {
+    val defineWeightKg: Expr.Define[Any, Seq, Double, OP] = define(FactTypes.WeightKg).from {
       valuesOfType(FactTypes.WeightLbs).map { lbs =>
         lbs / lbsPerKg.const
       }
     }
-    val expr = usingDefinitions(defineWeightKg) {
-      valuesOfType(FactTypes.WeightKg).map(_ * 2d.const)
+    val expr = using(defineWeightKg).thenReturn {
+      _.map(_ * 2d.const)
     }
     val observedWrapped = expr.run(FactTable(weightLbs))
     inside(observedWrapped) {
