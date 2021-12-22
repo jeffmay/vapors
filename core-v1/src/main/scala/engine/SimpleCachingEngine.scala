@@ -101,6 +101,7 @@ object SimpleCachingEngine {
       input: I,
       expr: Expr[I, O, OP],
       updated: ResultCache,
+      factTable: FactTable = this.factTable,
     ): CachedResult[O] = {
       val visitor = new Visitor[OP](factTable, updated)
       expr.visit(visitor)(input)
@@ -140,6 +141,7 @@ object SimpleCachingEngine {
     protected def state[I, O](
       input: I,
       output: CachedResult[O],
+      factTable: FactTable = this.factTable,
     ): ExprState[I, CachedResult[O]] = ExprState(factTable, Some(input), Some(output))
 
     protected def debugging[E <: Expr.AnyWith[OP]](
@@ -217,6 +219,16 @@ object SimpleCachingEngine {
         val o = expr.function(i)
         debugging(expr).invokeAndReturn(state(i, cached(o)))
       }
+
+    override def visitDefine[I, C[_] : Foldable, T](
+      expr: Expr.Define[I, C, T, OP],
+    )(implicit
+      opF: OP[Seq[TypedFact[T]]],
+    ): I => CachedResult[Seq[TypedFact[T]]] = memoize(expr, _) { i =>
+      val CachedResult(factValues, updatedCached) = expr.defnExpr.visit(this)(i)
+      val facts = factValues.toList.map(expr.factType)
+      debugging(expr).invokeAndReturn(state((i, factValues), cached(facts, updatedCached)))
+    }
 
     override def visitExists[C[_] : Foldable, A, B : AsBoolean : OP](
       expr: Expr.Exists[C, A, B, OP],
@@ -371,6 +383,18 @@ object SimpleCachingEngine {
       val sorted = sortable.sort(i)
       debugging(expr).invokeAndReturn(state(unsorted, cached(sorted)))
     }
+
+    override def visitUsingDefinitions[I, O : OP](expr: Expr.UsingDefinitions[I, O, OP]): I => CachedResult[O] =
+      memoize(expr, _) { i =>
+        val CachedResult(newFacts, updatedCache) =
+          expr.definitions.foldLeft(CachedResult(Set.empty[Fact], resultCache)) { (last, next) =>
+            val CachedResult(nextFacts, updatedCache) = visitWithUpdatedCache(i, next, last.cacheState)
+            CachedResult(last.value ++ nextFacts, updatedCache)
+          }
+        val updatedFactTable = factTable.addAll(newFacts)
+        val o = visitWithUpdatedCache(i, expr.thenExpr, updatedCache, updatedFactTable)
+        debugging(expr).invokeAndReturn(state((i, newFacts), o, updatedFactTable))
+      }
 
     override def visitValuesOfType[T, O](
       expr: Expr.ValuesOfType[T, O, OP],

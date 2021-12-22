@@ -4,11 +4,12 @@ package dsl
 
 import algebra._
 import data.{Extract, ExtractValue, FactTypeSet}
+import data._
 import lens.VariantLens
 import math.Power
 
 import cats.data.NonEmptySeq
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Reducible}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Reducible}
 import shapeless.{Generic, HList, Nat}
 
 trait WrappedBuildExprDsl extends BuildExprDsl {
@@ -25,14 +26,6 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
   protected implicit def wrapSelected: WrapSelected[W, OP]
 
   override def ident[I](implicit opI: OP[W[I]]): Expr.Identity[W[I], OP] = Expr.Identity()
-
-  override def valuesOfType[T](
-    factTypeSet: FactTypeSet[T],
-  )(implicit
-    opT: OP[T],
-    opTs: OP[Seq[W[T]]],
-  ): Expr.ValuesOfType[T, W[T], OP] =
-    Expr.ValuesOfType(factTypeSet, wrapFact.wrapFact(_))
 
   override def pow[I, L, R](
     leftExpr: I ~:> W[L],
@@ -72,6 +65,65 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
     ): Expr.When[EI, W[Boolean], EO, OP] =
       Expr.When(branches, elseExpr)
   }
+
+  override def define[T](factType: FactType[T]): WrappedDefineBuilder[T] = new WrappedDefineBuilder(factType)
+
+  class WrappedDefineBuilder[T](factType: FactType[T]) extends DefineBuilder(factType) {
+
+    override def oneFrom(
+      defnExpr: Any ~:> W[T],
+    )(implicit
+      opWT: OP[W[T]],
+      opT: OP[T],
+      opF: OP[Seq[TypedFact[T]]],
+    ): Expr.Define[Any, Id, T, OP] = {
+      val lens = VariantLens.id[W[T]].extractValue[W, T]
+      val extracted = defnExpr.andThen {
+        Expr.Select(ident, lens, (_: W[T], t: T) => t)
+      }
+      Expr.Define(factType, extracted: Any ~:> Id[T])
+    }
+
+    override def from[C[_] : Functor : Foldable](
+      defnExpr: Any ~:> C[W[T]],
+    )(implicit
+      opWT: OP[W[T]],
+      opCT: OP[C[T]],
+      opT: OP[T],
+      opF: OP[Seq[TypedFact[T]]],
+    ): Expr.Define[Any, C, T, OP] = {
+      val lens = VariantLens.id[W[T]].extractValue[W, T]
+      val extracted = defnExpr.andThen {
+        Expr.MapEvery[C, W[T], T, OP](Expr.Select(ident, lens, (_: W[T], t: T) => t))
+      }
+      Expr.Define(factType, extracted: Any ~:> C[T])
+    }
+
+    override def fromInput[I, C[_] : Functor : Foldable](
+      buildDefnExpr: I =~:> C[W[T]],
+    )(implicit
+      opI: OP[I],
+      opWT: OP[W[T]],
+      opCT: OP[C[T]],
+      opT: OP[T],
+      opF: OP[Seq[TypedFact[T]]],
+    ): Expr.Define[I, C, T, OP] = {
+      val unextracted = buildDefnExpr(Expr.Identity())
+      val lens = VariantLens.id[W[T]].extractValue[W, T]
+      val extracted = unextracted.andThen {
+        Expr.MapEvery[C, W[T], T, OP](Expr.Select(ident, lens, (_: W[T], t: T) => t))
+      }
+      Expr.Define(factType, extracted)
+    }
+  }
+
+  override def valuesOfType[T](
+    factTypeSet: FactTypeSet[T],
+  )(implicit
+    opT: OP[T],
+    opTs: OP[Seq[W[T]]],
+  ): Expr.ValuesOfType[T, W[T], OP] =
+    Expr.ValuesOfType(factTypeSet, wrapFact.wrapFact(_))
 
   override implicit def const[A](
     value: A,

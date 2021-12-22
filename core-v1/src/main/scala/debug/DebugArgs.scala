@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package debug
 
 import algebra.{Expr, SizeComparison}
-import data.{ExprState, Window}
+import data.{ExprState, FactSet, TypedFact, Window}
 import lens.VariantLens
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
@@ -173,6 +173,12 @@ object DebugArgs {
       override type Out = O
     }
 
+  implicit def debugDefine[I, C[_], T, OP[_]]: Aux[Expr.Define[I, C, T, OP], OP, (I, C[T]), Seq[TypedFact[T]]] =
+    new DebugArgs[Expr.Define[I, C, T, OP], OP] {
+      override type In = (I, C[T])
+      override type Out = Seq[TypedFact[T]]
+    }
+
   implicit def debugIdent[I, OP[_]]: Aux[Expr.Identity[I, OP], OP, I, I] =
     new DebugArgs[Expr.Identity[I, OP], OP] {
       override type In = I
@@ -253,6 +259,12 @@ object DebugArgs {
     new DebugArgs[Expr.Sorted[C, A, OP], OP] {
       override type In = C[A]
       override type Out = C[A]
+    }
+
+  implicit def debugUsingDefinitions[I, O, OP[_]]: Aux[Expr.UsingDefinitions[I, O, OP], OP, (I, FactSet), O] =
+    new DebugArgs[Expr.UsingDefinitions[I, O, OP], OP] {
+      override type In = (I, FactSet)
+      override type Out = O
     }
 
   implicit def debugValuesOfType[T, O, OP[_]]: Aux[Expr.ValuesOfType[T, O, OP], OP, Any, Seq[O]] =
