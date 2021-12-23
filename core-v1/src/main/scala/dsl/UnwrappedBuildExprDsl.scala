@@ -219,6 +219,17 @@ trait UnwrappedBuildExprDsl
 
   final class UnwrappedHkExprBuilder[-I, C[_], A](inputExpr: I ~:> C[A]) extends HkExprBuilder(inputExpr) {
 
+    override def atIndex(
+      index: Long,
+    )(implicit
+      foldableC: Foldable[C],
+      opA: OP[A],
+      opO: OP[Option[A]],
+    ): Expr.Select[I, C[A], Option[A], Option[A], OP] = {
+      val lens = VariantLens.id[C[A]].at(index)
+      Expr.Select(inputExpr, lens, (_, el) => el)
+    }
+
     override def head(
       implicit
       reducibleC: Reducible[C],

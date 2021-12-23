@@ -132,4 +132,18 @@ class SimpleSelectSpec extends FunSuite {
     }
     assert(message contains "Could not find an instance of Reducible for Seq")
   }
+
+  test("Select an element by index from a Seq") {
+    val fixture = Seq(1, 2, 3)
+    val expr = fixture.const.atIndex(1)
+    val observed = expr.run()
+    assertEquals(observed, Some(fixture(1)))
+  }
+
+  test("Select an element by index from a NonEmptySeq") {
+    val fixture = NonEmptySeq.of(1, 2, 3)
+    val expr = fixture.const.atIndex(1)
+    val observed = expr.run()
+    assertEquals(observed, fixture.get(1))
+  }
 }
