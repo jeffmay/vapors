@@ -4,7 +4,7 @@ package dsl
 
 import algebra._
 import data._
-import lens.VariantLens
+import lens.{IterableInto, VariantLens}
 import logic.{Conjunction, Disjunction, Logic, Negation}
 import math.Power
 
@@ -40,7 +40,7 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods with UsingDefiniti
   ): AndThen[I, Seq[Seq[A]], Seq[A]] = {
     Expr
       .Sequence(expressions.map {
-        Expr.Select(_, VariantLens.id[C[A]].asIterable.to[Seq], (_: C[A], sa: Seq[A]) => sa)
+        Expr.Select(_, VariantLens.id[C[A]].to[Seq], (_: C[A], sa: Seq[A]) => sa)
       })
       .andThen(Expr.Flatten())
   }
@@ -420,6 +420,12 @@ You should prefer put your declaration of dependency on definitions close to whe
       sortable: Sortable[C, W[A]],
       opAs: OP[C[W[A]]],
     ): AndThen[I, C[W[A]], C[W[A]]]
+
+    def to[S[_]](
+      implicit
+      foldableC: Foldable[C],
+      into: IterableInto[S, W[A]],
+    ): SelectHolder[I, C[W[A]], into.Out, into.Out, OP]
   }
 
   abstract class SizeIsBuilder[-I, C](proof: I ~:> C) {

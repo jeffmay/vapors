@@ -4,7 +4,7 @@ package dsl
 
 import algebra._
 import data.{Extract, FactType, FactTypeSet, TypedFact}
-import lens.VariantLens
+import lens.{IterableInto, VariantLens}
 import logic.Logic
 import math.Power
 
@@ -325,6 +325,15 @@ trait UnwrappedBuildExprDsl
       opAs: OP[C[A]],
     ): AndThen[I, C[A], C[A]] =
       inputExpr.andThen(Expr.Sorted())
+
+    override def to[S[_]](
+      implicit
+      foldableC: Foldable[C],
+      into: IterableInto[S, A],
+    ): SelectHolder[I, C[A], into.Out, into.Out, OP] = {
+      val lens = VariantLens.id[C[A]].to(into)
+      new SelectHolder(inputExpr, lens, (_, out) => out)
+    }
   }
 
   final class UnwrappedSizeIsBuilder[-I, C](inputExpr: I ~:> C) extends SizeIsBuilder(inputExpr) {

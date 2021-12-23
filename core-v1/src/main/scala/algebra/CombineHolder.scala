@@ -70,15 +70,17 @@ object CombineHolder extends LowPriorityCombineHolderImplicits {
   /**
     * This is a hack to fix a reported error by IntelliJ.
     *
+    * @see [[SelectHolder.debugAnyHolder]]
+    *
     * IntelliJ's presentation compiler infers (wrongly) that the input type of the [[CombineHolder]]
     * is `Nothing`, when it should be `Any`. This hints to the compiler to use `Any` before trying any
     * other type, so this patches an error that prevents you from calling `.run()` on a debugged
     * [[CombineHolder]] produced expression.
     *
-    * If this can be removed, then [[LowPriorityCombineHolderImplicits.debugExpr]] can be moved back
-    * to this position (and possibly remove the low priority trait).
+    * If this can be removed, then [[LowPriorityCombineHolderImplicits.debugHolder]] can be moved back
+    * to this position (and remove the low priority trait if it is empty).
     */
-  implicit def debugAnyCombineHolder[LI, LO, RI, RO, O, OP[_]](
+  implicit def debugAnyHolder[LI, LO, RI, RO, O, OP[_]](
     holder: CombineHolder[Any, LI, LO, RI, RO, O, OP],
   )(implicit
     opO: OP[O],
@@ -89,7 +91,7 @@ object CombineHolder extends LowPriorityCombineHolderImplicits {
 
 trait LowPriorityCombineHolderImplicits {
 
-  implicit def debugExpr[I, LI, LO, RI, RO, O, OP[_]](
+  implicit def debugHolder[I, LI, LO, RI, RO, O, OP[_]](
     holder: CombineHolder[I, LI, LO, RI, RO, O, OP],
   )(implicit
     opO: OP[O],

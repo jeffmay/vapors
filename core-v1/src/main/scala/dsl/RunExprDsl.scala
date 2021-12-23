@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import algebra.CombineHolder
+import algebra.{CombineHolder, SelectHolder}
 import data.{ExprState, FactTable}
 
 trait RunExprDsl {
@@ -25,6 +25,10 @@ trait RunExprDsl {
   implicit def runCombineWith[I, O : OP](
     builder: CombineHolder[I, Nothing, Any, Nothing, Any, O, OP],
   ): SpecificRunWithExpr[I, O]
+
+  implicit def runSelect[A, B, O : OP](builder: SelectHolder[Any, A, B, O, OP]): SpecificRunExpr[O]
+
+  implicit def runSelectWith[I, A, B, O : OP](builder: SelectHolder[I, A, B, O, OP]): SpecificRunWithExpr[I, O]
 
   type SpecificRunExpr[+O] <: RunExpr[O]
   type SpecificRunWithExpr[-I, +O] <: RunWithExpr[I, O]
