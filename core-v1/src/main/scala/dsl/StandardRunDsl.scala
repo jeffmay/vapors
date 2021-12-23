@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import algebra.{CombineHolder, ExprResult}
+import algebra.{CombineHolder, ExprResult, SelectHolder}
 import data.{ExprState, FactTable}
 import engine.StandardEngine
 
@@ -29,6 +29,14 @@ trait StandardRunDsl extends RunExprDsl {
   override implicit def runCombineWith[I, O : OP](
     builder: CombineHolder[I, Nothing, Any, Nothing, Any, O, OP],
   ): RunWithStandardExpr[I, O] = new RunWithStandardExpr(builder.toExpr)
+
+  override implicit def runSelect[A, B, O : OP](builder: SelectHolder[Any, A, B, O, OP]): RunStandardExpr[O] =
+    new RunStandardExpr(builder.toExpr)
+
+  override implicit def runSelectWith[I, A, B, O : OP](
+    builder: SelectHolder[I, A, B, O, OP],
+  ): RunWithStandardExpr[I, O] =
+    new RunWithStandardExpr(builder.toExpr)
 
   override type SpecificRunExpr[+O] = RunStandardExpr[O]
   override type SpecificRunWithExpr[-I, +O] = RunWithStandardExpr[I, O]

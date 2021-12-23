@@ -3,9 +3,8 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra._
-import data.{Extract, ExtractValue, FactTypeSet}
 import data._
-import lens.VariantLens
+import lens.{IterableInto, VariantLens}
 import math.Power
 
 import cats.data.NonEmptySeq
@@ -339,6 +338,16 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
       opAs: OP[C[W[A]]],
     ): AndThen[I, C[W[A]], C[W[A]]] =
       inputExpr.andThen(Expr.Sorted())
+
+    override def to[S[_]](
+      implicit
+      foldableC: Foldable[C],
+      into: IterableInto[S, W[A]],
+    ): SelectHolder[I, C[W[A]], into.Out, into.Out, OP] = {
+      val lens = VariantLens.id[C[W[A]]].to(into)
+      // This is an isomorphic operation at the container level, so there is no need to alter the wrapped elements
+      new SelectHolder(inputExpr, lens, (_, out) => out)
+    }
   }
 
   class WrappedSizeIsBuilder[-I, C](inputExpr: I ~:> C) extends SizeIsBuilder(inputExpr) {

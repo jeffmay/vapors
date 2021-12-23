@@ -149,7 +149,7 @@ object VariantLens extends VariantLensLowPriorityImplicits {
   }
 }
 
-sealed trait VariantLensLowPriorityImplicits {
+private[lens] sealed trait VariantLensLowPriorityImplicits {
 
   /**
     * Wrap the result of this lens with an [[VariantLens.AsIterableBuilder]] for helper operations

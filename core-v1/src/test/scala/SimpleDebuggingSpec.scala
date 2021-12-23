@@ -1,8 +1,10 @@
 package com.rallyhealth.vapors.v1
 
 import algebra.Expr
-import com.rallyhealth.vapors.v1.example.NestedSelectable
-import com.rallyhealth.vapors.v1.lens.VariantLens
+import example.NestedSelectable
+import lens.VariantLens
+
+import cats.data.NonEmptySeq
 import munit._
 import shapeless.HNil
 
@@ -200,6 +202,35 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
       val (_, ca: Seq[Int]) = state.input
       val o: Seq[Int] = state.output
     }
+  }
+
+  private val selectHolderInput = Seq(1, 2, 3)
+  private val selectHolder = selectHolderInput.const.to[NonEmptySeq]
+  private val selectHolderLens = VariantLens.id[Seq[Int]].to[NonEmptySeq]
+  private val selectHolderOutput = Some(NonEmptySeq.of(1, 2, 3))
+
+  test("debug select holder with input") {
+    val expr = selectHolder.debug { state =>
+      val (i, seq, lens, nonEmpty) = state.input
+      assertInputEquals(expectedInitialInput, i)
+      assertEquals(seq, selectHolderInput)
+      assertEquals(lens.path, selectHolderLens.path)
+      assertEquals(nonEmpty, NonEmptySeq.fromSeq(selectHolderInput))
+      assertEquals(state.output, selectHolderOutput)
+    }
+    expr.runWith(initialInput)
+  }
+
+  test("debug select holder without initial input") {
+    val expr = selectHolder.debug { state =>
+      val (i, seq, lens, nonEmpty) = state.input
+      assertInputEquals(None, i)
+      assertEquals(seq, selectHolderInput)
+      assertEquals(lens.path, selectHolderLens.path)
+      assertEquals(nonEmpty, NonEmptySeq.fromSeq(selectHolderInput))
+      assertEquals(state.output, selectHolderOutput)
+    }
+    expr.run()
   }
 
   private val selectInput = NestedSelectable("optSelected", opt = Some(NestedSelectable("selected")))
