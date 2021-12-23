@@ -337,6 +337,14 @@ You should prefer put your declaration of dependency on definitions close to whe
 
   abstract class HkExprBuilder[-I, C[_], A](proof: I ~:> C[W[A]]) {
 
+    def atIndex(
+      index: Long,
+    )(implicit
+      foldableC: Foldable[C],
+      opA: OP[A],
+      opO: OP[Option[W[A]]],
+    ): Expr.Select[I, C[W[A]], Option[W[A]], Option[W[A]], OP]
+
     def head(
       implicit
       reducibleC: Reducible[C],

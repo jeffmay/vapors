@@ -215,6 +215,17 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
 
   class WrappedHkExprBuilder[-I, C[_], A](inputExpr: I ~:> C[W[A]]) extends HkExprBuilder(inputExpr) {
 
+    override def atIndex(
+      index: Long,
+    )(implicit
+      foldableC: Foldable[C],
+      opA: OP[A],
+      opO: OP[Option[W[A]]],
+    ): Expr.Select[I, C[W[A]], Option[W[A]], Option[W[A]], OP] = {
+      val lens = VariantLens.id[C[W[A]]].at(index)
+      Expr.Select(inputExpr, lens, (_, el) => el)
+    }
+
     override def head(
       implicit
       reducibleC: Reducible[C],
