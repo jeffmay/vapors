@@ -11,6 +11,7 @@ import cats.{Eval, Foldable, Reducible}
 import shapeless.ops.hlist
 import shapeless.{Generic, HList}
 
+import scala.annotation.nowarn
 import scala.collection.{Factory, View}
 
 // TODO: Rename to NamedLens after old algebra removed
@@ -126,13 +127,13 @@ object VariantLens extends VariantLensLowPriorityImplicits {
       )
 
     /**
-      * Use the given Scala collection companion object to convert this [[IterableOnce]] into the desired output.
+      * Use the given higher-kinded type to convert the resulting [[IterableOnce]] into the desired output.
       *
       * TODO: Should there be any path information for conversion?
       *       List => Map seems important information as values with duplicate keys could be dropped
       */
-    def to[C[_]](implicit factory: Factory[E, C[E]]): VariantLens[A, C[E]] =
-      lens.copy(get = lens.get.andThen(factory.fromSpecific))
+    def to[C[_]](implicit into: IterableInto[C, E]): VariantLens[A, into.Out] =
+      lens.copy(get = lens.get.andThen(into.fromIterable(_): @nowarn))
   }
 
   implicit final class AsHListBuilder[A, L <: HList](private val lens: VariantLens[A, L]) extends AnyVal {
