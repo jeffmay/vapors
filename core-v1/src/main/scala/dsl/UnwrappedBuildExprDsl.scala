@@ -3,13 +3,13 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra._
-import data.{Extract, FactType, FactTypeSet, TypedFact}
-import lens.{IterableInto, VariantLens}
+import data.{Extract, FactType, FactTypeSet, SliceRange, TypedFact}
+import lens.{CollectInto, IterableInto, VariantLens}
 import logic.Logic
 import math.Power
 
 import cats.data.NonEmptySeq
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Reducible}
+import cats.{FlatMap, Foldable, Functor, Id, Reducible, Traverse}
 import shapeless.{Generic, HList, Nat}
 
 trait UnwrappedBuildExprDsl
@@ -270,15 +270,14 @@ trait UnwrappedBuildExprDsl
         Expr.Exists[C, A, Boolean, OP](conditionExprBuilder(ident), _ => true, _ => false, shortCircuit),
       )
 
-    override def filter(
+    override def filter[D[_]](
       conditionExprBuilder: A =~:> Boolean,
     )(implicit
-      opO: OP[C[A]],
+      filter: CollectInto.Filter[C, A, D],
       opA: OP[A],
-      opB: OP[Boolean],
-      filterC: FunctorFilter[C],
-    ): AndThen[I, C[A], C[A]] =
-      inputExpr.andThen(Expr.Filter(conditionExprBuilder(ident)))
+      opO: OP[D[A]],
+    ): AndThen[I, C[A], D[A]] =
+      inputExpr.andThen(Expr.Filter[C, A, Boolean, D, OP](conditionExprBuilder(ident)))
 
     override def forall(
       conditionExprBuilder: A =~:> Boolean,
@@ -338,6 +337,15 @@ trait UnwrappedBuildExprDsl
       inputExpr.andThen(Expr.SizeIs[C[A], Int, Boolean, OP](SizeComparison.===, Expr.Const(0)(opWI)))
 
     override def sizeIs: UnwrappedSizeIsBuilder[I, C[A]] = new UnwrappedSizeIsBuilder(inputExpr)
+
+    override def slice[D[_]](
+      range: SliceRange.Relative,
+    )(implicit
+      traverseC: Traverse[C],
+      filter: CollectInto.Filter[C, A, D],
+      opO: OP[D[A]],
+    ): AndThen[I, C[A], D[A]] =
+      inputExpr.andThen(Expr.Slice(range))
 
     override def sorted(
       implicit

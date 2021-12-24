@@ -5,12 +5,12 @@ package algebra
 import data._
 import debug.{DebugArgs, Debugging, NoDebugging}
 import dsl.{ExprHList, ExprHNil, Sortable, ZipToShortest}
-import lens.VariantLens
+import lens.{CollectInto, VariantLens}
 import logic.{Conjunction, Disjunction, Negation}
 import math._
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse}
+import cats.{FlatMap, Foldable, Functor, Traverse}
 import shapeless.{::, HList, HNil}
 
 import scala.annotation.nowarn
@@ -295,11 +295,12 @@ object Expr {
 
     def visitExists[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](expr: Exists[C, A, B, OP]): C[A] ~:> B
 
-    def visitFilter[C[_] : FunctorFilter, A, B : ExtractValue.AsBoolean : OP](
-      expr: Filter[C, A, B, OP],
+    def visitFilter[C[_], A, B : ExtractValue.AsBoolean, D[_]](
+      expr: Filter[C, A, B, D, OP],
     )(implicit
-      opO: OP[C[A]],
-    ): C[A] ~:> C[A]
+      filter: CollectInto.Filter[C, A, D],
+      opO: OP[D[A]],
+    ): C[A] ~:> D[A]
 
     def visitFlatten[C[_] : FlatMap, A](expr: Flatten[C, A, OP])(implicit opCA: OP[C[A]]): C[C[A]] ~:> C[A]
 
@@ -344,6 +345,13 @@ object Expr {
     )(implicit
       compare: SizeComparable[I, N, B],
     ): I ~:> B
+
+    def visitSlice[C[_] : Traverse, A, D[_]](
+      expr: Slice[C, A, D, OP],
+    )(implicit
+      filter: CollectInto.Filter[C, A, D],
+      opO: OP[D[A]],
+    ): C[A] ~:> D[A]
 
     def visitSorted[C[_], A](
       expr: Sorted[C, A, OP],
@@ -445,11 +453,12 @@ object Expr {
     ): H[C[A], B] =
       proxy(underlying.visitExists(expr))
 
-    override def visitFilter[C[_] : FunctorFilter, A, B : ExtractValue.AsBoolean : OP](
-      expr: Filter[C, A, B, OP],
+    override def visitFilter[C[_], A, B : ExtractValue.AsBoolean, D[_]](
+      expr: Filter[C, A, B, D, OP],
     )(implicit
-      opO: OP[C[A]],
-    ): H[C[A], C[A]] = proxy(underlying.visitFilter(expr))
+      filter: CollectInto.Filter[C, A, D],
+      opO: OP[D[A]],
+    ): H[C[A], D[A]] = proxy(underlying.visitFilter(expr))
 
     override def visitFlatten[C[_] : FlatMap, A](expr: Flatten[C, A, OP])(implicit opCA: OP[C[A]]): H[C[C[A]], C[A]] =
       proxy(underlying.visitFlatten(expr))
@@ -518,6 +527,14 @@ object Expr {
 
     override def visitUsingDefinitions[I, O : OP](expr: UsingDefinitions[I, O, OP]): H[I, O] =
       proxy(underlying.visitUsingDefinitions(expr))
+
+    override def visitSlice[C[_] : Traverse, A, D[_]](
+      expr: Slice[C, A, D, OP],
+    )(implicit
+      filter: CollectInto.Filter[C, A, D],
+      opO: OP[D[A]],
+    ): H[C[A], D[A]] =
+      proxy(underlying.visitSlice(expr))
 
     override def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): H[Any, Seq[O]] =
       proxy(underlying.visitValuesOfType(expr))
@@ -780,14 +797,15 @@ object Expr {
     * @tparam A the type of every element of the input
     * @tparam B the condition result type, which must define a way to be viewed as a `Boolean`
     */
-  final case class Filter[C[_] : FunctorFilter, A, B : ExtractValue.AsBoolean : OP, OP[_]](
+  final case class Filter[C[_], A, +B : ExtractValue.AsBoolean, D[_], OP[_]](
     conditionExpr: Expr[A, B, OP],
     private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
-    opO: OP[C[A]],
-  ) extends Expr[C[A], C[A], OP]("filter") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], C[A]] = v.visitFilter(this)
-    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Filter[C, A, B, OP] =
+    filter: CollectInto.Filter[C, A, D],
+    opO: OP[D[A]],
+  ) extends Expr[C[A], D[A], OP]("filter") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], D[A]] = v.visitFilter(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Filter[C, A, B, D, OP] =
       copy(debugging = debugging)
   }
 
@@ -1042,6 +1060,31 @@ object Expr {
   ) extends Expr[I, B, OP]("sizeIs") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, B] = v.visitSizeIs(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): SizeIs[I, N, B, OP] =
+      copy(debugging = debugging)
+  }
+
+  /**
+    * Return a slice of the input collection based on a given relative [[SliceRange]].
+    *
+    * This may change the type of collection from [[C]] to [[D]] in the process.
+    *
+    * @see [[CollectInto]] for more details on converting collection types.
+    *
+    * @param range a [[SliceRange.Relative]] to be applied to a collection of type [[C]]
+    * @param filter the definition for how to filter the collection from type [[C]] to type [[D]]
+    * @tparam C the input collection type
+    * @tparam A the collection element type
+    * @tparam D the resulting collection type
+    */
+  final case class Slice[C[_] : Traverse, A, D[_], OP[_]](
+    range: SliceRange.Relative,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    filter: CollectInto.Filter[C, A, D],
+    opO: OP[D[A]],
+  ) extends Expr[C[A], D[A], OP]("slice") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], D[A]] = v.visitSlice(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Slice[C, A, D, OP] =
       copy(debugging = debugging)
   }
 

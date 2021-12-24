@@ -5,10 +5,11 @@ package algebra
 import data.ExtractValue.AsBoolean
 import data.{ExprState, ExtractValue, Window}
 import dsl.Sortable
+import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
 import cats.data.NonEmptyVector
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse}
+import cats.{FlatMap, Foldable, Functor, Traverse}
 
 /**
   * The result of running the associated [[Expr]] of the same name.
@@ -86,11 +87,12 @@ object ExprResult {
 
     def visitExists[C[_] : Foldable, A, B : AsBoolean : OP](result: Exists[PO, C, A, B, OP]): C[A] ~>: B
 
-    def visitFilter[C[_] : FunctorFilter, A, B : AsBoolean : OP](
-      result: Filter[PO, C, A, B, OP],
+    def visitFilter[C[_], A, B : AsBoolean, D[_]](
+      result: Filter[PO, C, A, B, D, OP],
     )(implicit
-      opO: OP[C[A]],
-    ): C[A] ~>: C[A]
+      filter: CollectInto.Filter[C, A, D],
+      opO: OP[D[A]],
+    ): C[A] ~>: D[A]
 
     def visitFlatten[C[_], A](result: Flatten[PO, C, A, OP])(implicit opO: OP[C[A]]): C[C[A]] ~>: C[A]
 
@@ -297,13 +299,14 @@ object ExprResult {
   /**
     * The result of running [[Expr.Filter]]
     */
-  final case class Filter[+PO, C[_] : FunctorFilter, A, B : AsBoolean : OP, OP[_]](
-    expr: Expr.Filter[C, A, B, OP],
-    state: ExprState[PO, C[A]],
+  final case class Filter[+PO, C[_], A, B : ExtractValue.AsBoolean, D[_], OP[_]](
+    expr: Expr.Filter[C, A, B, D, OP],
+    state: ExprState[PO, D[A]],
   )(implicit
-    opO: OP[C[A]],
-  ) extends ExprResult[PO, C[A], C[A], OP] {
-    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[C[A], C[A]] = v.visitFilter(this)
+    filter: CollectInto.Filter[C, A, D],
+    opO: OP[D[A]],
+  ) extends ExprResult[PO, C[A], D[A], OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[C[A], D[A]] = v.visitFilter(this)
   }
 
   /**

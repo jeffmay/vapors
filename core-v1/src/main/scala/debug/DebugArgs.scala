@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package debug
 
 import algebra.{Expr, SizeComparison}
-import data.{ExprState, FactSet, TypedFact, Window}
+import data._
 import lens.VariantLens
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
@@ -208,10 +208,10 @@ object DebugArgs {
       override type Out = B
     }
 
-  implicit def debugFilter[C[_], A, B, OP[_]]: Aux[Expr.Filter[C, A, B, OP], OP, C[A], C[A]] =
-    new DebugArgs[Expr.Filter[C, A, B, OP], OP] {
+  implicit def debugFilter[C[_], A, B, D[_], OP[_]]: Aux[Expr.Filter[C, A, B, D, OP], OP, C[A], D[A]] =
+    new DebugArgs[Expr.Filter[C, A, B, D, OP], OP] {
       override type In = C[A]
-      override type Out = C[A]
+      override type Out = D[A]
     }
 
   implicit def debugFlatten[C[_], A, OP[_]]: Aux[Expr.Flatten[C, A, OP], OP, C[C[A]], C[A]] =
@@ -259,6 +259,12 @@ object DebugArgs {
     new DebugArgs[Expr.SizeIs[I, N, B, OP], OP] {
       override type In = (I, SizeComparison, N)
       override type Out = B
+    }
+
+  implicit def debugSlice[C[_], A, D[_], OP[_]]: Aux[Expr.Slice[C, A, D, OP], OP, (C[A], SliceRange.Absolute), D[A]] =
+    new DebugArgs[Expr.Slice[C, A, D, OP], OP] {
+      override type In = (C[A], SliceRange.Absolute)
+      override type Out = D[A]
     }
 
   implicit def debugSorted[C[_], A, OP[_]]: Aux[Expr.Sorted[C, A, OP], OP, C[A], C[A]] =

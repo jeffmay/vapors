@@ -1,5 +1,6 @@
 package com.rallyhealth.vapors.v1
 
+import cats.data.{NonEmptyList, NonEmptySeq, NonEmptyVector}
 import munit.FunSuite
 
 class SimpleFilterSpec extends FunSuite {
@@ -16,5 +17,41 @@ class SimpleFilterSpec extends FunSuite {
     compileErrors {
       "Seq().const.filter(_ < 3.const)"
     }
+  }
+
+  test("NonEmptySeq[Int].filter returns a Seq[Int]") {
+    val expr = NonEmptySeq.of(1, 2, 3, 4).const.filter(_ > 2.const)
+    val res = expr.run()
+    assertEquals(res, Seq(3, 4))
+  }
+
+  test("NonEmptySeq[Int].filter returns an empty Seq[Int]") {
+    val expr = NonEmptySeq.of(1, 2, 3, 4).const.filter(_ > 4.const)
+    val res = expr.run()
+    assertEquals(res, Seq())
+  }
+
+  test("NonEmptyList[Int].filter returns a List[Int]") {
+    val expr = NonEmptyList.of(1, 2, 3, 4).const.filter(_ > 2.const)
+    val res = expr.run()
+    assertEquals(res, List(3, 4))
+  }
+
+  test("NonEmptyList[Int].filter returns an empty List[Int]") {
+    val expr = NonEmptyList.of(1, 2, 3, 4).const.filter(_ > 4.const)
+    val res = expr.run()
+    assertEquals(res, Nil)
+  }
+
+  test("NonEmptyVector[Int].filter returns a Vector[Int]") {
+    val expr = NonEmptyVector.of(1, 2, 3, 4).const.filter(_ > 2.const)
+    val res = expr.run()
+    assertEquals(res, Vector(3, 4))
+  }
+
+  test("NonEmptyVector[Int].filter returns an empty Vector[Int]") {
+    val expr = NonEmptyVector.of(1, 2, 3, 4).const.filter(_ > 4.const)
+    val res = expr.run()
+    assertEquals(res, Vector())
   }
 }

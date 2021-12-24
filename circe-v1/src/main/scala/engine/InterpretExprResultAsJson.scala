@@ -3,15 +3,15 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra.{EqualComparable, ExprResult, WindowComparable}
-
-import cats.{Foldable, Functor, FunctorFilter, Order, Traverse}
-import data.{ExprState, Extract}
+import data.ExprState
 import data.ExtractValue.AsBoolean
 import debug.HasSourceCodeInfo
+import dsl.Sortable
 import dsl.circe.HasEncoder
+import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
-import com.rallyhealth.vapors.v1.dsl.Sortable
+import cats.{Foldable, Functor, Traverse}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -104,11 +104,12 @@ object InterpretExprResultAsJson {
       result: ExprResult.Exists[PO, C, A, B, OP],
     ): ToJsonObject[C[A], B] = encodeExprResult(result)
 
-    override def visitFilter[C[_] : FunctorFilter, A, B : AsBoolean : OP](
-      result: ExprResult.Filter[PO, C, A, B, OP],
+    override def visitFilter[C[_], A, B : AsBoolean, D[_]](
+      result: ExprResult.Filter[PO, C, A, B, D, OP],
     )(implicit
-      opO: OP[C[A]],
-    ): ToJsonObject[C[A], C[A]] = encodeExprResult(result)
+      filter: CollectInto.Filter[C, A, D],
+      opO: OP[D[A]],
+    ): ToJsonObject[C[A], D[A]] = encodeExprResult(result)
 
     override def visitFlatten[C[_], A](
       result: ExprResult.Flatten[PO, C, A, OP],
@@ -256,11 +257,12 @@ object InterpretExprResultAsJson {
       result: ExprResult.Exists[PO, C, A, B, OP],
     ): ToJsonObject[C[A], B] = super.visitExists(result).deepMerge(sourceInfo[B])
 
-    override def visitFilter[C[_] : FunctorFilter, A, B : AsBoolean : OP](
-      result: ExprResult.Filter[PO, C, A, B, OP],
+    override def visitFilter[C[_], A, B : AsBoolean, D[_]](
+      result: ExprResult.Filter[PO, C, A, B, D, OP],
     )(implicit
-      opO: OP[C[A]],
-    ): ToJsonObject[C[A], C[A]] = super.visitFilter(result).deepMerge(sourceInfo[C[A]])
+      filter: CollectInto.Filter[C, A, D],
+      opO: OP[D[A]],
+    ): ToJsonObject[C[A], D[A]] = super.visitFilter(result).deepMerge(sourceInfo[D[A]])
 
     override def visitFlatten[C[_], A](
       result: ExprResult.Flatten[PO, C, A, OP],

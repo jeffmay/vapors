@@ -8,11 +8,12 @@ import data._
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
 import dsl.{Sortable, ZipToShortest}
+import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
 import cats.arrow.Arrow
 import cats.data.NonEmptyVector
-import cats.{Applicative, Eval, FlatMap, Foldable, Functor, FunctorFilter, Traverse}
+import cats.{Applicative, Eval, FlatMap, Foldable, Functor, Traverse}
 import shapeless.HList
 
 object SimpleCachingEngine {
@@ -240,14 +241,15 @@ object SimpleCachingEngine {
       debugging(expr).invokeAndReturn(state((ca, results), cached(o, finalState.cacheState)))
     }
 
-    override def visitFilter[C[_] : FunctorFilter, A, B : ExtractValue.AsBoolean : OP](
-      expr: Expr.Filter[C, A, B, OP],
+    override def visitFilter[C[_], A, B : ExtractValue.AsBoolean, D[_]](
+      expr: Expr.Filter[C, A, B, D, OP],
     )(implicit
-      opO: OP[C[A]],
-    ): C[A] => CachedResult[C[A]] = memoize(expr, _) { input =>
+      filter: CollectInto.Filter[C, A, D],
+      opO: OP[D[A]],
+    ): C[A] => CachedResult[D[A]] = memoize(expr, _) { input =>
       // TODO: Is it possible to use cache between elements in the functor?
       val isMatchingResult = expr.conditionExpr.visit(this).andThen(r => ExtractValue.asBoolean(r.value))
-      val o = input.filter(isMatchingResult)
+      val o = filter.filter(input, isMatchingResult)
       debugging(expr).invokeAndReturn(state(input, cached(o)))
     }
 
@@ -380,6 +382,17 @@ object SimpleCachingEngine {
       val CachedResult(comparedTo, cacheState) = expr.comparedTo.visit(this)(i)
       val o = compare.sizeCompare(i, expr.comparison, comparedTo)
       debugging(expr).invokeAndReturn(state((i, expr.comparison, comparedTo), cached(o, cacheState)))
+    }
+
+    override def visitSlice[C[_] : Traverse, A, D[_]](
+      expr: Expr.Slice[C, A, D, OP],
+    )(implicit
+      filter: CollectInto.Filter[C, A, D],
+      opO: OP[D[A]],
+    ): C[A] => CachedResult[D[A]] = memoize(expr, _) { ca =>
+      val absRange = expr.range.toAbsolute(ca.size.toInt)
+      val slice = filter.collectSomeWithIndex(ca, (a, idx) => Option.when(absRange contains idx)(a))
+      debugging(expr).invokeAndReturn(state((ca, absRange), cached(slice)))
     }
 
     override def visitSorted[C[_], A](
