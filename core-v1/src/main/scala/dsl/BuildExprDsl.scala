@@ -4,15 +4,15 @@ package dsl
 
 import algebra._
 import data._
-import lens.{IterableInto, VariantLens}
+import lens.{CollectInto, IterableInto, VariantLens}
 import logic.{Conjunction, Disjunction, Logic, Negation}
 import math.Power
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Order, Reducible, Traverse}
+import cats.{FlatMap, Foldable, Functor, Id, Order, Reducible, Traverse}
 import shapeless.{Generic, HList}
 
-trait BuildExprDsl extends DebugExprDsl with WrapArityMethods with UsingDefinitionArityMethods {
+trait BuildExprDsl extends DebugExprDsl with SliceRangeSyntax with WrapArityMethods with UsingDefinitionArityMethods {
   self: DslTypes with ExprHListDslImplicits with OutputTypeImplicits =>
 
   /**
@@ -376,14 +376,13 @@ You should prefer put your declaration of dependency on definitions close to whe
       foldC: Foldable[C],
     ): AndThen[I, C[W[A]], W[Boolean]]
 
-    def filter(
+    def filter[D[_]](
       conditionExprBuilder: W[A] =~:> W[Boolean],
     )(implicit
-      opO: OP[C[W[A]]],
+      filter: CollectInto.Filter[C, W[A], D],
       opA: OP[W[A]],
-      opB: OP[W[Boolean]],
-      filterC: FunctorFilter[C],
-    ): AndThen[I, C[W[A]], C[W[A]]]
+      opB: OP[D[W[A]]],
+    ): AndThen[I, C[W[A]], D[W[A]]]
 
     def forall(
       conditionExprBuilder: W[A] =~:> W[Boolean],
@@ -431,6 +430,14 @@ You should prefer put your declaration of dependency on definitions close to whe
     ): AndThen[I, C[W[A]], W[Boolean]]
 
     def sizeIs: SizeIsBuilder[I, C[W[A]]]
+
+    def slice[D[_]](
+      range: SliceRange.Relative,
+    )(implicit
+      traverseC: Traverse[C],
+      filter: CollectInto.Filter[C, W[A], D],
+      opO: OP[D[W[A]]],
+    ): AndThen[I, C[W[A]], D[W[A]]]
 
     def sorted(
       implicit

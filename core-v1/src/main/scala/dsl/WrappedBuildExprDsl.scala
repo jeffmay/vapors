@@ -4,11 +4,11 @@ package dsl
 
 import algebra._
 import data._
-import lens.{IterableInto, VariantLens}
+import lens.{CollectInto, IterableInto, VariantLens}
 import math.Power
 
 import cats.data.NonEmptySeq
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Id, Reducible}
+import cats.{FlatMap, Foldable, Functor, Id, Reducible, Traverse}
 import shapeless.{Generic, HList, Nat}
 
 trait WrappedBuildExprDsl extends BuildExprDsl {
@@ -311,15 +311,14 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
     ): AndThen[I, C[W[A]], C[W[B]]] =
       inputExpr.andThen(Expr.MapEvery(mapExprBuilder(ident)))
 
-    override def filter(
+    override def filter[D[_]](
       conditionExprBuilder: W[A] =~:> W[Boolean],
     )(implicit
-      opO: OP[C[W[A]]],
+      filter: CollectInto.Filter[C, W[A], D],
       opA: OP[W[A]],
-      opB: OP[W[Boolean]],
-      filterC: FunctorFilter[C],
-    ): AndThen[I, C[W[A]], C[W[A]]] =
-      inputExpr.andThen(Expr.Filter(conditionExprBuilder(Expr.Identity())))
+      opO: OP[D[W[A]]],
+    ): AndThen[I, C[W[A]], D[W[A]]] =
+      inputExpr.andThen(Expr.Filter[C, W[A], W[Boolean], D, OP](conditionExprBuilder(Expr.Identity())))
 
     override def flatMap[D[a] >: C[a] : FlatMap, O](
       exprBuilder: W[A] =~:> D[W[O]],
@@ -342,6 +341,15 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
       }
 
     override def sizeIs: SizeIsBuilder[I, C[W[A]]] = new WrappedSizeIsBuilder(inputExpr)
+
+    override def slice[D[_]](
+      range: SliceRange.Relative,
+    )(implicit
+      traverseC: Traverse[C],
+      filter: CollectInto.Filter[C, W[A], D],
+      opO: OP[D[W[A]]],
+    ): AndThen[I, C[W[A]], D[W[A]]] =
+      inputExpr.andThen(Expr.Slice(range))
 
     override def sorted(
       implicit

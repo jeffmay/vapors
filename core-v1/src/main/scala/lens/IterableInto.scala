@@ -6,6 +6,15 @@ import cats.data.{NonEmptyList, NonEmptySeq, NonEmptyVector}
 
 import scala.collection.{mutable, Factory}
 
+/**
+  * Defines the ability to convert from an [[IterableOnce]] into the deferred type member.
+  *
+  * This is useful for representing constraint validation, such as converting to a non-empty collection
+  * only returning an [[Option]] of [[NonEmptySeq]].
+  *
+  * @tparam C the starting collection type
+  * @tparam A the element type
+  */
 trait IterableInto[C[_], -A] {
   type Out
 

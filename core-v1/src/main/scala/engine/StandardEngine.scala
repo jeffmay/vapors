@@ -6,9 +6,10 @@ import algebra._
 import data.{ExprState, ExtractValue, TypedFact, Window}
 import debug.DebugArgs
 import dsl.{Sortable, ZipToShortest}
+import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse}
+import cats.{FlatMap, Foldable, Functor, Traverse}
 import shapeless.HList
 
 import scala.annotation.nowarn
@@ -141,16 +142,16 @@ object StandardEngine {
       ExprResult.Exists(expr, finalState)
     }
 
-    override def visitFilter[C[_] : FunctorFilter, A, B : ExtractValue.AsBoolean : OP](
-      expr: Expr.Filter[C, A, B, OP],
+    override def visitFilter[C[_], A, B : ExtractValue.AsBoolean, D[_]](
+      expr: Expr.Filter[C, A, B, D, OP],
     )(implicit
-      opO: OP[C[A]],
-    ): PO <:< C[A] => ExprResult[PO, C[A], C[A], OP] = { implicit evPOisI =>
-      val ca: C[A] = state.output
-      val o = ca.filter { a =>
+      filter: CollectInto.Filter[C, A, D],
+      opO: OP[D[A]],
+    ): PO <:< C[A] => ExprResult[PO, C[A], D[A], OP] = { implicit evPOisI =>
+      val o = filter.filter(state.output, { a =>
         val conditionResult = expr.conditionExpr.visit(withOutput(a))(implicitly)
         ExtractValue.asBoolean(conditionResult.state.output)
-      }
+      })
       val finalState = state.swapAndReplaceOutput(o)
       debugging(expr).invokeDebugger(finalState)
       ExprResult.Filter(expr, finalState)
@@ -290,6 +291,13 @@ object StandardEngine {
     )(implicit
       compare: SizeComparable[I, N, B],
     ): PO <:< I => ExprResult[PO, I, B, OP] = ???
+
+    override def visitSlice[C[_] : Traverse, A, D[_]](
+      expr: Expr.Slice[C, A, D, OP],
+    )(implicit
+      filter: CollectInto.Filter[C, A, D],
+      opO: OP[D[A]],
+    ): PO <:< C[A] => ExprResult[PO, C[A], D[A], OP] = ???
 
     override def visitSorted[C[_], A](
       expr: Expr.Sorted[C, A, OP],

@@ -183,7 +183,7 @@ class SimpleJustifiedSelectSpec extends FunSuite {
     val fixture = Seq(1, 2, 3)
     val expr = fixture.const.atIndex(1)
     val observed = expr.run()
-    val expected = Some(Justified.bySelection(2, DataPath.empty.atIndex(1), Justified.byConst(fixture)))
+    val expected = Some(Justified.bySelection(fixture(1), DataPath.empty.atIndex(1), Justified.byConst(fixture)))
     assertEquals(observed, expected)
   }
 
@@ -191,7 +191,8 @@ class SimpleJustifiedSelectSpec extends FunSuite {
     val fixture = NonEmptySeq.of(1, 2, 3)
     val expr = fixture.const.atIndex(1)
     val observed = expr.run()
-    val expected = Some(Justified.bySelection(2, DataPath.empty.atIndex(1), Justified.byConst(fixture)))
+    val expected =
+      Some(Justified.bySelection(fixture.getUnsafe(1), DataPath.empty.atIndex(1), Justified.byConst(fixture)))
     assertEquals(observed, expected)
   }
 }
