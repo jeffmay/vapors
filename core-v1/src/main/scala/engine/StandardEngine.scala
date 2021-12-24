@@ -212,6 +212,8 @@ object StandardEngine {
       ExprResult.IsEqual(expr, finalState)
     }
 
+    override def visitGetOrElse[I, O : OP](expr: Expr.GetOrElse[I, O, OP]): PO <:< I => ExprResult[PO, I, O, OP] = ???
+
     override def visitMapEvery[C[_] : Functor, A, B](
       expr: Expr.MapEvery[C, A, B, OP],
     )(implicit

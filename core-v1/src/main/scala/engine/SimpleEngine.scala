@@ -163,6 +163,14 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state((i, left, right), isEqual))
     }
 
+    override def visitGetOrElse[I, O : OP](expr: Expr.GetOrElse[I, O, OP]): I => O = { i =>
+      val opt = expr.optionExpr.visit(this)(i)
+      val o = opt.getOrElse {
+        expr.defaultExpr.visit(this)(i)
+      }
+      debugging(expr).invokeAndReturn(state((i, opt), o))
+    }
+
     override def visitMapEvery[C[_] : Functor, A, B](
       expr: Expr.MapEvery[C, A, B, OP],
     )(implicit

@@ -191,6 +191,12 @@ object DebugArgs {
       override type Out = W[Boolean]
     }
 
+  implicit def debugGetOrElse[I, O, OP[_]]: Aux[Expr.GetOrElse[I, O, OP], OP, (I, Option[O]), O] =
+    new DebugArgs[Expr.GetOrElse[I, O, OP], OP] {
+      override type In = (I, Option[O])
+      override type Out = O
+    }
+
   implicit def debugExists[
     C[_],
     A,

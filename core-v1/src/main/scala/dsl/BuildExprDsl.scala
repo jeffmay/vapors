@@ -316,6 +316,15 @@ You should prefer put your declaration of dependency on definitions close to whe
     }
   }
 
+  implicit def optionOps[I, O](optExpr: I ~:> Option[W[O]]): OptionExprBuilder[I, O] =
+    new OptionExprBuilder(optExpr)
+
+  class OptionExprBuilder[-I, +O](optExpr: I ~:> Option[W[O]]) {
+
+    def getOrElse[EI <: I, EO >: O](defaultExpr: EI ~:> W[EO])(implicit opO: OP[W[EO]]): Expr.GetOrElse[EI, W[EO], OP] =
+      Expr.GetOrElse(optExpr, defaultExpr)
+  }
+
   implicit def sizeOf[I, C](expr: I ~:> C): SizeOfExprBuilder[I, C]
 
   abstract class SizeOfExprBuilder[-I, C](proof: I ~:> C) {

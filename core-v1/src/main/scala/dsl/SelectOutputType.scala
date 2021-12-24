@@ -26,7 +26,7 @@ DSL wrapper type: ${W}
 Typically, this means that you are calling .select() and creating a lens to an empty collection (with an element type of Nothing) or a non-Traverse higher-kinded type.
 You can fix this by explicitly annotating the collection type parameter to something other than Nothing or convert the collection before selecting from it.""",
 )
-trait SelectOutputType[W[+_], I, A] {
+trait SelectOutputType[W[+_], -I, -A] {
   type Out
 
   /**
@@ -41,5 +41,5 @@ trait SelectOutputType[W[+_], I, A] {
 }
 
 object SelectOutputType {
-  type Aux[W[+_], I, A, B] = SelectOutputType[W, I, A] { type Out = B }
+  type Aux[W[+_], -I, -A, B] = SelectOutputType[W, I, A] { type Out = B }
 }
