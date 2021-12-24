@@ -191,6 +191,15 @@ trait UnwrappedBuildExprDsl
       inputExpr.andThen(Expr.Convert(ExprConverter.asProductType)(opWP))(opWP)
   }
 
+  override implicit def optionOps[I, O](optExpr: I ~:> Option[O]): UnwrappedOptionExprBuilder[I, O] =
+    new UnwrappedOptionExprBuilder(optExpr)
+
+  final class UnwrappedOptionExprBuilder[-I, +O](optExpr: I ~:> Option[O]) extends OptionExprBuilder(optExpr) {
+
+    override def getOrElse[EI <: I, EO >: O](defaultExpr: EI ~:> EO)(implicit opO: OP[EO]): Expr.GetOrElse[EI, EO, OP] =
+      Expr.GetOrElse(optExpr, defaultExpr)
+  }
+
   override implicit def sizeOf[I, C](inputExpr: I ~:> C): UnwrappedSizeOfExprBuilder[I, C] =
     new UnwrappedSizeOfExprBuilder(inputExpr)
 

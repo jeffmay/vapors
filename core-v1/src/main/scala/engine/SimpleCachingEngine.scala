@@ -300,6 +300,15 @@ object SimpleCachingEngine {
       debugging(expr).invokeAndReturn(state((i, left, right), isEqual))
     }
 
+    override def visitGetOrElse[I, O : OP](expr: Expr.GetOrElse[I, O, OP]): I => CachedResult[O] =
+      memoize(expr, _) { i =>
+        val CachedResult(opt, optCache) = expr.optionExpr.visit(this)(i)
+        val output = opt.map(cached(_, optCache)).getOrElse {
+          visitWithUpdatedCache(i, expr.defaultExpr, optCache)
+        }
+        debugging(expr).invokeAndReturn(state((i, opt), output))
+      }
+
     override def visitMapEvery[C[_] : Functor, A, B](
       expr: Expr.MapEvery[C, A, B, OP],
     )(implicit

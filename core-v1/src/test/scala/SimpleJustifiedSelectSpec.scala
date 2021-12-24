@@ -183,13 +183,15 @@ class SimpleJustifiedSelectSpec extends FunSuite {
     val fixture = Seq(1, 2, 3)
     val expr = fixture.const.atIndex(1)
     val observed = expr.run()
-    assertEquals(observed, Some(Justified.byConst(fixture(1))))
+    val expected = Some(Justified.bySelection(2, DataPath.empty.atIndex(1), Justified.byConst(fixture)))
+    assertEquals(observed, expected)
   }
 
   test("Select an element by index from a NonEmptySeq") {
     val fixture = NonEmptySeq.of(1, 2, 3)
     val expr = fixture.const.atIndex(1)
     val observed = expr.run()
-    assertEquals(observed, fixture.get(1).map(Justified.byConst))
+    val expected = Some(Justified.bySelection(2, DataPath.empty.atIndex(1), Justified.byConst(fixture)))
+    assertEquals(observed, expected)
   }
 }

@@ -317,6 +317,8 @@ object Expr {
       opO: OP[W[Boolean]],
     ): I ~:> W[Boolean]
 
+    def visitGetOrElse[I, O : OP](expr: GetOrElse[I, O, OP]): I ~:> O
+
     def visitMapEvery[C[_] : Functor, A, B](expr: MapEvery[C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~:> C[B]
 
     def visitNot[I, B, W[+_]](
@@ -469,6 +471,8 @@ object Expr {
       opV: OP[W[V]],
       opO: OP[W[Boolean]],
     ): H[I, W[Boolean]] = proxy(underlying.visitIsEqual(expr))
+
+    override def visitGetOrElse[I, O : OP](expr: GetOrElse[I, O, OP]): H[I, O] = proxy(underlying.visitGetOrElse(expr))
 
     override def visitMapEvery[C[_] : Functor, A, B](
       expr: MapEvery[C, A, B, OP],
@@ -833,6 +837,25 @@ object Expr {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, I] = v.visitIdentity(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Identity[I, OP] =
       copy[I, OP](debugging = debugging)
+  }
+
+  /**
+    * If the output of the [[optionExpr]] is defined, then return it, otherwise evaluate the [[defaultExpr]]
+    * and return that.
+    *
+    * Flattens the [[Option]] to a value of the same type (or more generic).
+    *
+    * @param optionExpr the input expression that evaluates to an [[Option]]
+    * @param defaultExpr an expression to evaluate when the [[Option]] is [[None]]
+    */
+  final case class GetOrElse[-I, +O : OP, OP[_]](
+    optionExpr: Expr[I, Option[O], OP],
+    defaultExpr: Expr[I, O, OP],
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  ) extends Expr[I, O, OP]("getOrElse") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitGetOrElse(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): GetOrElse[I, O, OP] =
+      copy(debugging = debugging)
   }
 
   /**
