@@ -3,13 +3,11 @@ package com.rallyhealth.vapors.v1
 package data
 
 import algebra.EqualComparable
+
 import cats.data.{NonEmptyList, NonEmptySeq, NonEmptySet, NonEmptyVector}
-import cats.{Eq, Order}
-import cats.data.{NonEmptyList, NonEmptySeq, NonEmptySet}
-import cats.{Eq, Functor, Order}
-import cats.syntax.show._
-import data.ExtractValue.AsBoolean
-import dsl.{WrapConst, WrapFact, WrapQuantifier, WrapSelected}
+import cats.implicits._
+import cats.{Eq, Functor, Order, Traverse}
+import dsl.{SelectOutputType, WrapConst, WrapFact, WrapQuantifier, WrapSelected}
 import lens.{DataPath, VariantLens}
 import logic.Logic
 import math.Add
@@ -187,6 +185,12 @@ object Justified {
     override lazy val evidence: Evidence =
       sources.foldLeft(Evidence.none)(_ | _.evidence) // TODO: Is this even valid?
     override def visit[G[+_]](v: Visitor[G]): G[V] = v.visitInference(this)
+  }
+
+  def elements[C[_] : Traverse, A](collection: Justified[C[A]]): C[Justified[A]] = {
+    collection.value.mapWithIndex { (a, idx) =>
+      Justified.bySelection(a, DataPath.empty.atIndex(idx), collection)
+    }
   }
 
   implicit def eq[V : Eq, OP[_]]: EqualComparable[Justified, V, OP] =

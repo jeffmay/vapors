@@ -11,15 +11,15 @@ class SimpleJustifiedSortedSpec extends FunSuite {
 
   test("Seq[Int].sorted") {
     val value = Seq(2, 4, 3, 1)
-    val expected = value.sorted
+    val expected = Justified.elements(Justified.byConst(value)).sorted
     val expr = value.const.sorted
     val result = expr.run()
-    assertEquals(result, expected.map(Justified.byConst))
+    assertEquals(result, expected)
   }
 
   test("NonEmptySeq[Int].sorted") {
     val value = NonEmptySeq.of(4, 2, 3, 1)
-    val expected = value.sorted.map(Justified.byConst)
+    val expected = Justified.elements(Justified.byConst(value)).sorted
     val expr = value.const.sorted
     val result = expr.run()
     assertEquals(result, expected)
@@ -27,7 +27,7 @@ class SimpleJustifiedSortedSpec extends FunSuite {
 
   test("NonEmptyList[Int].sorted") {
     val value = NonEmptyList.of(4, 2, 3, 1)
-    val expected = value.sorted.map(Justified.byConst)
+    val expected = Justified.elements(Justified.byConst(value)).sorted
     val expr = value.const.sorted
     val result = expr.run()
     assertEquals(result, expected)
@@ -35,7 +35,7 @@ class SimpleJustifiedSortedSpec extends FunSuite {
 
   test("NonEmptyVector[Int].sorted") {
     val value = NonEmptyVector.of(4, 2, 3, 1)
-    val expected = value.sorted.map(Justified.byConst)
+    val expected = Justified.elements(Justified.byConst(value)).sorted
     val expr = value.const.sorted
     val result = expr.run()
     assertEquals(result, expected)

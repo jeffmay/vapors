@@ -8,6 +8,7 @@ import lens.VariantLens
 import logic.Logic
 
 import cats.{Foldable, Functor, FunctorFilter, Traverse}
+import com.rallyhealth.vapors.v1.dsl.ConstOutputType.Aux
 import shapeless.<:!<
 
 trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with UnwrappedDslTypes {
@@ -138,10 +139,11 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
 
 sealed trait UnwrappedImplicits extends MidPriorityUnwrappedImplicits with WrapImplicits {
 
-  override implicit final def constFunctor[C[_] : Functor, O : OP](
+  override implicit def constTraverse[C[_] : Traverse, O](
     implicit
-    cot: ConstOutputType[W, O],
-  ): ConstOutputType.Aux[W, C[O], C[cot.Out]] = defn.constFunctor[C, O](cot)
+    sot: SelectOutputType[W, C[O], O],
+    opCO: OP[C[O]],
+  ): Aux[W, C[O], C[sot.Out]] = defn.constTraverse(sot)
 
   override implicit final def selectOption[I : OP, O : OP](
     implicit
