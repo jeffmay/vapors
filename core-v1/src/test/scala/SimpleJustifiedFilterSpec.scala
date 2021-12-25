@@ -1,6 +1,7 @@
 package com.rallyhealth.vapors.v1
 
-import com.rallyhealth.vapors.v1.data.Justified
+import data.Justified
+
 import munit.FunSuite
 
 class SimpleJustifiedFilterSpec extends FunSuite {
@@ -8,9 +9,11 @@ class SimpleJustifiedFilterSpec extends FunSuite {
   import dsl.simple.justified._
 
   test("Seq[Justified[Int]].filter") {
-    val expr = Seq(1, 2, 3, 4).const.filter(_ < 3.const)
+    val input = Seq(1, 2, 3, 4)
+    val expr = input.const.filter(_ < 3.const)
+    val expected = Justified.elements(Justified.byConst(input)).filter(_.value < 3)
     val res = expr.run()
-    assertEquals(res, Seq(Justified.byConst(1), Justified.byConst(2)))
+    assertEquals(res, expected)
   }
 
   test("Seq[Justified[Nothing]].filter doesn't compile") {

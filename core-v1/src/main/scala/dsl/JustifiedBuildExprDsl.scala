@@ -3,9 +3,10 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra._
-import cats.{Functor, Traverse}
 import data.{Extract, ExtractValue, Justified}
 import logic.Logic
+
+import cats.Traverse
 import shapeless.<:!<
 
 trait JustifiedBuildExprDsl extends WrappedExprDsl with WrapJustifiedImplicits with JustifiedDslTypes {
@@ -35,10 +36,11 @@ trait JustifiedBuildExprDsl extends WrappedExprDsl with WrapJustifiedImplicits w
 
 sealed trait WrapJustifiedImplicits extends WrapImplicits with MidPriorityJustifiedWrapImplicits {
 
-  override implicit def constFunctor[C[_] : Functor, O : OP](
+  override implicit def constTraverse[C[_] : Traverse, O](
     implicit
-    cot: ConstOutputType[Justified, O],
-  ): ConstOutputType.Aux[Justified, C[O], C[cot.Out]] = defn.constFunctor(cot)
+    sot: SelectOutputType[Justified, C[O], O],
+    opCO: OP[C[O]],
+  ): ConstOutputType.Aux[Justified, C[O], C[sot.Out]] = defn.constTraverse(sot)
 
   override implicit def selectOption[I : OP, O : OP](
     implicit

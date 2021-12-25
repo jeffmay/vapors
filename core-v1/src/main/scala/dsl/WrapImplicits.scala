@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import cats.implicits._
-import cats.{Functor, Traverse}
+import cats.Traverse
 import lens.DataPath
 import shapeless.<:!<
 
@@ -16,9 +16,10 @@ import shapeless.<:!<
 trait WrapImplicits extends MidPriorityWrapImplicits {
   self: DslTypes =>
 
-  implicit def constFunctor[C[_] : Functor, O : OP](
+  implicit def constTraverse[C[_] : Traverse, O](
     implicit
-    sot: ConstOutputType[W, O],
+    sot: SelectOutputType[W, C[O], O],
+    opCO: OP[C[O]],
   ): ConstOutputType.Aux[W, C[O], C[sot.Out]]
 
   implicit def selectOption[I : OP, O : OP](
@@ -66,12 +67,17 @@ final class WrapDefinitions[W[+_], OP[_]](
   wrapConstW: WrapConst[W, OP],
 ) {
 
-  def constFunctor[C[_] : Functor, O : OP](cot: ConstOutputType[W, O]): ConstOutputType.Aux[W, C[O], C[cot.Out]] =
+  def constTraverse[C[_] : Traverse, O](
+    sot: SelectOutputType[W, C[O], O],
+  )(implicit
+    opCO: OP[C[O]],
+  ): ConstOutputType.Aux[W, C[O], C[sot.Out]] =
     new ConstOutputType[W, C[O]] {
-      override type Out = C[cot.Out]
-      override def wrapConst(value: C[O]): C[cot.Out] = {
-        value.map { a =>
-          cot.wrapConst(a)
+      override type Out = C[sot.Out]
+      override def wrapConst(value: C[O]): C[sot.Out] = {
+        val wrappedConst = wrapConstW.wrapConst(value)
+        value.mapWithIndex { (a, idx) =>
+          sot.wrapSelected(wrappedConst, DataPath.empty.atIndex(idx), a)
         }
       }
     }
@@ -90,9 +96,8 @@ final class WrapDefinitions[W[+_], OP[_]](
         path: DataPath,
         value: C[O],
       ): C[sot.Out] = {
-        value.zipWithIndex.map {
-          case (a, i) =>
-            sot.wrapSelected(wrapped, path.atIndex(i), a)
+        value.mapWithIndex { (a, i) =>
+          sot.wrapSelected(wrapped, path.atIndex(i), a)
         }
       }
     }
