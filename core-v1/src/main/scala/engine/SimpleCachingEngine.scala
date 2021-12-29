@@ -7,7 +7,7 @@ import data.ExtractValue.AsBoolean
 import data._
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
-import dsl.{Sortable, ZipToShortest}
+import dsl.{ConvertToHList, Sortable, ZipToShortest}
 import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
@@ -404,6 +404,15 @@ object SimpleCachingEngine {
       val unsorted: C[A] = i
       val sorted = sortable.sort(i)
       debugging(expr).invokeAndReturn(state(unsorted, cached(sorted)))
+    }
+
+    override def visitToHList[I, L <: HList : OP](
+      expr: Expr.ToHList[I, L, OP],
+    )(implicit
+      toHL: ConvertToHList[L],
+    ): I => CachedResult[L] = memoize(expr, _) { i =>
+      val fn = toHL.convertToHListWith(expr.exprHList, this)
+      debugging(expr).invokeAndReturn(state(i, fn(i)))
     }
 
     override def visitUsingDefinitions[I, O : OP](expr: Expr.UsingDefinitions[I, O, OP]): I => CachedResult[O] =

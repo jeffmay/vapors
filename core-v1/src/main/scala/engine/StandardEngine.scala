@@ -5,7 +5,7 @@ package engine
 import algebra._
 import data.{ExprState, ExtractValue, TypedFact, Window}
 import debug.DebugArgs
-import dsl.{Sortable, ZipToShortest}
+import dsl.{ConvertToHList, Sortable, ZipToShortest}
 import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
@@ -310,6 +310,13 @@ object StandardEngine {
       debugging(expr).invokeDebugger(finalState)
       ExprResult.Sorted(expr, finalState)
     }
+
+    // TODO: This requires an Arrow over the function type, which will probably require refactoring this trait
+    override def visitToHList[I, L <: HList : OP](
+      expr: Expr.ToHList[I, L, OP],
+    )(implicit
+      toHL: ConvertToHList[L],
+    ): PO <:< I => ExprResult[PO, I, L, OP] = ???
 
     override def visitUsingDefinitions[I, O : OP](
       expr: Expr.UsingDefinitions[I, O, OP],

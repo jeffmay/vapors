@@ -6,7 +6,7 @@ import algebra.{EqualComparable, Expr, SizeComparable, WindowComparable}
 import data._
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
-import dsl.{Sortable, ZipToShortest}
+import dsl.{ConvertToHList, ExprHCons, ExprHNil, Sortable, ZipToShortest}
 import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
@@ -255,6 +255,15 @@ object SimpleEngine {
     ): C[A] => C[A] = { i =>
       val o = sortable.sort(i)
       debugging(expr).invokeAndReturn(state(i, o))
+    }
+
+    override def visitToHList[I, L <: HList : OP](
+      expr: Expr.ToHList[I, L, OP],
+    )(implicit
+      toHL: ConvertToHList[L],
+    ): I => L = { i =>
+      val fn = toHL.convertToHListWith(expr.exprHList, this)
+      debugging(expr).invokeAndReturn(state(i, fn(i)))
     }
 
     override def visitUsingDefinitions[I, O : OP](expr: Expr.UsingDefinitions[I, O, OP]): I => O = { i =>

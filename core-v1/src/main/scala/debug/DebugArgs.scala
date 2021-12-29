@@ -302,6 +302,12 @@ object DebugArgs {
       override type Out = W[Boolean]
     }
 
+  implicit def debugToHList[I, L <: HList, OP[_]]: Aux[Expr.ToHList[I, L, OP], OP, I, L] =
+    new DebugArgs[Expr.ToHList[I, L, OP], OP] {
+      override type In = I
+      override type Out = L
+    }
+
   implicit def debugZipToShortestHList[
     I,
     F[+_],
