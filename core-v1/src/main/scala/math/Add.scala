@@ -2,8 +2,9 @@ package com.rallyhealth.vapors.v1
 
 package math
 
-import java.time.{Duration, Instant, LocalDate, Period}
+import java.time.{Duration, Instant, LocalDate, LocalDateTime, Period, ZonedDateTime}
 import scala.annotation.implicitNotFound
+import scala.concurrent.duration.FiniteDuration
 
 @implicitNotFound("""${L} + ${R} is not supported.
                      
@@ -60,4 +61,24 @@ private[math] trait AddJavaTimeImplicits {
   implicit val addDurationToInstant: Add.Aux[Instant, Duration, Instant] = Add.instance(_.plus(_))
 
   implicit val addPeriodToLocalDate: Add.Aux[LocalDate, Period, LocalDate] = Add.instance(_.plus(_))
+
+  implicit val addFiniteDurationToInstant: Add.Aux[Instant, FiniteDuration, Instant] = Add.instance {
+    (temporal, duration) =>
+      temporal.plusNanos(duration.toNanos)
+  }
+
+  implicit val addFiniteDurationToLocalDate: Add.Aux[LocalDate, FiniteDuration, LocalDate] = Add.instance {
+    (temporal, duration) =>
+      temporal.plusDays(duration.toDays)
+  }
+
+  implicit val addFiniteDurationToLocalDateTime: Add.Aux[LocalDateTime, FiniteDuration, LocalDateTime] = Add.instance {
+    (temporal, duration) =>
+      temporal.plusNanos(duration.toNanos)
+  }
+
+  implicit val addFiniteDurationToZonedDateTime: Add.Aux[ZonedDateTime, FiniteDuration, ZonedDateTime] = Add.instance {
+    (temporal, duration) =>
+      temporal.plusNanos(duration.toNanos)
+  }
 }

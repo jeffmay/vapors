@@ -12,7 +12,12 @@ import cats.data.{NonEmptySeq, NonEmptyVector}
 import cats.{FlatMap, Foldable, Functor, Id, Order, Reducible, Traverse}
 import shapeless.{Generic, HList}
 
-trait BuildExprDsl extends DebugExprDsl with SliceRangeSyntax with WrapArityMethods with UsingDefinitionArityMethods {
+trait BuildExprDsl
+  extends DebugExprDsl
+  with SliceRangeSyntax
+  with TimeFunctions
+  with WrapArityMethods
+  with UsingDefinitionArityMethods {
   self: DslTypes with ExprHListDslImplicits with OutputTypeImplicits =>
 
   /**

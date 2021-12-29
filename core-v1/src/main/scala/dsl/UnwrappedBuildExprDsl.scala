@@ -17,6 +17,7 @@ trait UnwrappedBuildExprDsl
   with UnwrappedUsingDefinitionArityMethods
   with DefaultUnwrappedExprHListImplicits
   with DefaultUnwrappedOutputTypeImplicits
+  with UnwrappedTimeFunctions
   with UnwrappedDslTypes {
 
   override protected implicit final def boolLogic: Logic[W, Boolean, OP] = Logic.bool
