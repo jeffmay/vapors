@@ -31,6 +31,9 @@ sealed trait ExprHList[-I, +L <: HList, OP[_]] {
 
 object ExprHList {
 
+  implicit def asExpr[I, L <: HList : ConvertToHList : OP, OP[_]](xhl: ExprHList[I, L, OP]): Expr.ToHList[I, L, OP] =
+    Expr.ToHList(xhl)
+
   implicit class Ops[I, L <: HList, OP[_]](private val xhl: ExprHList[I, L, OP]) {
 
     /**
@@ -42,6 +45,12 @@ object ExprHList {
       * Return the tail elements of this non-empty [[ExprHList]].
       */
     def tail(implicit c: IsExprHCons[L]): ExprHList[I, c.T, OP] = c.tail(xhl)
+
+    def toExpr(
+      implicit
+      c: ConvertToHList[L],
+      opL: OP[L],
+    ): Expr.ToHList[I, L, OP] = Expr.ToHList(xhl)
   }
 }
 

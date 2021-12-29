@@ -4,7 +4,7 @@ package algebra
 
 import data._
 import debug.{DebugArgs, Debugging, NoDebugging}
-import dsl.{ExprHList, ExprHNil, Sortable, ZipToShortest}
+import dsl.{ConvertToHList, ExprHList, ExprHNil, Sortable, ZipToShortest}
 import lens.{CollectInto, VariantLens}
 import logic.{Conjunction, Disjunction, Negation}
 import math._
@@ -359,6 +359,8 @@ object Expr {
       sortable: Sortable[C, A],
       opAs: OP[C[A]],
     ): C[A] ~:> C[A]
+
+    def visitToHList[I, L <: HList : OP](expr: ToHList[I, L, OP])(implicit toHL: ConvertToHList[L]): I ~:> L
 
     def visitUsingDefinitions[I, O : OP](expr: UsingDefinitions[I, O, OP]): I ~:> O
 
@@ -1230,6 +1232,19 @@ object Expr {
       copy(debugging = debugging)
   }
 
+  // TODO: Is there a way to combine this with the Convert operation?
+  //       Maybe the converter can take the visitor as an argument to its function?
+  final case class ToHList[-I, +L <: HList : OP, OP[_]](
+    exprHList: ExprHList[I, L, OP],
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    toHL: ConvertToHList[L],
+  ) extends Expr[I, L, OP]("toHList") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, L] = v.visitToHList(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): ToHList[I, L, OP] =
+      copy(debugging = debugging)
+  }
+
   /**
     * Zip the output of the elements of all the [[Expr]] nodes of the given [[ExprHList]] up to the
     * length of the shortest given collection.
@@ -1252,7 +1267,7 @@ object Expr {
   )(implicit
     zip: ZipToShortest.Aux[W, WL, OP, UL],
     opO: OP[W[UL]],
-  ) extends Expr[I, W[UL], OP]("zipToHList") {
+  ) extends Expr[I, W[UL], OP]("zipToShortest") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[UL]] = v.visitZipToShortestHList(this)
     override private[v1] def withDebugging(
       debugging: Debugging[Nothing, Nothing],
