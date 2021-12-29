@@ -527,6 +527,9 @@ object Expr {
       compare: SizeComparable[I, N, B],
     ): H[I, B] = proxy(underlying.visitSizeIs(expr))
 
+    override def visitToHList[I, L <: HList : OP](expr: ToHList[I, L, OP])(implicit toHL: ConvertToHList[L]): H[I, L] =
+      proxy(underlying.visitToHList(expr))
+
     override def visitUsingDefinitions[I, O : OP](expr: UsingDefinitions[I, O, OP]): H[I, O] =
       proxy(underlying.visitUsingDefinitions(expr))
 

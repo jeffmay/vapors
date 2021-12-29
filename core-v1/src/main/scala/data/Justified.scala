@@ -7,6 +7,7 @@ import dsl.{WrapConst, WrapFact, WrapQuantifier, WrapSelected}
 import lens.{DataPath, VariantLens}
 import logic.Logic
 import math._
+import time.CountTime
 
 import cats.data.{NonEmptySeq, NonEmptySet}
 import cats.implicits._
@@ -224,6 +225,17 @@ object Justified extends LowPriorityJustifiedImplicits {
   implicit def orderingByValue[V : Ordering]: Ordering[Justified[V]] = Ordering.by(_.value)
 
   implicit def orderByValue[V : Order]: Order[Justified[V]] = Order.by(_.value)
+
+  implicit def countTime[T, U, O](
+    implicit
+    underlying: CountTime[T, U, O],
+  ): CountTime[Justified[T], Justified[U], Justified[O]] = { (start, end, truncateToUnit) =>
+    Justified.byInference(
+      "date_diff",
+      underlying.between(start.value, end.value, truncateToUnit.value),
+      NonEmptySeq.of(start, end, truncateToUnit),
+    )
+  }
 
   private final case object ExtractJustified extends Extract[Justified] {
     override def extract[A](fa: Justified[A]): A = fa.value
