@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{EqualComparable, Expr, WindowComparable}
+import algebra.{EqualComparable, Expr, SizeComparable, WindowComparable}
 import data.ExtractValue.AsBoolean
 import data._
 import debug.DebugArgs
@@ -349,6 +349,16 @@ object SimpleCachingEngine {
         e.visit(this)(i)
       }
       debugging(expr).invokeAndReturn(state(i, co))
+    }
+
+    override def visitSizeIs[I, N : ExtractValue[*, Int], B : ExtractValue.AsBoolean : OP](
+      expr: Expr.SizeIs[I, N, B, OP],
+    )(implicit
+      compare: SizeComparable[I, N, B],
+    ): I => CachedResult[B] = memoize(expr, _) { i =>
+      val CachedResult(comparedTo, cacheState) = expr.comparedTo.visit(this)(i)
+      val o = compare.sizeCompare(i, expr.comparison, comparedTo)
+      debugging(expr).invokeAndReturn(state((i, expr.comparison, comparedTo), cached(o, cacheState)))
     }
 
     override def visitSorted[C[_], A](

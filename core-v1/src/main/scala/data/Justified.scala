@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package data
 
-import algebra.EqualComparable
+import algebra.{EqualComparable, SizeComparable, SizeComparison}
 import dsl.{WrapConst, WrapFact, WrapQuantifier, WrapSelected}
 import lens.{DataPath, VariantLens}
 import logic.Logic
@@ -10,9 +10,10 @@ import math._
 
 import cats.data.{NonEmptySeq, NonEmptySet}
 import cats.implicits._
-import cats.{Applicative, Eq, Eval, Order, Semigroupal, Traverse}
+import cats.{Applicative, Eq, Eval, Foldable, Functor, Order, Semigroupal, Traverse}
 
 import scala.annotation.nowarn
+import scala.collection.Factory
 
 /**
   * Represents a result that contains a tree of justified inputs and operations, as well as the value
@@ -96,7 +97,7 @@ sealed trait Justified[+V] extends Product {
     )
 }
 
-object Justified {
+object Justified extends LowPriorityJustifiedImplicits {
 
   trait Visitor[G[+_]] {
 
@@ -193,6 +194,19 @@ object Justified {
     }
   }
 
+  def elements[C[a] <: Iterable[a], A](
+    collection: Justified[C[A]],
+  )(implicit
+    factory: Factory[Justified[A], C[Justified[A]]],
+  ): C[Justified[A]] = {
+    collection.value.zipWithIndex
+      .map {
+        case (a, idx) =>
+          Justified.bySelection(a, DataPath.empty.atIndex(idx), collection)
+      }
+      .to(factory)
+  }
+
   implicit def eq[V : Eq, OP[_]]: EqualComparable[Justified, V, OP] =
     new EqualComparable[Justified, V, OP] {
       override def isEqual(
@@ -217,7 +231,10 @@ object Justified {
 
   implicit def extract: Extract[Justified] = ExtractJustified
 
-  implicit def extractValue[V]: ExtractValue[Justified[V], V] = _.value
+  implicit def wrapSizeComparedIterable[C[a] <: Iterable[a], A, N, B](
+    implicit
+    sizeComparable: SizeComparable[C[Justified[A]], N, B],
+  ): SizeComparable[C[Justified[A]], Justified[N], Justified[B]] = wrapSizeCompared(_.size)
 
   private final case object WrapConstJustified extends WrapConst[Justified, Any] {
     override def wrapConst[A](value: A)(implicit opA: Any): Justified[A] = Justified.byConst(value)
@@ -427,4 +444,39 @@ object Justified {
         exponent: Justified[E],
       ): Justified[O] = base.zipWith(exponent, "power")(pow0.power(_, _): @nowarn)
     }
+}
+
+sealed class LowPriorityJustifiedImplicits {
+
+  protected def wrapSizeCompared[C[_], A, N, B](
+    getSize: C[Justified[A]] => Long,
+  )(implicit
+    sizeComparable: SizeComparable[C[Justified[A]], N, B],
+  ): SizeComparable[C[Justified[A]], Justified[N], Justified[B]] = { (collection, comparison, comparedTo) =>
+    val actualSize = getSize(collection)
+    val result = sizeComparable.sizeCompare(collection, comparison, comparedTo.value)
+    Justified.byInference(
+      s"sizeIs ${comparison.symbol} ${comparedTo.value}",
+      result,
+      NonEmptySeq.of(
+        // TODO: This is not really a "const", but rather an inference, but we have lost the reference to the original
+        //       wrapped collection. We could try to retrace the Justified tree from the first element, but what if
+        //       the collection is empty? What if the justification for the element comes from a different collection
+        //       than the other elements of the collection? Do we need to unify the justification of all the elements
+        //       and have a special case when the collection is empty?
+        //
+        // One potential (but invasive) solution to this problem would be to always retain the wrapper of the entire
+        // collection and perform all operations on the types inside the wrapper (rather than strip the wrapper when
+        // operating on collections, as we do now). We should explore this option before the 1.0.0 release.
+        Justified.byConst(actualSize),
+        Justified.byConst(comparison),
+        comparedTo,
+      ),
+    )
+  }
+
+  implicit def wrapSizeComparedFoldable[C[_] : Foldable, A, N, B](
+    implicit
+    sizeComparable: SizeComparable[C[Justified[A]], N, B],
+  ): SizeComparable[C[Justified[A]], Justified[N], Justified[B]] = wrapSizeCompared(_.size)
 }

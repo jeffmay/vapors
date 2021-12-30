@@ -331,6 +331,12 @@ object Expr {
 
     def visitSequence[C[+_] : Traverse, I, O](expr: Sequence[C, I, O, OP])(implicit opCO: OP[C[O]]): I ~:> C[O]
 
+    def visitSizeIs[I, N : ExtractValue[*, Int], B : ExtractValue.AsBoolean : OP](
+      expr: SizeIs[I, N, B, OP],
+    )(implicit
+      compare: SizeComparable[I, N, B],
+    ): I ~:> B
+
     def visitSorted[C[_], A](
       expr: Sorted[C, A, OP],
     )(implicit
@@ -485,6 +491,12 @@ object Expr {
       sortable: Sortable[C, A],
       opAs: OP[C[A]],
     ): H[C[A], C[A]] = proxy(underlying.visitSorted(expr))
+
+    override def visitSizeIs[I, N : ExtractValue[*, Int], B : ExtractValue.AsBoolean : OP](
+      expr: SizeIs[I, N, B, OP],
+    )(implicit
+      compare: SizeComparable[I, N, B],
+    ): H[I, B] = proxy(underlying.visitSizeIs(expr))
 
     override def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): H[Any, Seq[O]] =
       proxy(underlying.visitValuesOfType(expr))
@@ -961,6 +973,35 @@ object Expr {
   ) extends Expr[I, W[Boolean], OP]("isEqual") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, W[Boolean]] = v.visitIsEqual(this)
     override def withDebugging(debugging: Debugging[Nothing, Nothing]): IsEqual[I, V, W, OP] =
+      copy(debugging = debugging)
+  }
+
+  /**
+    * Compare the size of the input type to the given [[comparedTo]] expression.
+    *
+    * See [[SizeComparison]] to choose how to compare the size.
+    *
+    * @note It is not possible to choose how you want to compare things using an expression
+    *       because the [[SizeComparison]] type is not a primitive value of the language,
+    *       but rather, just a syntactic component.
+    *
+    * @param comparison the type of comparison to perform
+    * @param comparedTo the integral numeric value to compare the size of input to
+    * @param compare the definition of how to compare the size of input to the numeric value
+    *
+    * @tparam I the input value type
+    * @tparam N a numeric integral viewable type
+    * @tparam B a boolean-like type to be returned as output
+    */
+  final case class SizeIs[-I, N : ExtractValue[*, Int], B : ExtractValue.AsBoolean : OP, OP[_]](
+    comparison: SizeComparison,
+    comparedTo: Expr[I, N, OP],
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    compare: SizeComparable[I, N, B],
+  ) extends Expr[I, B, OP]("sizeIs") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, B] = v.visitSizeIs(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): SizeIs[I, N, B, OP] =
       copy(debugging = debugging)
   }
 

@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package dsl.circe
 
 import algebra.ExprResult
-import data.{Evidence, ExprState, Justified}
+import data.{ExprState, Justified}
 import debug.{HasSourceCodeInfo, SourceCodeInfo}
 import engine.InterpretExprResultAsJson
 
@@ -64,6 +64,7 @@ trait MidPrioritySourceInfoEncoders extends LowPrioritySimpleResultEncoders {
     O : OP,
     OP[a] <: HasEncoder[a],
   ]: Encoder.AsObject[ExprResult[Nothing, Nothing, O, OP]] = {
+    implicit val encodeOutput: Encoder[O] = implicitly[OP[O]].encodeOutput
     encodeExprResult[Nothing, Nothing, O, OP]
   }
 
@@ -79,6 +80,8 @@ trait MidPrioritySourceInfoEncoders extends LowPrioritySimpleResultEncoders {
     O : OP,
     OP[a] <: HasEncoder[a] with HasSourceCodeInfo,
   ]: Encoder.AsObject[ExprResult[Nothing, Nothing, O, OP]] = {
+    val has: HasEncoder[O] = implicitly[OP[O]]
+    implicit val encodeOutput: Encoder[O] = has.encodeOutput
     encodeDebugExprResultWithDebugInfo[Nothing, Nothing, O, OP]
   }
 }
@@ -102,6 +105,4 @@ trait LowPrioritySimpleResultEncoders {
   ): Encoder.AsObject[ExprResult[PO, I, O, OP]] = Encoder.AsObject.instance { result =>
     result.visit(InterpretExprResultAsJson.Visitor[OP](result.state))
   }
-
-  implicit def encodeOutput[O : HasEncoder]: Encoder[O] = HasEncoder[O].encodeOutput
 }
