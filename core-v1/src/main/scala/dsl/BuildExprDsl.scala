@@ -45,11 +45,13 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
       .andThen(Expr.Flatten())
   }
 
-  final def seq[I, O](expressions: I ~:> O*)(implicit opO: OP[Seq[O]]): I ~:> Seq[O] =
+  def seq[I, O](expressions: I ~:> W[O]*)(implicit opO: OP[Seq[W[O]]]): I ~:> Seq[W[O]] =
     wrapAll(expressions)
 
-  final def some[I, O](expr: I ~:> O)(implicit opO: OP[Option[O]]): I ~:> Option[O] =
+  def some[I, O](expr: I ~:> W[O])(implicit opO: OP[Option[W[O]]]): I ~:> Option[W[O]] =
     wrapAll(Option(expr))
+
+  def none[O](implicit opO: OP[Option[W[O]]]): Any ~:> Option[W[O]] = Expr.Const(None: Option[W[O]])
 
   def valuesOfType[T](
     factTypeSet: FactTypeSet[T],
@@ -252,6 +254,21 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
     }
   }
 
+  implicit def sizeOf[I, C](expr: I ~:> C): SizeOfExprBuilder[I, C]
+
+  abstract class SizeOfExprBuilder[-I, C](proof: I ~:> C) {
+
+    def isEmpty(
+      implicit
+      sizeCompare: SizeComparable[C, W[Int], W[Boolean]],
+      opI: OP[Int],
+      opWI: OP[W[Int]],
+      opWB: OP[W[Boolean]],
+    ): AndThen[I, C, W[Boolean]]
+
+    def sizeIs: SizeIsBuilder[I, C]
+  }
+
   implicit def hk[I, C[_], A](expr: I ~:> C[W[A]])(implicit ne: NotEmpty[C, A]): SpecificHkExprBuilder[I, C, A]
 
   type SpecificHkExprBuilder[-I, C[_], A] <: HkExprBuilder[I, C, A]
@@ -326,11 +343,59 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
       opDO: OP[D[W[O]]],
     ): AndThen[I, D[D[W[O]]], D[W[O]]]
 
+    def isEmpty(
+      implicit
+      sizeCompare: SizeComparable[C[W[A]], W[Int], W[Boolean]],
+      opI: OP[Int],
+      opWI: OP[W[Int]],
+      opWB: OP[W[Boolean]],
+    ): AndThen[I, C[W[A]], W[Boolean]]
+
+    def sizeIs: SizeIsBuilder[I, C[W[A]]]
+
     def sorted(
       implicit
       sortable: Sortable[C, W[A]],
       opAs: OP[C[W[A]]],
     ): AndThen[I, C[W[A]], C[W[A]]]
+  }
+
+  abstract class SizeIsBuilder[-I, C](proof: I ~:> C) {
+
+    def ===(
+      sizeExpr: C ~:> W[Int],
+    )(implicit
+      sizeComparable: SizeComparable[C, W[Int], W[Boolean]],
+      opO: OP[W[Boolean]],
+    ): AndThen[I, C, W[Boolean]]
+
+    def >(
+      sizeExpr: C ~:> W[Int],
+    )(implicit
+      sizeComparable: SizeComparable[C, W[Int], W[Boolean]],
+      opO: OP[W[Boolean]],
+    ): AndThen[I, C, W[Boolean]]
+
+    def >=(
+      sizeExpr: C ~:> W[Int],
+    )(implicit
+      sizeComparable: SizeComparable[C, W[Int], W[Boolean]],
+      opO: OP[W[Boolean]],
+    ): AndThen[I, C, W[Boolean]]
+
+    def <(
+      sizeExpr: C ~:> W[Int],
+    )(implicit
+      sizeComparable: SizeComparable[C, W[Int], W[Boolean]],
+      opO: OP[W[Boolean]],
+    ): AndThen[I, C, W[Boolean]]
+
+    def <=(
+      sizeExpr: C ~:> W[Int],
+    )(implicit
+      sizeComparable: SizeComparable[C, W[Int], W[Boolean]],
+      opO: OP[W[Boolean]],
+    ): AndThen[I, C, W[Boolean]]
   }
 
   implicit def isInWindow[I, V : Order : OP](

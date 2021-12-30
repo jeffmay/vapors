@@ -15,16 +15,20 @@ import scala.annotation.implicitNotFound
   * @tparam O the original unwrapped input type
   * @return the appropriately wrapped output scalar or functor type
   */
-@implicitNotFound("""
-Cannot find the appropriate output type when attempting to wrap a value of type ${I} into a constant.
+@implicitNotFound(
+  """Cannot find the appropriate ConstOutputType when attempting to wrap a value of type ${O}.
+     
+DSL wrapper type: ${W}
 
-Typically, this means that you are attempting to call .const on a non-Functor higher-kinded type.""")
-trait ConstOutputType[W[+_], O] {
+Typically, this means that you are calling .const on an empty collection (with an element type of Nothing).
+You can fix this by explicitly annotating the collection type parameter to something other than Nothing.""",
+)
+trait ConstOutputType[W[+_], -O] {
   type Out
 
   def wrapConst(value: O): Out
 }
 
 object ConstOutputType {
-  type Aux[W[+_], O, WO] = ConstOutputType[W, O] { type Out = WO }
+  type Aux[W[+_], -O, WO] = ConstOutputType[W, O] { type Out = WO }
 }

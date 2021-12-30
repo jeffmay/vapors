@@ -8,11 +8,32 @@ import com.rallyhealth.vapors.v1.algebra.Expr
 import com.rallyhealth.vapors.v1.lens.DataPath
 import shapeless.{::, HList, HNil}
 
+import scala.collection.Factory
+
 final class DslImplicitDefinitions[W[+_] : Functor : Semigroupal, OP[_]](
   implicit
   wrapElementW: WrapSelected[W, OP],
   wrapConstW: WrapConst[W, OP],
 ) {
+
+  def constIterable[C[a] <: Iterable[a], A, O](
+    sot: SelectOutputType.Aux[W, C[A], A, O],
+  )(implicit
+    factory: Factory[O, C[O]],
+    opCA: OP[C[A]],
+  ): ConstOutputType.Aux[W, C[A], C[O]] =
+    new ConstOutputType[W, C[A]] {
+      override type Out = C[O]
+      override def wrapConst(value: C[A]): C[O] = {
+        val wrappedConst = wrapConstW.wrapConst(value)
+        value.zipWithIndex
+          .map {
+            case (a, idx) =>
+              sot.wrapSelected(wrappedConst, DataPath.empty.atIndex(idx), a)
+          }
+          .to(factory)
+      }
+    }
 
   def constTraverse[C[_] : Traverse, O](
     sot: SelectOutputType[W, C[O], O],
@@ -29,20 +50,41 @@ final class DslImplicitDefinitions[W[+_] : Functor : Semigroupal, OP[_]](
       }
     }
 
-  def selectOption[I : OP, O : OP](
-    sot: SelectOutputType[W, I, O],
-  ): SelectOutputType.Aux[W, I, Option[O], Option[sot.Out]] = selectTraverse[Option, I, O](sot)
+  def selectOption[I : OP, A : OP, O](
+    sot: SelectOutputType.Aux[W, I, A, O],
+  ): SelectOutputType.Aux[W, I, Option[A], Option[O]] = selectTraverse(sot)
 
-  def selectTraverse[C[_] : Traverse, I : OP, O : OP](
-    sot: SelectOutputType[W, I, O],
-  ): SelectOutputType.Aux[W, I, C[O], C[sot.Out]] =
-    new SelectOutputType[W, I, C[O]] {
-      override type Out = C[sot.Out]
+  def selectIterable[C[a] <: Iterable[a], I : OP, A : OP, O](
+    sot: SelectOutputType.Aux[W, I, A, O],
+  )(implicit
+    factory: Factory[O, C[O]],
+  ): SelectOutputType.Aux[W, I, C[A], C[O]] =
+    new SelectOutputType[W, I, C[A]] {
+      override type Out = C[O]
       override def wrapSelected(
         wrapped: W[I],
         path: DataPath,
-        value: C[O],
-      ): C[sot.Out] = {
+        value: C[A],
+      ): C[O] = {
+        value.zipWithIndex
+          .map {
+            case (a, i) =>
+              sot.wrapSelected(wrapped, path.atIndex(i), a)
+          }
+          .to(factory)
+      }
+    }
+
+  def selectTraverse[C[_] : Traverse, I : OP, A : OP, O](
+    sot: SelectOutputType.Aux[W, I, A, O],
+  ): SelectOutputType.Aux[W, I, C[A], C[O]] =
+    new SelectOutputType[W, I, C[A]] {
+      override type Out = C[O]
+      override def wrapSelected(
+        wrapped: W[I],
+        path: DataPath,
+        value: C[A],
+      ): C[O] = {
         value.mapWithIndex { (a, i) =>
           sot.wrapSelected(wrapped, path.atIndex(i), a)
         }

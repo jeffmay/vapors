@@ -9,6 +9,8 @@ import logic.Logic
 import cats.{Align, Functor, FunctorFilter, Traverse}
 import shapeless.{::, <:!<, HList, HNil}
 
+import scala.collection.Factory
+
 trait JustifiedBuildExprDsl
   extends WrappedBuildExprDsl
   with DefinedJustifiedDslImplicitDefinitions
@@ -49,22 +51,35 @@ sealed trait JustifiedOutputTypeImplicits
   with JustifiedMidPriorityOutputTypeImplicits
   with DefinedJustifiedDslImplicitDefinitions {
 
-  override implicit def constTraverse[C[_] : Traverse, O](
+  override implicit def constOption[A](
     implicit
-    sot: SelectOutputType[Justified, C[O], O],
-    opCO: OP[C[O]],
-  ): ConstOutputType.Aux[Justified, C[O], C[sot.Out]] = defn.constTraverse(sot)
+    sot: SelectOutputType[Justified, Option[A], A],
+    opCO: OP[Option[A]],
+  ): ConstOutputType.Aux[Justified, Option[A], Option[sot.Out]] = defn.constTraverse(sot)
 
-  override implicit def selectOption[I : OP, O : OP](
+  override implicit def constSet[C[a] <: Set[a], A, O](
     implicit
-    sot: SelectOutputType[Justified, I, O],
-  ): SelectOutputType.Aux[Justified, I, Option[O], Option[sot.Out]] = defn.selectOption(sot)
+    sot: SelectOutputType.Aux[Justified, C[A], A, O],
+    factory: Factory[O, C[O]],
+    opCA: OP[C[A]],
+  ): ConstOutputType.Aux[Justified, C[A], C[O]] = defn.constIterable(sot)
+
+  override implicit def selectOption[I : OP, A : OP](
+    implicit
+    sot: SelectOutputType[Justified, I, A],
+  ): SelectOutputType.Aux[Justified, I, Option[A], Option[sot.Out]] = defn.selectOption(sot)
 }
 
 sealed trait JustifiedMidPriorityOutputTypeImplicits
   extends MidPriorityOutputTypeImplicits
   with JustifiedLowPriorityOutputTypeImplicits
   with DefinedJustifiedDslImplicitDefinitions {
+
+  override implicit final def constTraverse[C[_] : Traverse, O](
+    implicit
+    sot: SelectOutputType[Justified, C[O], O],
+    opCO: OP[C[O]],
+  ): ConstOutputType.Aux[Justified, C[O], C[sot.Out]] = defn.constTraverse(sot)
 
   override implicit final def selectTraverse[C[_] : Traverse, I : OP, O : OP](
     implicit
@@ -77,9 +92,13 @@ sealed trait JustifiedLowPriorityOutputTypeImplicits
   extends LowPriorityOutputTypeImplicits
   with DefinedJustifiedDslImplicitDefinitions {
 
-  override implicit final def constId[O : OP]: ConstOutputType.Aux[Justified, O, Justified[O]] = defn.constId
+  override implicit final def constId[O : Wrappable : OP]: ConstOutputType.Aux[Justified, O, Justified[O]] =
+    defn.constId
 
-  override implicit final def selectId[I : OP, O : OP]: SelectOutputType.Aux[Justified, I, O, Justified[O]] =
+  override implicit final def selectId[
+    I : OP,
+    O : Wrappable : OP,
+  ]: SelectOutputType.Aux[Justified, I, O, Justified[O]] =
     defn.selectId
 }
 

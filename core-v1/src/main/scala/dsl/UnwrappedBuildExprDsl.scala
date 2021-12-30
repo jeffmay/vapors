@@ -33,6 +33,13 @@ trait UnwrappedBuildExprDsl
 
   override final def ident[I](implicit opI: OP[I]): Expr.Identity[I, OP] = Expr.Identity()
 
+  override final def seq[I, O](expressions: I ~:> O*)(implicit opO: OP[Seq[O]]): I ~:> Seq[O] =
+    super.seq[I, O](expressions: _*)
+
+  override final def some[I, O](expr: I ~:> O)(implicit opO: OP[Option[O]]): I ~:> Option[O] = super.some[I, O](expr)
+
+  override final def none[O](implicit opO: OP[Option[O]]): Any ~:> Option[O] = super.none[O]
+
   override final def valuesOfType[T](
     factTypeSet: FactTypeSet[T],
   )(implicit
@@ -147,6 +154,23 @@ trait UnwrappedBuildExprDsl
       inputExpr.andThen(Expr.Convert(ExprConverter.asProductType)(opWP))(opWP)
   }
 
+  override implicit def sizeOf[I, C](inputExpr: I ~:> C): UnwrappedSizeOfExprBuilder[I, C] =
+    new UnwrappedSizeOfExprBuilder(inputExpr)
+
+  class UnwrappedSizeOfExprBuilder[-I, C](inputExpr: I ~:> C) extends SizeOfExprBuilder[I, C](inputExpr) {
+
+    override def isEmpty(
+      implicit
+      sizeCompare: SizeComparable[C, Int, Boolean],
+      opI: OP[Int],
+      opWI: OP[Int],
+      opWB: OP[Boolean],
+    ): AndThen[I, C, Boolean] =
+      inputExpr.andThen(Expr.SizeIs[C, Int, Boolean, OP](SizeComparison.===, Expr.Const(0)(opWI)))
+
+    override def sizeIs: UnwrappedSizeIsBuilder[I, C] = new UnwrappedSizeIsBuilder(inputExpr)
+  }
+
   override implicit final def hk[I, C[_], A](
     expr: I ~:> C[A],
   )(implicit
@@ -247,11 +271,75 @@ trait UnwrappedBuildExprDsl
     ): AndThen[I, D[D[O]], D[O]] =
       inputExpr.andThen(Expr.MapEvery[D, A, D[O], OP](exprBuilder(ident))).andThen(Expr.Flatten())
 
+    override def isEmpty(
+      implicit
+      sizeCompare: SizeComparable[C[A], Int, Boolean],
+      opI: OP[Int],
+      opWI: OP[Int],
+      opWB: OP[Boolean],
+    ): AndThen[I, C[A], Boolean] =
+      inputExpr.andThen(Expr.SizeIs[C[A], Int, Boolean, OP](SizeComparison.===, Expr.Const(0)(opWI)))
+
+    override def sizeIs: UnwrappedSizeIsBuilder[I, C[A]] = new UnwrappedSizeIsBuilder(inputExpr)
+
     override def sorted(
       implicit
       sortable: Sortable[C, A],
       opAs: OP[C[A]],
     ): AndThen[I, C[A], C[A]] =
       inputExpr.andThen(Expr.Sorted())
+  }
+
+  final class UnwrappedSizeIsBuilder[-I, C](inputExpr: I ~:> C) extends SizeIsBuilder(inputExpr) {
+
+    override def ===(
+      sizeExpr: C ~:> Int,
+    )(implicit
+      sizeComparable: SizeComparable[C, Int, Boolean],
+      opO: OP[Boolean],
+    ): AndThen[I, C, Boolean] =
+      inputExpr.andThen {
+        Expr.SizeIs(SizeComparison.===, sizeExpr)
+      }
+
+    override def >(
+      sizeExpr: C ~:> Int,
+    )(implicit
+      sizeComparable: SizeComparable[C, Int, Boolean],
+      opO: OP[Boolean],
+    ): AndThen[I, C, Boolean] =
+      inputExpr.andThen {
+        Expr.SizeIs(SizeComparison.>, sizeExpr)
+      }
+
+    override def >=(
+      sizeExpr: C ~:> Int,
+    )(implicit
+      sizeComparable: SizeComparable[C, Int, Boolean],
+      opO: OP[Boolean],
+    ): AndThen[I, C, Boolean] =
+      inputExpr.andThen {
+        Expr.SizeIs(SizeComparison.>=, sizeExpr)
+      }
+
+    override def <(
+      sizeExpr: C ~:> Int,
+    )(implicit
+      sizeComparable: SizeComparable[C, Int, Boolean],
+      opO: OP[Boolean],
+    ): AndThen[I, C, Boolean] =
+      inputExpr.andThen {
+        Expr.SizeIs(SizeComparison.<, sizeExpr)
+      }
+
+    override def <=(
+      sizeExpr: C ~:> Int,
+    )(implicit
+      sizeComparable: SizeComparable[C, Int, Boolean],
+      opO: OP[Boolean],
+    ): AndThen[I, C, Boolean] =
+      inputExpr.andThen {
+        Expr.SizeIs(SizeComparison.<=, sizeExpr)
+      }
   }
 }

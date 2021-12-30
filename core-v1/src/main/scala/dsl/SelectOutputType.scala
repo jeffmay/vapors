@@ -19,10 +19,12 @@ import scala.annotation.implicitNotFound
   * @return the appropriately wrapped output scalar or functor type
   */
 @implicitNotFound(
-  """
-Cannot find the appropriate output type when selecting a value of type ${A} from ${I}.
+  """Cannot find the appropriate SelectOutputType when selecting a value of type ${A} from ${I}.
+     
+DSL wrapper type: ${W}
 
-Typically, this means that you are calling .select() and creating a lens to a non-Functor higher-kinded type.""",
+Typically, this means that you are calling .select() and creating a lens to an empty collection (with an element type of Nothing) or a non-Traverse higher-kinded type.
+You can fix this by explicitly annotating the collection type parameter to something other than Nothing or convert the collection before selecting from it.""",
 )
 trait SelectOutputType[W[+_], I, A] {
   type Out

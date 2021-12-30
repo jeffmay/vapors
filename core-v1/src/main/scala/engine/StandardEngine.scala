@@ -277,6 +277,12 @@ object StandardEngine {
       ExprResult.Sequence(expr, finalState, co)
     }
 
+    override def visitSizeIs[I, N : ExtractValue[*, Int], B : ExtractValue.AsBoolean : OP](
+      expr: Expr.SizeIs[I, N, B, OP],
+    )(implicit
+      compare: SizeComparable[I, N, B],
+    ): PO <:< I => ExprResult[PO, I, B, OP] = ???
+
     override def visitSorted[C[_], A](
       expr: Expr.Sorted[C, A, OP],
     )(implicit

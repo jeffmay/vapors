@@ -1,6 +1,7 @@
 package com.rallyhealth.vapors.v1
 
-import com.rallyhealth.vapors.v1.dsl.NotEmpty
+import dsl.NotEmpty
+
 import munit.FunSuite
 
 class SimpleConstSpec extends FunSuite {
@@ -36,10 +37,16 @@ class SimpleConstSpec extends FunSuite {
     assert(message contains NotEmpty.errorMessage.replace("${C}", "[+A]List[A]"))
   }
 
-  test("Array.const does not allow calling map") {
+  test("Array.const is not allowed") {
     val fixture = Array(1, 2, 3)
-    val message = compileErrors("fixture.const.map(_ + 1.const)")
-    assert(message contains "Could not find an instance of Functor for Array")
+    val message = compileErrors("fixture.const")
+    assertNotEquals(message, "")
+  }
+
+  test("Iterable.const is not allowed") {
+    val fixture = Iterable(1, 2, 3)
+    val message = compileErrors("fixture.const")
+    assertNotEquals(message, "")
   }
 
   test("Set.const does not allow calling map") {

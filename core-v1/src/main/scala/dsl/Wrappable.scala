@@ -39,13 +39,4 @@ This is because there is no Traverse[IterableOnce] definition. You can use .getA
   implicit def iterableOnceIsNotWrappable1[A]: Wrappable[IterableOnce[A]] = unexpected
   implicit def iterableOnceIsNotWrappable2[A]: Wrappable[IterableOnce[A]] = unexpected
 
-  @implicitAmbiguous(
-    """
-Can't use the .get operation to select a field of type ${C}[${A}].
-
-This is because there is no Traverse[${C}] definition. You can use .getAs[Seq] on the expression or .to(Seq) on the lens to convert the value to a Seq before mapping over the results.""",
-  )
-  implicit def setIsNotWrappable1[C[a] <: Set[a], A]: Wrappable[C[A]] = unexpected
-  implicit def setIsNotWrappable2[C[a] <: Set[a], A]: Wrappable[C[A]] = unexpected
-
 }

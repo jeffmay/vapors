@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import algebra.{CombineHolder, Expr, ExprConverter}
+import algebra._
 import data.{Extract, ExtractValue, FactTypeSet}
 import lens.VariantLens
 import math.Power
@@ -135,6 +135,25 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
       inputExpr.andThen(Expr.Convert(ExprConverter.asWrappedProductType[W, L, P, OP]))
   }
 
+  override implicit def sizeOf[I, C](inputExpr: I ~:> C): WrappedSizeOfExprBuilder[I, C] =
+    new WrappedSizeOfExprBuilder(inputExpr)
+
+  class WrappedSizeOfExprBuilder[-I, C](inputExpr: I ~:> C) extends SizeOfExprBuilder(inputExpr) {
+
+    override def isEmpty(
+      implicit
+      sizeCompare: SizeComparable[C, W[Int], W[Boolean]],
+      opI: OP[Int],
+      opWI: OP[W[Int]],
+      opWB: OP[W[Boolean]],
+    ): AndThen[I, C, W[Boolean]] =
+      inputExpr.andThen {
+        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.===, Expr.Const(wrapConst.wrapConst(0)))
+      }
+
+    override def sizeIs: SizeIsBuilder[I, C] = new WrappedSizeIsBuilder(inputExpr)
+  }
+
   override implicit def hk[I, C[_], A](
     expr: I ~:> C[W[A]],
   )(implicit
@@ -249,11 +268,77 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
     ): AndThen[I, D[D[W[O]]], D[W[O]]] =
       inputExpr.andThen(Expr.MapEvery[D, W[A], D[W[O]], OP](exprBuilder(ident))).andThen(Expr.Flatten())
 
+    override def isEmpty(
+      implicit
+      sizeCompare: SizeComparable[C[W[A]], W[Int], W[Boolean]],
+      opI: OP[Int],
+      opWI: OP[W[Int]],
+      opWB: OP[W[Boolean]],
+    ): AndThen[I, C[W[A]], W[Boolean]] =
+      inputExpr.andThen {
+        Expr.SizeIs[C[W[A]], W[Int], W[Boolean], OP](SizeComparison.===, Expr.Const(wrapConst.wrapConst(0)))
+      }
+
+    override def sizeIs: SizeIsBuilder[I, C[W[A]]] = new WrappedSizeIsBuilder(inputExpr)
+
     override def sorted(
       implicit
       sortable: Sortable[C, W[A]],
       opAs: OP[C[W[A]]],
     ): AndThen[I, C[W[A]], C[W[A]]] =
       inputExpr.andThen(Expr.Sorted())
+  }
+
+  class WrappedSizeIsBuilder[-I, C](inputExpr: I ~:> C) extends SizeIsBuilder(inputExpr) {
+
+    override def ===(
+      sizeExpr: C ~:> W[Int],
+    )(implicit
+      sizeComparable: SizeComparable[C, W[Int], W[Boolean]],
+      opO: OP[W[Boolean]],
+    ): AndThen[I, C, W[Boolean]] =
+      inputExpr.andThen {
+        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.===, sizeExpr)
+      }
+
+    override def >(
+      sizeExpr: C ~:> W[Int],
+    )(implicit
+      sizeComparable: SizeComparable[C, W[Int], W[Boolean]],
+      opO: OP[W[Boolean]],
+    ): AndThen[I, C, W[Boolean]] =
+      inputExpr.andThen {
+        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.>, sizeExpr)
+      }
+
+    override def >=(
+      sizeExpr: C ~:> W[Int],
+    )(implicit
+      sizeComparable: SizeComparable[C, W[Int], W[Boolean]],
+      opO: OP[W[Boolean]],
+    ): AndThen[I, C, W[Boolean]] =
+      inputExpr.andThen {
+        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.>=, sizeExpr)
+      }
+
+    override def <(
+      sizeExpr: C ~:> W[Int],
+    )(implicit
+      sizeComparable: SizeComparable[C, W[Int], W[Boolean]],
+      opO: OP[W[Boolean]],
+    ): AndThen[I, C, W[Boolean]] =
+      inputExpr.andThen {
+        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.<, sizeExpr)
+      }
+
+    override def <=(
+      sizeExpr: C ~:> W[Int],
+    )(implicit
+      sizeComparable: SizeComparable[C, W[Int], W[Boolean]],
+      opO: OP[W[Boolean]],
+    ): AndThen[I, C, W[Boolean]] =
+      inputExpr.andThen {
+        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.<=, sizeExpr)
+      }
   }
 }

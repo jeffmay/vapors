@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package engine
 
-import algebra.{EqualComparable, Expr, WindowComparable}
+import algebra.{EqualComparable, Expr, SizeComparable, WindowComparable}
 import data.{ExprState, ExtractValue, FactTable, Window}
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
@@ -203,6 +203,16 @@ object SimpleEngine {
         e.visit(this)(i)
       }
       debugging(expr).invokeAndReturn(state(i, co))
+    }
+
+    override def visitSizeIs[I, N : ExtractValue[*, Int], B : ExtractValue.AsBoolean : OP](
+      expr: Expr.SizeIs[I, N, B, OP],
+    )(implicit
+      compare: SizeComparable[I, N, B],
+    ): I => B = { i =>
+      val comparedTo = expr.comparedTo.visit(this)(i)
+      val o = compare.sizeCompare(i, expr.comparison, comparedTo)
+      debugging(expr).invokeAndReturn(state((i, expr.comparison, comparedTo), o))
     }
 
     override def visitSorted[C[_], A](

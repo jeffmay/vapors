@@ -2,12 +2,13 @@ package com.rallyhealth.vapors.v1
 
 package debug
 
-import algebra.Expr
-import cats.data.{NonEmptySeq, NonEmptyVector}
+import algebra.{Expr, SizeComparison}
 import data.{ExprState, Window}
 import lens.VariantLens
+
+import cats.data.{NonEmptySeq, NonEmptyVector}
 import izumi.reflect.Tag
-import shapeless.{::, HList}
+import shapeless.HList
 
 import scala.reflect.ClassTag
 
@@ -240,6 +241,12 @@ object DebugArgs {
     new DebugArgs[Expr.Sequence[C, I, O, OP], OP] {
       override type In = I
       override type Out = C[O]
+    }
+
+  implicit def debugSizeIs[I, N, B, OP[_]]: Aux[Expr.SizeIs[I, N, B, OP], OP, (I, SizeComparison, N), B] =
+    new DebugArgs[Expr.SizeIs[I, N, B, OP], OP] {
+      override type In = (I, SizeComparison, N)
+      override type Out = B
     }
 
   implicit def debugSorted[C[_], A, OP[_]]: Aux[Expr.Sorted[C, A, OP], OP, C[A], C[A]] =
