@@ -28,6 +28,8 @@ trait UnwrappedBuildExprDsl
 
   override protected implicit final def wrapConst: WrapConst[W, OP] = WrapConst.unwrapped
 
+  override protected implicit final def wrapContained: WrapContained[W, OP] = WrapContained.unwrapped
+
   override protected implicit final def wrapSelected: WrapSelected[W, OP] = WrapSelected.unwrapped
 
   // TODO: Should this be visible outside this trait?
@@ -160,6 +162,21 @@ trait UnwrappedBuildExprDsl
   ): ConstExprBuilder[constType.Out, OP] =
     new ConstExprBuilder(constType.wrapConst(value))
 
+  // TODO: Is this redundant syntax worth keeping around?
+  override implicit final def inSet[I, A](inputExpr: I ~:> A): UnwrappedInSetExprBuilder[I, A] =
+    new UnwrappedInSetExprBuilder(inputExpr)
+
+  final class UnwrappedInSetExprBuilder[-I, +A](inputExpr: I ~:> A) extends InSetExprBuilder(inputExpr) {
+
+    override def in[NI <: I, V >: A](
+      validValuesExpr: NI ~:> Set[V],
+    )(implicit
+      opA: OP[V],
+      opO: OP[Boolean],
+    ): Expr.ContainsAny[NI, W, Id, V, Boolean, OP] =
+      Expr.ContainsAny[NI, W, Id, V, Boolean, OP](inputExpr, validValuesExpr, wrapContained.wrapContained(_, _, _))
+  }
+
   override implicit final def in[I, T](expr: I ~:> T): UnwrappedSelectExprBuilder[I, T] =
     new UnwrappedSelectExprBuilder(expr)
 
@@ -268,6 +285,15 @@ trait UnwrappedBuildExprDsl
       val lens = VariantLens.id[C[A]].at(index)
       Expr.Select(inputExpr, lens, (_, el) => el)
     }
+
+    override def containsAny[NI <: I](
+      validValuesExpr: NI ~:> Set[A],
+    )(implicit
+      foldableC: Foldable[C],
+      opA: OP[A],
+      opO: OP[Boolean],
+    ): Expr.ContainsAny[NI, W, C, A, Boolean, OP] =
+      Expr.ContainsAny[NI, W, C, A, Boolean, OP](inputExpr, validValuesExpr, wrapContained.wrapContained(_, _, _))
 
     override def head(
       implicit

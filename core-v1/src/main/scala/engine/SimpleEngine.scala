@@ -6,11 +6,11 @@ import algebra.{EqualComparable, Expr, SizeComparable, WindowComparable}
 import data._
 import debug.DebugArgs
 import debug.DebugArgs.Invoker
-import dsl.{ConvertToHList, ExprHCons, ExprHNil, Sortable, ZipToShortest}
+import dsl.{ConvertToHList, Sortable, ZipToShortest}
 import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
-import cats.{FlatMap, Foldable, Functor, Traverse}
+import cats.{Eval, FlatMap, Foldable, Functor, Traverse}
 import shapeless.HList
 
 /**
@@ -81,6 +81,26 @@ object SimpleEngine {
     override def visitConst[O : OP](expr: Expr.Const[O, OP]): Any => O = { i =>
       val o = expr.value
       debugging(expr).invokeAndReturn(state(i, o))
+    }
+
+    override def visitContainsAny[I, W[+_] : Extract, C[_] : Foldable, A, B : OP](
+      expr: Expr.ContainsAny[I, W, C, A, B, OP],
+    ): I => B = { i =>
+      val input = expr.inputExpr.visit(this)(i)
+      val wrappedValidSet = expr.validValuesExpr.visit(this)(i)
+      // TODO: Implement short-circuiting
+      // TODO: Move to CommonEngine
+      val W = Extract[W]
+      val valid = wrappedValidSet.map(W.extract)
+      val found = input
+        .foldRight(Eval.now(List.empty[W[A]])) { (wa, acc) =>
+          val a = W.extract(wa)
+          if (valid(a)) acc.map(wa :: _)
+          else acc
+        }
+        .value
+      val o = expr.foundMatchingElements(input, wrappedValidSet, found)
+      debugging(expr).invokeAndReturn(state((i, input, wrappedValidSet, found), o))
     }
 
     override def visitConvert[I, O : OP](expr: Expr.Convert[I, O, OP]): I => O = { i =>

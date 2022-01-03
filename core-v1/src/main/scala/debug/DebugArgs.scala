@@ -173,6 +173,19 @@ object DebugArgs {
       override type Out = O
     }
 
+  implicit def debugContainsAny[
+    I,
+    W[+_],
+    C[_],
+    A,
+    B,
+    OP[_],
+  ]: Aux[Expr.ContainsAny[I, W, C, A, B, OP], OP, (I, C[W[A]], Set[W[A]], Seq[W[A]]), B] =
+    new DebugArgs[Expr.ContainsAny[I, W, C, A, B, OP], OP] {
+      override type In = (I, C[W[A]], Set[W[A]], Seq[W[A]])
+      override type Out = B
+    }
+
   implicit def debugDefine[I, C[_], T, OP[_]]: Aux[Expr.Define[I, C, T, OP], OP, (I, C[T]), Seq[TypedFact[T]]] =
     new DebugArgs[Expr.Define[I, C, T, OP], OP] {
       override type In = (I, C[T])

@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package data
 
 import algebra.{EqualComparable, SizeComparable, SizeComparison}
-import dsl.{WrapConst, WrapFact, WrapQuantifier, WrapSelected}
+import dsl.{WrapConst, WrapContained, WrapFact, WrapQuantifier, WrapSelected}
 import lens.{DataPath, VariantLens}
 import logic.Logic
 import math._
@@ -11,7 +11,7 @@ import time.CountTime
 
 import cats.data.{NonEmptySeq, NonEmptySet}
 import cats.implicits._
-import cats.{Applicative, Eq, Eval, Foldable, Functor, Order, Semigroupal, Traverse}
+import cats.{Applicative, Eq, Eval, Foldable, Functor, Order, Semigroupal, Traverse, TraverseFilter}
 
 import scala.annotation.nowarn
 import scala.collection.Factory
@@ -256,6 +256,40 @@ object Justified extends LowPriorityJustifiedImplicits {
 
   private final case object WrapFactJustified extends WrapFact[Justified, Any] {
     override def wrapFact[O](fact: TypedFact[O])(implicit opO: Any): Justified[O] = Justified.byFact(fact)
+  }
+
+  implicit def wrapContained[OP[_]]: WrapContained[Justified, OP] =
+    WrapContainedJustified.asInstanceOf[WrapContained[Justified, OP]]
+
+  private final case object WrapContainedJustified extends WrapContained[Justified, Any] {
+
+    override def wrapContained[C[_] : Foldable, V](
+      original: C[Justified[V]],
+      valid: Set[Justified[V]],
+      found: Seq[Justified[V]],
+    )(implicit
+      opV: Any,
+    ): Justified[Boolean] = {
+      // TODO: Figure out how to avoid the Justified.byConst situation.
+      // One option is to wrap every collection as well as the elements to provide traceability for empty collections
+      val justifiedValidValues = NonEmptySeq
+        .fromSeq(valid.toSeq)
+        .map { nonEmpty =>
+          Justified.byInference("validValues", valid.map(_.value), nonEmpty)
+        }
+        .getOrElse {
+          Justified.byConst(Set())
+        }
+      val justifiedElements = NonEmptySeq
+        .fromSeq(found)
+        .map { nonEmpty =>
+          Justified.byInference("foundElements", found.map(_.value), nonEmpty)
+        }
+        .getOrElse {
+          Justified.byConst(Seq())
+        }
+      Justified.byInference("contains", found.nonEmpty, NonEmptySeq.of(justifiedValidValues, justifiedElements))
+    }
   }
 
   implicit def wrapFact[OP[_]]: WrapFact[Justified, OP] = WrapFactJustified.asInstanceOf[WrapFact[Justified, OP]]

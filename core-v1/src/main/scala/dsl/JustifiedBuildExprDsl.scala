@@ -32,6 +32,8 @@ trait JustifiedBuildExprDsl
 
   override protected implicit final def wrapConst: WrapConst[Justified, OP] = Justified.wrapConst
 
+  override protected implicit final def wrapContained: WrapContained[Justified, OP] = Justified.wrapContained
+
   override protected implicit final def wrapFact: WrapFact[Justified, OP] = Justified.wrapFact
 
   override protected implicit final def wrapSelected: WrapSelected[Justified, OP] = Justified.wrapSelected

@@ -283,6 +283,8 @@ object Expr {
 
     def visitConst[O : OP](expr: Const[O, OP]): Any ~:> O
 
+    def visitContainsAny[I, W[+_] : Extract, C[_] : Foldable, A, B : OP](expr: ContainsAny[I, W, C, A, B, OP]): I ~:> B
+
     def visitConvert[I, O : OP](expr: Convert[I, O, OP]): I ~:> O
 
     def visitCustomFunction[I, O : OP](expr: CustomFunction[I, O, OP]): I ~:> O
@@ -438,6 +440,11 @@ object Expr {
     ): H[I, O] = proxy(underlying.visitCombine(expr))
 
     override def visitConst[O : OP](expr: Const[O, OP]): H[Any, O] = proxy(underlying.visitConst(expr))
+
+    override def visitContainsAny[I, W[+_] : Extract, C[_] : Foldable, A, B : OP](
+      expr: ContainsAny[I, W, C, A, B, OP],
+    ): H[I, B] =
+      proxy(underlying.visitContainsAny(expr))
 
     override def visitConvert[I, O : OP](expr: Convert[I, O, OP]): H[I, O] = proxy(underlying.visitConvert(expr))
 
@@ -743,6 +750,34 @@ object Expr {
   ) extends Expr[I, O, OP]("customFunction") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitCustomFunction(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Expr[I, O, OP] =
+      copy(debugging = debugging)
+  }
+
+  // TODO: Remove the W wrapper again?
+  /**
+    * Returns a Boolean-like result [[B]] indicating whether the [[inputExpr]] result contains
+    * any elements from the result of the [[validValuesExpr]].
+    *
+    * @param inputExpr an expression that returns a [[Foldable]] collection with wrapped elements
+    * @param validValuesExpr an expression that returns a wrapped set of valid values
+    * @param foundMatchingElements a function that defines how to return an instance of B based on the
+    *                              wrapped instances of input values, valid values, and matching elements.
+    * @tparam W the wrapper type (or effect) TODO: Remove the covariant requirement?
+    * @tparam C the collection type
+    * @tparam A the element type
+    * @tparam B a Boolean-like type that indicates whether any of the values from the [[inputExpr]] result
+    *           were found in the [[validValuesExpr]] result.
+    */
+  final case class ContainsAny[-I, W[+_] : Extract, C[_] : Foldable, A, +B : OP, OP[_]](
+    inputExpr: Expr[I, C[W[A]], OP],
+    validValuesExpr: Expr[I, Set[W[A]], OP],
+    // TODO: Support short-circuiting by returning a single element?
+    // TODO: Use a Set instead of a List? Seq instead of List? Upcast to Iterable to allow either?
+    foundMatchingElements: (C[W[A]], Set[W[A]], List[W[A]]) => B,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  ) extends Expr[I, B, OP]("containsAny") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, B] = v.visitContainsAny(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): ContainsAny[I, W, C, A, B, OP] =
       copy(debugging = debugging)
   }
 
