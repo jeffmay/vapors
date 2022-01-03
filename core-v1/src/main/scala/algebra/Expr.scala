@@ -106,7 +106,7 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
     * @see [[CombineHolder]] for details on how type-inference works.
     *
     * @param that the other expression to add
-    * @param add the type-level definition of how to add this type of output to that type of element
+    * @param add the type-level definition of how to add `this` output type to `that` output type
     *
     * @tparam CI a more specific input type to obey the laws of contravariance
     * @tparam LI the left-input to the add operation must be a supertype of the output of `this` expression
@@ -130,7 +130,12 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
     * @see [[Subtract]] for how to define new combinations of types that can be subtracted.
     *
     * @param that the other expression to subtract from the output of this expression
-    * @param sub the type-level definition of how to subtract that type of output from this type of output
+    * @param sub the type-level definition of how to subtract `that` output type from `this` output type
+    *
+    * @tparam CI a more specific input type to obey the laws of contravariance
+    * @tparam LI the left-input to the subtract operation must be a supertype of the output of `this` expression
+    * @tparam RI the right-input to the subtract operation must be a supertype of the output of `that` given expression
+    * @tparam RO the output of `that` given operation (must be a subtype of `RI`)
     *
     * @return a [[CombineHolder]] to allow for type-level calculation of the return type
     */
@@ -148,7 +153,12 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
     * @see [[CombineHolder]] for details on how type-inference works.
     *
     * @param that the other expression to multiply
-    * @param mult the type-level definition of how to multiply this type of output to that type of element
+    * @param mult the type-level definition of how to multiply `this` output type to `that` output type
+    *
+    * @tparam CI a more specific input type to obey the laws of contravariance
+    * @tparam LI the left-input to the multiply operation must be a supertype of the output of `this` expression
+    * @tparam RI the right-input to the multiply operation must be a supertype of the output of `that` given expression
+    * @tparam RO the output of `that` given operation (must be a subtype of `RI`)
     *
     * @return a [[CombineHolder]] to allow for type-level calculation of the return type
     */
@@ -168,7 +178,12 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
     * @see [[CombineHolder]] for details on how type-inference works.
     *
     * @param that the other expression to multiply
-    * @param div the type-level definition of how to divide this type of output by that type of output
+    * @param div the type-level definition of how to divide `this` output type by `that` output type
+    *
+    * @tparam CI a more specific input type to obey the laws of contravariance
+    * @tparam LI the left-input to the divide operation must be a supertype of the output of `this` expression
+    * @tparam RI the right-input to the divide operation must be a supertype of the output of `that` given expression
+    * @tparam RO the output of `that` given operation (must be a subtype of `RI`)
     *
     * @return a [[CombineHolder]] to allow for type-level calculation of the return type
     */
@@ -181,6 +196,23 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
     new CombineHolder(this, that, "divide", div.divide(_, _): @nowarn)
   }
 
+  /**
+    * Raise this expression to the power of the result of the given expression using the implicit
+    * definition for exponentiation [[Power]].
+    *
+    * @see [[Divide]] for how to define new combinations of types that can be divided into each other.
+    * @see [[CombineHolder]] for details on how type-inference works.
+    *
+    * @param that the other expression to raise this output to the power of
+    * @param pow the type-level definition of how to raise `this` output type to the exponent of `that` output type
+    *
+    * @tparam CI a more specific input type to obey the laws of contravariance
+    * @tparam LI the left-input to the power operation must be a supertype of the output of `this` expression
+    * @tparam RI the right-input to the power operation must be a supertype of the output of `that` given expression
+    * @tparam RO the output of `that` given operation (must be a subtype of `RI`)
+    *
+    * @return a [[CombineHolder]] to allow for type-level calculation of the return type
+    */
   def ^[CI <: I, LI >: O, RI >: RO, RO <: RI : OP](
     that: Expr[CI, RO, OP],
   )(implicit
