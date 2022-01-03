@@ -3,13 +3,13 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra._
-import data.{ExprState, ExtractValue, TypedFact, Window}
+import data.{ExprState, Extract, ExtractValue, TypedFact, Window}
 import debug.DebugArgs
 import dsl.{ConvertToHList, Sortable, ZipToShortest}
 import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
-import cats.{FlatMap, Foldable, Functor, Traverse}
+import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse}
 import shapeless.HList
 
 import scala.annotation.nowarn
@@ -105,6 +105,10 @@ object StandardEngine {
       debugging(expr).invokeDebugger(finalState)
       ExprResult.Const(expr, finalState)
     }
+
+    override def visitContainsAny[I, W[+_] : Extract, C[_] : Foldable, A, B : OP](
+      expr: Expr.ContainsAny[I, W, C, A, B, OP],
+    ): PO <:< I => ExprResult[PO, I, B, OP] = ???
 
     override def visitConvert[I, O : OP](expr: Expr.Convert[I, O, OP]): PO <:< I => ExprResult[PO, I, O, OP] = {
       implicit evPOisI =>

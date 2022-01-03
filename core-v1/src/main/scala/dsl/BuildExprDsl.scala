@@ -33,6 +33,8 @@ trait BuildExprDsl
 
   protected implicit def wrapConst: WrapConst[W, OP]
 
+  protected implicit def wrapContained: WrapContained[W, OP]
+
   protected implicit def wrapSelected: WrapSelected[W, OP]
 
   def ident[I](implicit opI: OP[W[I]]): Expr.Identity[W[I], OP]
@@ -233,6 +235,19 @@ You should prefer put your declaration of dependency on definitions close to whe
     constType: ConstOutputType[W, A],
   ): ConstExprBuilder[constType.Out, OP]
 
+  // TODO: Is this redundant syntax worth keeping around?
+  implicit def inSet[I, A](inputExpr: I ~:> W[A]): InSetExprBuilder[I, A]
+
+  abstract class InSetExprBuilder[-I, +A](proof: I ~:> W[A]) {
+
+    def in[NI <: I, V >: A](
+      validValuesExpr: NI ~:> Set[W[V]],
+    )(implicit
+      opA: OP[V],
+      opO: OP[W[Boolean]],
+    ): Expr.ContainsAny[NI, W, Id, V, W[Boolean], OP]
+  }
+
   implicit def in[I, T](expr: I ~:> W[T]): SelectExprBuilder[I, T]
 
   abstract class SelectExprBuilder[-I, A](proof: I ~:> W[A]) {
@@ -387,6 +402,14 @@ You should prefer put your declaration of dependency on definitions close to whe
       opA: OP[A],
       opO: OP[Option[W[A]]],
     ): Expr.Select[I, C[W[A]], Option[W[A]], Option[W[A]], OP]
+
+    def containsAny[NI <: I](
+      validValuesExpr: NI ~:> Set[W[A]],
+    )(implicit
+      foldableC: Foldable[C],
+      opA: OP[A],
+      opO: OP[W[Boolean]],
+    ): Expr.ContainsAny[NI, W, C, A, W[Boolean], OP]
 
     def head(
       implicit

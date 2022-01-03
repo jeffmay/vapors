@@ -124,6 +124,24 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
   ): Expr.ValuesOfType[T, W[T], OP] =
     Expr.ValuesOfType(factTypeSet, wrapFact.wrapFact(_))
 
+  override implicit def inSet[I, A](inputExpr: I ~:> W[A]): WrappedInSetExprBuilder[I, A] =
+    new WrappedInSetExprBuilder(inputExpr)
+
+  class WrappedInSetExprBuilder[-I, +A](inputExpr: I ~:> W[A]) extends InSetExprBuilder(inputExpr) {
+
+    override def in[NI <: I, V >: A](
+      validValuesExpr: NI ~:> Set[W[V]],
+    )(implicit
+      opA: OP[V],
+      opO: OP[W[Boolean]],
+    ): Expr.ContainsAny[NI, W, Id, V, W[Boolean], OP] =
+      Expr.ContainsAny[NI, W, Id, V, W[Boolean], OP](
+        inputExpr: I ~:> W[V], // prove to IntelliJ that inputExpr has the correct type via covariance
+        validValuesExpr,
+        wrapContained.wrapContained(_, _, _),
+      )
+  }
+
   override implicit def const[A](
     value: A,
   )(implicit
@@ -224,6 +242,20 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
     ): Expr.Select[I, C[W[A]], Option[W[A]], Option[W[A]], OP] = {
       val lens = VariantLens.id[C[W[A]]].at(index)
       Expr.Select(inputExpr, lens, (_, el) => el)
+    }
+
+    override def containsAny[NI <: I](
+      validValuesExpr: NI ~:> Set[W[A]],
+    )(implicit
+      traverseC: Foldable[C],
+      opA: OP[A],
+      opO: OP[W[Boolean]],
+    ): Expr.ContainsAny[NI, W, C, A, W[Boolean], OP] = {
+      Expr.ContainsAny(
+        inputExpr,
+        validValuesExpr,
+        wrapContained.wrapContained(_, _, _),
+      )
     }
 
     override def head(

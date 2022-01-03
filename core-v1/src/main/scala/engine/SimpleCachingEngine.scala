@@ -210,6 +210,27 @@ object SimpleCachingEngine {
       debugging(expr).invokeAndReturn(state(i, cached(o)))
     }
 
+    override def visitContainsAny[I, W[+_] : Extract, C[_] : Foldable, A, B : OP](
+      expr: Expr.ContainsAny[I, W, C, A, B, OP],
+    ): I => CachedResult[B] = memoize(expr, _) { i =>
+      val CachedResult(input, inputCacheState) = expr.inputExpr.visit(this)(i)
+      val CachedResult(wrappedValidSet, finalCacheState) =
+        visitWithUpdatedCache(i, expr.validValuesExpr, inputCacheState)
+      // TODO: Implement short-circuiting
+      // TODO: Move to CommonEngine
+      val W = Extract[W]
+      val valid = wrappedValidSet.map(W.extract)
+      val found = input
+        .foldRight(Eval.now(List.empty[W[A]])) { (wa, acc) =>
+          val a = W.extract(wa)
+          if (valid(a)) acc.map(wa :: _)
+          else acc
+        }
+        .value
+      val o = expr.foundMatchingElements(input, wrappedValidSet, found)
+      debugging(expr).invokeAndReturn(state((i, input, wrappedValidSet, found), cached(o, finalCacheState)))
+    }
+
     override def visitConvert[I, O : OP](expr: Expr.Convert[I, O, OP]): I => CachedResult[O] = memoize(expr, _) { i =>
       val o = expr.converter(i)
       debugging(expr).invokeAndReturn(state(i, cached(o)))
