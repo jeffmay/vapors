@@ -21,7 +21,7 @@ trait Divide[N, D] {
 object Divide extends DivideNumericImplicits {
   type Aux[N, D, O] = Divide[N, D] { type Out = O }
 
-  def apply[N, D, O](fn: (N, D) => O): Divide.Aux[N, D, O] = new Divide[N, D] {
+  def instance[N, D, O](fn: (N, D) => O): Divide.Aux[N, D, O] = new Divide[N, D] {
     override type Out = O
     override def divide(
       numerator: N,
@@ -35,25 +35,25 @@ object Divide extends DivideNumericImplicits {
 
 private[math] trait DivideNumericImplicits extends MidPriorityDivideFractionalImplicits {
 
-  implicit def fractional[I : Fractional]: Divide.Aux[I, I, I] = Divide(Fractional[I].div)
+  implicit def fractional[I : Fractional]: Divide.Aux[I, I, I] = Divide.instance(Fractional[I].div)
 
-  implicit def integral[I : Integral]: Divide.Aux[I, I, I] = Divide(Integral[I].quot)
+  implicit def integral[I : Integral]: Divide.Aux[I, I, I] = Divide.instance(Integral[I].quot)
 }
 
 private[math] trait MidPriorityDivideFractionalImplicits extends LowPriorityDivideNumericImplicits {
 
   implicit def fractionalCoerceLeft[N : Fractional, D](implicit ev: D => N): Divide.Aux[N, D, N] =
-    Divide(Fractional[N].div(_, _))
+    Divide.instance(Fractional[N].div(_, _))
 
   implicit def fractionalCoerceRight[N, D : Fractional](implicit ev: N => D): Divide.Aux[N, D, D] =
-    Divide(Fractional[D].div(_, _))
+    Divide.instance(Fractional[D].div(_, _))
 }
 
 private[math] trait LowPriorityDivideNumericImplicits {
 
   implicit def integralCoerceLeft[N : Integral, D](implicit ev: D => N): Divide.Aux[N, D, N] =
-    Divide(Integral[N].quot(_, _))
+    Divide.instance(Integral[N].quot(_, _))
 
   implicit def integralCoerceRight[N, D : Integral](implicit ev: N => D): Divide.Aux[N, D, D] =
-    Divide(Integral[D].quot(_, _))
+    Divide.instance(Integral[D].quot(_, _))
 }

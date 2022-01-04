@@ -21,7 +21,7 @@ trait Multiply[L, R] {
     * Swap the order of arguments to the combine method. This is based on the assumption that multiplication
     * is always commutative between the left and right argument types.
     */
-  final def swapArgs: Multiply.Aux[R, L, Out] = Multiply { (r, l) =>
+  final def swapArgs: Multiply.Aux[R, L, Out] = Multiply.instance { (r, l) =>
     multiply(l, r)
   }
 }
@@ -29,7 +29,7 @@ trait Multiply[L, R] {
 object Multiply extends MultiplyNumericImplicits with MultiplyStringImplicits {
   type Aux[L, R, O] = Multiply[L, R] { type Out = O }
 
-  def apply[L, R, O](fn: (L, R) => O): Multiply.Aux[L, R, O] = new Multiply[L, R] {
+  def instance[L, R, O](fn: (L, R) => O): Multiply.Aux[L, R, O] = new Multiply[L, R] {
     override type Out = O
     override def multiply(
       left: L,
@@ -42,19 +42,19 @@ object Multiply extends MultiplyNumericImplicits with MultiplyStringImplicits {
 
 private[math] trait MultiplyNumericImplicits extends LowPriorityMultiplyNumericImplicits {
 
-  implicit def numeric[I : Numeric]: Multiply.Aux[I, I, I] = Multiply(Numeric[I].times)
+  implicit def numeric[I : Numeric]: Multiply.Aux[I, I, I] = Multiply.instance(Numeric[I].times)
 }
 
 private[math] trait LowPriorityMultiplyNumericImplicits {
 
   implicit def numericCoerceLeft[L : Numeric, R : Numeric](implicit ev: R => L): Multiply.Aux[L, R, L] =
-    Multiply(Numeric[L].times(_, _))
+    Multiply.instance(Numeric[L].times(_, _))
 
   implicit def numericCoerceRight[L : Numeric, R : Numeric](implicit ev: L => R): Multiply.Aux[L, R, R] =
-    Multiply(Numeric[R].times(_, _))
+    Multiply.instance(Numeric[R].times(_, _))
 }
 
 private[math] trait MultiplyStringImplicits {
 
-  implicit val stringTimesInt: Multiply.Aux[String, Int, String] = Multiply(_ * _)
+  implicit val stringTimesInt: Multiply.Aux[String, Int, String] = Multiply.instance(_ * _)
 }
