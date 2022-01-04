@@ -241,7 +241,6 @@ class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
     }
   }
 
-  // TODO: These tests would be more useful in a wrapped DSL
   private val zipToHListExpr0 = ("a".const :: 1.const).toHList
   private val zipToHListOutput0 = "a" :: 1 :: HNil
 

@@ -4,7 +4,9 @@ import algebra.Expr
 import data.Justified
 import example.NestedSelectable
 import lens.VariantLens
+
 import munit._
+import shapeless.HNil
 
 class SimpleJustifiedDebuggingSpec extends FunSuite with CommonDebuggingSpec {
 
@@ -239,6 +241,43 @@ class SimpleJustifiedDebuggingSpec extends FunSuite with CommonDebuggingSpec {
         b: Option[NestedSelectable],
       ) = state.input
       val o: Option[Justified[NestedSelectable]] = state.output
+    }
+  }
+
+  private val zipToHListExpr0 = ("a".const :: 1.const).toHList
+  private val zipToHListOutput0 = "a" :: 1 :: HNil
+
+  test("debug zipToHList without initial input") {
+    testExpr(zipToHListExpr0).withNoInput.verifyDebuggerCalledWith { state =>
+      val i = state.input
+      assertInputEquals(None, i)
+      assertEquals(state.output.value, zipToHListOutput0)
+    }
+  }
+
+  test("debug zipToHList syntax works") {
+    zipToHListExpr0.debug { state =>
+      assertEquals(state.output.value, zipToHListOutput0)
+    }
+  }
+
+  private val zipToHListInput1 = 1
+  private val zipToHListJustifiedInput1 = Justified.byConst(zipToHListInput1)
+  private val zipToHListExpr1 = (ident[Int] :: "bananas".const).toHList
+  private val zipToHListOutput1 = zipToHListInput1 :: "bananas" :: HNil
+
+  test("debug zipToHList with input") {
+    testExpr(zipToHListExpr1).withInput(zipToHListJustifiedInput1).verifyDebuggerCalledWith { state =>
+      val i = state.input
+      assertInputEquals(Some(zipToHListJustifiedInput1), i)
+      assertEquals(state.output.value, zipToHListOutput1)
+    }
+  }
+
+  test("debug zipToHList with input syntax works") {
+    zipToHListExpr1.debug { state =>
+      assertEquals(state.input, zipToHListInput1)
+      assertEquals(state.output.value, zipToHListOutput1)
     }
   }
 }

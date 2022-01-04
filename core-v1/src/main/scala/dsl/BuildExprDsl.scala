@@ -99,14 +99,54 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
 
   implicit def xhlOps[I, WL <: HList](exprHList: ExprHList[I, WL, OP]): ExprHListOpsBuilder[I, WL]
 
+  /**
+    * Operations that can be performed on an [[ExprHList]].
+    *
+    * @param proof useful for inferring the correct type from the required input expression in subclasses
+    *
+    * @tparam I the input type
+    * @tparam WL the type of [[HList]] of all wrapped outputs of the given [[ExprHList]]
+    */
   abstract class ExprHListOpsBuilder[-I, WL <: HList](proof: ExprHList[I, WL, OP]) {
 
+    /**
+      * Combine all outputs of all the [[Expr]] nodes into an [[HList]] of the unwrapped elements
+      * then wrapped by the wrapper type [[W]].
+      *
+      * This is useful in combination with the [[ConvertHListExprBuilder.as]] operator to convert
+      * an expression of a wrapped [[HList]] into an expression of a wrapped product type.
+      *
+      * @param isCons evidence that the list is not [[ExprHNil]]
+      * @param opO the output parameter of the wrapped output [[UL]]
+      *
+      * @tparam UL the combined [[HList]] of all unwrapped output types of the embedded [[Expr]] nodes
+      *
+      * @return an expression from the shared input type to a wrapped [[UL]] [[HList]]s.
+      */
     def toHList[UL <: HList](
       implicit
       isCons: ZipToShortest.Aux[W, WL, OP, UL],
       opO: OP[W[UL]],
     ): I ~:> W[UL]
 
+    /**
+      * Zip all outputs of all the [[Expr]] nodes into a collection [[C]] of wrapped [[HList]] elements,
+      * limited by the length of the shortest collection.
+      *
+      * This is useful for zipping [[List]]s or [[Option]]s into a single list or option of the dependent parts
+      * so that each element can be converted to a product type within the container type.
+      *
+      * @see [[ZipToShortest]] for details on how this type-level definition is derived.
+      *
+      * @param zip definition of how to zip the elements of the collection [[C]] with elements of type [[WL]]
+      *            into a collection of wrapped [[UL]] elements with the length of the shortest collection.
+      * @param opO the output parameter of the collection of wrapped output values of type [[UL]]
+      *
+      * @tparam C the collection type (covariant because the [[Expr.ZipToShortestHList]] wrapper type is covariant)
+      * @tparam UL the combined [[HList]] of all unwrapped output types of the embedded [[Expr]] nodes
+      *
+      * @return an expression from the shared input type to a collection [[C]] of wrapped [[UL]] [[HList]]s.
+      */
     def zipToShortest[C[+_], UL <: HList](
       implicit
       zip: ZipToShortest.Aux[CW[C, W, +*], WL, OP, UL],
@@ -118,6 +158,21 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
 
   abstract class ConvertHListExprBuilder[-I, L <: HList](proof: I ~:> W[L]) {
 
+    /**
+      * Convert the wrapped [[HList]] output of type [[L]] from the given expression into the product type [[P]]
+      * as defined by the [[Generic]] representation implicitly available from shapeless.
+      *
+      * @param gen the compiler-provided definition of how to convert the generic representation, [[L]],
+      *            into the the product type [[P]]
+      * @param opL the unwrapped output parameter for [[L]]
+      * @param opWL the wrapped output parameter for [[L]]
+      * @param opP the unwrapped output parameter for [[P]]
+      * @param opWP the wrapped output parameter for [[P]]
+      *
+      * @tparam P the product type produced as output. Typically a user-defined case class.
+      *
+      * @return an expression that converts from a wrapped [[L]] to a wrapped [[P]]
+      */
     def as[P](
       implicit
       gen: Generic.Aux[P, L],

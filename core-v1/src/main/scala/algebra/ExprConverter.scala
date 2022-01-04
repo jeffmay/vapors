@@ -3,9 +3,9 @@ package com.rallyhealth.vapors.v1
 package algebra
 
 import data.{Extract, Window}
-import cats.Functor
-import com.rallyhealth.vapors.v1.dsl.WrapSelected
-import com.rallyhealth.vapors.v1.lens.DataPath
+import dsl.WrapSelected
+import lens.DataPath
+
 import shapeless.ops.hlist.Tupler
 import shapeless.{Generic, HList}
 
@@ -38,8 +38,6 @@ object ExprConverter {
     override val toString: String = s"ExprConverter.$conversionType"
   }
 
-  def asHListIdentity[O <: HList]: ExprConverter[O, O] = new Impl("asHList", identity)
-
   def asProductType[I <: HList, O](implicit gen: Generic.Aux[O, I]): ExprConverter[I, O] =
     new Impl("asProduct", gen.from)
 
@@ -52,8 +50,4 @@ object ExprConverter {
 
   def asTuple[I <: HList, O](implicit tupler: Tupler.Aux[I, O]): ExprConverter[I, O] =
     new Impl("asTuple", tupler.apply)
-
-  // TODO: Take more metadata about the bounds that this value is being converted to
-  def asWindow[O](buildWindow: O => Window[O]): ExprConverter[O, Window[O]] =
-    new Impl("asWindow", buildWindow)
 }

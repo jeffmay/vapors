@@ -102,8 +102,19 @@ trait DslTypes extends Any {
     */
   final type >=<[-I, +V] = Expr.WithinWindow[I, V, W, OP]
 
+  /**
+    * An [[ExprHList]] with a fixed [[OP]] type.
+    */
   final type XHL[-I, L <: HList] = ExprHList[I, L, OP]
 
+  /**
+    * An [[ExprHNil]] with a fixed [[OP]] type.
+    */
   final type XHNil = ExprHNil[OP]
+
+  /**
+    * An alias for constructing [[XHNil]] that is not suitable for pattern matching
+    * (you must use the [[ExprHNil.unapply]] method to match on this type properly)
+    */
   @inline final def XHNil: XHNil = ExprHNil[OP]
 }

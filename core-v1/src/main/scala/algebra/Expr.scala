@@ -42,11 +42,16 @@ import scala.annotation.nowarn
 sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product with Equals {
 
   /**
-    * TODO: Document better
+    * Prefix an expression node to create an [[ExprHList]] of size 2.
     *
-    * @param head the expression to prepend to the constructed [[ExprHList]]
+    * @see [[dsl.BuildExprDsl.ExprHListOpsBuilder]] for operations available on [[ExprHList]]
+    *
+    * @param headExpr the expression to prepend to the constructed [[ExprHList]]
+    *
+    * @tparam CI a more specific input type to obey the laws of contravariance
+    * @tparam H the output type of the given head expression
     */
-  def ::[CI <: I, H](head: Expr[CI, H, OP]): ExprHList[CI, H :: O :: HNil, OP] = head :: this :: ExprHNil[OP]
+  def ::[CI <: I, H](headExpr: Expr[CI, H, OP]): ExprHList[CI, H :: O :: HNil, OP] = headExpr :: this :: ExprHNil[OP]
 
   /**
     * Holds any [[Debugging]] hook to be run while running this expression.
@@ -894,6 +899,13 @@ object Expr {
       copy(debugging = debugging)
   }
 
+  /**
+    * Apply a serializable [[ExprConverter]] function to the input type [[I]] to view it as a value of type [[O]].
+    *
+    * This can be used to view an [[HList]] as a product type with the number and type of elements.
+    *
+    * @param converter the serializable [[ExprConverter]] used to view the input type [[I]] as [[O]]
+    */
   final case class Convert[-I, +O : OP, OP[_]](
     converter: ExprConverter[I, O],
     private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
@@ -903,6 +915,22 @@ object Expr {
       copy(debugging = debugging)
   }
 
+  /**
+    * Zip the output of the elements of all the [[Expr]] nodes of the given [[ExprHList]] up to the
+    * length of the shortest given collection.
+    *
+    * @see [[ZipToShortest]] for more details
+    *
+    * @param exprHList the fixed-size heterogeneous list of [[Expr]] nodes
+    * @param zip the definition of how to zip the output elements of the expressions
+    *
+    * @tparam I the input value type
+    * @tparam W the wrapper type (with the embedded collection type)
+    * @tparam WL an [[HList]] containing all the wrapped output types of all the [[Expr]] nodes embedded in
+    *            the [[exprHList]]
+    * @tparam UL an [[HList]] containing all the unwrapped output types of all the [[Expr]] nodes embedded
+    *            in the [[exprHList]]
+    */
   final case class ZipToShortestHList[-I, W[+_], +WL <: HList, +UL <: HList, OP[_]](
     exprHList: ExprHList[I, WL, OP],
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
