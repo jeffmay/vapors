@@ -32,7 +32,11 @@ class SimpleJustifiedToHListSpec extends FunSuite {
             (expected.name, expected.age :: HNil),
             NonEmptySeq.of(
               Justified.byConst(expected.name),
-              Justified.byConst(expected.age :: HNil),
+              Justified.byInference(
+                "map",
+                expected.age :: HNil,
+                NonEmptySeq.of(Justified.byConst(expected.age)),
+              ),
             ),
           ),
         ),
@@ -58,7 +62,11 @@ class SimpleJustifiedToHListSpec extends FunSuite {
             (expected.name, expected.age :: HNil),
             NonEmptySeq.of(
               Justified.byConst(expected.name),
-              Justified.byConst(expected.age :: HNil),
+              Justified.byInference(
+                "map",
+                expected.age :: HNil,
+                NonEmptySeq.of(Justified.byConst(expected.age)),
+              ),
             ),
           ),
         ),

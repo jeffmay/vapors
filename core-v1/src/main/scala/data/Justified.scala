@@ -304,12 +304,9 @@ object Justified {
 
   implicit val traverse: Traverse[Justified] = new Traverse[Justified] {
 
-    override def map[A, B](fa: Justified[A])(f: A => B): Justified[B] = fa match {
-      case Justified.ByConst(v) => Justified.byConst(f(v))
-      case Justified.ByConfig(v, k, d) => Justified.byConfig(f(v), k, d)
-      case _ =>
-        val derived = f(fa.value)
-        Justified.byInference("map", derived, NonEmptySeq.of(fa))
+    override def map[A, B](fa: Justified[A])(f: A => B): Justified[B] = {
+      val derived = f(fa.value)
+      Justified.byInference("map", derived, NonEmptySeq.of(fa))
     }
 
     override def traverse[G[_] : Applicative, A, B](fa: Justified[A])(f: A => G[B]): G[Justified[B]] = {
