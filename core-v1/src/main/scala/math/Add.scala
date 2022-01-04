@@ -22,7 +22,7 @@ trait Add[L, R] {
     * Swap the order of arguments to the combine method. This is based on the assumption that addition
     * is always commutative between the left and right argument types.
     */
-  final def swapArgs: Add.Aux[R, L, Out] = Add { (r, l) =>
+  final def swapArgs: Add.Aux[R, L, Out] = Add.instance { (r, l) =>
     add(l, r)
   }
 }
@@ -30,7 +30,7 @@ trait Add[L, R] {
 object Add extends AddNumericImplicits with AddJavaTimeImplicits {
   type Aux[L, R, O] = Add[L, R] { type Out = O }
 
-  def apply[L, R, O](fn: (L, R) => O): Add.Aux[L, R, O] = new Add[L, R] {
+  def instance[L, R, O](fn: (L, R) => O): Add.Aux[L, R, O] = new Add[L, R] {
     override type Out = O
     override def add(
       left: L,
@@ -43,21 +43,21 @@ object Add extends AddNumericImplicits with AddJavaTimeImplicits {
 
 private[math] trait AddNumericImplicits extends LowPriorityAddNumericImplicits {
 
-  implicit def numeric[I : Numeric]: Add.Aux[I, I, I] = Add(Numeric[I].plus)
+  implicit def numeric[I : Numeric]: Add.Aux[I, I, I] = Add.instance(Numeric[I].plus)
 }
 
 private[math] trait LowPriorityAddNumericImplicits {
 
   implicit def numericCoerceLeft[L : Numeric, R : Numeric](implicit ev: R => L): Add.Aux[L, R, L] =
-    Add(Numeric[L].plus(_, _))
+    Add.instance(Numeric[L].plus(_, _))
 
   implicit def numericCoerceRight[L : Numeric, R : Numeric](implicit ev: L => R): Add.Aux[L, R, R] =
-    Add(Numeric[R].plus(_, _))
+    Add.instance(Numeric[R].plus(_, _))
 }
 
 private[math] trait AddJavaTimeImplicits {
 
-  implicit val addDurationToInstant: Add.Aux[Instant, Duration, Instant] = Add(_.plus(_))
+  implicit val addDurationToInstant: Add.Aux[Instant, Duration, Instant] = Add.instance(_.plus(_))
 
-  implicit val addPeriodToLocalDate: Add.Aux[LocalDate, Period, LocalDate] = Add(_.plus(_))
+  implicit val addPeriodToLocalDate: Add.Aux[LocalDate, Period, LocalDate] = Add.instance(_.plus(_))
 }

@@ -22,7 +22,7 @@ trait Subtract[L, R] {
 object Subtract extends SubtractNumericImplicits with SubtractJavaTimeImplicits {
   type Aux[L, R, O] = Subtract[L, R] { type Out = O }
 
-  def apply[L, R, O](fn: (L, R) => O): Subtract.Aux[L, R, O] = new Subtract[L, R] {
+  def instance[L, R, O](fn: (L, R) => O): Subtract.Aux[L, R, O] = new Subtract[L, R] {
     override type Out = O
     override def subtract(
       left: L,
@@ -36,21 +36,21 @@ object Subtract extends SubtractNumericImplicits with SubtractJavaTimeImplicits 
 
 private[math] trait SubtractNumericImplicits extends LowPrioritySubtractNumericImplicits {
 
-  implicit def numeric[I : Numeric]: Subtract.Aux[I, I, I] = Subtract(Numeric[I].minus)
+  implicit def numeric[I : Numeric]: Subtract.Aux[I, I, I] = Subtract.instance(Numeric[I].minus)
 }
 
 private[math] trait LowPrioritySubtractNumericImplicits {
 
   implicit def numericCoerceLeft[L : Numeric, R : Numeric](implicit ev: R => L): Subtract.Aux[L, R, L] =
-    Subtract(Numeric[L].minus(_, _))
+    Subtract.instance(Numeric[L].minus(_, _))
 
   implicit def numericCoerceRight[L : Numeric, R : Numeric](implicit ev: L => R): Subtract.Aux[L, R, R] =
-    Subtract(Numeric[R].minus(_, _))
+    Subtract.instance(Numeric[R].minus(_, _))
 }
 
 private[math] trait SubtractJavaTimeImplicits {
 
-  implicit val subtractDurationFromInstant: Subtract.Aux[Instant, Duration, Instant] = Subtract(_.minus(_))
+  implicit val subtractDurationFromInstant: Subtract.Aux[Instant, Duration, Instant] = Subtract.instance(_.minus(_))
 
-  implicit val subtractPeriodFromLocalDate: Subtract.Aux[LocalDate, Period, LocalDate] = Subtract(_.minus(_))
+  implicit val subtractPeriodFromLocalDate: Subtract.Aux[LocalDate, Period, LocalDate] = Subtract.instance(_.minus(_))
 }

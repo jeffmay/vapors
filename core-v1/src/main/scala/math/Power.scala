@@ -21,7 +21,7 @@ trait Power[B, E] {
 object Power extends PowerNumericImplicits {
   type Aux[B, E, O] = Power[B, E] { type Out = O }
 
-  def apply[B, E, O](fn: (B, E) => O): Power.Aux[B, E, O] = new Power[B, E] {
+  def instance[B, E, O](fn: (B, E) => O): Power.Aux[B, E, O] = new Power[B, E] {
     override type Out = O
     override def power(
       base: B,
@@ -37,7 +37,7 @@ private[math] trait PowerNumericImplicits {
   implicit def numeric[B : Numeric, E : Numeric]: Power.Aux[B, E, Double] = {
     val L = Numeric[B]
     val R = Numeric[E]
-    Power { (l, r) =>
+    Power.instance { (l, r) =>
       Math.pow(L.toDouble(l), R.toDouble(r))
     }
   }
