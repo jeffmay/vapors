@@ -2,10 +2,11 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import algebra.Expr
+import algebra.{CombineHolder, Expr}
 import data.{Extract, ExtractValue, FactTypeSet}
 import dsl.SelectOutputType.Aux
 import lens.VariantLens
+import math.Power
 
 import cats.{Foldable, Functor, FunctorFilter}
 
@@ -31,6 +32,15 @@ trait WrappedExprDsl extends BuildExprDsl {
     opTs: OP[Seq[W[T]]],
   ): Expr.ValuesOfType[T, W[T], OP] =
     Expr.ValuesOfType(factTypeSet, wrapFact.wrapFact(_))
+
+  override def pow[I, L, R](
+    leftExpr: I ~:> W[L],
+    rightExpr: I ~:> W[R],
+  )(implicit
+    opR: OP[W[R]],
+    pow: Power[W[L], W[R]],
+  ): CombineHolder[I, W[L], W[L], W[R], W[R], pow.Out, OP] =
+    (leftExpr ^ rightExpr)(opR, pow)
 
   override implicit def const[A](
     value: A,

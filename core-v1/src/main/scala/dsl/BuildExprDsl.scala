@@ -33,15 +33,13 @@ trait BuildExprDsl extends DebugExprDsl {
     opTs: OP[Seq[W[T]]],
   ): Expr.ValuesOfType[T, W[T], OP]
 
-  final def pow[I, L, R](
+  def pow[I, L, R](
     leftExpr: I ~:> W[L],
     rightExpr: I ~:> W[R],
   )(implicit
     opR: OP[W[R]],
     pow: Power[W[L], W[R]],
-  ): CombineHolder[I, W[L], W[L], W[R], W[R], pow.Out, OP] = {
-    (leftExpr ^ rightExpr)(opR, pow)
-  }
+  ): CombineHolder[I, W[L], W[L], W[R], W[R], pow.Out, OP]
 
   implicit final def logical[I, B](expr: I ~:> W[B]): LogicalExprOps[I, B, W, OP] = new LogicalExprOps(expr)
 

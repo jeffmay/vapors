@@ -9,6 +9,7 @@ import logic.Logic
 
 import cats.{Foldable, Functor, FunctorFilter, Traverse}
 import com.rallyhealth.vapors.v1.dsl.ConstOutputType.Aux
+import com.rallyhealth.vapors.v1.math.Power
 import shapeless.<:!<
 
 trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with UnwrappedDslTypes {
@@ -37,6 +38,15 @@ trait UnwrappedBuildExprDsl extends BuildExprDsl with UnwrappedImplicits with Un
     opTs: OP[Seq[T]],
   ): Expr.ValuesOfType[T, T, OP] =
     Expr.ValuesOfType(factTypeSet, _.value)
+
+  override final def pow[I, L, R](
+    leftExpr: I ~:> L,
+    rightExpr: I ~:> R,
+  )(implicit
+    opR: OP[R],
+    pow: Power[L, R],
+  ): CombineHolder[I, L, L, R, R, pow.Out, OP] =
+    (leftExpr ^ rightExpr)(opR, pow)
 
   override implicit final def const[A](
     value: A,
