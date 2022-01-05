@@ -8,7 +8,7 @@ import lens.{CollectInto, IterableInto, VariantLens}
 import math.Power
 
 import cats.data.NonEmptySeq
-import cats.{FlatMap, Foldable, Functor, Id, Reducible, Traverse}
+import cats.{FlatMap, Foldable, Functor, Id, Order, Reducible, Traverse}
 import shapeless.{Generic, HList, Nat}
 
 trait WrappedBuildExprDsl extends BuildExprDsl {
@@ -231,7 +231,7 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
       reducibleC: Reducible[C],
       opA: OP[W[A]],
     ): Expr.Select[I, C[W[A]], W[A], W[A], OP] = {
-      val lens = VariantLens.id[C[W[A]]].head
+      val lens = VariantLens.id[C[W[A]]].head[C, W[A]]
       Expr.Select(inputExpr, lens, (_, head) => head)
     }
 
@@ -328,6 +328,26 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
       opDO: OP[D[W[O]]],
     ): AndThen[I, D[D[W[O]]], D[W[O]]] =
       inputExpr.andThen(Expr.MapEvery[D, W[A], D[W[O]], OP](exprBuilder(ident))).andThen(Expr.Flatten())
+
+    override def min(
+      implicit
+      reducibleC: Reducible[C],
+      orderA: Order[A],
+      opO: OP[W[A]],
+    ): AndThen[I, C[W[A]], W[A]] =
+      inputExpr.andThen {
+        Expr.CustomFunction("min", Reducible[C].minimumBy(_)(extract.extract))
+      }
+
+    override def max(
+      implicit
+      reducibleC: Reducible[C],
+      orderA: Order[A],
+      opO: OP[W[A]],
+    ): AndThen[I, C[W[A]], W[A]] =
+      inputExpr.andThen {
+        Expr.CustomFunction("max", Reducible[C].maximumBy(_)(extract.extract))
+      }
 
     override def isEmpty(
       implicit

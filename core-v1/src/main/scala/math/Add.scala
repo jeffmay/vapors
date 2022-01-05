@@ -30,6 +30,7 @@ trait Add[L, R] {
 
 object Add extends AddNumericImplicits with AddJavaTimeImplicits {
   type Aux[L, R, O] = Add[L, R] { type Out = O }
+  type Id[N] = Add[N, N] { type Out = N }
 
   def instance[L, R, O](fn: (L, R) => O): Add.Aux[L, R, O] = new Add[L, R] {
     override type Out = O

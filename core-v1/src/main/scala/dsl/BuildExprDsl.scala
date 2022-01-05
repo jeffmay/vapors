@@ -6,7 +6,7 @@ import algebra._
 import data._
 import lens.{CollectInto, IterableInto, VariantLens}
 import logic.{Conjunction, Disjunction, Logic, Negation}
-import math.Power
+import math.{Add, Power}
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
 import cats.{FlatMap, Foldable, Functor, Id, Order, Reducible, Traverse}
@@ -126,6 +126,35 @@ You should prefer put your declaration of dependency on definitions close to whe
     opT: OP[T],
     opTs: OP[Seq[W[T]]],
   ): Expr.ValuesOfType[T, W[T], OP]
+
+  def min[I, N : Order](
+    first: I ~:> W[N],
+    rest: I ~:> W[N]*,
+  )(implicit
+    opSWN: OP[NonEmptySeq[W[N]]],
+    opWN: OP[W[N]],
+  ): I ~:> W[N] =
+    wrapAll(NonEmptySeq(first, rest)).min
+
+  def max[I, N : Order](
+    first: I ~:> W[N],
+    rest: I ~:> W[N]*,
+  )(implicit
+    opSWN: OP[NonEmptySeq[W[N]]],
+    opWN: OP[W[N]],
+  ): I ~:> W[N] =
+    wrapAll(NonEmptySeq(first, rest)).max
+
+  def sum[I, N : Numeric](
+    first: I ~:> W[N],
+    rest: I ~:> W[N]*,
+  )(implicit
+    addWN: Add.Id[W[N]],
+    opSWN: OP[NonEmptySeq[W[N]]],
+    opN: OP[N],
+    opTWN: OP[(W[N], W[N])],
+    opWN: OP[W[N]],
+  ): I ~:> W[N] = wrapAll(NonEmptySeq(first, rest)).sum
 
   def pow[I, L, R](
     leftExpr: I ~:> W[L],
@@ -426,6 +455,20 @@ You should prefer put your declaration of dependency on definitions close to whe
       opDO: OP[D[W[O]]],
     ): AndThen[I, D[D[W[O]]], D[W[O]]]
 
+    def min(
+      implicit
+      reducibleC: Reducible[C],
+      orderA: Order[A],
+      opO: OP[W[A]],
+    ): AndThen[I, C[W[A]], W[A]]
+
+    def max(
+      implicit
+      reducibleC: Reducible[C],
+      orderA: Order[A],
+      opO: OP[W[A]],
+    ): AndThen[I, C[W[A]], W[A]]
+
     def isEmpty(
       implicit
       sizeCompare: SizeComparable[C[W[A]], W[Int], W[Boolean]],
@@ -449,6 +492,17 @@ You should prefer put your declaration of dependency on definitions close to whe
       sortable: Sortable[C, W[A]],
       opAs: OP[C[W[A]]],
     ): AndThen[I, C[W[A]], C[W[A]]]
+
+    def sum(
+      implicit
+      foldableC: Foldable[C],
+      addA: Add.Id[W[A]],
+      numericA: Numeric[A],
+      opA: OP[A],
+      opAA: OP[(W[A], W[A])],
+      opO: OP[W[A]],
+    ): Expr.FoldLeft[I, C, W[A], W[A], OP] =
+      this.foldLeft(Expr.Const[W[A], OP](wrapConst.wrapConst(numericA.zero)))(_ + _)
 
     def to[S[_]](
       implicit

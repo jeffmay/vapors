@@ -6,10 +6,10 @@ import algebra._
 import data.{Extract, FactType, FactTypeSet, SliceRange, TypedFact}
 import lens.{CollectInto, IterableInto, VariantLens}
 import logic.Logic
-import math.Power
+import math.{Add, Power}
 
 import cats.data.NonEmptySeq
-import cats.{FlatMap, Foldable, Functor, Id, Reducible, Traverse}
+import cats.{FlatMap, Foldable, Functor, Id, Order, Reducible, Traverse}
 import shapeless.{Generic, HList, Nat}
 
 trait UnwrappedBuildExprDsl
@@ -85,6 +85,35 @@ trait UnwrappedBuildExprDsl
     opTs: OP[Seq[T]],
   ): Expr.ValuesOfType[T, T, OP] =
     Expr.ValuesOfType(factTypeSet, _.value)
+
+  override final def min[I, N : Order](
+    first: I ~:> N,
+    rest: I ~:> N*,
+  )(implicit
+    opSWN: OP[NonEmptySeq[N]],
+    opWN: OP[N],
+  ): I ~:> N =
+    super.min[I, N](first, rest: _*)
+
+  override final def max[I, N : Order](
+    first: I ~:> N,
+    rest: I ~:> N*,
+  )(implicit
+    opSWN: OP[NonEmptySeq[N]],
+    opWN: OP[N],
+  ): I ~:> N =
+    super.max[I, N](first, rest: _*)
+
+  override final def sum[I, N : Numeric](
+    first: I ~:> N,
+    rest: I ~:> N*,
+  )(implicit
+    addWN: Add.Id[N],
+    opSWN: OP[NonEmptySeq[N]],
+    opN: OP[N],
+    opTWN: OP[(N, N)],
+    opWN: OP[N],
+  ): I ~:> N = super.sum[I, N](first, rest: _*)(Numeric[N], addWN, opSWN, opN, opTWN, opWN)
 
   override final def pow[I, L, R](
     leftExpr: I ~:> L,
@@ -245,7 +274,7 @@ trait UnwrappedBuildExprDsl
       reducibleC: Reducible[C],
       opA: OP[A],
     ): Expr.Select[I, C[A], A, A, OP] = {
-      val lens = VariantLens.id[C[A]].head
+      val lens = VariantLens.id[C[A]].head[C, A]
       Expr.Select(inputExpr, lens, (_, head) => head)
     }
 
@@ -328,6 +357,26 @@ trait UnwrappedBuildExprDsl
     ): AndThen[I, D[D[O]], D[O]] =
       inputExpr.andThen(Expr.MapEvery[D, A, D[O], OP](exprBuilder(ident))).andThen(Expr.Flatten())
 
+    override def min(
+      implicit
+      reducibleC: Reducible[C],
+      orderA: Order[A],
+      opO: OP[A],
+    ): AndThen[I, C[A], A] =
+      inputExpr.andThen {
+        Expr.CustomFunction("min", Reducible[C].minimum(_: C[A]))
+      }
+
+    override def max(
+      implicit
+      reducibleC: Reducible[C],
+      orderA: Order[A],
+      opO: OP[A],
+    ): AndThen[I, C[A], A] =
+      inputExpr.andThen {
+        Expr.CustomFunction("min", Reducible[C].maximum(_: C[A]))
+      }
+
     override def isEmpty(
       implicit
       sizeCompare: SizeComparable[C[A], Int, Boolean],
@@ -354,6 +403,16 @@ trait UnwrappedBuildExprDsl
       opAs: OP[C[A]],
     ): AndThen[I, C[A], C[A]] =
       inputExpr.andThen(Expr.Sorted())
+
+    override def sum(
+      implicit
+      foldableC: Foldable[C],
+      addA: Add.Id[A],
+      numericA: Numeric[A],
+      opA: OP[A],
+      opAA: OP[(A, A)],
+      opO: OP[A],
+    ): Expr.FoldLeft[I, C, A, A, OP] = super.sum(foldableC, addA, numericA, opA, opAA, opO)
 
     override def to[S[_]](
       implicit
