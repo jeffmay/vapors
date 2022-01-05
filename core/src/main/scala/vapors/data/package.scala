@@ -26,4 +26,7 @@ package object data {
     * @note not to be confused with a [[FactTypeSet]] (which is a set of [[FactType]]s, with not values)
     */
   final type TypedFactSet[T] = Set[TypedFact[T]]
+
+  @deprecated("Use com.rallyhealth.vapors.v1.data.TimeOrder instead.", "1.0.0")
+  type TimeOrder = vapors.v1.data.TimeOrder
 }
