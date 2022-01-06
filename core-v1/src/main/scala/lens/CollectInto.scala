@@ -93,4 +93,27 @@ object CollectInto {
   implicit def nonEmptyVector[A, B]: CollectInto.Aux[NonEmptyVector, A, B, Vector] =
     new CollectUsingFactory[NonEmptyVector, A, B, Vector](_.toVector)
 
+  private final class CollectIntoOption[A, B] extends CollectInto[Option, A, B] {
+
+    override type Out[a] = Option[a]
+
+    override def filter(
+      collection: Option[A],
+      collector: A => Boolean,
+    )(implicit
+      ev: A <:< B,
+    ): Option[B] =
+      collection.collect {
+        case a if collector(a) => ev(a)
+      }
+
+    override def collectSomeWithIndex(
+      collection: Option[A],
+      collector: (A, Int) => Option[B],
+    ): Option[B] =
+      collection.collect(Function.unlift(collector(_, 0)))
+  }
+
+  implicit def option[A, B]: CollectInto.Aux[Option, A, B, Option] = new CollectIntoOption[A, B]
+
 }
