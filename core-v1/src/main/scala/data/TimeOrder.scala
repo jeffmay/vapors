@@ -8,29 +8,44 @@ import cats.Order
 import java.time._
 import java.time.chrono.{ChronoLocalDate, ChronoLocalDateTime, ChronoZonedDateTime}
 
-abstract class TimeOrder {
+class TimeOrder {
 
-  def modify[T](order: Order[T]): Order[T]
+  protected def modify[T](order: Order[T]): Order[T] = order
 
-  implicit val latestLocalDateFirst: Order[LocalDate] = modify {
+  @deprecated("Use orderLocalDate instead.", "1.0.0")
+  def latestLocalDateFirst: Order[LocalDate] = orderLocalDate
+
+  implicit val orderLocalDate: Order[LocalDate] = modify {
     Order.fromComparable[ChronoLocalDate].contramap(identity[ChronoLocalDate])
   }
 
-  implicit val latestLocalDateTimeFirst: Order[LocalDateTime] = modify {
+  @deprecated("Use orderLocalDate instead.", "1.0.0")
+  def latestLocalDateTimeFirst: Order[LocalDateTime] = orderLocalDateTime
+
+  implicit val orderLocalDateTime: Order[LocalDateTime] = modify {
     Order
       .fromComparable[ChronoLocalDateTime[_ <: ChronoLocalDate]]
       .contramap(identity[ChronoLocalDateTime[_ <: ChronoLocalDate]])
   }
 
-  implicit val latestLocalTimeFirst: Order[LocalTime] = modify {
+  @deprecated("Use orderLocalDate instead.", "1.0.0")
+  def latestLocalTimeFirst: Order[LocalTime] = orderLocalTime
+
+  implicit val orderLocalTime: Order[LocalTime] = modify {
     Order.fromComparable
   }
 
-  implicit val latestInstantFirst: Order[Instant] = modify {
+  @deprecated("Use orderLocalDate instead.", "1.0.0")
+  def latestInstantFirst: Order[Instant] = orderInstant
+
+  implicit val orderInstant: Order[Instant] = modify {
     Order.fromComparable
   }
 
-  implicit val latestZonedDateTimeFirst: Order[ZonedDateTime] = modify {
+  @deprecated("Use orderLocalDate instead.", "1.0.0")
+  def latestZonedDateTimeFirst: Order[ZonedDateTime] = orderZonedDateTime
+
+  implicit val orderZonedDateTime: Order[ZonedDateTime] = modify {
     Order
       .fromComparable[ChronoZonedDateTime[_ <: ChronoLocalDate]]
       .contramap(identity[ChronoZonedDateTime[_ <: ChronoLocalDate]])
@@ -40,10 +55,8 @@ abstract class TimeOrder {
 object TimeOrder {
 
   final object YoungestFirst extends TimeOrder {
-    override def modify[T](order: Order[T]): Order[T] = Order.reverse(order)
+    override protected def modify[T](order: Order[T]): Order[T] = Order.reverse(order)
   }
 
-  final object OldestFirst extends TimeOrder {
-    override def modify[T](order: Order[T]): Order[T] = Order.reverse(order)
-  }
+  final object OldestFirst extends TimeOrder
 }
