@@ -7,6 +7,23 @@ class SimpleFilterSpec extends FunSuite {
 
   import dsl.simple._
 
+  test("Some[Int].filter returns Some[Int]") {
+    val input = Some(1)
+    val expr = input.const.filter(_ < 3.const)
+    assertEquals(expr.run(), input)
+  }
+
+  test("Some[Int].filter returns None") {
+    val input = Some(1)
+    val expr = input.const.filter(_ < 0.const)
+    assertEquals(expr.run(), None)
+  }
+
+  test("None.filter returns None") {
+    val expr = none[Int].filter(_ => true.const)
+    assertEquals(expr.run(), None)
+  }
+
   test("Seq[Int].filter") {
     val expr = Seq(1, 2, 3, 4).const.filter(_ < 3.const)
     val res = expr.run()

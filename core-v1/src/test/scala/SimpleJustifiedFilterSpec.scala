@@ -10,6 +10,26 @@ class SimpleJustifiedFilterSpec extends FunSuite {
 
   import dsl.simple.justified._
 
+  test("Some[Justified[Int]].filter returns Some[Int]") {
+    val input = Some(1)
+    val expr = input.const.filter(_ < 3.const)
+    val observed = expr.run()
+    val expected = Some(Justified.bySelection(1, DataPath.empty.atIndex(0), Justified.byConst(input)))
+    assertEquals(observed, expected)
+  }
+
+  test("Some[Justified[Int]].filter returns None") {
+    val input = Some(1)
+    val expr = input.const.filter(_ < 0.const)
+    val observed = expr.run()
+    assertEquals(observed, None)
+  }
+
+  test("None.filter returns None") {
+    val expr = none[Int].filter(_ => true.const)
+    assertEquals(expr.run(), None)
+  }
+
   test("Seq[Justified[Int]].filter") {
     val input = Seq(1, 2, 3, 4)
     val expr = input.const.filter(_ < 3.const)
