@@ -581,8 +581,8 @@ You should prefer put your declaration of dependency on definitions close to whe
     opO: OP[W[Window[V]]],
   ): WindowComparisonExprBuilder[I, V] = new WindowComparisonExprBuilder(valueExpr)
 
-  class WindowComparisonExprBuilder[I, V : Order : OP](
-    protected val valueExpr: I ~:> W[V],
+  class WindowComparisonExprBuilder[-I, V : Order : OP](
+    protected val lhsExpr: I ~:> W[V],
   )(implicit
     opV: OP[W[V]],
     opB: OP[W[Boolean]],
@@ -590,16 +590,16 @@ You should prefer put your declaration of dependency on definitions close to whe
     opO: OP[W[Window[V]]],
   ) {
 
-    private def compareExpr(
+    private def compareExpr[NI <: I](
       name: String, // TODO: Add the name to the WithinWindow somehow?
-      that: Expr[I, W[V], OP],
+      that: Expr[NI, W[V], OP],
     )(
       // TODO: Use a lens here? Maybe some kind of "wrap" operation?
       using: V => Window[V],
-    ): I >=< V = {
+    ): NI >=< V = {
       val lens = VariantLens.id[W[V]].extractValue
       Expr.WithinWindow(
-        valueExpr,
+        lhsExpr,
         that match {
           case Expr.Const(wv, _) =>
             val v = Extract[W].extract(wv)
@@ -607,7 +607,7 @@ You should prefer put your declaration of dependency on definitions close to whe
             val wrappedWindow = wrapConst.wrapConst(window)
             Expr.Const[W[Window[V]], OP](wrappedWindow)
           case _ =>
-            Expr.Select[I, W[V], V, W[Window[V]], OP](
+            Expr.Select[NI, W[V], V, W[Window[V]], OP](
               that,
               lens,
               (wv, a) => wrapSelected.wrapSelected(wv, lens.path, using(a)),
@@ -616,17 +616,17 @@ You should prefer put your declaration of dependency on definitions close to whe
       )
     }
 
-    def <(expr: I ~:> W[V]): I >=< V = compareExpr("<", expr)(Window.lessThan(_))
+    def <[NI <: I](expr: NI ~:> W[V]): NI >=< V = compareExpr("<", expr)(Window.lessThan(_))
 
-    def <=(expr: I ~:> W[V]): I >=< V = compareExpr("<=", expr)(Window.lessThanOrEqual(_))
+    def <=[NI <: I](expr: NI ~:> W[V]): NI >=< V = compareExpr("<=", expr)(Window.lessThanOrEqual(_))
 
-    def >(expr: I ~:> W[V]): I >=< V = compareExpr(">", expr)(Window.greaterThan(_))
+    def >[NI <: I](expr: NI ~:> W[V]): NI >=< V = compareExpr(">", expr)(Window.greaterThan(_))
 
-    def >=(expr: I ~:> W[V]): I >=< V = compareExpr(">=", expr)(Window.greaterThanOrEqual(_))
+    def >=[NI <: I](expr: NI ~:> W[V]): NI >=< V = compareExpr(">=", expr)(Window.greaterThanOrEqual(_))
 
-    def within(expr: I ~:> W[Window[V]]): I >=< V = this >=< expr
+    def within[NI <: I](expr: NI ~:> W[Window[V]]): NI >=< V = this >=< expr
 
-    def >=<(expr: I ~:> W[Window[V]]): I >=< V = Expr.WithinWindow(valueExpr, expr)
+    def >=<[NI <: I](expr: NI ~:> W[Window[V]]): NI >=< V = Expr.WithinWindow(lhsExpr, expr)
   }
 
   implicit def isEq[I, V : OP](
@@ -638,7 +638,7 @@ You should prefer put your declaration of dependency on definitions close to whe
   ): EqualComparisonExprBuilder[I, V] =
     new EqualComparisonExprBuilder(valueExpr)
 
-  class EqualComparisonExprBuilder[I, V : OP](
+  class EqualComparisonExprBuilder[-I, V : OP](
     protected val leftExpr: I ~:> W[V],
   )(implicit
     eqV: EqualComparable[W, V, OP],
@@ -646,9 +646,9 @@ You should prefer put your declaration of dependency on definitions close to whe
     opB: OP[W[Boolean]],
   ) {
 
-    def ===(rightExpr: I ~:> W[V]): Expr.IsEqual[I, V, W, OP] = Expr.IsEqual(leftExpr, rightExpr)
+    def ===[NI <: I](rightExpr: NI ~:> W[V]): Expr.IsEqual[NI, V, W, OP] = Expr.IsEqual(leftExpr, rightExpr)
 
-    def =!=(rightExpr: I ~:> W[V]): Expr.Not[I, Boolean, W, OP] =
+    def =!=[NI <: I](rightExpr: NI ~:> W[V]): Expr.Not[NI, Boolean, W, OP] =
       Expr.Not(Expr.IsEqual(leftExpr, rightExpr))
   }
 }
