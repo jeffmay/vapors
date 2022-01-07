@@ -273,8 +273,7 @@ object StandardEngine {
     override def visitWhen[I, B : ExtractValue.AsBoolean, O : OP](
       expr: Expr.When[I, B, O, OP],
     ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evPOisI =>
-      val initFalseResults: Seq[ExprResult[PO, I, B, OP]] =
-        new Array[ExprResult[PO, I, B, OP]](expr.conditionBranches.length).toSeq
+      val initFalseResults: Seq[ExprResult[PO, I, B, OP]] = Vector()
       val initFoundResult: Option[(Option[ExprResult[PO, I, B, OP]], ExprResult[PO, I, O, OP], Int)] = None
       val (falseResults, foundResult) =
         expr.conditionBranches.toSeq.zipWithIndex.foldLeft((initFalseResults, initFoundResult)) {
