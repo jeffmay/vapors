@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package algebra
 
 import data.ExtractValue.AsBoolean
-import data.{ExprState, Window}
+import data.{ExprState, ExtractValue, Window}
 import dsl.Sortable
 import logic.{Conjunction, Disjunction, Negation}
 
@@ -130,6 +130,8 @@ object ExprResult {
     ): C[A] ~>: C[A]
 
     def visitValuesOfType[T, O](result: ValuesOfType[PO, T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~>: Seq[O]
+
+    def visitWhen[I, B, O : OP](result: When[PO, I, B, O, OP]): I ~>: O
 
     def visitWithinWindow[I, V, W[+_]](
       result: WithinWindow[PO, I, V, W, OP],
@@ -346,6 +348,26 @@ object ExprResult {
     opTs: OP[Seq[O]],
   ) extends ExprResult[PO, Any, Seq[O], OP] {
     override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[Any, Seq[O]] = v.visitValuesOfType(this)
+  }
+
+  /**
+    * The result of running [[Expr.When]]
+    *
+    * @param thenExprIndex the index of the [[Expr.When.thenExpressions]] used to produce the outputResult
+    *                      (when no condition matches, it will be the length of the [[Expr.When.conditionBranches]])
+    * @param falseConditionResults all condition results that produced a false result before the output was produced
+    * @param matchingConditionResult the condition result that returned true, if any.
+    * @param outputResult the result of the matched condition or default expression
+    */
+  final case class When[+PO, -I, +B : ExtractValue.AsBoolean, +O : OP, OP[_]](
+    expr: Expr.When[I, B, O, OP],
+    state: ExprState[PO, O],
+    thenExprIndex: Int,
+    falseConditionResults: Seq[ExprResult[PO, I, B, OP]],
+    matchingConditionResult: Option[ExprResult[PO, I, B, OP]],
+    outputResult: ExprResult[PO, I, O, OP],
+  ) extends ExprResult[PO, I, O, OP] {
+    override def visit[G[-_, +_]](v: Visitor[PO, G, OP]): G[I, O] = v.visitWhen(this)
   }
 
   /**

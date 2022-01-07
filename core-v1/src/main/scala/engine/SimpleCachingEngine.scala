@@ -331,6 +331,32 @@ object SimpleCachingEngine {
       debugging(expr).invokeAndReturn(state(i, cached(o)))
     }
 
+    override def visitWhen[I, B : ExtractValue.AsBoolean, O : OP](expr: Expr.When[I, B, O, OP]): I => CachedResult[O] =
+      memoize(expr, _) { i =>
+        val (cacheState, firstResult) =
+          expr.conditionBranches.zipWithIndex.foldLeft((resultCache, None: Option[(O, Int)])) {
+            case ((cacheState, None), (cb, idx)) =>
+              val condResult = visitWithUpdatedCache(i, cb.whenExpr, cacheState)
+              val condIsMet = ExtractValue.asBoolean(condResult.value)
+              if (condIsMet) {
+                val branchResult = visitWithUpdatedCache(i, cb.thenExpr, condResult.cacheState)
+                (branchResult.cacheState, Some(branchResult.value, idx))
+              } else {
+                (condResult.cacheState, None)
+              }
+            case (found @ (_, Some(_)), _) => found
+          }
+        val (o, idx, finalCacheState) = firstResult
+          .map {
+            case (o, idx) => (o, idx, cacheState)
+          }
+          .getOrElse {
+            val defaultResult = visitWithUpdatedCache(i, expr.defaultExpr, cacheState)
+            (defaultResult.value, expr.conditionBranches.length, defaultResult.cacheState)
+          }
+        debugging(expr).invokeAndReturn(state((i, idx), cached(o, finalCacheState)))
+      }
+
     override def visitWithinWindow[I, V, F[+_]](
       expr: Expr.WithinWindow[I, V, F, OP],
     )(implicit

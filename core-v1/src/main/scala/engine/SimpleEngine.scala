@@ -196,6 +196,21 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state(i, o))
     }
 
+    override def visitWhen[I, B : ExtractValue.AsBoolean, O : OP](expr: Expr.When[I, B, O, OP]): I => O = { i =>
+      val firstResult = expr.conditionBranches.zipWithIndex.collectFirstSome {
+        case (cb, idx) =>
+          val condResult = cb.whenExpr.visit(this)(i)
+          val condIsMet = ExtractValue.asBoolean(condResult)
+          Option.when(condIsMet) {
+            (cb.thenExpr.visit(this)(i), idx)
+          }
+      }
+      val (o, idx) = firstResult.getOrElse {
+        (expr.defaultExpr.visit(this)(i), expr.conditionBranches.length)
+      }
+      debugging(expr).invokeAndReturn(state((i, idx), o))
+    }
+
     override def visitWithinWindow[I, V, W[+_]](
       expr: Expr.WithinWindow[I, V, W, OP],
     )(implicit

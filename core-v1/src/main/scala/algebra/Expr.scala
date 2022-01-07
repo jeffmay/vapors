@@ -334,6 +334,8 @@ object Expr {
 
     def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): Any ~:> Seq[O]
 
+    def visitWhen[I, B : ExtractValue.AsBoolean, O : OP](expr: When[I, B, O, OP]): I ~:> O
+
     def visitWithinWindow[I, V, W[+_]](
       expr: WithinWindow[I, V, W, OP],
     )(implicit
@@ -468,6 +470,9 @@ object Expr {
 
     override def visitValuesOfType[T, O](expr: ValuesOfType[T, O, OP])(implicit opTs: OP[Seq[O]]): H[Any, Seq[O]] =
       proxy(underlying.visitValuesOfType(expr))
+
+    override def visitWhen[I, B : ExtractValue.AsBoolean, O : OP](expr: When[I, B, O, OP]): H[I, O] =
+      proxy(underlying.visitWhen(expr))
 
     override def visitWithinWindow[I, V, W[+_]](
       expr: WithinWindow[I, V, W, OP],
@@ -870,6 +875,38 @@ object Expr {
   ) extends Expr[C[A], C[A], OP]("sorted") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[C[A], C[A]] = v.visitSorted(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Sorted[C, A, OP] =
+      copy(debugging = debugging)
+  }
+
+  /**
+    * A container for a condition and an expression to compute if the condition is met.
+    *
+    * @see [[Expr.When]] for usage.
+    *
+    * @param whenExpr a conditional expression that guards the resulting [[thenExpr]]
+    * @param thenExpr an expression to compute the result if the [[whenExpr]] returns true
+    */
+  final case class ConditionBranch[-I, +B : ExtractValue.AsBoolean, +O, OP[_]](
+    whenExpr: Expr[I, B, OP],
+    thenExpr: Expr[I, O, OP],
+  )
+
+  /**
+    * A branching if [ / elif ...] / else conditional operation.
+    *
+    * @param conditionBranches all of the branches that are guarded by condition expressions
+    * @param defaultExpr the expression to run if none of the branch conditions matches
+    * @tparam B a Boolean-like type that is used to determine if a branch condition is matched should run
+    */
+  final case class When[-I, +B : ExtractValue.AsBoolean, +O : OP, OP[_]](
+    conditionBranches: NonEmptySeq[ConditionBranch[I, B, O, OP]],
+    defaultExpr: Expr[I, O, OP],
+    private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  ) extends Expr[I, O, OP]("when") {
+    lazy val whenExpressions: NonEmptySeq[Expr[I, B, OP]] = conditionBranches.map(_.whenExpr)
+    lazy val thenExpressions: NonEmptySeq[Expr[I, O, OP]] = conditionBranches.map(_.thenExpr) :+ defaultExpr
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitWhen(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): When[I, B, O, OP] =
       copy(debugging = debugging)
   }
 
