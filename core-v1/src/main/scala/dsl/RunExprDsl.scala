@@ -16,7 +16,7 @@ trait RunExprDsl {
     initState: ExprState[Any, PO],
   ): RunWithResult[PO, I, O]
 
-  implicit def run[O](expr: Any ~:> O): SpecificRunExpr[O]
+  implicit def runAny[O](expr: Any ~:> O): SpecificRunExpr[O]
 
   implicit def runWith[I, O](expr: I ~:> O): SpecificRunWithExpr[I, O]
 
