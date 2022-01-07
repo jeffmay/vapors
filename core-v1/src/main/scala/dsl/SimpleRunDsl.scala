@@ -16,7 +16,7 @@ trait SimpleRunDsl extends RunExprDsl {
     initState: ExprState[Any, PO],
   ): O = expr.visit(SimpleEngine[OP](initState.factTable))(initState.output)
 
-  override implicit final def run[O](expr: Any ~:> O): RunIdExpr[O] = new RunIdExpr(expr)
+  override implicit final def runAny[O](expr: Any ~:> O): RunIdExpr[O] = new RunIdExpr(expr)
 
   override implicit final def runWith[I, O](expr: I ~:> O): RunWithIdExpr[I, O] = new RunWithIdExpr(expr)
 

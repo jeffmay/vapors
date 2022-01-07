@@ -18,7 +18,7 @@ trait StandardRunDsl extends RunExprDsl {
     expr.visit(StandardEngine[OP](initState))(implicitly)
   }
 
-  override implicit final def run[O](expr: Any ~:> O): RunStandardExpr[O] = new RunStandardExpr(expr)
+  override implicit final def runAny[O](expr: Any ~:> O): RunStandardExpr[O] = new RunStandardExpr(expr)
 
   override implicit final def runWith[I, O](expr: I ~:> O): RunWithStandardExpr[I, O] = new RunWithStandardExpr(expr)
 
