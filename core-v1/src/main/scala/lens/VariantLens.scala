@@ -249,21 +249,20 @@ final case class VariantLens[-A, +B](
   }
 
   /**
-    * Upcasts the lens.
+    * Upcasts the lens using the compiler provided evidence of the given type being a subtype of the output.
     *
-    * @note this would not be necessary if [[VariantLens]] used appropriate variance, however, variance for lenses
-    *       introduces a lot of issues.
+    * @note this is rarely necessary since [[VariantLens]] is covariant on its output parameter, however,
+    *       it is useful in scenarios when you have a type-constructor and want to use type-level evidence
+    *       of a specific collection / element type to infer the result of an element type.
     */
-  def as[V](implicit convert: B => V): VariantLens[A, V] =
-    this.copy(get = this.get.andThen(convert))
+  def as[V](implicit ev: B <:< V): VariantLens[A, V] =
+    this.copy(get = this.get.andThen(ev))
 
   /**
     * Convert the [[Foldable]] higher-kinded type into a [[LazyList]].
     */
   def asIterable[C[_] : Foldable, E](implicit ev: B <:< C[E]): VariantLens[A, Iterable[E]] =
-    this.copy(
-      get = this.get.andThen(ev).andThen(Foldable[C].toIterable),
-    )
+    this.copy(get = this.get.andThen(b => Foldable[C].toIterable(ev(b))))
 
   /**
     * Extracts the value of a wrapper without altering the [[path]]
