@@ -45,9 +45,6 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
       .andThen(Expr.Flatten())
   }
 
-  def flatten[I, C[+_] : FlatMap, A](expr: I ~:> C[C[A]])(implicit opCA: OP[C[A]]): AndThen[I, C[C[A]], C[A]] =
-    expr.andThen(Expr.Flatten())
-
   def valuesOfType[T](
     factTypeSet: FactTypeSet[T],
   )(implicit
@@ -230,6 +227,23 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
       opP: OP[P],
       opWP: OP[W[P]],
     ): AndThen[I, W[L], W[P]]
+  }
+
+  implicit final def flat[I, C[_], D[_], A](inputExpr: I ~:> C[D[A]]): FlattenExprBuilder[I, C, D, A] =
+    new FlattenExprBuilder(inputExpr)
+
+  final class FlattenExprBuilder[-I, C[_], D[_], A](inputExpr: I ~:> C[D[A]]) {
+
+    def flatten[F[a] >: C[a]](
+      implicit
+      flatMapC: FlatMap[F],
+      ev: C[D[A]] <:< F[F[A]],
+      opF: OP[F[F[A]]],
+      opO: OP[F[A]],
+    ): I ~:> F[A] = {
+      val lens = VariantLens.id[C[D[A]]].as[F[F[A]]]
+      Expr.Select[I, C[D[A]], F[F[A]], F[F[A]], OP](inputExpr, lens, (_, res) => res).andThen(Expr.Flatten[F, A, OP]())
+    }
   }
 
   implicit def hk[I, C[_], A](expr: I ~:> C[W[A]])(implicit ne: NotEmpty[C, A]): SpecificHkExprBuilder[I, C, A]

@@ -753,6 +753,31 @@ object Expr {
       copy(debugging = debugging)
   }
 
+  /**
+    * Chain this node to flatten a collection of collections into a lower dimensional collection.
+    *
+    * This requires a law abiding definition of [[FlatMap]] to be provided. Since `x.flatMap` is
+    * equivalent to `x.map().flatten` (if the definition obeys the laws of [[FlatMap]]), this is
+    * used to implement both `flatMap` and `flatten`.
+    *
+    * <h3>How would this support other types of flatten operations?</h3>
+    *
+    * For most things, we can project into a [[Seq]] of [[Seq]] (either through variance or using a lens)
+    * and, since [[Seq]] has a standard definition for [[FlatMap]], we can then flatten down to a
+    * lower-dimensional [[Seq]] and convert the result into a more specific collection with [[Select]].
+    *
+    * However, if we want to support flattening a [[Seq]] of [[Set]]s into a single [[Set]] or other types
+    * of "flattening" we would have to create a new operation type for this.
+    *
+    * While it would be possible to just require a function `C[ C[A] ] => C[A]` and leave it up to the DSL
+    * to implement the meaning of "flattening" the types, I think this is preferable to restrict the types
+    * of collections that can be flattened and use more specific expression nodes for set operations and only
+    * allow `.flatten` and `.flatMap` for types that obey the laws of [[FlatMap]]. This has a clear
+    * definition and will probably scale best into the future without over-engineering it now.
+    *
+    * @tparam C the collection type
+    * @tparam A the element type
+    */
   final case class Flatten[C[_] : FlatMap, A, OP[_]](
     private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
@@ -844,6 +869,14 @@ object Expr {
       copy(debugging = debugging)
   }
 
+  /**
+    * Takes a traversable sequence of expressions that accept the same input type and return the same output type
+    * and creates an expression that takes the same input type and returns the same traversable type sequence of
+    * output values.
+    *
+    * @param expressions the sequence of expressions to evaluate in order to create the same sequence of results
+    * @tparam C the traversable collection
+    */
   final case class Sequence[C[+_] : Traverse, -I, +O, OP[_]](
     expressions: C[Expr[I, O, OP]],
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
