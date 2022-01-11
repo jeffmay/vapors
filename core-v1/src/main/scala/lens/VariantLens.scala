@@ -2,12 +2,12 @@ package com.rallyhealth.vapors.v1
 
 package lens
 
+import data.Extract
+
+import cats.Foldable
 import cats.arrow.Compose
 import cats.data.NonEmptySet
 import cats.kernel.Semigroup
-import data.Extract
-
-import cats.{Eval, Foldable, Reducible}
 import shapeless.ops.hlist
 import shapeless.{Generic, HList}
 
@@ -107,8 +107,13 @@ object VariantLens extends VariantLensLowPriorityImplicits {
     )
   }
 
-  // TODO: Make this more generally useful and convert back to a NamedLens implicitly
-  // I think this can be folded into VariantLens now that it utilizes variance
+  /**
+    * Wrap the result of this lens with an [[VariantLens.AsIterableBuilder]] for helper operations
+    * on [[IterableOnce]] types.
+    */
+  implicit def asIterable[A, E](lens: VariantLens[A, IterableOnce[E]]): VariantLens.AsIterableBuilder[A, E] =
+    new VariantLens.AsIterableBuilder(lens)
+
   final class AsIterableBuilder[A, E](private val lens: VariantLens[A, IterableOnce[E]]) extends AnyVal {
 
     /**
@@ -149,23 +154,12 @@ sealed trait VariantLensLowPriorityImplicits {
     * Wrap the result of this lens with an [[VariantLens.AsIterableBuilder]] for helper operations
     * on [[IterableOnce]] types.
     */
-  implicit def asFoldableIterable[A, B, C[_] : Foldable, E](
-    lens: VariantLens[A, B],
+  implicit def asFoldable[A, C[_], E](
+    lens: VariantLens[A, C[E]],
   )(implicit
-    ev: B <:< C[E],
+    foldableC: Foldable[C],
   ): VariantLens.AsIterableBuilder[A, E] =
     new VariantLens.AsIterableBuilder(lens.asIterable)
-
-  /**
-    * Wrap the result of this lens with an [[VariantLens.AsIterableBuilder]] for helper operations
-    * on [[IterableOnce]] types.
-    */
-  implicit def asIterable[A, B, E](
-    lens: VariantLens[A, B],
-  )(implicit
-    ev: B <:< IterableOnce[E],
-  ): VariantLens.AsIterableBuilder[A, E] =
-    new VariantLens.AsIterableBuilder(lens.as[IterableOnce[E]])
 }
 
 /**
@@ -260,8 +254,8 @@ final case class VariantLens[-A, +B](
     * @note this would not be necessary if [[VariantLens]] used appropriate variance, however, variance for lenses
     *       introduces a lot of issues.
     */
-  def as[V](implicit ev: B <:< V): VariantLens[A, V] =
-    this.copy(get = this.get.andThen(ev))
+  def as[V](implicit convert: B => V): VariantLens[A, V] =
+    this.copy(get = this.get.andThen(convert))
 
   /**
     * Convert the [[Foldable]] higher-kinded type into a [[LazyList]].
