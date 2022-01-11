@@ -40,9 +40,7 @@ object SimpleCachingEngine {
 
         override def ap[A, B](ff: CachedResult[A => B])(fa: CachedResult[A]): CachedResult[B] = {
           val value = ff.value(fa.value)
-          // TODO: What if I just take the cache from fa?
-          val combinedCache = ff.cacheState ++ fa.cacheState
-          CachedResult(value, combinedCache)
+          CachedResult(value, fa.cacheState)
         }
 
         override final def extract[A](fa: CachedResult[A]): A = fa.value
