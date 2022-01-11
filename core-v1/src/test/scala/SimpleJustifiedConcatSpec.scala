@@ -20,4 +20,17 @@ class SimpleJustifiedConcatSpec extends FunSuite {
         Justified.elements(Justified.byConst(s3))
     assertEquals(observed, expected)
   }
+
+  test("concat non-empty option with empty option produces a non-empty seq") {
+    val s1 = Option(1)
+    val s2: Option[Int] = None
+    val s3 = Option(2)
+    val expr = concat(s1.const, s2.const, s3.const)
+    val observed = expr.run()
+    val expected =
+      Justified.elements(Justified.byConst(s1)).toSeq ++
+        Justified.elements(Justified.byConst(s2)) ++
+        Justified.elements(Justified.byConst(s3))
+    assertEquals(observed, expected)
+  }
 }

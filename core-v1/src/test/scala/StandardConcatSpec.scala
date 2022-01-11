@@ -15,4 +15,14 @@ class StandardConcatSpec extends FunSuite {
     val expected = s1 ++ s2 ++ s3
     assertEquals(observed.state.output, expected)
   }
+
+  test("concat non-empty option with empty option produces a non-empty seq") {
+    val s1 = Option(1)
+    val s2 = None
+    val s3 = Option(2)
+    val expr = concat(s1.const, s2.const, s3.const)
+    val observed = expr.run()
+    val expected = (s1 ++ s2 ++ s3).toSeq
+    assertEquals(observed.state.output, expected)
+  }
 }
