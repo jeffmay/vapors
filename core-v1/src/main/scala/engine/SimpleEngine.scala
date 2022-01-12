@@ -180,7 +180,7 @@ object SimpleEngine {
       opO: OP[W[Boolean]],
     ): I => W[Boolean] = { i =>
       val left = expr.leftExpr.visit(this)(i)
-      val right = expr.leftExpr.visit(this)(i)
+      val right = expr.rightExpr.visit(this)(i)
       val isEqual = eq.isEqual(left, right)
       debugging(expr).invokeAndReturn(state((i, left, right), isEqual))
     }
