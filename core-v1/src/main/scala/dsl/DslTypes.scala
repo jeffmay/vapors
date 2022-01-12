@@ -81,7 +81,7 @@ trait DslTypes extends Any {
     * @tparam I the input (and output) type of the expression provided as input to the function
     * @tparam O the output type of the expression returned by the function
     */
-  final type ExprFunction[I, +O] = Expr.Identity[I, OP] => Expr[I, O, OP]
+  final type ExprFunction[I, +O] = Expr[I, I, OP] => Expr[I, O, OP]
 
   /**
     * Alias for any expression with the `OP` type fixed by this DSL.

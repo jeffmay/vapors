@@ -207,6 +207,12 @@ object DebugArgs {
       override type Out = C[A]
     }
 
+  implicit def debugFoldLeft[I, C[_], A, B, OP[_]]: Aux[Expr.FoldLeft[I, C, A, B, OP], OP, (I, C[A], B), B] =
+    new DebugArgs[Expr.FoldLeft[I, C, A, B, OP], OP] {
+      override type In = (I, C[A], B)
+      override type Out = B
+    }
+
   implicit def debugForAll[
     C[_],
     A,

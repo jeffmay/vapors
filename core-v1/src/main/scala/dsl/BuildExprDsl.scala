@@ -286,6 +286,17 @@ trait BuildExprDsl extends DebugExprDsl with WrapArityMethods {
       foldC: Foldable[C],
     ): AndThen[I, C[W[A]], W[Boolean]]
 
+    def foldLeft[CI <: I, B](
+      initExpr: CI ~:> W[B],
+    )(
+      foldExprBuilder: ((W[B], W[A]) ~:> W[B], (W[B], W[A]) ~:> W[A]) => ((W[B], W[A]) ~:> W[B]),
+    )(implicit
+      foldableC: Foldable[C],
+      opBA: OP[(W[B], W[A])],
+      opA: OP[W[A]],
+      opB: OP[W[B]],
+    ): Expr.FoldLeft[CI, C, W[A], W[B], OP]
+
     def map[B](
       mapExprBuilder: W[A] =~:> W[B],
     )(implicit

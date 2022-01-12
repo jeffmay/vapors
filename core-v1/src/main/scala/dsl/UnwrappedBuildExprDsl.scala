@@ -10,7 +10,7 @@ import math.Power
 
 import cats.data.NonEmptySeq
 import cats.{FlatMap, Foldable, Functor, FunctorFilter}
-import shapeless.{Generic, HList}
+import shapeless.{Generic, HList, Nat}
 
 trait UnwrappedBuildExprDsl
   extends BuildExprDsl
@@ -201,6 +201,23 @@ trait UnwrappedBuildExprDsl
       inputExpr.andThen(
         Expr.ForAll[C, A, Boolean, OP](conditionExprBuilder(ident), _ => true, _ => false, shortCircuit),
       )
+
+    override def foldLeft[CI <: I, B](
+      initExpr: CI ~:> B,
+    )(
+      foldExprBuilder: ((B, A) ~:> B, (B, A) ~:> A) => ((B, A) ~:> B),
+    )(implicit
+      foldableC: Foldable[C],
+      opBA: OP[(B, A)],
+      opA: OP[A],
+      opB: OP[B],
+    ): Expr.FoldLeft[CI, C, A, B, OP] = {
+      val initLensExpr = ident[(B, A)]
+      val b = initLensExpr.get(_.at(Nat._0))
+      val a = initLensExpr.get(_.at(Nat._1))
+      val foldExpr = foldExprBuilder(b, a)
+      Expr.FoldLeft(inputExpr, initExpr, foldExpr)
+    }
 
     override def map[B](
       mapExprBuilder: A =~:> B,
