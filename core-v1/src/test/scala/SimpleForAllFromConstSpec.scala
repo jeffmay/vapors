@@ -27,7 +27,7 @@ class SimpleForAllFromConstSpec extends FunSuite {
       _ === 3.const
     }
     val result = expr.run()
-    assert(result)
+    assert(!result)
   }
 
   test(".forall returns false when non-empty and condition is never met") {
