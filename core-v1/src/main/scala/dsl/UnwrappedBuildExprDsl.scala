@@ -137,8 +137,8 @@ trait UnwrappedBuildExprDsl
     branches: NonEmptySeq[Expr.ConditionBranch[I, Boolean, O, OP]],
     nextCondExpr: I ~:> Boolean,
   ) extends WhenElifBuilder[I, Boolean, O](branches, nextCondExpr) {
-    override def thenReturn[TI <: I, TO](thenExpr: TI ~:> TO): UnwrappedWhenElseBuilder[TI, TO] =
-      new UnwrappedWhenElseBuilder(NonEmptySeq.of(Expr.ConditionBranch(nextCondExpr, thenExpr)))
+    override def thenReturn[TI <: I, TO >: O](thenExpr: TI ~:> TO): UnwrappedWhenElseBuilder[TI, TO] =
+      new UnwrappedWhenElseBuilder(branches :+ Expr.ConditionBranch(nextCondExpr, thenExpr))
   }
 
   final class UnwrappedWhenElseBuilder[-I, +O](branches: NonEmptySeq[Expr.ConditionBranch[I, Boolean, O, OP]])
