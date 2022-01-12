@@ -297,7 +297,7 @@ object Expr {
 
     def visitFlatten[C[_] : FlatMap, A](expr: Flatten[C, A, OP])(implicit opCA: OP[C[A]]): C[C[A]] ~:> C[A]
 
-    def visitFoldLeft[I, C[_] : Foldable, A, B : OP](expr: FoldLeft[I, C, A, B, OP]): I ~:> B
+    def visitFoldLeft[I, C[_] : Foldable, A, O : OP](expr: FoldLeft[I, C, A, O, OP]): I ~:> O
 
     def visitForAll[C[_] : Foldable, A, B : ExtractValue.AsBoolean : OP](expr: ForAll[C, A, B, OP]): C[A] ~:> B
 
@@ -912,18 +912,16 @@ object Expr {
     *
     * @tparam C the [[Foldable]] collection type
     * @tparam A the element type
-    * @tparam B the accumulator type, initial value, and return type
+    * @tparam O the accumulator type, initial value, and output type
     */
-  final case class FoldLeft[-I, C[_] : Foldable, A, B, OP[_]](
+  final case class FoldLeft[-I, C[_] : Foldable, A, O : OP, OP[_]](
     inputExpr: Expr[I, C[A], OP],
-    initExpr: Expr[I, B, OP],
-    foldExpr: Expr[(B, A), B, OP],
+    initExpr: Expr[I, O, OP],
+    foldExpr: Expr[(O, A), O, OP],
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
-  )(implicit
-    opO: OP[B],
-  ) extends Expr[I, B, OP]("foldLeft") {
-    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, B] = v.visitFoldLeft(this)
-    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): FoldLeft[I, C, A, B, OP] =
+  ) extends Expr[I, O, OP]("foldLeft") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitFoldLeft(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): FoldLeft[I, C, A, O, OP] =
       copy(debugging = debugging)
   }
 

@@ -118,7 +118,7 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state(cca, ca))
     }
 
-    override def visitFoldLeft[I, C[_] : Foldable, A, B : OP](expr: Expr.FoldLeft[I, C, A, B, OP]): I => B = { i =>
+    override def visitFoldLeft[I, C[_] : Foldable, A, O : OP](expr: Expr.FoldLeft[I, C, A, O, OP]): I => O = { i =>
       val ca = expr.inputExpr.visit(this)(i)
       val initB = expr.initExpr.visit(this)(i)
       val finalB = ca.foldLeft(initB) { (b, a) =>
