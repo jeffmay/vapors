@@ -9,7 +9,7 @@ import dsl.{ConvertToHList, Sortable, ZipToShortest}
 import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
-import cats.{FlatMap, Foldable, Functor, FunctorFilter, Traverse}
+import cats.{Applicative, FlatMap, Foldable, Functor, FunctorFilter, SemigroupK, Traverse}
 import shapeless.HList
 
 import scala.annotation.nowarn
@@ -277,15 +277,15 @@ object StandardEngine {
       ExprResult.Select(expr, finalState)
     }
 
-    override def visitSequence[C[+_] : Traverse, I, O](
+    override def visitSequence[C[+_] : Applicative : SemigroupK : Traverse, I, O](
       expr: Expr.Sequence[C, I, O, OP],
     )(implicit
       opCO: OP[C[O]],
     ): PO <:< I => ExprResult[PO, I, C[O], OP] = { implicit evPOisI =>
-      val co = expr.expressions.map { e =>
+      val co = Traverse[C].map(expr.expressions) { e =>
         e.visit(this)(implicitly)
       }
-      val finalState = state.swapAndReplaceOutput(co.map(_.state.output))
+      val finalState = state.swapAndReplaceOutput(Traverse[C].map(co)(_.state.output))
       debugging(expr).invokeDebugger(finalState)
       ExprResult.Sequence(expr, finalState, co)
     }

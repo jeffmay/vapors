@@ -10,7 +10,7 @@ import dsl.{ConvertToHList, Sortable, ZipToShortest}
 import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
-import cats.{Eval, FlatMap, Foldable, Functor, Traverse}
+import cats.{Applicative, Eval, FlatMap, Foldable, Functor, SemigroupK, Traverse}
 import shapeless.HList
 
 /**
@@ -235,12 +235,12 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state((i, a, expr.lens, b), o))
     }
 
-    override def visitSequence[C[+_] : Traverse, I, O](
+    override def visitSequence[C[+_] : Applicative : SemigroupK : Traverse, I, O](
       expr: Expr.Sequence[C, I, O, OP],
     )(implicit
       opCO: OP[C[O]],
     ): I => C[O] = { i =>
-      val co = expr.expressions.map { e =>
+      val co = Traverse[C].map(expr.expressions) { e =>
         e.visit(this)(i)
       }
       debugging(expr).invokeAndReturn(state(i, co))

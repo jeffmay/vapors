@@ -10,7 +10,7 @@ import logic.{Conjunction, Disjunction, Negation}
 import math._
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
-import cats.{FlatMap, Foldable, Functor, Traverse}
+import cats.{Applicative, FlatMap, Foldable, Functor, SemigroupK, Traverse}
 import shapeless.{::, HList, HNil}
 
 import scala.annotation.nowarn
@@ -340,7 +340,11 @@ object Expr {
 
     def visitSelect[I, A, B, O : OP](expr: Select[I, A, B, O, OP]): I ~:> O
 
-    def visitSequence[C[+_] : Traverse, I, O](expr: Sequence[C, I, O, OP])(implicit opCO: OP[C[O]]): I ~:> C[O]
+    def visitSequence[C[+_] : Applicative : SemigroupK : Traverse, I, O](
+      expr: Sequence[C, I, O, OP],
+    )(implicit
+      opCO: OP[C[O]],
+    ): I ~:> C[O]
 
     def visitSizeIs[I, N : ExtractValue[*, Int], B : ExtractValue.AsBoolean : OP](
       expr: SizeIs[I, N, B, OP],
@@ -515,7 +519,7 @@ object Expr {
     override def visitSelect[I, A, B, O : OP](expr: Select[I, A, B, O, OP]): H[I, O] =
       proxy(underlying.visitSelect(expr))
 
-    override def visitSequence[C[+_] : Traverse, I, O](
+    override def visitSequence[C[+_] : Applicative : SemigroupK : Traverse, I, O](
       expr: Sequence[C, I, O, OP],
     )(implicit
       opCO: OP[C[O]],
@@ -992,7 +996,7 @@ object Expr {
     * @param expressions the sequence of expressions to evaluate in order to create the same sequence of results
     * @tparam C the traversable collection
     */
-  final case class Sequence[+C[+_] : Traverse, -I, +O, OP[_]](
+  final case class Sequence[+C[+_] : Applicative : SemigroupK : Traverse, -I, +O, OP[_]](
     expressions: C[Expr[I, O, OP]],
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
