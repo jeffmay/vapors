@@ -12,9 +12,11 @@ import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
 import cats.arrow.Arrow
-import cats.data.{IndexedStateT, NonEmptyVector, State, StateT}
-import cats.{Applicative, Eval, FlatMap, Foldable, Functor, Semigroup, SemigroupK, Traverse}
+import cats.data.NonEmptyVector
+import cats.{Applicative, Eval, FlatMap, Foldable, Functor, Monad, SemigroupK, Traverse}
 import shapeless.HList
+
+import scala.annotation.tailrec
 
 object SimpleCachingEngine {
 
@@ -31,40 +33,47 @@ object SimpleCachingEngine {
   )
 
   final object CachedResult {
-    implicit val instance: Applicative[CachedResult]
-      with Extract[CachedResult]
-      with Foldable[CachedResult]
-      with Functor[CachedResult] =
-      new Applicative[CachedResult] with Extract[CachedResult] with Foldable[CachedResult] with Functor[CachedResult] {
 
-        override def pure[A](x: A): CachedResult[A] = CachedResult(x, Map.empty)
+    private final case object CatsInstances extends Foldable[CachedResult] with Monad[CachedResult] {
 
-        override def ap[A, B](ff: CachedResult[A => B])(fa: CachedResult[A]): CachedResult[B] = {
-          val value = ff.value(fa.value)
-          CachedResult(value, fa.cacheState)
-        }
+      override def pure[A](x: A): CachedResult[A] = CachedResult(x, Map.empty)
 
-        override final def extract[A](fa: CachedResult[A]): A = fa.value
+      override def ap[A, B](ff: CachedResult[A => B])(fa: CachedResult[A]): CachedResult[B] = {
+        val value = ff.value(fa.value)
+        CachedResult(value, fa.cacheState)
+      }
 
-        override final def foldLeft[A, B](
-          fa: CachedResult[A],
-          b: B,
-        )(
-          f: (B, A) => B,
-        ): B = f(b, fa.value)
+      override def flatMap[A, B](fa: CachedResult[A])(f: A => CachedResult[B]): CachedResult[B] = f(fa.value)
 
-        override final def foldRight[A, B](
-          fa: CachedResult[A],
-          lb: Eval[B],
-        )(
-          f: (A, Eval[B]) => Eval[B],
-        ): Eval[B] = f(fa.value, lb)
-
-        override final def map[A, B](fa: CachedResult[A])(f: A => B): CachedResult[B] = {
-          val b = f(fa.value)
-          CachedResult(b, fa.cacheState)
+      @tailrec override def tailRecM[A, B](a: A)(f: A => CachedResult[Either[A, B]]): CachedResult[B] = {
+        val res = f(a)
+        res.value match {
+          case Right(done) => res.copy(value = done)
+          case Left(next) => tailRecM(next)(f)
         }
       }
+
+      override def foldLeft[A, B](
+        fa: CachedResult[A],
+        b: B,
+      )(
+        f: (B, A) => B,
+      ): B = f(b, fa.value)
+
+      override def foldRight[A, B](
+        fa: CachedResult[A],
+        lb: Eval[B],
+      )(
+        f: (A, Eval[B]) => Eval[B],
+      ): Eval[B] = f(fa.value, lb)
+
+      override def map[A, B](fa: CachedResult[A])(f: A => B): CachedResult[B] = {
+        val b = f(fa.value)
+        CachedResult(b, fa.cacheState)
+      }
+    }
+
+    @inline implicit def instance: Foldable[CachedResult] with Monad[CachedResult] = CatsInstances
   }
 
   class Visitor[OP[_]](
