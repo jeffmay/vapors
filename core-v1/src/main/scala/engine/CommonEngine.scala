@@ -3,9 +3,10 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra.Expr
+import data.ExtractValue
+
 import cats.data.NonEmptySeq
-import cats.{Eval, Foldable, Functor}
-import data.{Extract, ExtractValue}
+import cats.{Foldable, Monad}
 import shapeless.Id
 
 /**
@@ -15,10 +16,10 @@ import shapeless.Id
   *           and fold the current state with a new value into a new state).
   * @tparam OP the type of output parameter. This is unused, but must be defined to satisfy the compiler.
   */
-abstract class CommonEngine[S[_] : Extract : Foldable : Functor, OP[_]] {
+abstract class CommonEngine[S[_] : Monad, OP[_]] {
   import cats.implicits._
 
-  private final val S = Extract[S]
+  private final val S = Monad[S]
 
   /**
     * Computes the given [[Expr.ForAll]] node by folding the initial state with the state produced
@@ -41,46 +42,70 @@ abstract class CommonEngine[S[_] : Extract : Foldable : Functor, OP[_]] {
   )(
     applyCondition: S[A] => S[B],
   ): S[(Either[NonEmptySeq[B], Seq[B]], B)] = {
-    // Create a foldable that folds over each value of the initial state
-    val SC = Foldable[S].compose[C]
     // Replace the current value of the initial state with an empty Eval for computing the accumulated result
     // This is effectively creating an empty value with the same state as the initial state
-    val acc: S[Eval[Either[NonEmptySeq[B], Seq[B]]]] = initialState.as(Eval.now(Right(Vector())))
-    // Fold the initial state into the initially empty accumulator
-    val finalState = SC.foldLeft(initialState, acc) {
-      case (prevState, a) =>
-        // Apply the given condition to get the next state and value
-        val sb = applyCondition(prevState.as(a))
-        // Extract the value
-        val b = S.extract(sb)
-        // Determine if the value is truthy
-        val isTrue = ExtractValue.asBoolean(b)
-        if (isTrue) {
-          prevState.map { prevStep =>
-            prevStep.map {
-              case Right(ts) => Right(ts :+ b) // combine true evidence for true result
-              case bs => bs // exclude true evidence for false result
-            }
-          }
-        } else {
-          // If we have a true condition AND we can short-circuit, then we are done
-          // Just replace the latest computed state with this result and stop
-          if (expr.shortCircuit) sb.as(Eval.now(Left(NonEmptySeq(b, Vector.empty))))
-          else // we are not going to short-circuit, so keep collecting the values
-            prevState.map { prevStep =>
-              prevStep.map {
-                case Right(_) => Left(NonEmptySeq(b, Vector.empty)) // this whole expression is now a false result
-                case Left(fs) => Left(fs :+ b) // combine false evidence for false result
-              }
+    val acc: S[Either[NonEmptySeq[B], Seq[B]]] = initialState.as(Right(Vector()))
+
+    // Flatten the updated state with the initial state to produce the final state
+    val finalState = initialState.flatMap { values =>
+      // Fold the values from the initial state into the initially empty accumulator
+      if (expr.shortCircuit) {
+        values.foldLeft(acc) {
+          case (acc, a) =>
+            // If we have a false condition result AND we can short-circuit, then we are done
+            // Just replace the latest computed state with this result and stop
+            acc.flatMap {
+              case early @ Left(_) => S.pure(early)
+              case _ => applyForAllCondition[C, A, B](applyCondition, acc, a)
             }
         }
+      } else {
+        // Same logic as short-circuit version but we don't stop on the first false condition result
+        values.foldLeft(acc) {
+          case (acc, a) => applyForAllCondition[C, A, B](applyCondition, acc, a)
+        }
+      }
     }
-    // Run the evaluation and produce the final state
-    finalState.map { computeResults =>
-      val falseOrTrueResults = computeResults.value
+    // Combine the intermediate results into a single boolean output result
+    finalState.map { falseOrTrueResults =>
       val finalOutput = falseOrTrueResults.fold(expr.combineFalse, expr.combineTrue)
       // Keep the intermediate results alongside the final output
       (falseOrTrueResults, finalOutput)
+    }
+  }
+
+  /**
+    * Helper method for determining the result of a forall fold operation step.
+    *
+    * Applies the condition function and accumulates either the next false or true result.
+    *
+    * @note If the result is false, then all previous true results will be dropped.
+    *
+    * @param applyCondition function to determine the condition result
+    * @param acc the accumulated results so far
+    * @param next the next value to pass to the condition function
+    * @return a new state with the next result folded in
+    */
+  protected def applyForAllCondition[C[_] : Foldable, A, B : ExtractValue.AsBoolean](
+    applyCondition: S[A] => S[B],
+    acc: S[Either[NonEmptySeq[B], Seq[B]]],
+    next: A,
+  ): S[Either[NonEmptySeq[B], Seq[B]]] = {
+    acc.flatMap { s =>
+      // Apply the given condition to get the next state and value
+      val sb = applyCondition(acc.as(next))
+      sb.map { b =>
+        // Determine if the value is truthy
+        val isTrue = ExtractValue.asBoolean(b)
+        if (isTrue) s match {
+          case Right(ts) => Right(ts :+ b) // combine true evidence for true result
+          case bs => bs // exclude true evidence for false result
+        } else
+          s match {
+            case Right(_) => Left(NonEmptySeq(b, Vector.empty)) // this whole expression is now a false result
+            case Left(fs) => Left(fs :+ b) // combine false evidence for false result
+          }
+      }
     }
   }
 
@@ -105,46 +130,69 @@ abstract class CommonEngine[S[_] : Extract : Foldable : Functor, OP[_]] {
   )(
     applyCondition: S[A] => S[B],
   ): S[(Either[Seq[B], NonEmptySeq[B]], B)] = {
-    // Create a foldable that folds over each value of the initial state
-    val SC = Foldable[S].compose[C]
     // Replace the current value of the initial state with an empty Eval for computing the accumulated result
     // This is effectively creating an empty value with the same state as the initial state
-    val acc: S[Eval[Either[Seq[B], NonEmptySeq[B]]]] = initialState.as(Eval.now(Left(Vector())))
-    // Fold the initial state into the initially empty accumulator
-    val finalState = SC.foldLeft(initialState, acc) {
-      case (prevState, a) =>
-        // Apply the given condition to get the next state and value
-        val sb = applyCondition(prevState.as(a))
-        // Extract the value
-        val b = S.extract(sb)
-        // Determine if the value is truthy
-        val isTrue = ExtractValue.asBoolean(b)
-        if (isTrue) {
-          // If we have a true condition AND we can short-circuit, then we are done
-          // Just replace the latest computed state with this result and stop
-          if (expr.shortCircuit) sb.as(Eval.now(Right(NonEmptySeq(b, Vector.empty))))
-          else // we are not going to short-circuit, so keep collecting the values
-            prevState.map { prevStep =>
-              prevStep.map {
-                case Left(_) => Right(NonEmptySeq(b, Vector.empty)) // this whole expression is now a true result
-                case Right(ts) => Right(ts :+ b) // combine true evidence for true result
-              }
+    val acc: S[Either[Seq[B], NonEmptySeq[B]]] = initialState.as(Left(Vector()))
+    // Flatten the updated state with the initial state to produce the final state
+    val finalState = initialState.flatMap { values =>
+      // Fold the values from the initial state into the initially empty accumulator
+      if (expr.shortCircuit) {
+        values.foldLeft(acc) {
+          case (acc, a) =>
+            // If we have a true condition result AND we can short-circuit, then we are done
+            // Just replace the latest computed state with this result and stop
+            acc.flatMap {
+              case early @ Right(_) => S.pure(early)
+              case _ => applyExistsCondition[C, A, B](applyCondition, acc, a)
             }
-        } else {
-          prevState.map { prevStep =>
-            prevStep.map {
-              case Left(fs) => Left(fs :+ b) // combine false evidence for false result
-              case bs => bs // exclude false evidence for true result
-            }
-          }
         }
+      } else {
+        // Same logic as short-circuit version but we don't stop on the first false condition result
+        values.foldLeft(acc) {
+          case (acc, a) => applyExistsCondition[C, A, B](applyCondition, acc, a)
+        }
+      }
     }
-    // Run the evaluation and produce the final state
-    finalState.map { computeResults =>
-      val falseOrTrueResults = computeResults.value
+    // Combine the intermediate results into a single boolean output result
+    finalState.map { falseOrTrueResults =>
       val finalOutput = falseOrTrueResults.fold(expr.combineFalse, expr.combineTrue)
       // Keep the intermediate results alongside the final output
       (falseOrTrueResults, finalOutput)
+    }
+  }
+
+  /**
+    * Helper method for determining the result of a exists fold operation step.
+    *
+    * Applies the condition function and accumulates either the next false or true result.
+    *
+    * @note If the result is true, then all previous false results will be dropped.
+    *
+    * @param applyCondition function to determine the condition result
+    * @param acc the accumulated results so far
+    * @param next the next value to pass to the condition function
+    * @return a new state with the next result folded in
+    */
+  protected def applyExistsCondition[C[_] : Foldable, A, B : ExtractValue.AsBoolean](
+    applyCondition: S[A] => S[B],
+    acc: S[Either[Seq[B], NonEmptySeq[B]]],
+    next: A,
+  ): S[Either[Seq[B], NonEmptySeq[B]]] = {
+    acc.flatMap { s =>
+      // Apply the given condition to get the next state and value
+      val sb = applyCondition(acc.as(next))
+      sb.map { b =>
+        // Determine if the value is truthy
+        val isTrue = ExtractValue.asBoolean(b)
+        if (isTrue) s match {
+          case Left(_) => Right(NonEmptySeq(b, Vector.empty)) // this whole expression is now a true result
+          case Right(ts) => Right(ts :+ b) // combine true evidence for true result
+        } else
+          s match {
+            case Left(fs) => Left(fs :+ b) // combine false evidence for false result
+            case bs => bs // exclude false evidence for true result
+          }
+      }
     }
   }
 }
