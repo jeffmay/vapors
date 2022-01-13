@@ -229,8 +229,6 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
     ne: NotEmpty[C, A],
   ): WrappedHkExprBuilder[I, C, A] = new WrappedHkExprBuilder(expr)
 
-  override type SpecificHkExprBuilder[-I, C[_], A] = WrappedHkExprBuilder[I, C, A]
-
   class WrappedHkExprBuilder[-I, C[_], A](inputExpr: I ~:> C[W[A]]) extends HkExprBuilder(inputExpr) {
 
     override def atIndex(

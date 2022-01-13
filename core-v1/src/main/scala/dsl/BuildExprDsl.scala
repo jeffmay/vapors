@@ -389,9 +389,7 @@ You should prefer put your declaration of dependency on definitions close to whe
     def sizeIs: SizeIsBuilder[I, C]
   }
 
-  implicit def hk[I, C[_], A](expr: I ~:> C[W[A]])(implicit ne: NotEmpty[C, A]): SpecificHkExprBuilder[I, C, A]
-
-  type SpecificHkExprBuilder[-I, C[_], A] <: HkExprBuilder[I, C, A]
+  implicit def hk[I, C[_], A](expr: I ~:> C[W[A]])(implicit ne: NotEmpty[C, A]): HkExprBuilder[I, C, A]
 
   abstract class HkExprBuilder[-I, C[_], A](proof: I ~:> C[W[A]]) {
 

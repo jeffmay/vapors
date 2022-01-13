@@ -271,8 +271,6 @@ trait UnwrappedBuildExprDsl
   ): UnwrappedHkExprBuilder[I, C, A] =
     new UnwrappedHkExprBuilder(expr)
 
-  override final type SpecificHkExprBuilder[-I, C[_], A] = UnwrappedHkExprBuilder[I, C, A]
-
   final class UnwrappedHkExprBuilder[-I, C[_], A](inputExpr: I ~:> C[A]) extends HkExprBuilder(inputExpr) {
 
     override def atIndex(
