@@ -9,7 +9,7 @@ import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
 import cats.data.NonEmptyVector
-import cats.{FlatMap, Foldable, Functor, Traverse}
+import cats.{Applicative, FlatMap, Foldable, Functor, SemigroupK, Traverse}
 
 /**
   * The result of running the associated [[Expr]] of the same name.
@@ -126,7 +126,11 @@ object ExprResult {
 
     def visitSelect[I, A, B, O : OP](result: Select[PO, I, A, B, O, OP]): I ~>: O
 
-    def visitSequence[I, C[+_] : Traverse, O](result: Sequence[PO, I, C, O, OP])(implicit opO: OP[C[O]]): I ~>: C[O]
+    def visitSequence[I, C[+_] : Applicative : SemigroupK : Traverse, O](
+      result: Sequence[PO, I, C, O, OP],
+    )(implicit
+      opO: OP[C[O]],
+    ): I ~>: C[O]
 
     def visitSorted[C[_], A](
       result: Sorted[PO, C, A, OP],
@@ -347,7 +351,7 @@ object ExprResult {
   /**
     * The result of running [[Expr.Sequence]]
     */
-  final case class Sequence[+PO, -I, C[+_] : Traverse, +O, OP[_]](
+  final case class Sequence[+PO, -I, C[+_] : Applicative : SemigroupK : Traverse, +O, OP[_]](
     expr: Expr.Sequence[C, I, O, OP],
     state: ExprState[PO, C[O]],
     innerResults: C[ExprResult[PO, I, O, OP]],

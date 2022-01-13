@@ -12,8 +12,8 @@ import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
 import cats.arrow.Arrow
-import cats.data.NonEmptyVector
-import cats.{Applicative, Eval, FlatMap, Foldable, Functor, Traverse}
+import cats.data.{IndexedStateT, NonEmptyVector, State, StateT}
+import cats.{Applicative, Eval, FlatMap, Foldable, Functor, Semigroup, SemigroupK, Traverse}
 import shapeless.HList
 
 object SimpleCachingEngine {
@@ -384,15 +384,30 @@ object SimpleCachingEngine {
         debugging(expr).invokeAndReturn(state((i, a, expr.lens, b), outputResult))
       }
 
-    override def visitSequence[C[+_] : Traverse, I, O](
+    override def visitSequence[C[+_] : Applicative : SemigroupK : Traverse, I, O](
       expr: Expr.Sequence[C, I, O, OP],
     )(implicit
       opCO: OP[C[O]],
     ): I => CachedResult[C[O]] = memoize(expr, _) { i =>
-      val co = expr.expressions.traverse { e =>
-        e.visit(this)(i)
+      val maybeResult = expr.expressions.get(0).map { firstExpr =>
+        val C: SemigroupK[C] = SemigroupK[C]
+        val firstResult = firstExpr.visit(this)(i)
+        val init = firstResult.map(_.pure[C])
+        expr.expressions.zipWithIndex.foldLeft(init) {
+          case (acc, (e, idx)) =>
+            if (idx > 0) {
+              visitWithUpdatedCache(i, e, acc.cacheState).map(n => C.combineK(acc.value, n.pure[C]))
+            } else acc
+        }
       }
-      debugging(expr).invokeAndReturn(state(i, co))
+      val result = maybeResult.getOrElse {
+        // This is almost certainly an empty collection, so this should be safe to cast
+        // If it is not an empty collection, then Foldable is defined incorrectly.
+        // Just to be safe, we will do an additional assertion that should be cheap for all empty collections
+        require(expr.expressions.isEmpty, "Foldable returned None for the first element of a non-empty collection")
+        cached(expr.expressions.asInstanceOf[C[O]])
+      }
+      debugging(expr).invokeAndReturn(state(i, result))
     }
 
     override def visitSizeIs[I, N : ExtractValue[*, Int], B : ExtractValue.AsBoolean : OP](

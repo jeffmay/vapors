@@ -11,7 +11,7 @@ import dsl.circe.HasEncoder
 import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
-import cats.{Foldable, Functor, Traverse}
+import cats.{Applicative, Foldable, Functor, SemigroupK, Traverse}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -158,7 +158,7 @@ object InterpretExprResultAsJson {
     override def visitSelect[I, A, B, O : OP](result: ExprResult.Select[PO, I, A, B, O, OP]): ToJsonObject[I, O] =
       encodeExprResult(result)
 
-    override def visitSequence[I, C[+_] : Traverse, O](
+    override def visitSequence[I, C[+_] : Applicative : SemigroupK : Traverse, O](
       result: ExprResult.Sequence[PO, I, C, O, OP],
     )(implicit
       opO: OP[C[O]],
@@ -308,7 +308,7 @@ object InterpretExprResultAsJson {
     override def visitSelect[I, A, B, O : OP](result: ExprResult.Select[PO, I, A, B, O, OP]): ToJsonObject[I, O] =
       super.visitSelect(result).deepMerge(sourceInfo[O])
 
-    override def visitSequence[I, C[+_] : Traverse, O](
+    override def visitSequence[I, C[+_] : Applicative : SemigroupK : Traverse, O](
       result: ExprResult.Sequence[PO, I, C, O, OP],
     )(implicit
       opO: OP[C[O]],

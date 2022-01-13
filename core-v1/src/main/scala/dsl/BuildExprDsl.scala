@@ -9,7 +9,7 @@ import logic.{Conjunction, Disjunction, Logic, Negation}
 import math.{Add, Power}
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
-import cats.{FlatMap, Foldable, Functor, Id, Order, Reducible, Traverse}
+import cats.{Applicative, FlatMap, Foldable, Functor, Id, Order, Reducible, SemigroupK, Traverse}
 import shapeless.{Generic, HList}
 
 trait BuildExprDsl
@@ -166,7 +166,7 @@ You should prefer put your declaration of dependency on definitions close to whe
     pow: Power[W[L], W[R]],
   ): CombineHolder[I, W[L], W[L], W[R], W[R], pow.Out, OP]
 
-  final def wrapAll[C[+_] : Traverse, I, O](
+  final def wrapAll[C[+_] : Applicative : SemigroupK : Traverse, I, O](
     expressions: C[I ~:> O],
   )(implicit
     opCO: OP[C[O]],
