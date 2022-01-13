@@ -4,7 +4,7 @@ import munit.FunSuite
 
 class SimpleGetOrElseSpec extends FunSuite {
 
-  import dsl.simple._
+  import dsl.caching.immutable._
 
   test("Some().const.getOrElse returns the wrapped value") {
     val input = 1

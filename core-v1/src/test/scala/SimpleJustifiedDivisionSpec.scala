@@ -7,7 +7,7 @@ import munit.FunSuite
 
 class SimpleJustifiedDivisionSpec extends FunSuite {
 
-  import dsl.simple.justified._
+  import dsl.caching.immutable.justified._
 
   test("Int / Int (exact)") {
     val expr = 2.const / 1.const

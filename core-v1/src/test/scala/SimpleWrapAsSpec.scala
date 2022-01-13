@@ -7,7 +7,7 @@ import shapeless._
 
 class SimpleWrapAsSpec extends FunSuite {
 
-  import dsl.simple._
+  import dsl.caching.immutable._
 
   test("wrap lat / lng as a GeoLocation") {
     val expected = GeoLocation(1.0, 2.0)

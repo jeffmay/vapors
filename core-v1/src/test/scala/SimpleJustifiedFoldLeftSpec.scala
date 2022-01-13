@@ -8,7 +8,7 @@ import munit.FunSuite
 
 class SimpleJustifiedFoldLeftSpec extends FunSuite {
 
-  import dsl.simple.justified._
+  import dsl.caching.immutable.justified._
 
   test(".foldLeft returns initial value when empty") {
     val expr = Seq.empty[Int].const.foldLeft(1.const)(_ + _)

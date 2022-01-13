@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-case object simple extends FullDsl with UnwrappedBuildExprDsl with SimpleRunDsl with ShowOPDsl {
+case object uncached extends FullDsl with UnwrappedBuildExprDsl with SimpleRunDsl with ShowOPDsl {
 
   final case object withDebugInfo extends UnwrappedBuildExprDsl with SimpleRunDsl with DebugSourceInfoDsl
 

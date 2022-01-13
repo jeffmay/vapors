@@ -4,7 +4,7 @@ import munit.FunSuite
 
 class SimpleIsEqualSpec extends FunSuite {
 
-  import dsl.simple._
+  import dsl.caching.immutable._
 
   test("1 === 1 is true") {
     val expr = 1.const === 1.const

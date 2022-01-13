@@ -9,7 +9,7 @@ package dsl
   *
   * There are various embedded domain-specific language objects you can import from to get a nicer syntax
   * for working with these expressions. For example, you might want to work with [[data.Justified]] values,
-  * so that you can track how a certain result was obtained. The [[dsl.simple.justified]] DSL will do this
+  * so that you can track how a certain result was obtained. The [[dsl.caching.justified]] DSL will do this
   * for you. If you want to track the state of every operation, you can use the [[dsl.standard]] DSL and
   * apply your own visitor to the [[algebra.ExprResult]] (which is a mirror of these node types, with the
   * exception that they contain the runtime result at each step in the computation). You can even mix and

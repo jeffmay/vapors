@@ -9,7 +9,7 @@ import scala.collection.immutable.SortedSet
 
 class SimpleJustifiedExistsEvidenceSpec extends FunSuite {
 
-  import dsl.simple.justified._
+  import dsl.caching.immutable.justified._
 
   test("Justified[Seq[_]].exists returns all evidence when empty".fail) {
     val emptyTagsFact = FactTypes.CombinedTags(CombinedTags.now(SortedSet()))

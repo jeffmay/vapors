@@ -1,7 +1,7 @@
 package com.rallyhealth.vapors.v1
 
 import example.FactTypes
-import dsl.simple._
+import dsl.caching.immutable._
 
 import munit.FunSuite
 

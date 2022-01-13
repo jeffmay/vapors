@@ -6,7 +6,7 @@ import munit.FunSuite
 
 class SimpleJustifiedConcatSpec extends FunSuite {
 
-  import dsl.simple.justified._
+  import dsl.caching.immutable.justified._
 
   test("concat non-empty seq with empty seq produces a non-empty seq") {
     val s1 = Seq(1, 2, 3)

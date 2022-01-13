@@ -8,7 +8,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     val benchmarkMatrix =
-      SimpleWithCachingBenchmarks.benchmarkMultiFindInSeqOfTags ++ SimpleWithoutCachingBenchmarks.benchmarkMultiFindInSeqOfTags
+      ImmutableCachingBenchmarks.benchmarkMultiFindInSeqOfTags ++ UncachedBenchmarks.benchmarkMultiFindInSeqOfTags
     println("Name,Exprs,Facts,Tags/Fact,Avg,StdDev")
     val unit = TimeUnit.MICROSECONDS
     for (benchmark <- benchmarkMatrix) {

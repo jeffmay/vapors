@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 class SimpleMultiplicationSpec extends munit.FunSuite {
 
-  import dsl.simple._
+  import dsl.caching.immutable._
 
   test("Int * Int") {
     val expr = 2.const * 2.const

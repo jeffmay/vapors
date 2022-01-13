@@ -10,7 +10,7 @@ import shapeless.HNil
 
 class SimpleJustifiedDebuggingSpec extends FunSuite with CommonDebuggingSpec {
 
-  override final val thisDsl = dsl.simple.justified
+  override final val thisDsl = dsl.caching.immutable.justified
   import thisDsl._
 
   private val initialInput = "Test input"

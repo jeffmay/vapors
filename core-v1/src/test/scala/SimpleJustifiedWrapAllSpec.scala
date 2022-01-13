@@ -7,7 +7,7 @@ import munit.FunSuite
 
 class SimpleJustifiedWrapAllSpec extends FunSuite {
 
-  import dsl.simple.justified._
+  import dsl.caching.immutable.justified._
 
   // TODO: runWith() should not require justified input. There should be a WrapInput definition.
 

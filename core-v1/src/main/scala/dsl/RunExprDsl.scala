@@ -8,30 +8,31 @@ import data.{ExprState, FactTable}
 trait RunExprDsl {
   self: DslTypes =>
 
+  type RunState
   type RunWithResult[+PO, -I, +O]
   type RunResult[+O] = RunWithResult[Nothing, Nothing, O]
 
   protected def visitExpr[PO <: I, I, O](
     expr: I ~:> O,
-    initState: ExprState[Any, PO],
+    initInput: ExprState.Output[PO],
+    initState: RunState,
   ): RunWithResult[PO, I, O]
 
-  implicit def runAny[O](expr: Any ~:> O): SpecificRunExpr[O]
+  protected def initRunState(factTable: FactTable): RunState
 
-  implicit def runWith[I, O](expr: I ~:> O): SpecificRunWithExpr[I, O]
+  implicit def runAny[O](expr: Any ~:> O): RunExpr[O]
 
-  implicit def runCombine[O : OP](builder: CombineHolder[Any, Nothing, Any, Nothing, Any, O, OP]): SpecificRunExpr[O]
+  implicit def runWith[I, O](expr: I ~:> O): RunWithInputExpr[I, O]
+
+  implicit def runCombine[O : OP](builder: CombineHolder[Any, Nothing, Any, Nothing, Any, O, OP]): RunExpr[O]
 
   implicit def runCombineWith[I, O : OP](
     builder: CombineHolder[I, Nothing, Any, Nothing, Any, O, OP],
-  ): SpecificRunWithExpr[I, O]
+  ): RunWithInputExpr[I, O]
 
-  implicit def runSelect[A, B, O : OP](builder: SelectHolder[Any, A, B, O, OP]): SpecificRunExpr[O]
+  implicit def runSelect[A, B, O : OP](builder: SelectHolder[Any, A, B, O, OP]): RunExpr[O]
 
-  implicit def runSelectWith[I, A, B, O : OP](builder: SelectHolder[I, A, B, O, OP]): SpecificRunWithExpr[I, O]
-
-  type SpecificRunExpr[+O] <: RunExpr[O]
-  type SpecificRunWithExpr[-I, +O] <: RunWithExpr[I, O]
+  implicit def runSelectWith[I, A, B, O : OP](builder: SelectHolder[I, A, B, O, OP]): RunWithInputExpr[I, O]
 
   /**
     * The expression needs to be able to handle any input, even though we will not give it any input.
@@ -48,25 +49,37 @@ trait RunExprDsl {
   class RunExpr[+O](expr: Any ~:> O) {
 
     /**
+      * Runs the expression without any starting input and [[FactTable.empty]].
+      *
+      * @note this requires `()` because this could execute side-effects from the attached debuggers.
+      */
+    def run(): RunResult[O] = run(FactTable.empty)
+
+    /**
       * Runs the expression without any starting input starting with the given [[FactTable]].
       *
       * @note this requires `()` because this could execute side-effects from the attached debuggers.
       */
-    def run(factTable: FactTable = FactTable.empty): RunResult[O] = {
-      visitExpr[Nothing, Nothing, O](expr, ExprState.Empty(factTable))
+    def run(factTable: FactTable): RunResult[O] = {
+      visitExpr[Nothing, Nothing, O](expr, ExprState.Empty(factTable), initRunState(factTable))
     }
   }
 
-  class RunWithExpr[-I, +O](expr: I ~:> O) {
+  class RunWithInputExpr[-I, +O](expr: I ~:> O) {
+
+    /**
+      * Runs the expression with the given input and [[FactTable.empty]].
+      */
+    def runWith[In <: I](input: In): RunWithResult[In, I, O] = this.runWith(input, FactTable.empty)
 
     /**
       * Runs the expression with the given input and starting [[FactTable]].
       */
     def runWith[In <: I](
       input: In,
-      factTable: FactTable = FactTable.empty,
+      factTable: FactTable,
     ): RunWithResult[In, I, O] = {
-      visitExpr(expr, ExprState.Output(input, factTable))
+      visitExpr(expr, ExprState.Output(input, factTable), initRunState(factTable))
     }
   }
 

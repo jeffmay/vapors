@@ -4,7 +4,7 @@ package bench
 
 import bench.timeit.{Benchmark, BenchmarkConfig}
 import v1.data.FactTable
-import v1.dsl.simple.OP
+import v1.dsl.uncached._ // we only care about the build expressions DSL, so this is safe to share with cached DSL
 import v1.example.{CombinedTags, FactTypes}
 
 import org.scalacheck.Gen
@@ -37,7 +37,6 @@ trait FindInSeqOfTagsListsBenchmarkSetup {
 }
 
 object FindInSeqOfTagsListsBenchmarkSetup {
-  import v1.dsl.simple._
 
   final case class Params(
     numExpressions: Int,

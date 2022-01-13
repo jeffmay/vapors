@@ -7,7 +7,7 @@ import munit.FunSuite
 
 class SimpleUsingDefinitionsSpec extends FunSuite {
 
-  import dsl.simple._
+  import dsl.caching.immutable._
 
   test("Derive Kg from Lbs") {
     val weightLbs = FactTypes.WeightLbs(150)
@@ -17,8 +17,8 @@ class SimpleUsingDefinitionsSpec extends FunSuite {
         lbs / lbsPerKg.const
       }
     }
-    val expr = usingDefinitions(defineWeightKg) {
-      valuesOfType(FactTypes.WeightKg).map(_ * 2d.const)
+    val expr = using(defineWeightKg).thenReturn {
+      _.map(_ * 2d.const)
     }
     val observed = expr.run(FactTable(weightLbs))
     val expected = (weightLbs.value / lbsPerKg) * 2

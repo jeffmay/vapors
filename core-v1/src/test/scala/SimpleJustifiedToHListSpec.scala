@@ -10,7 +10,7 @@ import shapeless.HNil
 
 class SimpleJustifiedToHListSpec extends FunSuite {
 
-  import dsl.simple.justified._
+  import dsl.caching.immutable.justified._
 
   private val alice = Person("Alice", 40)
   private val bob = Person("Bob", 45)

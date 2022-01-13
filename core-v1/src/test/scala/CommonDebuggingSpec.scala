@@ -32,7 +32,11 @@ trait CommonDebuggingSpec extends BaseDslSpec {
 
   final class TestDebugExprWith[E <: AnyExpr, DI, DO](expr: E)(implicit debugArgs: DebugArgs.Aux[E, OP, DI, DO]) {
 
-    def withInput[I, S >: E <: I ~:> Any](input: I)(implicit ev: E <:< S): TestInputDebugExpr[S, I, DI, DO] = {
+    def withInput[I, S >: E <: I ~:> Any](
+      input: I,
+    )(implicit
+      ev: E <:< S,
+    ): TestInputDebugExpr[S, I, DI, DO] = {
       new TestInputDebugExpr[S, I, DI, DO](expr, input, FactTable.empty)(
         debugArgs.asInstanceOf[DebugArgs.Aux[S, OP, DI, DO]],
       )

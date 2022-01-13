@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 
 class SimpleJustifiedTimeFunctionSpec extends ScalaCheckSuite {
 
-  import dsl.simple.justified._
+  import dsl.caching.immutable.justified._
 
   test("now + 15.seconds.const produces a new Instant every time evaluated") {
     val clock = TestClock.oneSecondPerTickFromNow()
