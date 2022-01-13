@@ -7,7 +7,7 @@ import munit.{FunSuite, Location}
 
 class SimpleBooleanLogicSpec extends FunSuite {
 
-  import dsl.simple._
+  import dsl.caching.immutable._
 
   private def testLogic(
     head: Expr.Const[Boolean, OP],

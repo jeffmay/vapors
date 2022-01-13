@@ -6,7 +6,7 @@ import munit.FunSuite
 
 class SimpleConstSpec extends FunSuite {
 
-  import dsl.simple._
+  import dsl.caching.immutable._
 
   test("Option.const allows calling map") {
     val fixture = Option(1)

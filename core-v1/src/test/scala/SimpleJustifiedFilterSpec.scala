@@ -8,7 +8,7 @@ import munit.FunSuite
 
 class SimpleJustifiedFilterSpec extends FunSuite {
 
-  import dsl.simple.justified._
+  import dsl.caching.immutable.justified._
 
   test("Some[Justified[Int]].filter returns Some[Int]") {
     val input = Some(1)

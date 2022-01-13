@@ -10,7 +10,7 @@ import shapeless.Nat
 
 class SimpleJustifiedSelectSpec extends FunSuite {
 
-  import dsl.simple.justified._
+  import dsl.caching.immutable.justified._
 
   import NestedSelectable.empty
 

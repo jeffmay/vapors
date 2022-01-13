@@ -5,7 +5,7 @@ import munit.FunSuite
 
 class SimpleWrapAllSpec extends FunSuite {
 
-  import dsl.simple._
+  import dsl.caching.immutable._
 
   test("wrapAll(None)") {
     val expr = wrapAll(None: Option[Any ~:> Int])

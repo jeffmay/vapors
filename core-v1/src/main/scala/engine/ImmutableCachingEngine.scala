@@ -14,12 +14,11 @@ import logic.{Conjunction, Disjunction, Negation}
 import cats.arrow.Arrow
 import cats.data.NonEmptyVector
 import cats.{Applicative, Eval, FlatMap, Foldable, Functor, Monad, SemigroupK, Traverse}
-import shapeless.HList
-import shapeless.HMap
+import shapeless.{HList, HMap}
 
 import scala.annotation.tailrec
 
-object SimpleCachingEngine {
+object ImmutableCachingEngine {
 
   @inline final def apply[OP[_]](
     factTable: FactTable,
@@ -555,34 +554,6 @@ object SimpleCachingEngine {
       val o = zip.zipToShortestWith(expr.exprHList, this).apply(i)
       debugging(expr).invokeAndReturn(state(i, o))
     }
-  }
-
-  // TODO: Support an eval method that returns an HMap with type-safe keys and / or HList?
-
-  def evalMultiple[I, O, OP[_]](
-    expressions: Seq[Expr[I, O, OP]],
-    factTable: FactTable = FactTable.empty,
-    input: I = (),
-    cache: ResultCache = ResultCache.empty,
-  ): IndexedSeq[O] = {
-    debugMultiple(expressions, factTable, input, cache).map(_.value)
-  }
-
-  def debugMultiple[I, O, OP[_]](
-    expressions: Seq[Expr[I, O, OP]],
-    factTable: FactTable = FactTable.empty,
-    input: I = (),
-    cache: ResultCache = ResultCache.empty,
-  ): IndexedSeq[CachedResult[O]] = {
-    // Using a mutable var to improve performance by avoiding wrapping and unwrapping tuples
-    var lastResultCache = cache
-    var results = Vector.empty[CachedResult[O]]
-    for (next <- expressions) {
-      val result = next.visit(new Visitor[OP](factTable, lastResultCache))(input)
-      lastResultCache = result.cacheState
-      results :+= result
-    }
-    results
   }
 
   protected implicit class InvokeAndReturn[E <: Expr.AnyWith[OP], OP[_], DI, DO](

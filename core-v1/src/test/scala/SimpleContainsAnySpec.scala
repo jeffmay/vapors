@@ -4,7 +4,7 @@ import munit.FunSuite
 
 class SimpleContainsAnySpec extends FunSuite {
 
-  import dsl.simple._
+  import dsl.caching.immutable._
 
   private val valid = Set(2, 3)
 

@@ -5,7 +5,7 @@ import munit.FunSuite
 
 class SimpleFilterSpec extends FunSuite {
 
-  import dsl.simple._
+  import dsl.caching.immutable._
 
   test("Some[Int].filter returns Some[Int]") {
     val input = Some(1)

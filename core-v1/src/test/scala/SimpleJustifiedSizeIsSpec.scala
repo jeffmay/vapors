@@ -8,7 +8,7 @@ import munit.FunSuite
 
 class SimpleJustifiedSizeIsSpec extends FunSuite {
 
-  import dsl.simple.justified._
+  import dsl.caching.immutable.justified._
 
   test("Some(1).const.isEmpty == false") {
     val expr = Some(1).const.isEmpty

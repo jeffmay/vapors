@@ -8,7 +8,7 @@ import java.time.{Duration, Instant, LocalDate, Period}
 
 class SimpleAdditionSpec extends munit.FunSuite {
 
-  import dsl.simple._
+  import dsl.caching.immutable._
 
   test("Int + Int (behavior)") {
     forAll { (l: Int, r: Int) =>

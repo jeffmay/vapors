@@ -4,7 +4,7 @@ import munit.FunSuite
 
 class SimpleExistsFromConstSpec extends FunSuite {
 
-  import dsl.simple._
+  import dsl.caching.immutable._
 
   test(".exists returns false when empty") {
     val expr = List.empty[Int].const.exists {

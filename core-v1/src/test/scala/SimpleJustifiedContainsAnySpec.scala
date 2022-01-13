@@ -8,7 +8,7 @@ import munit.FunSuite
 
 class SimpleJustifiedContainsAnySpec extends FunSuite {
 
-  import dsl.simple.justified._
+  import dsl.caching.immutable.justified._
 
   private val valid = Set(2, 3)
   private val justifiedValidValues = Justified.byInference(

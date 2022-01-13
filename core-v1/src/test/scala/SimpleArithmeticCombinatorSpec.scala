@@ -5,7 +5,7 @@ import munit.FunSuite
 
 class SimpleArithmeticCombinatorSpec extends FunSuite {
 
-  import dsl.simple._
+  import dsl.caching.immutable._
 
   test("min(2, 3, 1) == 1") {
     val expr = min(2.const, 3.const, 1.const)

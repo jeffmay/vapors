@@ -4,7 +4,7 @@ import munit.FunSuite
 
 class SimpleSliceSpec extends FunSuite {
 
-  import dsl.simple._
+  import dsl.caching.immutable._
 
   test("[1..5].slice(1 <-> 3)") {
     val input = Seq(1, 2, 3, 4, 5)

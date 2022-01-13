@@ -5,12 +5,13 @@ import example.NestedSelectable
 import lens.VariantLens
 
 import cats.data.NonEmptySeq
+import com.rallyhealth.vapors.v1.engine.ImmutableCachingEngine.{CachedResult, ResultCache}
 import munit._
 import shapeless.HNil
 
 class SimpleDebuggingSpec extends FunSuite with CommonDebuggingSpec {
 
-  override final val thisDsl = dsl.simple
+  override final val thisDsl = dsl.caching.immutable
   import thisDsl._
 
   private val initialInput = "Test input"
