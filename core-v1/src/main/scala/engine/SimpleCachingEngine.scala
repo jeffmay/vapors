@@ -15,17 +15,33 @@ import cats.arrow.Arrow
 import cats.data.NonEmptyVector
 import cats.{Applicative, Eval, FlatMap, Foldable, Functor, Monad, SemigroupK, Traverse}
 import shapeless.HList
+import shapeless.HMap
 
 import scala.annotation.tailrec
 
 object SimpleCachingEngine {
 
-  // TODO: Use a more type-safe cache with opaque typed keys (rather than Any)
+  @inline final def apply[OP[_]](
+    factTable: FactTable,
+    resultCache: ResultCache = ResultCache.empty,
+  ): Visitor[OP] = new Visitor(factTable, resultCache)
 
-  type Key = Any
-  type Result = Any
+  final class ResultCache private (private val underlying: Map[Any, Any]) extends HMap[CacheEntryType](underlying) {
+    override def +[K, V](kv: (K, V))(implicit ev: CacheEntryType[K, V]): ResultCache = new ResultCache(underlying + kv)
+    override def -[K](k: K): HMap[CacheEntryType] = new ResultCache(underlying - k)
+    def ++(that: ResultCache): ResultCache = new ResultCache(this.underlying ++ that.underlying)
+  }
 
-  type ResultCache = Map[Key, Result]
+  final object ResultCache {
+    val empty: ResultCache = new ResultCache(Map.empty)
+  }
+
+  final class CacheEntryType[I, O] private {}
+
+  final object CacheEntryType {
+    implicit def validKey[I, O, OP[_]]: CacheEntryType[(Expr[I, O, OP], I), O] =
+      new CacheEntryType[(Expr[I, O, OP], I), O]
+  }
 
   final case class CachedResult[+V](
     value: V,
@@ -36,7 +52,7 @@ object SimpleCachingEngine {
 
     private final case object CatsInstances extends Foldable[CachedResult] with Monad[CachedResult] {
 
-      override def pure[A](x: A): CachedResult[A] = CachedResult(x, Map.empty)
+      override def pure[A](x: A): CachedResult[A] = CachedResult(x, ResultCache.empty)
 
       override def ap[A, B](ff: CachedResult[A => B])(fa: CachedResult[A]): CachedResult[B] = {
         val value = ff.value(fa.value)
@@ -162,6 +178,13 @@ object SimpleCachingEngine {
       new InvokeAndReturn(DebugArgs[OP].of(expr)(debugArgs))
 
     // TODO: Use Hash type bounds on I?
+    // This would require putting the Hash[PO] into the state, since this is often the input.
+    // For input that does not come from the previous operation, it would have to come from the OP (output param)
+    // This would require restraining the OP parameter to include a hash code for the input
+    // While this is probably a good idea to clarify the behavior through types, it also complicates the code
+    // for something that can be achieved through the convention of only using algebraic data types (sum & product)
+    // as values within the expression language. I'm leaving this challenge for a later date, depending on whether
+    // we discover another need to constrain the OP type.
     protected def memoize[I, O](
       expr: Expr[I, O, OP],
       input: I,
@@ -169,10 +192,10 @@ object SimpleCachingEngine {
       operation: I => CachedResult[O],
     ): CachedResult[O] = {
       val key = (expr, input)
-      val CachedResult(value, cacheState) = resultCache.get(key).map(o => cached(o.asInstanceOf[O])).getOrElse {
+      val CachedResult(value, cacheState) = resultCache.get(key).map(cached(_)).getOrElse {
         operation(input)
       }
-      CachedResult(value, cacheState.updated(key, value))
+      CachedResult(value, cacheState + (key -> value))
     }
 
     override def visitAnd[I, B, F[+_]](
@@ -540,7 +563,7 @@ object SimpleCachingEngine {
     expressions: Seq[Expr[I, O, OP]],
     factTable: FactTable = FactTable.empty,
     input: I = (),
-    cache: ResultCache = Map.empty,
+    cache: ResultCache = ResultCache.empty,
   ): IndexedSeq[O] = {
     debugMultiple(expressions, factTable, input, cache).map(_.value)
   }
@@ -549,7 +572,7 @@ object SimpleCachingEngine {
     expressions: Seq[Expr[I, O, OP]],
     factTable: FactTable = FactTable.empty,
     input: I = (),
-    cache: ResultCache = Map.empty,
+    cache: ResultCache = ResultCache.empty,
   ): IndexedSeq[CachedResult[O]] = {
     // Using a mutable var to improve performance by avoiding wrapping and unwrapping tuples
     var lastResultCache = cache
