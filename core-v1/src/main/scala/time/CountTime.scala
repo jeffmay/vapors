@@ -2,7 +2,8 @@ package com.rallyhealth.vapors.v1
 
 package time
 
-import java.time.temporal.{ChronoUnit, Temporal, TemporalUnit}
+import java.time.temporal.Temporal
+import java.time._
 
 trait CountTime[-T, -U, +O] {
 
@@ -36,11 +37,18 @@ object CountTime {
       start: T,
       end: T,
       unit: TemporalUnit,
-    ): Long = start.until(end, unit)
+    ): Long = start.until(end, unit.chronoUnit)
   }
 
-  @inline private def temporal[T <: Temporal]: CountTime[T, ChronoUnit, Long] = new OfTemporal[T]
+  @inline private def temporal[T <: Temporal]: CountTime[T, TemporalUnit, Long] = new OfTemporal[T]
 
-  // TODO: Restrict invalid units by type
-  implicit val ofTemporal: CountTime[Temporal, ChronoUnit, Long] = temporal
+  implicit val countInstant: CountTime[Instant, TimeUnit, Long] = temporal
+  implicit val countLocalTime: CountTime[LocalTime, TimeUnit, Long] = temporal
+  implicit val countOffsetTime: CountTime[OffsetTime, TimeUnit, Long] = temporal
+
+  implicit val countLocalDate: CountTime[LocalDate, DateUnit, Long] = temporal
+
+  implicit val countLocalDateTime: CountTime[LocalDateTime, TemporalUnit, Long] = temporal
+  implicit val countOffsetDateTime: CountTime[OffsetDateTime, TemporalUnit, Long] = temporal
+  implicit val countZonedDateTime: CountTime[ZonedDateTime, TemporalUnit, Long] = temporal
 }
