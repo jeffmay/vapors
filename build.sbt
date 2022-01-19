@@ -4,9 +4,6 @@ name := "vapors-root"
 ThisBuild / organization := "com.rallyhealth"
 ThisBuild / organizationName := "Rally Health"
 
-// publish snapshots until we have a 1.0.0-M1 git tag
-isSnapshot := true
-
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / scalaVersion := Dependencies.Scala_2_13
 ThisBuild / licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT"))
