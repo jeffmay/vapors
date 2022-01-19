@@ -19,6 +19,16 @@ sealed abstract class TimeUnit(u: ChronoUnit) extends TemporalUnit(u)
   */
 sealed abstract class DateUnit(u: ChronoUnit) extends TemporalUnit(u)
 
+/**
+  * Represents a unit that is a multiple of months.
+  */
+sealed abstract class MonthUnit(u: ChronoUnit) extends DateUnit(u)
+
+/**
+  * Represents a unit that is a multiple of years.
+  */
+sealed abstract class YearUnit(u: ChronoUnit) extends MonthUnit(u)
+
 object TemporalUnit {
 
   final case object Nanos extends TimeUnit(ChronoUnit.NANOS)
@@ -31,8 +41,9 @@ object TemporalUnit {
   final case object Days extends DateUnit(ChronoUnit.DAYS)
   final case object Weeks extends DateUnit(ChronoUnit.WEEKS)
   final case object Months extends DateUnit(ChronoUnit.MONTHS)
-  final case object Years extends DateUnit(ChronoUnit.YEARS)
-  final case object Decades extends DateUnit(ChronoUnit.DECADES)
-  final case object Centuries extends DateUnit(ChronoUnit.CENTURIES)
-  final case object Millennia extends DateUnit(ChronoUnit.MILLENNIA)
+
+  final case object Years extends YearUnit(ChronoUnit.YEARS)
+  final case object Decades extends YearUnit(ChronoUnit.DECADES)
+  final case object Centuries extends YearUnit(ChronoUnit.CENTURIES)
+  final case object Millennia extends YearUnit(ChronoUnit.MILLENNIA)
 }

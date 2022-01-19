@@ -4,7 +4,9 @@ package time
 
 import java.time.temporal.Temporal
 import java.time._
+import scala.annotation.implicitNotFound
 
+@implicitNotFound("Cannot count the number of ${U} between two instances of ${T}")
 trait CountTime[-T, -U, +O] {
 
   /**
@@ -51,4 +53,7 @@ object CountTime {
   implicit val countLocalDateTime: CountTime[LocalDateTime, TemporalUnit, Long] = temporal
   implicit val countOffsetDateTime: CountTime[OffsetDateTime, TemporalUnit, Long] = temporal
   implicit val countZonedDateTime: CountTime[ZonedDateTime, TemporalUnit, Long] = temporal
+
+  implicit val countYearMonth: CountTime[YearMonth, MonthUnit, Long] = temporal
+  implicit val countYear: CountTime[Year, YearUnit, Long] = temporal
 }
