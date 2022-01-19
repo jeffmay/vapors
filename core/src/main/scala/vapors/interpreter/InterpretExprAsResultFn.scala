@@ -583,6 +583,7 @@ final class InterpretExprAsResultFn[V, P] extends Expr.Visitor[V, P, Lambda[r =>
     exprHList: NonEmptyExprHList[V, Id, L, P],
     input: ExprInput[V],
   ): SimpleOutput[L] = {
+    implicit val id: Functor[Id] with Semigroupal[Id] = cats.catsInstancesForId
     exprHList.visitProduct(new InterpretExprAsSimpleOutputFn).apply(input)
   }
 

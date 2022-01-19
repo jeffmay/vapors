@@ -2,36 +2,29 @@ import sbt._
 
 object Dependencies {
 
-  final val Scala_2_13 = "2.13.6"
+  final val Scala_2_13 = "2.13.8"
 
-  private final val catsVersion = "2.6.1"
-  private final val catsEffectVersion = "3.2.7"
+  private final val catsVersion = "2.7.0"
   private final val circeVersion = "0.14.1"
-  private final val izumiReflectVersion = "1.1.3"
-  private final val munitVersion = "0.7.28"
-  private final val munitCatsEffectVersion = "1.0.5"
-  private final val munitScalaCheckVersion = "0.7.29"
-  private final val scalacticVersion = "3.2.9"
+  private final val izumiReflectVersion = "2.0.8"
+  private final val munitVersion = "1.0.0-M1" // it's okay to use milestone version for test code
+  private final val scalacticVersion = "3.2.10"
   private final val scalaCheckVersion = "1.15.4"
-  private final val scalaCheckOpsVersion = "2.7.1"
-  private final val scalaTestVersion = "3.2.9"
-  private final val scalaTestPlusScalaCheckVersion = "3.2.9.0"
+  private final val scalaCheckOpsVersion = "2.8.1"
+  private final val scalaTestVersion = "3.2.10"
+  private final val scalaTestPlusScalaCheckVersion = "3.2.10.0"
   private final val shapelessVersion = "2.3.7"
   private final val sourcecodeVersion = "0.2.7"
-  private final val zioVersion = "1.0.11"
 
   private val alleyCatsCore = "org.typelevel" %% "alleycats-core" % catsVersion
   private val catsCore = "org.typelevel" %% "cats-core" % catsVersion
-  private val catsEffect = "org.typelevel" %% "cats-effect" % catsEffectVersion
-  private val catsFree = "org.typelevel" %% "cats-free" % catsVersion
   private val circeCore = "io.circe" %% "circe-core" % circeVersion
   private val circeLiteral = "io.circe" %% "circe-literal" % circeVersion
   private val circeGeneric = "io.circe" %% "circe-generic" % circeVersion
   private val circeParser = "io.circe" %% "circe-parser" % circeVersion
   private val izumiReflect = "dev.zio" %% "izumi-reflect" % izumiReflectVersion
   private val munit = "org.scalameta" %% "munit" % munitVersion
-  private val munitCatsEffect = "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion
-  private val munitScalaCheck = "org.scalameta" %% "munit-scalacheck" % munitScalaCheckVersion
+  private val munitScalaCheck = "org.scalameta" %% "munit-scalacheck" % munitVersion
   private val scalaCheck = "org.scalacheck" %% "scalacheck" % scalaCheckVersion
   private val scalaCheckOps = "com.rallyhealth" %% "scalacheck-ops_1-15" % scalaCheckOpsVersion
   private val scalactic = "org.scalactic" %% "scalactic" % scalacticVersion
@@ -40,7 +33,6 @@ object Dependencies {
   private def scalaReflect(scalacVersion: String): ModuleID = "org.scala-lang" % "scala-reflect" % scalacVersion
   private val shapeless = "com.chuusai" %% "shapeless" % shapelessVersion
   private val sourcecode = "com.lihaoyi" %% "sourcecode" % sourcecodeVersion
-  private val zio = "dev.zio" %% "zio" % zioVersion
 
   final object BenchProject {
 
@@ -55,15 +47,12 @@ object Dependencies {
       Seq(
         alleyCatsCore,
         catsCore,
-        catsEffect,
-        catsFree,
         scalactic,
         scalaReflect(scalaVersion),
         shapeless,
       ) ++ Seq(
         // Test-only dependencies
         munit,
-        munitCatsEffect,
         munitScalaCheck,
         scalaCheck,
         scalaCheckOps,
@@ -81,11 +70,9 @@ object Dependencies {
         scalactic,
         shapeless,
         sourcecode,
-        zio, // used for Has[_] data type for now
       ) ++ Seq(
         // Test-only dependencies
         munit,
-        munitCatsEffect,
         munitScalaCheck,
         scalaCheck,
         scalaCheckOps,
