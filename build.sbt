@@ -48,26 +48,8 @@ def commonProject(
     )
 }
 
-lazy val bench = commonProject("bench", "vapors")
-  .dependsOn(`core-v1` % "test->test") // TODO: Include other projects for comparison
-  .settings(
-    libraryDependencies ++= BenchProject.all,
-    Test / parallelExecution := false,
-  )
-
-lazy val core = commonProject("core")
-  .dependsOn(`core-v1`)
-  .settings(
-    libraryDependencies ++= CoreProject.all(scalaVersion.value),
-  )
-
 lazy val `core-v1` = commonProject("core-v1", "vapors.v1")
   .settings(
     libraryDependencies ++= CoreV1Project.all,
   )
 
-lazy val `circe-v1` = commonProject("circe-v1", "vapors.v1")
-  .dependsOn(`core-v1` % "compile;test->test")
-  .settings(
-    libraryDependencies ++= CirceV1Project.all,
-  )
