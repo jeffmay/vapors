@@ -10,7 +10,7 @@ import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
 import cats.{Applicative, FlatMap, Foldable, Functor, FunctorFilter, SemigroupK, Traverse}
-import shapeless.HList
+import shapeless.Tuple
 
 import scala.annotation.nowarn
 import scala.collection.mutable
@@ -33,7 +33,7 @@ object StandardEngine {
     */
   class Visitor[PO, OP[_]](val state: ExprState[Any, PO])
     extends CommonUncachedEngine[OP]
-    with Expr.Visitor[Lambda[(`-I`, `+O`) => PO <:< I => ExprResult[PO, I, O, OP]], OP] {
+    with Expr.Visitor[[i, o] =>> PO <:< i => ExprResult[PO, i, o, OP], OP] {
 
     import cats.implicits._
 
@@ -316,7 +316,7 @@ object StandardEngine {
     }
 
     // TODO: This requires an Arrow over the function type, which will probably require refactoring this trait
-    override def visitToHList[I, L <: HList : OP](
+    override def visitToHList[I, L <: Tuple : OP](
       expr: Expr.ToHList[I, L, OP],
     )(implicit
       toHL: ConvertToHList[L],
@@ -381,7 +381,7 @@ object StandardEngine {
       ExprResult.WithinWindow(expr, finalState, valueResult, windowResult)
     }
 
-    override def visitZipToShortestHList[I, F[+_], WL <: HList, UL <: HList](
+    override def visitZipToShortestHList[I, F[+_], WL <: Tuple, UL <: Tuple](
       expr: Expr.ZipToShortestHList[I, F, WL, UL, OP],
     )(implicit
       zip: ZipToShortest.Aux[F, WL, OP, UL],

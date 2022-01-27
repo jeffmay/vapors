@@ -3,8 +3,6 @@ package com.rallyhealth.vapors.v1
 package lens
 
 import cats.Foldable
-import shapeless.ops.{hlist, tuple}
-import shapeless.{HList, Nat}
 
 /**
   * Defines how to get an instance of [[V]] from a collection [[C]], keyed by [[K]].
@@ -19,7 +17,7 @@ trait VariantIndexed[-C, -K, +V] {
 
 object VariantIndexed extends LowPriorityVariantIndexed {
 
-  @inline final def apply[C, K, V](implicit M: Indexed[C, K, V]): Indexed[C, K, V] = M
+  @inline final def apply[C, K, V](implicit M: VariantIndexed[C, K, V]): VariantIndexed[C, K, V] = M
 
   type MapLike[M[_, _], K, V] = VariantIndexed[M[K, V], K, Option[V]]
   type MapOf[K, V] = MapLike[Map, K, V]
@@ -32,15 +30,9 @@ object VariantIndexed extends LowPriorityVariantIndexed {
     }
   }
 
-  implicit def indexedHList[L <: HList, N <: Nat, V](implicit at: hlist.At.Aux[L, N, V]): VariantIndexed[L, N, V] = {
-    new VariantIndexed[L, N, V] {
-      override def get(container: L)(key: N): V = at(container)
-    }
-  }
-
-  implicit def indexedTuple[T <: Product, N <: Nat, V](implicit at: tuple.At.Aux[T, N, V]): VariantIndexed[T, N, V] = {
-    new VariantIndexed[T, N, V] {
-      override def get(container: T)(key: N): V = at(container)
+  implicit def indexedTuple[T <: NonEmptyTuple, N <: Int]: VariantIndexed[T, N, Tuple.Elem[T, N]] = {
+    new VariantIndexed[T, N, Tuple.Elem[T, N]] {
+      override def get(container: T)(key: N): Tuple.Elem[T, key.type] = container(key)
     }
   }
 

@@ -16,6 +16,8 @@ import cats.{Applicative, Eq, Eval, Foldable, Functor, Order, Semigroupal, Trave
 import scala.annotation.nowarn
 import scala.collection.Factory
 
+import shapeless3.deriving.Const
+
 /**
   * Represents a result that contains a tree of justified inputs and operations, as well as the value
   * for each operation along the way.
@@ -237,7 +239,7 @@ object Justified extends LowPriorityJustifiedImplicits {
     )
   }
 
-  private final case object ExtractJustified extends Extract[Justified] {
+  private case object ExtractJustified extends Extract[Justified] {
     override def extract[A](fa: Justified[A]): A = fa.value
   }
 
@@ -248,20 +250,20 @@ object Justified extends LowPriorityJustifiedImplicits {
     sizeComparable: SizeComparable[C[Justified[A]], N, B],
   ): SizeComparable[C[Justified[A]], Justified[N], Justified[B]] = wrapSizeCompared(_.size)
 
-  private final case object WrapConstJustified extends WrapConst[Justified, Any] {
+  private case object WrapConstJustified extends WrapConst[Justified, Any] {
     override def wrapConst[A](value: A)(implicit opA: Any): Justified[A] = Justified.byConst(value)
   }
 
   implicit def wrapConst[OP[_]]: WrapConst[Justified, OP] = WrapConstJustified.asInstanceOf[WrapConst[Justified, OP]]
 
-  private final case object WrapFactJustified extends WrapFact[Justified, Any] {
+  private case object WrapFactJustified extends WrapFact[Justified, Any] {
     override def wrapFact[O](fact: TypedFact[O])(implicit opO: Any): Justified[O] = Justified.byFact(fact)
   }
 
   implicit def wrapContained[OP[_]]: WrapContained[Justified, OP] =
     WrapContainedJustified.asInstanceOf[WrapContained[Justified, OP]]
 
-  private final case object WrapContainedJustified extends WrapContained[Justified, Any] {
+  private case object WrapContainedJustified extends WrapContained[Justified, Any] {
 
     override def wrapContained[C[_] : Foldable, V](
       original: C[Justified[V]],
@@ -294,7 +296,7 @@ object Justified extends LowPriorityJustifiedImplicits {
 
   implicit def wrapFact[OP[_]]: WrapFact[Justified, OP] = WrapFactJustified.asInstanceOf[WrapFact[Justified, OP]]
 
-  private final case object WrapSelectedJustified extends WrapSelected[Justified, Any] {
+  private case object WrapSelectedJustified extends WrapSelected[Justified, Any] {
     override def wrapSelected[I, O](
       container: Justified[I],
       path: DataPath,
@@ -310,7 +312,7 @@ object Justified extends LowPriorityJustifiedImplicits {
   implicit def wrapSelected[OP[_]]: WrapSelected[Justified, OP] =
     WrapSelectedJustified.asInstanceOf[WrapSelected[Justified, OP]]
 
-  private final object WrapQuantifierJustified extends WrapQuantifier[Justified, Any] {
+  private object WrapQuantifierJustified extends WrapQuantifier[Justified, Any] {
 
     // TODO: Pull this from config somehow?
     override def shortCircuit: Boolean = false
@@ -400,7 +402,10 @@ object Justified extends LowPriorityJustifiedImplicits {
 
   implicit def bool[OP[_]]: Logic[Justified, Boolean, OP] = anyBool.asInstanceOf[Logic[Justified, Boolean, OP]]
 
-  final class BooleanLogic[B : ExtractValue.AsBoolean](fromBoolean: Boolean => B) extends Logic[Justified, B, Any] {
+  final class BooleanLogic[B : ExtractValue.AsBoolean](fromBoolean: Boolean => B)
+    extends Logic[Justified, B, Const[Any]] {
+
+    private def isTrue(value: Justified[B]): Boolean = ExtractValue.asBoolean(value.value)
 
     override def and(
       left: Justified[B],
@@ -408,7 +413,7 @@ object Justified extends LowPriorityJustifiedImplicits {
     )(implicit
       opB: Any,
     ): Justified[B] = {
-      val outcome = left.value && right.value
+      val outcome = isTrue(left) && isTrue(right)
       Justified.byInference("and", fromBoolean(outcome), NonEmptySeq(left, Vector(right)))
     }
 
@@ -418,12 +423,12 @@ object Justified extends LowPriorityJustifiedImplicits {
     )(implicit
       opB: Any,
     ): Justified[B] = {
-      val outcome = left.value || right.value
+      val outcome = isTrue(left) || isTrue(right)
       Justified.byInference("or", fromBoolean(outcome), NonEmptySeq(left, Vector(right)))
     }
 
     override def not(value: Justified[B])(implicit opB: Any): Justified[B] = {
-      val outcome = !value.value
+      val outcome = !isTrue(value)
       Justified.byInference("not", fromBoolean(outcome), NonEmptySeq.of(value))
     }
   }

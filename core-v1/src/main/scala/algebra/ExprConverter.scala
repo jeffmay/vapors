@@ -6,8 +6,9 @@ import data.{Extract, Window}
 import dsl.WrapSelected
 import lens.DataPath
 
-import shapeless.ops.hlist.Tupler
-import shapeless.{Generic, HList}
+import shapeless3.deriving.{Id, K0}
+
+import scala.deriving.Mirror
 
 /**
   * A serializable description of a total conversion function from one type to another.
@@ -38,16 +39,17 @@ object ExprConverter {
     override val toString: String = s"ExprConverter.$conversionType"
   }
 
-  def asProductType[I <: HList, O](implicit gen: Generic.Aux[O, I]): ExprConverter[I, O] =
-    new Impl("asProduct", gen.from)
+  def asProductType[I <: Tuple](implicit gen: Mirror.Product): ExprConverter[I, gen.MirroredMonoType] =
+    new Impl("asProduct", gen.fromProduct)
 
-  def asWrappedProductType[W[+_] : Extract, I <: HList : OP, O : OP, OP[_]](
+  def asWrappedProductType[W[+_] : Extract, I <: Tuple : OP, O : OP, OP[_]](
     implicit
-    gen: Generic.Aux[O, I],
+    gen: K0.Generic[O],
     wrapSelected: WrapSelected[W, OP],
   ): ExprConverter[W[I], W[O]] =
-    new Impl("asProductWrapped", wi => wrapSelected.wrapSelected(wi, DataPath.empty, gen.from(Extract[W].extract(wi))))
+    new Impl(
+      "asProductWrapped",
+      wi => wrapSelected.wrapSelected(wi, DataPath.empty, gen.fromRepr(Extract[W].extract(wi))),
+    )
 
-  def asTuple[I <: HList, O](implicit tupler: Tupler.Aux[I, O]): ExprConverter[I, O] =
-    new Impl("asTuple", tupler.apply)
 }

@@ -31,19 +31,19 @@ sealed abstract class YearUnit(u: ChronoUnit) extends MonthUnit(u)
 
 object TemporalUnit {
 
-  final case object Nanos extends TimeUnit(ChronoUnit.NANOS)
-  final case object Micros extends TimeUnit(ChronoUnit.MICROS)
-  final case object Millis extends TimeUnit(ChronoUnit.MILLIS)
-  final case object Seconds extends TimeUnit(ChronoUnit.SECONDS)
-  final case object Minutes extends TimeUnit(ChronoUnit.MINUTES)
-  final case object Hours extends TimeUnit(ChronoUnit.HOURS)
+  case object Nanos extends TimeUnit(ChronoUnit.NANOS)
+  case object Micros extends TimeUnit(ChronoUnit.MICROS)
+  case object Millis extends TimeUnit(ChronoUnit.MILLIS)
+  case object Seconds extends TimeUnit(ChronoUnit.SECONDS)
+  case object Minutes extends TimeUnit(ChronoUnit.MINUTES)
+  case object Hours extends TimeUnit(ChronoUnit.HOURS)
 
-  final case object Days extends DateUnit(ChronoUnit.DAYS)
-  final case object Weeks extends DateUnit(ChronoUnit.WEEKS)
-  final case object Months extends DateUnit(ChronoUnit.MONTHS)
+  case object Days extends DateUnit(ChronoUnit.DAYS)
+  case object Weeks extends DateUnit(ChronoUnit.WEEKS)
+  case object Months extends DateUnit(ChronoUnit.MONTHS)
 
-  final case object Years extends YearUnit(ChronoUnit.YEARS)
-  final case object Decades extends YearUnit(ChronoUnit.DECADES)
-  final case object Centuries extends YearUnit(ChronoUnit.CENTURIES)
-  final case object Millennia extends YearUnit(ChronoUnit.MILLENNIA)
+  case object Years extends YearUnit(ChronoUnit.YEARS)
+  case object Decades extends YearUnit(ChronoUnit.DECADES)
+  case object Centuries extends YearUnit(ChronoUnit.CENTURIES)
+  case object Millennia extends YearUnit(ChronoUnit.MILLENNIA)
 }

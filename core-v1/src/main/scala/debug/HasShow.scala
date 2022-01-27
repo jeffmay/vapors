@@ -24,7 +24,7 @@ object HasShow extends LowPriorityHasShow {
 
   @inline final def none[V]: HasShow[V] = NoShow.asInstanceOf[HasShow[V]]
 
-  private final object NoShow extends HasShow[Any] {
+  private object NoShow extends HasShow[Any] {
     override val show: Show[Any] = _.toString
   }
 

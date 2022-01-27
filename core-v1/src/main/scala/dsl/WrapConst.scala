@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import shapeless.Id
+import shapeless3.deriving.{Const, Id}
 
 /**
   * Wraps the given constant with the given wrapper type.
@@ -21,7 +21,7 @@ trait WrapConst[W[_], OP[_]] {
 
 object WrapConst {
 
-  private final object Unwrapped extends WrapConst[Id, Any] {
+  private object Unwrapped extends WrapConst[Id, Const[Any]] {
     override def wrapConst[A](value: A)(implicit opA: Any): A = value
   }
 

@@ -48,10 +48,10 @@ private[math] trait MultiplyNumericImplicits extends LowPriorityMultiplyNumericI
 private[math] trait LowPriorityMultiplyNumericImplicits {
 
   implicit def numericCoerceLeft[L : Numeric, R : Numeric](implicit ev: R => L): Multiply.Aux[L, R, L] =
-    Multiply.instance(Numeric[L].times(_, _))
+    Multiply.instance((l, r) => Numeric[L].times(l, ev(r)))
 
   implicit def numericCoerceRight[L : Numeric, R : Numeric](implicit ev: L => R): Multiply.Aux[L, R, R] =
-    Multiply.instance(Numeric[R].times(_, _))
+    Multiply.instance((l, r) => Numeric[R].times(ev(l), r))
 }
 
 private[math] trait MultiplyStringImplicits {

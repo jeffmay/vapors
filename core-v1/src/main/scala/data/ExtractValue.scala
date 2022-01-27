@@ -8,7 +8,8 @@ package data
   * While definitionally identical to an implicit function, it's meaning is different. This
   * is typically used to extract a value from a field of a product type.
   */
-trait ExtractValue[T, V] extends (T => V) {
+trait
+ExtractValue[T, V] extends (T => V) {
 
   override final def apply(v1: T): V = extractValue(v1)
 
@@ -16,6 +17,8 @@ trait ExtractValue[T, V] extends (T => V) {
 }
 
 object ExtractValue {
+
+  type As[T] = [v] =>> ExtractValue[T, v]
 
   /**
     * A handy type alias for extracting a boolean from a given type.
@@ -36,7 +39,7 @@ object ExtractValue {
     def from[T](implicit extractor: ExtractValue[T, V]): ExtractValue[T, V] = extractor
   }
 
-  implicit def conforms[A, B](implicit ev: A <:< B): ExtractValue[A, B] = ev.apply
+  implicit def conforms[A, B](implicit ev: A => B): ExtractValue[A, B] = ev.apply(_)
 
   implicit def extracted[W[_] : Extract, V]: ExtractValue[W[V], V] = Extract[W].extract(_)
 }

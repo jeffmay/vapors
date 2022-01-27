@@ -3,7 +3,6 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra.Expr
-import shapeless.HList
 
 /**
   * All type aliases defined by the [[FullDsl]] subclasses.
@@ -105,7 +104,7 @@ trait DslTypes extends Any {
   /**
     * An [[ExprHList]] with a fixed [[OP]] type.
     */
-  final type XHL[-I, L <: HList] = ExprHList[I, L, OP]
+  final type XHL[-I, L <: Tuple] = ExprHList[I, L, OP]
 
   /**
     * An [[ExprHNil]] with a fixed [[OP]] type.

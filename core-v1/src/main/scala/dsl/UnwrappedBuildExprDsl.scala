@@ -10,7 +10,7 @@ import math.{Add, Power}
 
 import cats.data.NonEmptySeq
 import cats.{FlatMap, Foldable, Functor, Id, Order, Reducible, Traverse}
-import shapeless.{Generic, HList, Nat}
+import shapeless3.deriving.K0
 
 trait UnwrappedBuildExprDsl
   extends BuildExprDsl
@@ -195,13 +195,13 @@ trait UnwrappedBuildExprDsl
     override def getAs[C[_]]: GetAsUnwrapped[I, A, C, OP] = new GetAsUnwrapped(inputExpr)
   }
 
-  override implicit final def xhlOps[I, WL <: HList](xhl: ExprHList[I, WL, OP]): UnwrappedExprHListOpsBuilder[I, WL] =
+  override implicit final def xhlOps[I, WL <: Tuple](xhl: ExprHList[I, WL, OP]): UnwrappedExprHListOpsBuilder[I, WL] =
     new UnwrappedExprHListOpsBuilder(xhl)
 
-  final class UnwrappedExprHListOpsBuilder[-I, WL <: HList](inputExprHList: ExprHList[I, WL, OP])
+  final class UnwrappedExprHListOpsBuilder[-I, WL <: Tuple](inputExprHList: ExprHList[I, WL, OP])
     extends ExprHListOpsBuilder(inputExprHList) {
 
-    override def toHList[UL <: HList](
+    override def toHList[UL <: Tuple](
       implicit
       zip: ZipToShortest.Aux[W, WL, OP, UL],
       opO: OP[UL],
@@ -211,7 +211,7 @@ trait UnwrappedBuildExprDsl
     }
 
     // IntelliJ highlights this as an error, but it compiles and it provides better type inference for the return type
-    override def zipToShortest[C[+_], UL <: HList](
+    override def zipToShortest[C[+_], UL <: Tuple](
       implicit
       zip: ZipToShortest.Aux[C, WL, OP, UL],
       opO: OP[C[UL]],
@@ -221,15 +221,15 @@ trait UnwrappedBuildExprDsl
     }
   }
 
-  override implicit def fromHL[I, L <: HList](expr: I ~:> L): UnwrappedConvertHListExprBuilder[I, L] =
+  override implicit def fromHL[I, L <: Tuple](expr: I ~:> L): UnwrappedConvertHListExprBuilder[I, L] =
     new UnwrappedConvertHListExprBuilder(expr)
 
-  final class UnwrappedConvertHListExprBuilder[-I, L <: HList](inputExpr: I ~:> L)
+  final class UnwrappedConvertHListExprBuilder[-I, L <: Tuple](inputExpr: I ~:> L)
     extends ConvertHListExprBuilder(inputExpr) {
 
     override def as[P](
       implicit
-      gen: Generic.Aux[P, L],
+      gen: K0.Generic[P],
       opL: OP[L],
       opWL: OP[L],
       opP: OP[P],
@@ -356,8 +356,8 @@ trait UnwrappedBuildExprDsl
       opB: OP[B],
     ): Expr.FoldLeft[CI, C, A, B, OP] = {
       val initLensExpr = ident[(B, A)]
-      val b = initLensExpr.get(_.at(Nat._0))
-      val a = initLensExpr.get(_.at(Nat._1))
+      val b = initLensExpr.get(_.at(0))
+      val a = initLensExpr.get(_.at(1))
       val foldExpr = foldExprBuilder(b, a)
       Expr.FoldLeft(inputExpr, initExpr, foldExpr)
     }

@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
 
-  final val Scala_2_13 = "2.13.8"
+  final val Scala_3 = "3.1.0"
 
   private final val catsVersion = "2.7.0"
   private final val izumiReflectVersion = "2.0.8"
@@ -12,7 +12,7 @@ object Dependencies {
   private final val scalaCheckOpsVersion = "2.8.1"
   private final val scalaTestVersion = "3.2.10"
   private final val scalaTestPlusScalaCheckVersion = "3.2.10.0"
-  private final val shapelessVersion = "2.3.7"
+  private final val shapelessVersion = "3.0.4"
   private final val sourcecodeVersion = "0.2.7"
 
   private val catsCore = "org.typelevel" %% "cats-core" % catsVersion
@@ -24,7 +24,7 @@ object Dependencies {
   private val scalactic = "org.scalactic" %% "scalactic" % scalacticVersion
   private val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion
   private val scalaTestPlusScalaCheck = "org.scalatestplus" %% "scalacheck-1-15" % scalaTestPlusScalaCheckVersion
-  private val shapeless = "com.chuusai" %% "shapeless" % shapelessVersion
+  private val shapeless = "org.typelevel" %% "shapeless3-deriving" % shapelessVersion
   private val sourcecode = "com.lihaoyi" %% "sourcecode" % sourcecodeVersion
 
   final object CoreV1Project {

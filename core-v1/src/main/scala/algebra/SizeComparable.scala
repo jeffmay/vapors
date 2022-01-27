@@ -73,9 +73,9 @@ object SizeComparable {
 sealed abstract class SizeComparison(val symbol: String)
 
 object SizeComparison {
-  final case object === extends SizeComparison("===")
-  final case object < extends SizeComparison("<")
-  final case object <= extends SizeComparison("<=")
-  final case object > extends SizeComparison(">")
-  final case object >= extends SizeComparison(">=")
+  case object === extends SizeComparison("===")
+  case object < extends SizeComparison("<")
+  case object <= extends SizeComparison("<=")
+  case object > extends SizeComparison(">")
+  case object >= extends SizeComparison(">=")
 }

@@ -3,8 +3,6 @@ package com.rallyhealth.vapors.v1
 package lens
 
 import cats.Foldable
-import shapeless.ops.{hlist, tuple}
-import shapeless.{HList, Nat}
 
 /**
   * Defines how to get an instance of [[V]] from a collection [[C]], keyed by [[K]].
@@ -32,15 +30,9 @@ object Indexed extends LowPriorityIndexed {
     }
   }
 
-  implicit def indexedHList[L <: HList, N <: Nat, V](implicit at: hlist.At.Aux[L, N, V]): Indexed[L, N, V] = {
-    new Indexed[L, N, V] {
-      override def get(container: L)(key: N): V = at(container)
-    }
-  }
-
-  implicit def indexedTuple[T <: Product, N <: Nat, V](implicit at: tuple.At.Aux[T, N, V]): Indexed[T, N, V] = {
-    new Indexed[T, N, V] {
-      override def get(container: T)(key: N): V = at(container)
+  implicit def indexedTuple[T <: NonEmptyTuple, N <: Int]: Indexed[T, N, Tuple.Elem[T, N]] = {
+    new Indexed[T, N, Tuple.Elem[T, N]] {
+      override def get(container: T)(key: N): Tuple.Elem[T, key.type] = container.apply(key)
     }
   }
 

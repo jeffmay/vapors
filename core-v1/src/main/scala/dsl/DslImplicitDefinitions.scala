@@ -6,7 +6,6 @@ import cats.data.Ior
 import cats.implicits._
 import com.rallyhealth.vapors.v1.algebra.Expr
 import com.rallyhealth.vapors.v1.lens.DataPath
-import shapeless.{::, HList, HNil}
 
 import scala.collection.Factory
 
@@ -109,37 +108,37 @@ final class DslImplicitDefinitions[W[+_] : Functor : Semigroupal, OP[_]](
 
   def hlastAlignMapN[C[_] : Functor, H](
     implicit
-    isCons: IsExprHCons.Aux[C[W[H]] :: HNil, C[W[H]], HNil],
-  ): ZipToShortest.Aux[Lambda[a => C[W[a]]], C[W[H]] :: HNil, OP, H :: HNil] =
-    new ZipToShortest[Lambda[a => C[W[a]]], C[W[H]] :: HNil, OP] {
-      override type UL = H :: HNil
+    isCons: IsExprHCons[C[W[H]] *: EmptyTuple],
+  ): ZipToShortest.Aux[[a] =>> C[W[a]], C[W[H]] *: EmptyTuple, OP, H *: EmptyTuple] =
+    new ZipToShortest[[a] =>> C[W[a]], C[W[H]] *: EmptyTuple, OP] {
+      override type UL = H *: EmptyTuple
       override def zipToShortestWith[G[-_, +_] : Arrow, I](
-        xhl: ExprHList[I, C[W[H]] :: HNil, OP],
+        xhl: ExprHList[I, C[W[H]] *: EmptyTuple, OP],
         v: Expr.Visitor[G, OP],
-      ): G[I, C[W[H :: HNil]]] = {
+      ): G[I, C[W[H *: EmptyTuple]]] = {
         val G = Arrow[G]
         val gcwh = xhl.head.visit(v)
         gcwh >>> G.lift { cwh =>
           cwh.map { wh =>
             wh.map { h =>
-              h :: HNil
+              h *: EmptyTuple
             }
           }
         }
       }
     }
 
-  def hconsAlignMapN[C[_] : Align : FunctorFilter, H, WT <: HList](
-    mt: ZipToShortest[Lambda[a => C[W[a]]], WT, OP],
+  def hconsAlignMapN[C[_] : Align : FunctorFilter, H, WT <: Tuple](
+    mt: ZipToShortest[[a] =>> C[W[a]], WT, OP],
   )(implicit
-    isCons: IsExprHCons.Aux[C[W[H]] :: WT, C[W[H]], WT],
-  ): ZipToShortest.Aux[Lambda[a => C[W[a]]], C[W[H]] :: WT, OP, H :: mt.UL] =
-    new ZipToShortest[Lambda[a => C[W[a]]], C[W[H]] :: WT, OP] {
-      override type UL = H :: mt.UL
+    isCons: IsExprHCons[C[W[H]] *: WT],
+  ): ZipToShortest.Aux[[a] =>> C[W[a]], C[W[H]] *: WT, OP, H *: mt.UL] =
+    new ZipToShortest[[a] =>> C[W[a]], C[W[H]] *: WT, OP] {
+      override type UL = H *: mt.UL
       override def zipToShortestWith[G[-_, +_] : Arrow, I](
-        xhl: ExprHList[I, C[W[H]] :: WT, OP],
+        xhl: ExprHList[I, C[W[H]] *: WT, OP],
         v: Expr.Visitor[G, OP],
-      ): G[I, C[W[H :: mt.UL]]] = {
+      ): G[I, C[W[H *: mt.UL]]] = {
         val C = Align[C]
         val G = Arrow[G]
         val gcwh = xhl.head.visit(v)
@@ -147,7 +146,7 @@ final class DslImplicitDefinitions[W[+_] : Functor : Semigroupal, OP[_]](
         (gcwh &&& gcwt) >>> G.lift {
           case (cwh, cwt) =>
             C.alignWith(cwh, cwt) {
-                case Ior.Both(wh, wt) => Some((wh, wt).mapN(_ :: _))
+                case Ior.Both(wh, wt) => Some((wh, wt).mapN(_ *: _))
                 case _ => None
               }
               .collect {
@@ -159,32 +158,32 @@ final class DslImplicitDefinitions[W[+_] : Functor : Semigroupal, OP[_]](
 
   def hlastMapN[H](
     implicit
-    isCons: IsExprHCons.Aux[W[H] :: HNil, W[H], HNil],
-  ): ZipToShortest.Aux[W, W[H] :: HNil, OP, H :: HNil] =
-    new ZipToShortest[W, W[H] :: HNil, OP] {
-      override type UL = H :: HNil
+    isCons: IsExprHCons[W[H] *: EmptyTuple],
+  ): ZipToShortest.Aux[W, W[H] *: EmptyTuple, OP, H *: EmptyTuple] =
+    new ZipToShortest[W, W[H] *: EmptyTuple, OP] {
+      override type UL = H *: EmptyTuple
       override def zipToShortestWith[G[-_, +_] : Arrow, I](
-        xhl: ExprHList[I, W[H] :: HNil, OP],
+        xhl: ExprHList[I, W[H] *: EmptyTuple, OP],
         v: Expr.Visitor[G, OP],
-      ): G[I, W[H :: HNil]] = {
+      ): G[I, W[H *: EmptyTuple]] = {
         val G = Arrow[G]
         val head = isCons.head(xhl)
         val gfh = head.visit(v)
-        gfh >>> G.lift(_.map(_ :: HNil))
+        gfh >>> G.lift(_.map(_ *: EmptyTuple))
       }
     }
 
-  def hconsMapN[H, WT <: HList](
+  def hconsMapN[H, WT <: Tuple](
     mt: ZipToShortest[W, WT, OP],
   )(implicit
-    isCons: IsExprHCons.Aux[W[H] :: WT, W[H], WT],
-  ): ZipToShortest.Aux[W, W[H] :: WT, OP, H :: mt.UL] =
-    new ZipToShortest[W, W[H] :: WT, OP] {
-      override type UL = H :: mt.UL
+    isCons: IsExprHCons[W[H] *: WT],
+  ): ZipToShortest.Aux[W, W[H] *: WT, OP, H *: mt.UL] =
+    new ZipToShortest[W, W[H] *: WT, OP] {
+      override type UL = H *: mt.UL
       override def zipToShortestWith[G[-_, +_] : Arrow, I](
-        xhl: ExprHList[I, W[H] :: WT, OP],
+        xhl: ExprHList[I, W[H] *: WT, OP],
         v: Expr.Visitor[G, OP],
-      ): G[I, W[H :: mt.UL]] = {
+      ): G[I, W[H *: mt.UL]] = {
         val G = Arrow[G]
         val head = isCons.head(xhl)
         val tail = isCons.tail(xhl)
@@ -193,7 +192,7 @@ final class DslImplicitDefinitions[W[+_] : Functor : Semigroupal, OP[_]](
         (gfh &&& gft) >>> G.lift {
           case (fh, ft) =>
             (fh, ft).mapN { (h, t) =>
-              h :: t
+              h *: t
             }
         }
       }

@@ -81,7 +81,7 @@ object ExprState {
   final val Empty: Empty = Empty(FactTable.empty)
 
   /** A sentinel value for empty ExprState input or output */
-  final case object Nothing
+  case object Nothing
 
   type Input[+I] = ExprState[I, Nothing]
 

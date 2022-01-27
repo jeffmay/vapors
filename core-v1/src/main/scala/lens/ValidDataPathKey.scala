@@ -3,8 +3,6 @@ package com.rallyhealth.vapors.v1
 package lens
 
 import cats.Contravariant
-import shapeless.Nat
-import shapeless.ops.nat.ToInt
 
 /**
   * Defines a type that can be used as the key in a [[Map]].
@@ -12,7 +10,7 @@ import shapeless.ops.nat.ToInt
   * @note you should consider extending [[Equals]] to make sure that your type is
   *       actually safe to use as a key.
   */
-trait ValidDataPathKey[K] {
+trait ValidDataPathKey[-K] {
 
   def stringify(key: K): String
 }
@@ -29,11 +27,7 @@ object ValidDataPathKey {
     }
   }
 
-  implicit def atNatIdx[N <: Nat : ToInt]: ValidDataPathKey[N] = { _ =>
-    ToInt[N].apply().toString
-  }
-
-  implicit val string: ValidDataPathKey[String] = identity[String]
+  implicit val string: ValidDataPathKey[String] = identity(_)
 
   implicit val int: ValidDataPathKey[Int] = _.toString
 

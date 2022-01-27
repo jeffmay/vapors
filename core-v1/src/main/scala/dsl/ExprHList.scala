@@ -4,19 +4,17 @@ package dsl
 
 import algebra.Expr
 
-import shapeless.{::, HList, HNil}
-
 /**
-  * Analogous to an [[HList]], but for [[Expr]] nodes with a shared input type [[I]] and [[OP]] type.
+  * Analogous to an [[Tuple]], but for [[Expr]] nodes with a shared input type [[I]] and [[OP]] type.
   *
   * @see [[dsl.BuildExprDsl.ExprHListOpsBuilder]] for operations available on [[ExprHList]]
   *
   * @tparam I the shared input type for all expressions in the [[ExprHList]]
-  * @tparam L the [[HList]] of output values (if this is a wrapped DSL, then each element will be wrapped)
+  * @tparam L the [[Tuple]] of output values (if this is a wrapped DSL, then each element will be wrapped)
   * @tparam OP the custom output parameter type constructor (defined by the imported DSL).
   *            See [[dsl.DslTypes.OP]] for more details.
   */
-sealed trait ExprHList[-I, +L <: HList, OP[_]] {
+sealed trait ExprHList[-I, +L <: Tuple, OP[_]] {
 
   /**
     * Prefix an expression node to this [[ExprHList]].
@@ -26,25 +24,27 @@ sealed trait ExprHList[-I, +L <: HList, OP[_]] {
     * @tparam CI a more specific input type to obey the laws of contravariance
     * @tparam H the output type of the given head expression
     */
-  def ::[CI <: I, H](headExpr: Expr[CI, H, OP]): ExprHList[CI, H :: L, OP] = ExprHCons(headExpr, this)
+  def ::[CI <: I, H](headExpr: Expr[CI, H, OP]): ExprHList[CI, H *: L, OP] = ExprHCons(headExpr, this)
 }
 
 object ExprHList {
 
-  implicit def asExpr[I, L <: HList : ConvertToHList : OP, OP[_]](xhl: ExprHList[I, L, OP]): Expr.ToHList[I, L, OP] =
+  implicit def asExpr[I, L <: Tuple : ConvertToHList : OP, OP[_]](xhl: ExprHList[I, L, OP]): Expr.ToHList[I, L, OP] =
     Expr.ToHList(xhl)
 
-  implicit class Ops[I, L <: HList, OP[_]](private val xhl: ExprHList[I, L, OP]) {
+  implicit class Ops[I, L <: Tuple, OP[_]](private val xhl: ExprHList[I, L, OP]) {
 
     /**
       * Return the first element of this non-empty [[ExprHList]].
       */
-    def head(implicit c: IsExprHCons[L]): Expr[I, c.H, OP] = c.head(xhl)
+    def head[This >: L <: NonEmptyTuple]: Expr[I, Tuple.Head[This], OP] =
+      xhl.asInstanceOf[ExprHCons[I, Tuple.Head[This], Tuple.Tail[This], OP]].head
 
     /**
       * Return the tail elements of this non-empty [[ExprHList]].
       */
-    def tail(implicit c: IsExprHCons[L]): ExprHList[I, c.T, OP] = c.tail(xhl)
+    def tail[This >: L <: NonEmptyTuple]: ExprHList[I, Tuple.Tail[This], OP] =
+      xhl.asInstanceOf[ExprHCons[I, Tuple.Head[This], Tuple.Tail[This], OP]].tail
 
     def toExpr(
       implicit
@@ -60,11 +60,11 @@ object ExprHList {
   * @tparam OP the custom output parameter type constructor (defined by the imported DSL).
   *            See [[dsl.DslTypes.OP]] for more details.
   */
-sealed abstract class ExprHNil[OP[_]] extends ExprHList[Any, HNil, OP]
+sealed abstract class ExprHNil[OP[_]] extends ExprHList[Any, EmptyTuple, OP]
 
 object ExprHNil {
   @inline final def apply[OP[_]]: ExprHNil[OP] = nil.asInstanceOf[ExprHNil[OP]]
-  private final object nil extends ExprHNil[Any]
+  private object nil extends ExprHNil[[_] =>> Any]
 
   final def unapply(v: Any): Boolean = nil == v
 }
@@ -78,11 +78,11 @@ object ExprHNil {
   *
   * @tparam I the shared input type for all expressions in the [[ExprHList]]
   * @tparam H the return type of the head [[Expr]]
-  * @tparam T the [[HList]] of all return types of the remaining elements in the [[ExprHList]]
+  * @tparam T the [[Tuple]] of all return types of the remaining elements in the [[ExprHList]]
   * @tparam OP the custom output parameter type constructor (defined by the imported DSL).
   *            See [[dsl.DslTypes.OP]] for more details.
   */
-case class ExprHCons[-I, +H, +T <: HList, OP[_]](
+case class ExprHCons[-I, +H, +T <: Tuple, OP[_]](
   head: Expr[I, H, OP],
   tail: ExprHList[I, T, OP],
-) extends ExprHList[I, H :: T, OP]
+) extends ExprHList[I, H *: T, OP]

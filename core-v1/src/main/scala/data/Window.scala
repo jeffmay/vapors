@@ -40,7 +40,7 @@ object Window {
 
   @inline final def empty[A]: Window[A] = Empty
 
-  private final case object Empty extends Window[Nothing] {
+  private case object Empty extends Window[Nothing] {
     override def bounds: Option[Ior[Above[Nothing], Below[Nothing]]] = None
   }
 
@@ -48,7 +48,7 @@ object Window {
 
     def contains(value: A): Boolean = window match {
       case Empty => false
-      case knownWindow: KnownWindow[A] => knownWindow.contains(value)
+      case knownWindow: KnownWindow[Any] => knownWindow.contains(value)
     }
   }
 

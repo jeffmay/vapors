@@ -8,7 +8,6 @@ import lens.VariantLens
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
 import izumi.reflect.Tag
-import shapeless.HList
 
 import scala.reflect.ClassTag
 
@@ -315,7 +314,7 @@ object DebugArgs {
       override type Out = W[Boolean]
     }
 
-  implicit def debugToHList[I, L <: HList, OP[_]]: Aux[Expr.ToHList[I, L, OP], OP, I, L] =
+  implicit def debugToHList[I, L <: Tuple, OP[_]]: Aux[Expr.ToHList[I, L, OP], OP, I, L] =
     new DebugArgs[Expr.ToHList[I, L, OP], OP] {
       override type In = I
       override type Out = L
@@ -324,8 +323,8 @@ object DebugArgs {
   implicit def debugZipToShortestHList[
     I,
     F[+_],
-    WL <: HList,
-    UL <: HList,
+    WL <: Tuple,
+    UL <: Tuple,
     OP[_],
   ]: Aux[Expr.ZipToShortestHList[I, F, WL, UL, OP], OP, I, F[UL]] =
     new DebugArgs[Expr.ZipToShortestHList[I, F, WL, UL, OP], OP] {

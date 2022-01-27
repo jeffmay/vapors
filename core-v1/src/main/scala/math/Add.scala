@@ -40,7 +40,7 @@ object Add extends AddNumericImplicits with AddJavaTimeImplicits {
     ): Out = fn(left, right)
   }
 
-  @inline def id[N](implicit add: Add.Aux[N, N, N]): Aux[N, N, N] = add
+  inline def id[N](implicit add: Add.Aux[N, N, N]): Aux[N, N, N] = add
 }
 
 private[math] trait AddNumericImplicits extends LowPriorityAddNumericImplicits {
@@ -50,11 +50,11 @@ private[math] trait AddNumericImplicits extends LowPriorityAddNumericImplicits {
 
 private[math] trait LowPriorityAddNumericImplicits {
 
-  implicit def numericCoerceLeft[L : Numeric, R : Numeric](implicit ev: R => L): Add.Aux[L, R, L] =
-    Add.instance(Numeric[L].plus(_, _))
+  implicit def numericCoerceLeft[L : Numeric, R : Numeric](implicit ev: R <:< L): Add.Aux[L, R, L] =
+    Add.instance((l, r) => Numeric[L].plus(l, r))
 
-  implicit def numericCoerceRight[L : Numeric, R : Numeric](implicit ev: L => R): Add.Aux[L, R, R] =
-    Add.instance(Numeric[R].plus(_, _))
+  implicit def numericCoerceRight[L : Numeric, R : Numeric](implicit ev: L <:< R): Add.Aux[L, R, R] =
+    Add.instance((l, r) => Numeric[R].plus(l, r))
 }
 
 private[math] trait AddJavaTimeImplicits {

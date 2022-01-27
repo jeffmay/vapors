@@ -42,10 +42,10 @@ private[math] trait SubtractNumericImplicits extends LowPrioritySubtractNumericI
 private[math] trait LowPrioritySubtractNumericImplicits {
 
   implicit def numericCoerceLeft[L : Numeric, R : Numeric](implicit ev: R => L): Subtract.Aux[L, R, L] =
-    Subtract.instance(Numeric[L].minus(_, _))
+    Subtract.instance((l, r) => Numeric[L].minus(l, ev(r)))
 
   implicit def numericCoerceRight[L : Numeric, R : Numeric](implicit ev: L => R): Subtract.Aux[L, R, R] =
-    Subtract.instance(Numeric[R].minus(_, _))
+    Subtract.instance((l, r) => Numeric[R].minus(ev(l), r))
 }
 
 private[math] trait SubtractJavaTimeImplicits {

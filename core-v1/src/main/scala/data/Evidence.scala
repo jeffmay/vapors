@@ -66,7 +66,7 @@ object Evidence {
 
   def apply(factSets: FactOrFactSet*): Evidence = {
     val fullFactSet = factSets.foldLeft(Set.empty[Fact])(_ | _.toSet)
-    NonEmptySet.fromSet(SortedSet.from(fullFactSet)).map(SomeEvidence).getOrElse(NoEvidence)
+    NonEmptySet.fromSet(SortedSet.from(fullFactSet)).map(SomeEvidence(_)).getOrElse(NoEvidence)
   }
 
 }

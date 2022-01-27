@@ -5,8 +5,6 @@ package dsl
 import algebra.Expr
 import time.CountTime
 
-import shapeless._
-
 import java.time.{Clock, Instant, LocalDate}
 
 /**
@@ -43,13 +41,12 @@ trait TimeFunctions {
     roundToUnitExpr: I ~:> W[U],
   )(implicit
     countTime: CountTime[W[T], W[U], W[Long]],
-    opL: OP[W[T] :: W[T] :: W[U] :: HNil],
+    opL: OP[(W[T], W[T], W[U])],
     opO: OP[W[Long]],
-  ): AndThen[I, W[T] :: W[T] :: W[U] :: HNil, W[Long]] = {
+  ): AndThen[I, (W[T], W[T], W[U]), W[Long]] = {
     (lhsExpr :: rhsExpr :: roundToUnitExpr).andThen {
-      Expr.CustomFunction[W[T] :: W[T] :: W[U] :: HNil, W[Long], OP]("date_diff", {
-        case lhs :: rhs :: unit :: HNil =>
-          CountTime.between(lhs, rhs, unit)
+      Expr.CustomFunction[(W[T], W[T], W[U]), W[Long], OP]("date_diff", { (lhs, rhs, unit) =>
+        CountTime.between(lhs, rhs, unit)
       })
     }
   }

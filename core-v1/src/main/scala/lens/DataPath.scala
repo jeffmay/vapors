@@ -70,9 +70,9 @@ object DataPath {
 
   final case class FilterKeys(keys: SortedSet[String]) extends Node
 
-  final case object Head extends Node
+  case object Head extends Node
 
-  final case object Last extends Node
+  case object Last extends Node
 
   final case class Idx(index: Int) extends Node
 
@@ -92,7 +92,7 @@ object DataPath {
     def nonEmptySet: NonEmptySet[Int] = NonEmptySet.fromSetUnsafe(immutable.SortedSet.from(bitSet))
   }
 
-  final object IdxSet {
+  object IdxSet {
     def apply(set: NonEmptySet[Int]): IdxSet = IdxSet(BitSet.fromSpecific(set.toSortedSet))
 
     def of(
@@ -125,9 +125,9 @@ object DataPath {
         case IdxSlice(startIdx, endIdx) =>
           buffer.append('[').append(startIdx).append(':').append(endIdx).append(']')
         case IdxRange(range) if range.step == 1 =>
-          remaining +:= IdxSlice(range.start, range.end)
+          remaining = remaining.+:(IdxSlice(range.start, range.end))
         case IdxRange(range) =>
-          remaining +:= IdxSet(BitSet.fromSpecific(range))
+          remaining = remaining.:+(IdxSet(BitSet.fromSpecific(range.iterator)))
         case IdxSet(idxSet) =>
           buffer.append('[')
           joinKeys(buffer, idxSet, ",")

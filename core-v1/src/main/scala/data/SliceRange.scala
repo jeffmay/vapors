@@ -75,7 +75,7 @@ object SliceRange {
     def <->(end: End.type): Relative = Relative.fromEnd(num)
   }
 
-  final case object End
+  case object End
 }
 
 trait SliceRangeSyntax {

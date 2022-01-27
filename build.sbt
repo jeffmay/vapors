@@ -5,19 +5,16 @@ ThisBuild / organization := "com.rallyhealth"
 ThisBuild / organizationName := "Rally Health"
 
 ThisBuild / versionScheme := Some("early-semver")
-ThisBuild / scalaVersion := Dependencies.Scala_2_13
+ThisBuild / scalaVersion := Dependencies.Scala_3
 ThisBuild / licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT"))
 
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation:false",
-  "-explaintypes",
   "-feature",
   "-language:higherKinds",
   "-language:implicitConversions",
   "-language:experimental.macros",
   "-Xfatal-warnings",
-  "-Xlog-implicits",
-  "-Ymacro-annotations",
 )
 
 // reload sbt when the build files change
@@ -44,7 +41,6 @@ def commonProject(
     .settings(
       name := s"vapors-$dir",
       idePackagePrefix.withRank(KeyRanks.Invisible) := Some(packagePrefix),
-      addCompilerPlugin(("org.typelevel" % "kind-projector" % "0.13.2").cross(CrossVersion.full)),
     )
 }
 
@@ -52,4 +48,3 @@ lazy val `core-v1` = commonProject("core-v1", "vapors.v1")
   .settings(
     libraryDependencies ++= CoreV1Project.all,
   )
-

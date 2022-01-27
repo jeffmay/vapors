@@ -4,10 +4,9 @@ package dsl
 
 import algebra.Expr
 import cats.arrow.Arrow
-import shapeless.HList
 
 /**
-  * Interprets an [[ExprHList]] using an [[Arrow]] to produce an F-wrapped [[HList]] of unwrapped results.
+  * Interprets an [[ExprHList]] using an [[Arrow]] to produce an F-wrapped [[Tuple]] of unwrapped results.
   *
   * For example (in pseudo-code types):
   *
@@ -17,8 +16,8 @@ import shapeless.HList
   *
   *     (Any ~:> Seq[String]) :: (I ~:> Seq[Int]) => Any ~:> Seq[String :: Int :: HNil]
   */
-trait ZipToShortest[W[_], WL <: HList, OP[_]] {
-  type UL <: HList
+trait ZipToShortest[W[_], WL <: Tuple, OP[_]] {
+  type UL <: Tuple
 
   def zipToShortestWith[G[-_, +_] : Arrow, I](
     xhl: ExprHList[I, WL, OP],
@@ -30,5 +29,5 @@ trait ZipToShortest[W[_], WL <: HList, OP[_]] {
   * Implementations live in the subclasses of [[ExprHListDslImplicits]].
   */
 object ZipToShortest {
-  type Aux[W[_], WL <: HList, OP[_], UL0] = ZipToShortest[W, WL, OP] { type UL = UL0 }
+  type Aux[W[_], WL <: Tuple, OP[_], UL0] = ZipToShortest[W, WL, OP] { type UL = UL0 }
 }

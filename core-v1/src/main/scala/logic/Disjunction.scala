@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package logic
 
-import shapeless.Id
+import shapeless3.deriving.Id
 
 import scala.annotation.implicitNotFound
 

@@ -11,7 +11,6 @@ import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
 import cats.{Applicative, Eval, FlatMap, Foldable, Functor, SemigroupK, Traverse}
-import shapeless.HList
 
 /**
   * A vapors [[Expr]] interpreter that just builds a simple function without providing any post-processing.
@@ -25,7 +24,7 @@ object SimpleEngine {
 
   class Visitor[OP[_]](protected val factTable: FactTable)
     extends CommonUncachedEngine[OP]
-    with Expr.Visitor[Lambda[(`-I`, `+O`) => I => O], OP] {
+    with Expr.Visitor[[i, o] =>> i => o, OP] {
 
     import cats.implicits._
 
@@ -246,7 +245,7 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state(i, co))
     }
 
-    override def visitSizeIs[I, N : ExtractValue[*, Int], B : ExtractValue.AsBoolean : OP](
+    override def visitSizeIs[I, N : ExtractValue.As[Int], B : ExtractValue.AsBoolean : OP](
       expr: Expr.SizeIs[I, N, B, OP],
     )(implicit
       compare: SizeComparable[I, N, B],
@@ -277,7 +276,7 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state(i, o))
     }
 
-    override def visitToHList[I, L <: HList : OP](
+    override def visitToHList[I, L <: Tuple : OP](
       expr: Expr.ToHList[I, L, OP],
     )(implicit
       toHL: ConvertToHList[L],
@@ -334,7 +333,7 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state((i, value, window), o))
     }
 
-    override def visitZipToShortestHList[I, F[+_], WL <: HList, UL <: HList](
+    override def visitZipToShortestHList[I, F[+_], WL <: Tuple, UL <: Tuple](
       expr: Expr.ZipToShortestHList[I, F, WL, UL, OP],
     )(implicit
       zip: ZipToShortest.Aux[F, WL, OP, UL],

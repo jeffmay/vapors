@@ -7,7 +7,6 @@ import data.{Extract, ExtractValue, Justified}
 import logic.Logic
 
 import cats.{Align, Functor, FunctorFilter, Traverse}
-import shapeless.{::, <:!<, HList, HNil}
 
 import scala.collection.Factory
 
@@ -26,7 +25,7 @@ trait JustifiedBuildExprDsl
 
   override protected implicit final def extractBool[
     B : ExtractValue.AsBoolean,
-  ]: ExtractValue.AsBoolean[Justified[B]] = { b =>
+  ]: ExtractValue.AsBoolean[Justified[B]] = { (b: Justified[B]) =>
     ExtractValue.asBoolean(b.value)
   }
 
@@ -111,15 +110,15 @@ sealed trait JustifiedExprHListDslImplicits
 
   override implicit def hlastAlignMapN[C[_] : Functor, H](
     implicit
-    isCons: IsExprHCons.Aux[C[Justified[H]] :: HNil, C[Justified[H]], HNil],
-  ): ZipToShortest.Aux[Lambda[a => C[Justified[a]]], C[Justified[H]] :: HNil, OP, H :: HNil] =
+    isCons: IsExprHCons[C[Justified[H]] *: EmptyTuple],
+  ): ZipToShortest.Aux[[a] =>> C[Justified[a]], C[Justified[H]] *: EmptyTuple, OP, H *: EmptyTuple] =
     defn.hlastAlignMapN
 
-  override implicit def hconsAlignMapN[C[_] : Align : FunctorFilter, H, WT <: HList](
+  override implicit def hconsAlignMapN[C[_] : Align : FunctorFilter, H, WT <: Tuple](
     implicit
-    isCons: IsExprHCons.Aux[C[Justified[H]] :: WT, C[Justified[H]], WT],
-    mt: ZipToShortest[Lambda[a => C[Justified[a]]], WT, OP],
-  ): ZipToShortest.Aux[Lambda[a => C[Justified[a]]], C[Justified[H]] :: WT, OP, H :: mt.UL] =
+    isCons: IsExprHCons[C[Justified[H]] *: WT],
+    mt: ZipToShortest[[a] =>> C[Justified[a]], WT, OP],
+  ): ZipToShortest.Aux[[a] =>> C[Justified[a]], C[Justified[H]] *: WT, OP, H *: mt.UL] =
     defn.hconsAlignMapN(mt)
 }
 
@@ -129,12 +128,12 @@ sealed trait JustifiedLowPriorityExprHListDslImplicits
 
   override implicit final def hlastMapN[H](
     implicit
-    isCons: IsExprHCons.Aux[Justified[H] :: HNil, Justified[H], HNil],
-  ): ZipToShortest.Aux[Justified, Justified[H] :: HNil, OP, H :: HNil] = defn.hlastMapN
+    isCons: IsExprHCons[Justified[H] *: EmptyTuple],
+  ): ZipToShortest.Aux[Justified, Justified[H] *: EmptyTuple, OP, H *: EmptyTuple] = defn.hlastMapN
 
-  override implicit final def hconsMapN[H, WT <: HList](
+  override implicit final def hconsMapN[H, WT <: Tuple](
     implicit
-    isCons: IsExprHCons.Aux[Justified[H] :: WT, Justified[H], WT],
+    isCons: IsExprHCons[Justified[H] *: WT],
     mt: ZipToShortest[Justified, WT, OP],
-  ): ZipToShortest.Aux[Justified, Justified[H] :: WT, OP, H :: mt.UL] = defn.hconsMapN(mt)
+  ): ZipToShortest.Aux[Justified, Justified[H] *: WT, OP, H *: mt.UL] = defn.hconsMapN(mt)
 }

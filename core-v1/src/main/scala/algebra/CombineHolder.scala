@@ -45,7 +45,7 @@ final class CombineHolder[-I, -LI, +LO : OP, -RI, +RO : OP, O, OP[_]](
     *
     * @see [[Expr.+]] for documentation of functionality.
     */
-  def +[CI <: I, NLI >: O, NRI >: NRO, NRO <: NRI : OP](
+  def +[CI <: I, NLI >: O, NRI >: NRO, NRO : OP](
     that: Expr[CI, NRO, OP],
   )(implicit
     opO: OP[O],

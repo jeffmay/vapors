@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package algebra
 
 import cats.{Eq, Functor, Semigroupal}
-import shapeless.Id
+import shapeless3.deriving.Id
 
 /**
   * Defines equality over an effect type `F` with a provided param `OP`

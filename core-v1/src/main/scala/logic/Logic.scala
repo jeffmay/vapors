@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package logic
 
-import shapeless.Id
+import shapeless3.deriving.{Const, Id}
 
 import scala.annotation.implicitNotFound
 
@@ -27,7 +27,7 @@ object Logic {
 
   @inline implicit final def bool[OP[_]]: Logic[Id, Boolean, OP] = AnyBool.asInstanceOf[Logic[Id, Boolean, OP]]
 
-  private final object AnyBool extends Logic[Id, Boolean, Any] {
+  private object AnyBool extends Logic[Id, Boolean, Const[Any]] {
 
     override def and(
       left: Boolean,

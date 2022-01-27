@@ -1,6 +1,8 @@
-package com.rallyhealth.vapors.v1.data
+package com.rallyhealth.vapors.v1
 
-import shapeless.Id
+package data
+
+import cats.Id
 
 /**
   * Extract the value from a context [[W]].

@@ -34,12 +34,12 @@ object Bounded {
     override def withInclusive(inclusive: Boolean): Below[A] = copy(inclusiveUpperBound = inclusive)
   }
 
-  implicit final object AboveFunctorLike extends Functor[Above] {
+  implicit object AboveFunctorLike extends Functor[Above] {
     override def map[A, B](fa: Above[A])(f: A => B): Above[B] =
       fa.copy[B](lowerBound = f(fa.lowerBound))
   }
 
-  implicit final object BelowFunctorLike extends Functor[Below] {
+  implicit object BelowFunctorLike extends Functor[Below] {
     override def map[A, B](fa: Below[A])(f: A => B): Below[B] =
       fa.copy[B](upperBound = f(fa.upperBound))
   }

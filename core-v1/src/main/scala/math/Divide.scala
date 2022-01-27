@@ -43,17 +43,17 @@ private[math] trait DivideNumericImplicits extends MidPriorityDivideFractionalIm
 private[math] trait MidPriorityDivideFractionalImplicits extends LowPriorityDivideNumericImplicits {
 
   implicit def fractionalCoerceLeft[N : Fractional, D](implicit ev: D => N): Divide.Aux[N, D, N] =
-    Divide.instance(Fractional[N].div(_, _))
+    Divide.instance((l, r) => Fractional[N].div(l, ev(r)))
 
   implicit def fractionalCoerceRight[N, D : Fractional](implicit ev: N => D): Divide.Aux[N, D, D] =
-    Divide.instance(Fractional[D].div(_, _))
+    Divide.instance((l, r) => Fractional[D].div(ev(l), r))
 }
 
 private[math] trait LowPriorityDivideNumericImplicits {
 
   implicit def integralCoerceLeft[N : Integral, D](implicit ev: D => N): Divide.Aux[N, D, N] =
-    Divide.instance(Integral[N].quot(_, _))
+    Divide.instance((l, r) => Integral[N].quot(l, ev(r)))
 
   implicit def integralCoerceRight[N, D : Integral](implicit ev: N => D): Divide.Aux[N, D, D] =
-    Divide.instance(Integral[D].quot(_, _))
+    Divide.instance((l, r) => Integral[D].quot(ev(l), r))
 }

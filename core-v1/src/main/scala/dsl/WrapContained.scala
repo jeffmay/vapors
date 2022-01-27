@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import cats.Foldable
-import shapeless.Id
+import cats.Id
 
 trait WrapContained[W[+_], OP[_]] {
 
@@ -18,9 +18,9 @@ trait WrapContained[W[+_], OP[_]] {
 
 object WrapContained {
 
-  @inline implicit final def unwrapped[OP[_]]: WrapContained[Id, OP] = Unwrapped.asInstanceOf[WrapContained[Id, OP]]
+  inline implicit final def unwrapped[OP[_]]: WrapContained[Id, OP] = Unwrapped.asInstanceOf[WrapContained[Id, OP]]
 
-  private final object Unwrapped extends WrapContained[Id, Any] {
+  private object Unwrapped extends WrapContained[Id, [_] =>> Any] {
 
     override def wrapContained[C[_] : Foldable, V](
       original: C[V],

@@ -2,8 +2,8 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import com.rallyhealth.vapors.v1.data.TypedFact
-import shapeless.Id
+import data.TypedFact
+import shapeless3.deriving.{Const, Id}
 
 trait WrapFact[W[_], OP[_]] {
 
@@ -12,7 +12,7 @@ trait WrapFact[W[_], OP[_]] {
 
 object WrapFact {
 
-  private final object Unwrapped extends WrapFact[Id, Any] {
+  private object Unwrapped extends WrapFact[Id, Const[Any]] {
     override def wrapFact[O](fact: TypedFact[O])(implicit opO: Any): O = fact.value
   }
 

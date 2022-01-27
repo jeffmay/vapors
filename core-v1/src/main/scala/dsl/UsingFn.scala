@@ -26,7 +26,7 @@ sealed abstract class UsingFn[-I, Fn[-_, +_], OP[_]](definitions: Seq[Expr.Defin
 final class UsingFn1[I, A, OP[_]] private[dsl] (
   definitions: Seq[Expr.Definition[I, OP]],
   a: Expr[Any, Seq[A], OP],
-) extends UsingFn[I, Lambda[(`-i`, `+o`) => Expr[Any, Seq[A], OP] => Expr[i, o, OP]], OP](definitions) {
+) extends UsingFn[I, [i, o] =>> Expr[Any, Seq[A], OP] => Expr[i, o, OP], OP](definitions) {
   override protected def supply[NI <: I, O](buildExpr: Expr[Any, Seq[A], OP] => Expr[NI, O, OP]): Expr[NI, O, OP] =
     buildExpr(a)
 }
@@ -35,7 +35,7 @@ final class UsingFn2[I, A, B, OP[_]] private[dsl] (
   definitions: Seq[Expr.Definition[I, OP]],
   a: Expr[Any, Seq[A], OP],
   b: Expr[Any, Seq[B], OP],
-) extends UsingFn[I, Lambda[(`-i`, `+o`) => (Expr[Any, Seq[A], OP], Expr[Any, Seq[B], OP]) => Expr[i, o, OP]], OP](
+) extends UsingFn[I, [i, o] =>> (Expr[Any, Seq[A], OP], Expr[Any, Seq[B], OP]) => Expr[i, o, OP], OP](
     definitions,
   ) {
   override protected def supply[NI <: I, O](
@@ -49,9 +49,7 @@ final class UsingFn3[I, A, B, C, OP[_]] private[dsl] (
   a: Expr[Any, Seq[A], OP],
   b: Expr[Any, Seq[B], OP],
   c: Expr[Any, Seq[C], OP],
-) extends UsingFn[I, Lambda[
-    (`-i`, `+o`) => (Expr[Any, Seq[A], OP], Expr[Any, Seq[B], OP], Expr[Any, Seq[C], OP]) => Expr[i, o, OP],
-  ], OP](
+) extends UsingFn[I, [i, o] =>> (Expr[Any, Seq[A], OP], Expr[Any, Seq[B], OP], Expr[Any, Seq[C], OP]) => Expr[i, o, OP], OP](
     definitions,
   ) {
   override protected def supply[NI <: I, O](
@@ -66,14 +64,12 @@ final class UsingFn4[I, A, B, C, D, OP[_]] private[dsl] (
   b: Expr[Any, Seq[B], OP],
   c: Expr[Any, Seq[C], OP],
   d: Expr[Any, Seq[D], OP],
-) extends UsingFn[I, Lambda[
-    (`-i`, `+o`) => (
+) extends UsingFn[I, [i, o] =>> (
       Expr[Any, Seq[A], OP],
       Expr[Any, Seq[B], OP],
       Expr[Any, Seq[C], OP],
       Expr[Any, Seq[D], OP],
-    ) => Expr[i, o, OP],
-  ], OP](
+    ) => Expr[i, o, OP], OP](
     definitions,
   ) {
   override protected def supply[NI <: I, O](
@@ -90,15 +86,13 @@ final class UsingFn5[I, A, B, C, D, E, OP[_]] private[dsl] (
   c: Expr[Any, Seq[C], OP],
   d: Expr[Any, Seq[D], OP],
   e: Expr[Any, Seq[E], OP],
-) extends UsingFn[I, Lambda[
-    (`-i`, `+o`) => (
+) extends UsingFn[I, [i, o] =>> (
       Expr[Any, Seq[A], OP],
       Expr[Any, Seq[B], OP],
       Expr[Any, Seq[C], OP],
       Expr[Any, Seq[D], OP],
       Expr[Any, Seq[E], OP],
-    ) => Expr[i, o, OP],
-  ], OP](
+    ) => Expr[i, o, OP], OP](
     definitions,
   ) {
   override protected def supply[NI <: I, O](
@@ -116,16 +110,14 @@ final class UsingFn6[I, A, B, C, D, E, F, OP[_]] private[dsl] (
   d: Expr[Any, Seq[D], OP],
   e: Expr[Any, Seq[E], OP],
   f: Expr[Any, Seq[F], OP],
-) extends UsingFn[I, Lambda[
-    (`-i`, `+o`) => (
+) extends UsingFn[I, [i, o] =>> (
       Expr[Any, Seq[A], OP],
       Expr[Any, Seq[B], OP],
       Expr[Any, Seq[C], OP],
       Expr[Any, Seq[D], OP],
       Expr[Any, Seq[E], OP],
       Expr[Any, Seq[F], OP],
-    ) => Expr[i, o, OP],
-  ], OP](
+    ) => Expr[i, o, OP], OP](
     definitions,
   ) {
   override protected def supply[NI <: I, O](
@@ -144,8 +136,7 @@ final class UsingFn7[I, A, B, C, D, E, F, G, OP[_]] private[dsl] (
   e: Expr[Any, Seq[E], OP],
   f: Expr[Any, Seq[F], OP],
   g: Expr[Any, Seq[G], OP],
-) extends UsingFn[I, Lambda[
-    (`-i`, `+o`) => (
+) extends UsingFn[I, [i, o] =>> (
       Expr[Any, Seq[A], OP],
       Expr[Any, Seq[B], OP],
       Expr[Any, Seq[C], OP],
@@ -153,8 +144,7 @@ final class UsingFn7[I, A, B, C, D, E, F, G, OP[_]] private[dsl] (
       Expr[Any, Seq[E], OP],
       Expr[Any, Seq[F], OP],
       Expr[Any, Seq[G], OP],
-    ) => Expr[i, o, OP],
-  ], OP](
+    ) => Expr[i, o, OP], OP](
     definitions,
   ) {
   override protected def supply[NI <: I, O](
@@ -174,8 +164,7 @@ final class UsingFn8[I, A, B, C, D, E, F, G, H, OP[_]] private[dsl] (
   f: Expr[Any, Seq[F], OP],
   g: Expr[Any, Seq[G], OP],
   h: Expr[Any, Seq[H], OP],
-) extends UsingFn[I, Lambda[
-    (`-i`, `+o`) => (
+) extends UsingFn[I, [i, o] =>> (
       Expr[Any, Seq[A], OP],
       Expr[Any, Seq[B], OP],
       Expr[Any, Seq[C], OP],
@@ -184,8 +173,7 @@ final class UsingFn8[I, A, B, C, D, E, F, G, H, OP[_]] private[dsl] (
       Expr[Any, Seq[F], OP],
       Expr[Any, Seq[G], OP],
       Expr[Any, Seq[H], OP],
-    ) => Expr[i, o, OP],
-  ], OP](
+    ) => Expr[i, o, OP], OP](
     definitions,
   ) {
   override protected def supply[NI <: I, O](
@@ -206,8 +194,7 @@ final class UsingFn9[I, A, B, C, D, E, F, G, H, J, OP[_]] private[dsl] (
   g: Expr[Any, Seq[G], OP],
   h: Expr[Any, Seq[H], OP],
   j: Expr[Any, Seq[J], OP],
-) extends UsingFn[I, Lambda[
-    (`-i`, `+o`) => (
+) extends UsingFn[I, [i, o] =>> (
       Expr[Any, Seq[A], OP],
       Expr[Any, Seq[B], OP],
       Expr[Any, Seq[C], OP],
@@ -217,8 +204,7 @@ final class UsingFn9[I, A, B, C, D, E, F, G, H, J, OP[_]] private[dsl] (
       Expr[Any, Seq[G], OP],
       Expr[Any, Seq[H], OP],
       Expr[Any, Seq[J], OP],
-    ) => Expr[i, o, OP],
-  ], OP](
+    ) => Expr[i, o, OP], OP](
     definitions,
   ) {
   override protected def supply[NI <: I, O](
@@ -241,8 +227,7 @@ final class UsingFn10[I, A, B, C, D, E, F, G, H, J, K, OP[_]] private[dsl] (
   h: Expr[Any, Seq[H], OP],
   j: Expr[Any, Seq[J], OP],
   k: Expr[Any, Seq[K], OP],
-) extends UsingFn[I, Lambda[
-    (`-i`, `+o`) => (
+) extends UsingFn[I, [i, o] =>> (
       Expr[Any, Seq[A], OP],
       Expr[Any, Seq[B], OP],
       Expr[Any, Seq[C], OP],
@@ -253,8 +238,7 @@ final class UsingFn10[I, A, B, C, D, E, F, G, H, J, K, OP[_]] private[dsl] (
       Expr[Any, Seq[H], OP],
       Expr[Any, Seq[J], OP],
       Expr[Any, Seq[K], OP],
-    ) => Expr[i, o, OP],
-  ], OP](
+    ) => Expr[i, o, OP], OP](
     definitions,
   ) {
   override protected def supply[NI <: I, O](

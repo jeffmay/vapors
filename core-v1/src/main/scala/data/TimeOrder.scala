@@ -54,9 +54,9 @@ class TimeOrder {
 
 object TimeOrder {
 
-  final object YoungestFirst extends TimeOrder {
+  object YoungestFirst extends TimeOrder {
     override protected def modify[T](order: Order[T]): Order[T] = Order.reverse(order)
   }
 
-  final object OldestFirst extends TimeOrder
+  object OldestFirst extends TimeOrder
 }

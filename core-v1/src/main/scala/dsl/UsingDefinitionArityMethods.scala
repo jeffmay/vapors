@@ -5,6 +5,8 @@ package dsl
 import algebra.Expr
 import data.FactTypeSet
 
+import shapeless3.deriving.Const
+
 trait UsingDefinitionArityMethods {
   self: DslTypes =>
 
@@ -16,12 +18,12 @@ trait UsingDefinitionArityMethods {
     opTs: OP[Seq[W[T]]],
   ): Expr.ValuesOfType[T, W[T], OP]
 
-  def using[I, A : OP](a: Expr.Define[I, Any, A, OP])(implicit opSA: OP[Seq[W[A]]]): UsingFn1[I, W[A], OP] =
+  def using[I, A : OP](a: Expr.Define[I, Const[Any], A, OP])(implicit opSA: OP[Seq[W[A]]]): UsingFn1[I, W[A], OP] =
     new UsingFn1(Seq(a), valuesOfType(a.factType))
 
   def using[I, A : OP, B : OP](
-    a: Expr.Define[I, Any, A, OP],
-    b: Expr.Define[I, Any, B, OP],
+    a: Expr.Define[I, Const[Any], A, OP],
+    b: Expr.Define[I, Const[Any], B, OP],
   )(implicit
     opSA: OP[Seq[W[A]]],
     opSB: OP[Seq[W[B]]],
@@ -29,9 +31,9 @@ trait UsingDefinitionArityMethods {
     new UsingFn2(Seq(a, b), valuesOfType(a.factType), valuesOfType(b.factType))
 
   def using[I, A : OP, B : OP, C : OP](
-    a: Expr.Define[I, Any, A, OP],
-    b: Expr.Define[I, Any, B, OP],
-    c: Expr.Define[I, Any, C, OP],
+    a: Expr.Define[I, Const[Any], A, OP],
+    b: Expr.Define[I, Const[Any], B, OP],
+    c: Expr.Define[I, Const[Any], C, OP],
   )(implicit
     opSA: OP[Seq[W[A]]],
     opSB: OP[Seq[W[B]]],
@@ -40,10 +42,10 @@ trait UsingDefinitionArityMethods {
     new UsingFn3(Seq(a, b, c), valuesOfType(a.factType), valuesOfType(b.factType), valuesOfType(c.factType))
 
   def using[I, A : OP, B : OP, C : OP, D : OP](
-    a: Expr.Define[I, Any, A, OP],
-    b: Expr.Define[I, Any, B, OP],
-    c: Expr.Define[I, Any, C, OP],
-    d: Expr.Define[I, Any, D, OP],
+    a: Expr.Define[I, Const[Any], A, OP],
+    b: Expr.Define[I, Const[Any], B, OP],
+    c: Expr.Define[I, Const[Any], C, OP],
+    d: Expr.Define[I, Const[Any], D, OP],
   )(implicit
     opSA: OP[Seq[W[A]]],
     opSB: OP[Seq[W[B]]],
@@ -59,11 +61,11 @@ trait UsingDefinitionArityMethods {
     )
 
   def using[I, A : OP, B : OP, C : OP, D : OP, E : OP](
-    a: Expr.Define[I, Any, A, OP],
-    b: Expr.Define[I, Any, B, OP],
-    c: Expr.Define[I, Any, C, OP],
-    d: Expr.Define[I, Any, D, OP],
-    e: Expr.Define[I, Any, E, OP],
+    a: Expr.Define[I, Const[Any], A, OP],
+    b: Expr.Define[I, Const[Any], B, OP],
+    c: Expr.Define[I, Const[Any], C, OP],
+    d: Expr.Define[I, Const[Any], D, OP],
+    e: Expr.Define[I, Const[Any], E, OP],
   )(implicit
     opSA: OP[Seq[W[A]]],
     opSB: OP[Seq[W[B]]],
@@ -81,12 +83,12 @@ trait UsingDefinitionArityMethods {
     )
 
   def using[I, A : OP, B : OP, C : OP, D : OP, E : OP, F : OP](
-    a: Expr.Define[I, Any, A, OP],
-    b: Expr.Define[I, Any, B, OP],
-    c: Expr.Define[I, Any, C, OP],
-    d: Expr.Define[I, Any, D, OP],
-    e: Expr.Define[I, Any, E, OP],
-    f: Expr.Define[I, Any, F, OP],
+    a: Expr.Define[I, Const[Any], A, OP],
+    b: Expr.Define[I, Const[Any], B, OP],
+    c: Expr.Define[I, Const[Any], C, OP],
+    d: Expr.Define[I, Const[Any], D, OP],
+    e: Expr.Define[I, Const[Any], E, OP],
+    f: Expr.Define[I, Const[Any], F, OP],
   )(implicit
     opSA: OP[Seq[W[A]]],
     opSB: OP[Seq[W[B]]],
@@ -106,13 +108,13 @@ trait UsingDefinitionArityMethods {
     )
 
   def using[I, A : OP, B : OP, C : OP, D : OP, E : OP, F : OP, G : OP](
-    a: Expr.Define[I, Any, A, OP],
-    b: Expr.Define[I, Any, B, OP],
-    c: Expr.Define[I, Any, C, OP],
-    d: Expr.Define[I, Any, D, OP],
-    e: Expr.Define[I, Any, E, OP],
-    f: Expr.Define[I, Any, F, OP],
-    g: Expr.Define[I, Any, G, OP],
+    a: Expr.Define[I, Const[Any], A, OP],
+    b: Expr.Define[I, Const[Any], B, OP],
+    c: Expr.Define[I, Const[Any], C, OP],
+    d: Expr.Define[I, Const[Any], D, OP],
+    e: Expr.Define[I, Const[Any], E, OP],
+    f: Expr.Define[I, Const[Any], F, OP],
+    g: Expr.Define[I, Const[Any], G, OP],
   )(implicit
     opSA: OP[Seq[W[A]]],
     opSB: OP[Seq[W[B]]],
@@ -134,14 +136,14 @@ trait UsingDefinitionArityMethods {
     )
 
   def using[I, A : OP, B : OP, C : OP, D : OP, E : OP, F : OP, G : OP, H : OP](
-    a: Expr.Define[I, Any, A, OP],
-    b: Expr.Define[I, Any, B, OP],
-    c: Expr.Define[I, Any, C, OP],
-    d: Expr.Define[I, Any, D, OP],
-    e: Expr.Define[I, Any, E, OP],
-    f: Expr.Define[I, Any, F, OP],
-    g: Expr.Define[I, Any, G, OP],
-    h: Expr.Define[I, Any, H, OP],
+    a: Expr.Define[I, Const[Any], A, OP],
+    b: Expr.Define[I, Const[Any], B, OP],
+    c: Expr.Define[I, Const[Any], C, OP],
+    d: Expr.Define[I, Const[Any], D, OP],
+    e: Expr.Define[I, Const[Any], E, OP],
+    f: Expr.Define[I, Const[Any], F, OP],
+    g: Expr.Define[I, Const[Any], G, OP],
+    h: Expr.Define[I, Const[Any], H, OP],
   )(implicit
     opSA: OP[Seq[W[A]]],
     opSB: OP[Seq[W[B]]],
@@ -165,15 +167,15 @@ trait UsingDefinitionArityMethods {
     )
 
   def using[I, A : OP, B : OP, C : OP, D : OP, E : OP, F : OP, G : OP, H : OP, J : OP](
-    a: Expr.Define[I, Any, A, OP],
-    b: Expr.Define[I, Any, B, OP],
-    c: Expr.Define[I, Any, C, OP],
-    d: Expr.Define[I, Any, D, OP],
-    e: Expr.Define[I, Any, E, OP],
-    f: Expr.Define[I, Any, F, OP],
-    g: Expr.Define[I, Any, G, OP],
-    h: Expr.Define[I, Any, H, OP],
-    j: Expr.Define[I, Any, J, OP],
+    a: Expr.Define[I, Const[Any], A, OP],
+    b: Expr.Define[I, Const[Any], B, OP],
+    c: Expr.Define[I, Const[Any], C, OP],
+    d: Expr.Define[I, Const[Any], D, OP],
+    e: Expr.Define[I, Const[Any], E, OP],
+    f: Expr.Define[I, Const[Any], F, OP],
+    g: Expr.Define[I, Const[Any], G, OP],
+    h: Expr.Define[I, Const[Any], H, OP],
+    j: Expr.Define[I, Const[Any], J, OP],
   )(implicit
     opSA: OP[Seq[W[A]]],
     opSB: OP[Seq[W[B]]],
@@ -199,16 +201,16 @@ trait UsingDefinitionArityMethods {
     )
 
   def using[I, A : OP, B : OP, C : OP, D : OP, E : OP, F : OP, G : OP, H : OP, J : OP, K : OP](
-    a: Expr.Define[I, Any, A, OP],
-    b: Expr.Define[I, Any, B, OP],
-    c: Expr.Define[I, Any, C, OP],
-    d: Expr.Define[I, Any, D, OP],
-    e: Expr.Define[I, Any, E, OP],
-    f: Expr.Define[I, Any, F, OP],
-    g: Expr.Define[I, Any, G, OP],
-    h: Expr.Define[I, Any, H, OP],
-    j: Expr.Define[I, Any, J, OP],
-    k: Expr.Define[I, Any, K, OP],
+    a: Expr.Define[I, Const[Any], A, OP],
+    b: Expr.Define[I, Const[Any], B, OP],
+    c: Expr.Define[I, Const[Any], C, OP],
+    d: Expr.Define[I, Const[Any], D, OP],
+    e: Expr.Define[I, Const[Any], E, OP],
+    f: Expr.Define[I, Const[Any], F, OP],
+    g: Expr.Define[I, Const[Any], G, OP],
+    h: Expr.Define[I, Const[Any], H, OP],
+    j: Expr.Define[I, Const[Any], J, OP],
+    k: Expr.Define[I, Const[Any], K, OP],
   )(implicit
     opSA: OP[Seq[W[A]]],
     opSB: OP[Seq[W[B]]],

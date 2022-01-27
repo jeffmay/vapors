@@ -1,7 +1,6 @@
 package com.rallyhealth.vapors.v1.dsl
 
 import cats.{Align, Functor, FunctorFilter}
-import shapeless.{::, HList, HNil}
 
 trait DefaultUnwrappedExprHListImplicits
   extends UnwrappedExprHListDslImplicits
@@ -10,19 +9,19 @@ trait DefaultUnwrappedExprHListImplicits
 
   override implicit final def hlastAlignMapN[C[_] : Functor, H](
     implicit
-    isCons: IsExprHCons.Aux[C[H] :: HNil, C[H], HNil],
-  ): ZipToShortest.Aux[C, C[H] :: HNil, OP, H :: HNil] = {
+    isCons: IsExprHCons[C[H] *: EmptyTuple, C[H], EmptyTuple],
+  ): ZipToShortest.Aux[C, C[H] *: EmptyTuple, OP, H *: EmptyTuple] = {
     // Help IntelliJ prove that the W[_] wrapper can be removed in phases
-    val zts: ZipToShortest.Aux[Lambda[a => C[a]], C[W[H]] :: HNil, OP, H :: HNil] =
+    val zts: ZipToShortest.Aux[[a] =>> C[a], C[W[H]] *: EmptyTuple, OP, H *: EmptyTuple] =
       defn.hlastAlignMapN[C, H](Functor[C], isCons)
     zts
   }
 
-  override implicit final def hconsAlignMapN[C[_] : Align : FunctorFilter, H, WT <: HList](
+  override implicit final def hconsAlignMapN[C[_] : Align : FunctorFilter, H, WT <: Tuple](
     implicit
-    isCons: IsExprHCons.Aux[C[H] :: WT, C[H], WT],
+    isCons: IsExprHCons[C[H] *: WT],
     mt: ZipToShortest[C, WT, OP],
-  ): ZipToShortest.Aux[C, C[H] :: WT, OP, H :: mt.UL] = {
+  ): ZipToShortest.Aux[C, C[H] *: WT, OP, H *: mt.UL] = {
     // IntelliJ highlights that as an error, but it compiles fine
     defn.hconsAlignMapN(mt)
   }
@@ -34,13 +33,13 @@ trait DefaultUnwrappedLowPriorityExprHListDslImplicits
 
   override implicit def hlastMapN[H](
     implicit
-    isCons: IsExprHCons.Aux[H :: HNil, H, HNil],
-  ): ZipToShortest.Aux[W, H :: HNil, OP, H :: HNil] =
+    isCons: IsExprHCons[H *: EmptyTuple],
+  ): ZipToShortest.Aux[W, H *: EmptyTuple, OP, H *: EmptyTuple] =
     defn.hlastMapN
 
-  override implicit def hconsMapN[H, WT <: HList](
+  override implicit def hconsMapN[H, WT <: Tuple](
     implicit
-    isCons: IsExprHCons.Aux[H :: WT, H, WT],
+    isCons: IsExprHCons[H *: WT],
     mt: ZipToShortest[W, WT, OP],
-  ): ZipToShortest.Aux[W, H :: WT, OP, H :: mt.UL] = defn.hconsMapN(mt)
+  ): ZipToShortest.Aux[W, H *: WT, OP, H *: mt.UL] = defn.hconsMapN(mt)
 }

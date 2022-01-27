@@ -4,9 +4,10 @@ package algebra
 
 import data.{Justified, Window}
 import debug.HasShow
+import cats.Id
 import cats.Show
 import cats.data.{NonEmptyList, NonEmptySeq}
-import shapeless.Id
+import shapeless3.deriving.Const
 
 /**
   * Defines the capability for performing a comparison over a wrapper type.
@@ -31,8 +32,8 @@ trait WindowComparable[W[_], OP[_]] {
 
 object WindowComparable {
 
-  private val anyJustified: WindowComparable[Justified, Any] = {
-    new WindowComparable[Justified, Any] {
+  private val anyJustified: WindowComparable[Justified, Const[Any]] = {
+    new WindowComparable[Justified, Const[Any]] {
 
       override def withinWindow[V](
         value: Justified[V],
@@ -55,7 +56,7 @@ object WindowComparable {
   implicit def justified[OP[_]]: WindowComparable[Justified, OP] =
     anyJustified.asInstanceOf[WindowComparable[Justified, OP]]
 
-  private val anyIdentity: WindowComparable[Id, Any] = new WindowComparable[Id, Any] {
+  private val anyIdentity: WindowComparable[Id, Const[Any]] = new WindowComparable[Id, Const[Any]] {
     override def withinWindow[V](
       value: V,
       window: Window[V],

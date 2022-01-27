@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package algebra
 
-import data._
+import data.*
 import debug.{DebugArgs, Debugging, NoDebugging}
 import dsl.{ConvertToHList, ExprHList, ExprHNil, Sortable, ZipToShortest}
 import lens.{CollectInto, VariantLens}
@@ -11,7 +11,6 @@ import math._
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
 import cats.{Applicative, FlatMap, Foldable, Functor, SemigroupK, Traverse}
-import shapeless.{::, HList, HNil}
 
 import scala.annotation.nowarn
 
@@ -51,7 +50,7 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
     * @tparam CI a more specific input type to obey the laws of contravariance
     * @tparam H the output type of the given head expression
     */
-  def ::[CI <: I, H](headExpr: Expr[CI, H, OP]): ExprHList[CI, H :: O :: HNil, OP] = headExpr :: this :: ExprHNil[OP]
+  def ::[CI <: I, H](headExpr: Expr[CI, H, OP]): ExprHList[CI, (H, O), OP] = headExpr :: this :: ExprHNil[OP]
 
   /**
     * Holds any [[Debugging]] hook to be run while running this expression.
@@ -128,7 +127,7 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
     *
     * @return a [[CombineHolder]] to allow for type-level calculation of the return type
     */
-  def +[CI <: I, LI >: O, RI >: RO, RO <: RI : OP](
+  def +[CI <: I, LI >: O, RI >: RO, RO : OP](
     that: Expr[CI, RO, OP],
   )(implicit
     add: Add[LI, RI],
@@ -152,7 +151,7 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
     *
     * @return a [[CombineHolder]] to allow for type-level calculation of the return type
     */
-  def -[CI <: I, LI >: O, RI >: RO, RO <: RI : OP](
+  def -[CI <: I, LI >: O, RI >: RO, RO : OP](
     that: Expr[CI, RO, OP],
   )(implicit
     sub: Subtract[LI, RI],
@@ -175,7 +174,7 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
     *
     * @return a [[CombineHolder]] to allow for type-level calculation of the return type
     */
-  def *[CI <: I, LI >: O, RI >: RO, RO <: RI : OP](
+  def *[CI <: I, LI >: O, RI >: RO, RO : OP](
     that: Expr[CI, RO, OP],
   )(implicit
     mult: Multiply[LI, RI],
@@ -200,7 +199,7 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
     *
     * @return a [[CombineHolder]] to allow for type-level calculation of the return type
     */
-  def /[CI <: I, LI >: O, RI >: RO, RO <: RI : OP](
+  def /[CI <: I, LI >: O, RI >: RO, RO : OP](
     that: Expr[CI, RO, OP],
   )(implicit
     div: Divide[LI, RI],
@@ -226,7 +225,7 @@ sealed abstract class Expr[-I, +O : OP, OP[_]](val name: String) extends Product
     *
     * @return a [[CombineHolder]] to allow for type-level calculation of the return type
     */
-  def ^[CI <: I, LI >: O, RI >: RO, RO <: RI : OP](
+  def ^[CI <: I, LI >: O, RI >: RO, RO : OP](
     that: Expr[CI, RO, OP],
   )(implicit
     pow: Power[LI, RI],
@@ -346,7 +345,7 @@ object Expr {
       opCO: OP[C[O]],
     ): I ~:> C[O]
 
-    def visitSizeIs[I, N : ExtractValue[*, Int], B : ExtractValue.AsBoolean : OP](
+    def visitSizeIs[I, N : ExtractValue.As[Int], B : ExtractValue.AsBoolean : OP](
       expr: SizeIs[I, N, B, OP],
     )(implicit
       compare: SizeComparable[I, N, B],
@@ -366,7 +365,7 @@ object Expr {
       opAs: OP[C[A]],
     ): C[A] ~:> C[A]
 
-    def visitToHList[I, L <: HList : OP](expr: ToHList[I, L, OP])(implicit toHL: ConvertToHList[L]): I ~:> L
+    def visitToHList[I, L <: Tuple : OP](expr: ToHList[I, L, OP])(implicit toHL: ConvertToHList[L]): I ~:> L
 
     def visitUsingDefinitions[I, O : OP](expr: UsingDefinitions[I, O, OP]): I ~:> O
 
@@ -383,7 +382,7 @@ object Expr {
       opB: OP[W[Boolean]],
     ): I ~:> W[Boolean]
 
-    def visitZipToShortestHList[I, W[+_], WL <: HList, UL <: HList](
+    def visitZipToShortestHList[I, W[+_], WL <: Tuple, UL <: Tuple](
       expr: Expr.ZipToShortestHList[I, W, WL, UL, OP],
     )(implicit
       zip: ZipToShortest.Aux[W, WL, OP, UL],
@@ -532,13 +531,13 @@ object Expr {
       opAs: OP[C[A]],
     ): H[C[A], C[A]] = proxy(underlying.visitSorted(expr))
 
-    override def visitSizeIs[I, N : ExtractValue[*, Int], B : ExtractValue.AsBoolean : OP](
+    override def visitSizeIs[I, N : ExtractValue.As[Int], B : ExtractValue.AsBoolean : OP](
       expr: SizeIs[I, N, B, OP],
     )(implicit
       compare: SizeComparable[I, N, B],
     ): H[I, B] = proxy(underlying.visitSizeIs(expr))
 
-    override def visitToHList[I, L <: HList : OP](expr: ToHList[I, L, OP])(implicit toHL: ConvertToHList[L]): H[I, L] =
+    override def visitToHList[I, L <: Tuple : OP](expr: ToHList[I, L, OP])(implicit toHL: ConvertToHList[L]): H[I, L] =
       proxy(underlying.visitToHList(expr))
 
     override def visitUsingDefinitions[I, O : OP](expr: UsingDefinitions[I, O, OP]): H[I, O] =
@@ -567,7 +566,7 @@ object Expr {
       opB: OP[W[Boolean]],
     ): H[I, W[Boolean]] = proxy(underlying.visitWithinWindow(expr))
 
-    override def visitZipToShortestHList[I, W[+_], WL <: HList, UL <: HList](
+    override def visitZipToShortestHList[I, W[+_], WL <: Tuple, UL <: Tuple](
       expr: ZipToShortestHList[I, W, WL, UL, OP],
     )(implicit
       zip: ZipToShortest.Aux[W, WL, OP, UL],
@@ -1095,7 +1094,7 @@ object Expr {
     * @tparam N a numeric integral viewable type
     * @tparam B a boolean-like type to be returned as output
     */
-  final case class SizeIs[-I, N : ExtractValue[*, Int], B : ExtractValue.AsBoolean : OP, OP[_]](
+  final case class SizeIs[-I, N : ExtractValue.As[Int], B : ExtractValue.AsBoolean : OP, OP[_]](
     comparison: SizeComparison,
     comparedTo: Expr[I, N, OP],
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
@@ -1261,7 +1260,7 @@ object Expr {
   /**
     * Apply a serializable [[ExprConverter]] function to the input type [[I]] to view it as a value of type [[O]].
     *
-    * This can be used to view an [[HList]] as a product type with the number and type of elements.
+    * This can be used to view an [[Tuple]] as a product type with the number and type of elements.
     *
     * @param converter the serializable [[ExprConverter]] used to view the input type [[I]] as [[O]]
     */
@@ -1276,7 +1275,7 @@ object Expr {
 
   // TODO: Is there a way to combine this with the Convert operation?
   //       Maybe the converter can take the visitor as an argument to its function?
-  final case class ToHList[-I, +L <: HList : OP, OP[_]](
+  final case class ToHList[-I, +L <: Tuple : OP, OP[_]](
     exprHList: ExprHList[I, L, OP],
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
@@ -1298,12 +1297,12 @@ object Expr {
     *
     * @tparam I the input value type
     * @tparam W the wrapper type (with the embedded collection type)
-    * @tparam WL an [[HList]] containing all the wrapped output types of all the [[Expr]] nodes embedded in
+    * @tparam WL an [[Tuple]] containing all the wrapped output types of all the [[Expr]] nodes embedded in
     *            the [[exprHList]]
-    * @tparam UL an [[HList]] containing all the unwrapped output types of all the [[Expr]] nodes embedded
+    * @tparam UL an [[Tuple]] containing all the unwrapped output types of all the [[Expr]] nodes embedded
     *            in the [[exprHList]]
     */
-  final case class ZipToShortestHList[-I, W[+_], +WL <: HList, +UL <: HList, OP[_]](
+  final case class ZipToShortestHList[-I, W[+_], +WL <: Tuple, +UL <: Tuple, OP[_]](
     exprHList: ExprHList[I, WL, OP],
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit

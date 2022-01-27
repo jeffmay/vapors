@@ -14,7 +14,6 @@ import logic.{Conjunction, Disjunction, Negation}
 import cats.arrow.Arrow
 import cats.data.NonEmptyVector
 import cats.{Applicative, Eval, FlatMap, Foldable, Functor, Monad, SemigroupK, Traverse}
-import shapeless.{HList, HMap}
 
 import scala.annotation.tailrec
 
@@ -31,13 +30,13 @@ object ImmutableCachingEngine {
     def ++(that: ResultCache): ResultCache = new ResultCache(this.underlying ++ that.underlying)
   }
 
-  final object ResultCache {
+  object ResultCache {
     val empty: ResultCache = new ResultCache(Map.empty)
   }
 
   final class CacheEntryType[I, O] private {}
 
-  final object CacheEntryType {
+  object CacheEntryType {
     implicit def validKey[I, O, OP[_]]: CacheEntryType[(Expr[I, O, OP], I), O] =
       new CacheEntryType[(Expr[I, O, OP], I), O]
   }
@@ -47,9 +46,9 @@ object ImmutableCachingEngine {
     cacheState: ResultCache,
   )
 
-  final object CachedResult {
+  object CachedResult {
 
-    private final case object CatsInstances extends Foldable[CachedResult] with Monad[CachedResult] {
+    private case object CatsInstances extends Foldable[CachedResult] with Monad[CachedResult] {
 
       override def pure[A](x: A): CachedResult[A] = CachedResult(x, ResultCache.empty)
 
@@ -95,7 +94,7 @@ object ImmutableCachingEngine {
     protected val factTable: FactTable,
     protected val resultCache: ResultCache,
   ) extends CommonEngine[CachedResult, OP]
-    with Expr.Visitor[Lambda[(`-i`, `+o`) => i => CachedResult[o]], OP] {
+    with Expr.Visitor[[i, o] =>> i => CachedResult[o], OP] {
 
     import cats.implicits._
 
@@ -473,7 +472,7 @@ object ImmutableCachingEngine {
       debugging(expr).invokeAndReturn(state(unsorted, cached(sorted)))
     }
 
-    override def visitToHList[I, L <: HList : OP](
+    override def visitToHList[I, L <: Tuple : OP](
       expr: Expr.ToHList[I, L, OP],
     )(implicit
       toHL: ConvertToHList[L],
@@ -545,7 +544,7 @@ object ImmutableCachingEngine {
       debugging(expr).invokeAndReturn(state((i, value, window), o))
     }
 
-    override def visitZipToShortestHList[I, F[+_], WL <: HList, UL <: HList](
+    override def visitZipToShortestHList[I, F[+_], WL <: Tuple, UL <: Tuple](
       expr: Expr.ZipToShortestHList[I, F, WL, UL, OP],
     )(implicit
       zip: ZipToShortest.Aux[F, WL, OP, UL],

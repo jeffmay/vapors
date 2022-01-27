@@ -9,7 +9,6 @@ import math.Power
 
 import cats.data.NonEmptySeq
 import cats.{FlatMap, Foldable, Functor, Id, Order, Reducible, Traverse}
-import shapeless.{Generic, HList, Nat}
 
 trait WrappedBuildExprDsl extends BuildExprDsl {
   self: DslTypes with WrappedExprHListDslImplicits with OutputTypeImplicits =>
@@ -166,31 +165,31 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
     override def getAs[C[_]]: GetAsWrapper[I, W, A, C, OP] = new GetAsWrapper(inputExpr)
   }
 
-  override implicit def xhlOps[I, WL <: HList](exprHList: ExprHList[I, WL, OP]): WrappedExprHListOpsBuilder[I, WL] =
+  override implicit def xhlOps[I, WL <: Tuple](exprHList: ExprHList[I, WL, OP]): WrappedExprHListOpsBuilder[I, WL] =
     new WrappedExprHListOpsBuilder(exprHList)
 
-  class WrappedExprHListOpsBuilder[-I, WL <: HList](inputExprHList: ExprHList[I, WL, OP])
+  class WrappedExprHListOpsBuilder[-I, WL <: Tuple](inputExprHList: ExprHList[I, WL, OP])
     extends ExprHListOpsBuilder(inputExprHList) {
 
-    override def toHList[UL <: HList](
+    override def toHList[UL <: Tuple](
       implicit
       isCons: ZipToShortest.Aux[W, WL, OP, UL],
       opO: OP[W[UL]],
     ): I ~:> W[UL] =
       Expr.ZipToShortestHList(inputExprHList)
 
-    override def zipToShortest[C[+_], UL <: HList](
+    override def zipToShortest[C[+_], UL <: Tuple](
       implicit
-      zip: ZipToShortest.Aux[CW[C, W, +*], WL, OP, UL],
+      zip: [a] =>> ZipToShortest.Aux[C[W[a]], WL, OP, UL],
       opO: OP[C[W[UL]]],
     ): I ~:> C[W[UL]] =
-      Expr.ZipToShortestHList[I, CW[C, W, +*], WL, UL, OP](inputExprHList)(zip, opO)
+      Expr.ZipToShortestHList[I, [a] =>> C[W[a]], WL, UL, OP](inputExprHList)(zip, opO)
   }
 
-  override implicit def fromHL[I, L <: HList](expr: I ~:> W[L]): WrappedConvertHListExprBuilder[I, L] =
+  override implicit def fromHL[I, L <: Tuple](expr: I ~:> W[L]): WrappedConvertHListExprBuilder[I, L] =
     new WrappedConvertHListExprBuilder(expr)
 
-  class WrappedConvertHListExprBuilder[-I, L <: HList](inputExpr: I ~:> W[L])
+  class WrappedConvertHListExprBuilder[-I, L <: Tuple](inputExpr: I ~:> W[L])
     extends ConvertHListExprBuilder(inputExpr) {
 
     override def as[P](
@@ -325,8 +324,8 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
     ): Expr.FoldLeft[CI, C, W[A], W[B], OP] = {
       val initLensExpr = Expr.Identity[(W[B], W[A]), OP]()
       val initLens = VariantLens.id[(W[B], W[A])]
-      val b = Expr.Select(initLensExpr, initLens.at(Nat._0), (_: (W[B], W[A]), wb: W[B]) => wb)
-      val a = Expr.Select(initLensExpr, initLens.at(Nat._1), (_: (W[B], W[A]), wa: W[A]) => wa)
+      val b = Expr.Select(initLensExpr, initLens.at(0), (_: (W[B], W[A]), wb: W[B]) => wb)
+      val a = Expr.Select(initLensExpr, initLens.at(1), (_: (W[B], W[A]), wa: W[A]) => wa)
       val foldExpr = foldExprBuilder(b, a)
       Expr.FoldLeft(inputExpr, initExpr, foldExpr)
     }

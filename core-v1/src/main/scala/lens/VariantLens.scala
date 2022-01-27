@@ -8,11 +8,13 @@ import cats.arrow.Compose
 import cats.data.NonEmptySet
 import cats.kernel.Semigroup
 import cats.{Eval, Foldable, Reducible}
-import shapeless.ops.hlist
-import shapeless.{Generic, HList}
+import shapeless3.deriving.Gen
+import shapeless3.deriving.K0.{Generic, ProductGeneric}
+import shapeless3.deriving.K0
 
 import scala.annotation.nowarn
 import scala.collection.{Factory, View}
+import scala.deriving.Mirror
 
 // TODO: Rename to NamedLens after old algebra removed
 /**
@@ -48,25 +50,27 @@ object VariantLens extends VariantLensLowPriorityImplicits {
       g.andThen(f)
   }
 
-  /**
-    * A fancy trick using macros that allows you to access the surrounding context of a method
-    * invocation. By wrapping the call with this class, we can access the given [[lens]] to
-    * apply the appropriate transformation.
-    *
-    * @param lens the lens to add the `.select` method to.
-    */
-  implicit final class Selector[A, B](val lens: VariantLens[A, B]) extends AnyVal {
+  // TODO: Create new .select macro
 
-    /**
-      * Create a [[VariantLens]] that selects a field based on a given function and applies the appropriate
-      * [[DataPath.atField]] operator.
-      *
-      * @note this uses a macro and only works for `val`s or `def`s with no arguments.
-      *
-      * @param getter a function that selects a value of type [[C]] from the return type [[B]] of the current lens
-      */
-    def select[C](getter: B => C): VariantLens[A, C] = macro VariantLensMacros.selectImpl[A, B, C]
-  }
+//  /**
+//    * A fancy trick using macros that allows you to access the surrounding context of a method
+//    * invocation. By wrapping the call with this class, we can access the given [[lens]] to
+//    * apply the appropriate transformation.
+//    *
+//    * @param lens the lens to add the `.select` method to.
+//    */
+//  implicit final class Selector[A, B](val lens: VariantLens[A, B]) extends AnyVal {
+//
+//    /**
+//      * Create a [[VariantLens]] that selects a field based on a given function and applies the appropriate
+//      * [[DataPath.atField]] operator.
+//      *
+//      * @note this uses a macro and only works for `val`s or `def`s with no arguments.
+//      *
+//      * @param getter a function that selects a value of type [[C]] from the return type [[B]] of the current lens
+//      */
+//    def select[C](getter: B => C): VariantLens[A, C] = macro VariantLensMacros.selectImpl[A, B, C]
+//  }
 
   /**
     * If the lens returns a [[IterableOnce]] of 2-tuples, then allow calling operations defined by [[AsMapBuilder]]
@@ -136,17 +140,17 @@ object VariantLens extends VariantLensLowPriorityImplicits {
       lens.copy(get = lens.get.andThen(into.fromIterable(_): @nowarn))
   }
 
-  implicit final class AsHListBuilder[A, L <: HList](private val lens: VariantLens[A, L]) extends AnyVal {
-
-    /**
-      * Convert the resulting [[HList]] into a tuple.
-      */
-    def tupled[T](implicit tupler: hlist.Tupler.Aux[L, T]): VariantLens[A, T] =
-      lens.copy(
-        path = lens.path,
-        get = lens.get.andThen(tupler.apply),
-      )
-  }
+//  implicit final class AsHListBuilder[A, L <: Tuple](private val lens: VariantLens[A, L]) extends AnyVal {
+//
+//    /**
+//      * Convert the resulting [[Tuple]] into a tuple.
+//      */
+//    def tupled[T](implicit tupler: hlist.Tupler.Aux[L, T]): VariantLens[A, T] =
+//      lens.copy(
+//        path = lens.path,
+//        get = lens.get.andThen(tupler.apply),
+//      )
+//  }
 }
 
 private[lens] sealed trait VariantLensLowPriorityImplicits {
@@ -198,7 +202,7 @@ final case class VariantLens[-A, +B](
     *
     * @param name the name of the field
     * @param getter a function to extract the value of this field from the object
-    * TODO: Use HList to make this more safe, instead of relying on the macro to use this properly.
+    * TODO: Use Tuple to make this more safe, instead of relying on the macro to use this properly.
     */
   def field[C](
     name: String,
@@ -217,7 +221,7 @@ final case class VariantLens[-A, +B](
     * indexable object returned by the current lens.
     *
     * @param key either a value of the appropriate key type OR a [[shapeless.Nat]] for accessing a
-    *            specifically typed value from a tuple or [[HList]]
+    *            specifically typed value from a tuple or [[Tuple]]
     */
   def at[K : ValidDataPathKey, V](
     key: K,
@@ -246,9 +250,9 @@ final case class VariantLens[-A, +B](
   /**
     * Filters the given set of keys from this indexable object.
     *
-    * @note Unfortunately this does not work for [[HList]] the same way that [[at]] does.
+    * @note Unfortunately this does not work for [[Tuple]] the same way that [[at]] does.
     *
-    * TODO: It may be possible to make this work for tuples / HList with varargs instead of [[NonEmptySet]].
+    * TODO: It may be possible to make this work for tuples / Tuple with varargs instead of [[NonEmptySet]].
     */
   def filterKeys[K : ValidDataPathKey, V : Semigroup](
     keys: NonEmptySet[K],
@@ -292,11 +296,15 @@ final case class VariantLens[-A, +B](
     this.copy(get = this.get.andThen(wv => Extract[W].extract(wv)))
 
   /**
-    * Converts the result into an [[HList]] if possible.
+    * Converts the result into an [[Tuple]] if [[B]] is a [[Product]] type.
     *
     * Uses recursive implicit resolution at compile-time to derive the appropriate heterogenious return type.
     *
-    * @see [[Generic]]
+    * @see [[Mirror.Product]]s
     */
-  def asHList[C >: B](implicit gen: Generic[C]): VariantLens[A, gen.Repr] = copy(get = this.get.andThen(gen.to(_)))
+  def asHList(
+    implicit
+    gen: K0.ProductGeneric[B],
+  ): VariantLens[A, gen.MirroredElemTypes] =
+    copy(get = this.get.andThen(b => gen.toRepr(b)))
 }

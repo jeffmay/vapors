@@ -61,7 +61,10 @@ object Fact {
   // This will be used a lot, so cache it
   private final val defaultOrder: Order[Fact] = orderByFactName(Order[String])
 
-  implicit def order(implicit orderFactNames: Order[String]): Order[Fact] = {
+  implicit def order(
+    implicit
+    orderFactNames: Order[String] = cats.instances.string.catsKernelStdOrderForString,
+  ): Order[Fact] = {
     if (orderFactNames == cats.instances.string.catsKernelStdOrderForString) defaultOrder
     else Order.whenEqual(orderByFactName(orderFactNames), orderByFactValue)
   }

@@ -3,7 +3,6 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import cats.{Align, Functor, FunctorFilter}
-import shapeless.{::, HList, HNil}
 
 /**
   * A marker trait for determining which set of implicits to inherit.
@@ -29,14 +28,14 @@ trait WrappedExprHListDslImplicits extends ExprHListDslImplicits {
 
   implicit def hlastAlignMapN[C[_] : Functor, H](
     implicit
-    isCons: IsExprHCons.Aux[C[W[H]] :: HNil, C[W[H]], HNil],
-  ): ZipToShortest.Aux[Lambda[a => C[W[a]]], C[W[H]] :: HNil, OP, H :: HNil]
+    isCons: IsExprHCons.Aux[C[W[H]] *: EmptyTuple, C[W[H]], EmptyTuple],
+  ): ZipToShortest.Aux[Lambda[a => C[W[a]]], C[W[H]] *: EmptyTuple, OP, H *: EmptyTuple]
 
-  implicit def hconsAlignMapN[C[_] : Align : FunctorFilter, H, WT <: HList](
+  implicit def hconsAlignMapN[C[_] : Align : FunctorFilter, H, WT <: Tuple](
     implicit
-    isCons: IsExprHCons.Aux[C[W[H]] :: WT, C[W[H]], WT],
+    isCons: IsExprHCons.Aux[C[W[H]] *: WT, C[W[H]], WT],
     mt: ZipToShortest[Lambda[a => C[W[a]]], WT, OP],
-  ): ZipToShortest.Aux[Lambda[a => C[W[a]]], C[W[H]] :: WT, OP, H :: mt.UL]
+  ): ZipToShortest.Aux[Lambda[a => C[W[a]]], C[W[H]] *: WT, OP, H *: mt.UL]
 
 }
 
@@ -45,14 +44,14 @@ trait WrappedLowPriorityExprHListDslImplicits {
 
   implicit def hlastMapN[H](
     implicit
-    isCons: IsExprHCons.Aux[W[H] :: HNil, W[H], HNil],
-  ): ZipToShortest.Aux[W, W[H] :: HNil, OP, H :: HNil]
+    isCons: IsExprHCons[W[H] *: EmptyTuple],
+  ): ZipToShortest.Aux[W, W[H] *: EmptyTuple, OP, H *: EmptyTuple]
 
-  implicit def hconsMapN[H, WT <: HList](
+  implicit def hconsMapN[H, WT <: Tuple](
     implicit
-    isCons: IsExprHCons.Aux[W[H] :: WT, W[H], WT],
+    isCons: IsExprHCons[W[H] *: WT],
     mt: ZipToShortest[W, WT, OP],
-  ): ZipToShortest.Aux[W, W[H] :: WT, OP, H :: mt.UL]
+  ): ZipToShortest.Aux[W, W[H] *: WT, OP, H *: mt.UL]
 }
 
 trait UnwrappedExprHListDslImplicits extends ExprHListDslImplicits {
@@ -60,14 +59,14 @@ trait UnwrappedExprHListDslImplicits extends ExprHListDslImplicits {
 
   implicit def hlastAlignMapN[C[_] : Functor, H](
     implicit
-    isCons: IsExprHCons.Aux[C[H] :: HNil, C[H], HNil],
-  ): ZipToShortest.Aux[C, C[H] :: HNil, OP, H :: HNil]
+    isCons: IsExprHCons[C[H] *: EmptyTuple],
+  ): ZipToShortest.Aux[C, C[H] *: EmptyTuple, OP, H *: EmptyTuple]
 
-  implicit def hconsAlignMapN[C[_] : Align : FunctorFilter, H, WT <: HList](
+  implicit def hconsAlignMapN[C[_] : Align : FunctorFilter, H, WT <: Tuple](
     implicit
-    isCons: IsExprHCons.Aux[C[H] :: WT, C[H], WT],
+    isCons: IsExprHCons[C[H] *: WT],
     mt: ZipToShortest[C, WT, OP],
-  ): ZipToShortest.Aux[C, C[H] :: WT, OP, H :: mt.UL]
+  ): ZipToShortest.Aux[C, C[H] *: WT, OP, H *: mt.UL]
 }
 
 trait UnwrappedLowPriorityExprHListDslImplicits {
@@ -75,12 +74,12 @@ trait UnwrappedLowPriorityExprHListDslImplicits {
 
   implicit def hlastMapN[H](
     implicit
-    isCons: IsExprHCons.Aux[H :: HNil, H, HNil],
-  ): ZipToShortest.Aux[W, H :: HNil, OP, H :: HNil]
+    isCons: IsExprHCons[H *: EmptyTuple, H, EmptyTuple],
+  ): ZipToShortest.Aux[W, H *: EmptyTuple, OP, H *: EmptyTuple]
 
-  implicit def hconsMapN[H, WT <: HList](
+  implicit def hconsMapN[H, WT <: Tuple](
     implicit
-    isCons: IsExprHCons.Aux[H :: WT, H, WT],
+    isCons: IsExprHCons.Aux[H *: WT, H, WT],
     mt: ZipToShortest[W, WT, OP],
-  ): ZipToShortest.Aux[W, H :: WT, OP, H :: mt.UL]
+  ): ZipToShortest.Aux[W, H *: WT, OP, H *: mt.UL]
 }

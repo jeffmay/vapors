@@ -10,7 +10,7 @@ import math.{Add, Power}
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
 import cats.{Applicative, FlatMap, Foldable, Functor, Id, Order, Reducible, SemigroupK, Traverse}
-import shapeless.{Generic, HList}
+import shapeless3.deriving.K0
 
 trait BuildExprDsl
   extends DebugExprDsl
@@ -262,7 +262,7 @@ You should prefer put your declaration of dependency on definitions close to whe
     def getAs[C[_]]: GetAsWrapper[I, W, A, C, OP]
   }
 
-  implicit def xhlOps[I, WL <: HList](exprHList: ExprHList[I, WL, OP]): ExprHListOpsBuilder[I, WL]
+  implicit def xhlOps[I, WL <: Tuple](exprHList: ExprHList[I, WL, OP]): ExprHListOpsBuilder[I, WL]
 
   /**
     * Operations that can be performed on an [[ExprHList]].
@@ -270,32 +270,32 @@ You should prefer put your declaration of dependency on definitions close to whe
     * @param proof useful for inferring the correct type from the required input expression in subclasses
     *
     * @tparam I the input type
-    * @tparam WL the type of [[HList]] of all wrapped outputs of the given [[ExprHList]]
+    * @tparam WL the type of [[Tuple]] of all wrapped outputs of the given [[ExprHList]]
     */
-  abstract class ExprHListOpsBuilder[-I, WL <: HList](proof: ExprHList[I, WL, OP]) {
+  abstract class ExprHListOpsBuilder[-I, WL <: Tuple](proof: ExprHList[I, WL, OP]) {
 
     /**
-      * Combine all outputs of all the [[Expr]] nodes into an [[HList]] of the unwrapped elements
+      * Combine all outputs of all the [[Expr]] nodes into an [[Tuple]] of the unwrapped elements
       * then wrapped by the wrapper type [[W]].
       *
       * This is useful in combination with the [[ConvertHListExprBuilder.as]] operator to convert
-      * an expression of a wrapped [[HList]] into an expression of a wrapped product type.
+      * an expression of a wrapped [[Tuple]] into an expression of a wrapped product type.
       *
       * @param isCons evidence that the list is not [[ExprHNil]]
       * @param opO the output parameter of the wrapped output [[UL]]
       *
-      * @tparam UL the combined [[HList]] of all unwrapped output types of the embedded [[Expr]] nodes
+      * @tparam UL the combined [[Tuple]] of all unwrapped output types of the embedded [[Expr]] nodes
       *
-      * @return an expression from the shared input type to a wrapped [[UL]] [[HList]]s.
+      * @return an expression from the shared input type to a wrapped [[UL]] [[Tuple]]s.
       */
-    def toHList[UL <: HList](
+    def toHList[UL <: Tuple](
       implicit
       isCons: ZipToShortest.Aux[W, WL, OP, UL],
       opO: OP[W[UL]],
     ): I ~:> W[UL]
 
     /**
-      * Zip all outputs of all the [[Expr]] nodes into a collection [[C]] of wrapped [[HList]] elements,
+      * Zip all outputs of all the [[Expr]] nodes into a collection [[C]] of wrapped [[Tuple]] elements,
       * limited by the length of the shortest collection.
       *
       * This is useful for zipping [[List]]s or [[Option]]s into a single list or option of the dependent parts
@@ -308,23 +308,23 @@ You should prefer put your declaration of dependency on definitions close to whe
       * @param opO the output parameter of the collection of wrapped output values of type [[UL]]
       *
       * @tparam C the collection type (covariant because the [[Expr.ZipToShortestHList]] wrapper type is covariant)
-      * @tparam UL the combined [[HList]] of all unwrapped output types of the embedded [[Expr]] nodes
+      * @tparam UL the combined [[Tuple]] of all unwrapped output types of the embedded [[Expr]] nodes
       *
-      * @return an expression from the shared input type to a collection [[C]] of wrapped [[UL]] [[HList]]s.
+      * @return an expression from the shared input type to a collection [[C]] of wrapped [[UL]] [[Tuple]]s.
       */
-    def zipToShortest[C[+_], UL <: HList](
+    def zipToShortest[C[+_], UL <: Tuple](
       implicit
-      zip: ZipToShortest.Aux[CW[C, W, +*], WL, OP, UL],
+      zip: ZipToShortest.Aux[[a] =>> C[W[a]], WL, OP, UL],
       opO: OP[C[W[UL]]],
     ): I ~:> C[W[UL]]
   }
 
-  implicit def fromHL[I, L <: HList](expr: I ~:> W[L]): ConvertHListExprBuilder[I, L]
+  implicit def fromHL[I, L <: Tuple](expr: I ~:> W[L]): ConvertHListExprBuilder[I, L]
 
-  abstract class ConvertHListExprBuilder[-I, L <: HList](proof: I ~:> W[L]) {
+  abstract class ConvertHListExprBuilder[-I, L <: Tuple](proof: I ~:> W[L]) {
 
     /**
-      * Convert the wrapped [[HList]] output of type [[L]] from the given expression into the product type [[P]]
+      * Convert the wrapped [[Tuple]] output of type [[L]] from the given expression into the product type [[P]]
       * as defined by the [[Generic]] representation implicitly available from shapeless.
       *
       * @param gen the compiler-provided definition of how to convert the generic representation, [[L]],
@@ -340,7 +340,7 @@ You should prefer put your declaration of dependency on definitions close to whe
       */
     def as[P](
       implicit
-      gen: Generic.Aux[P, L],
+      gen: K0.Generic[P],
       opL: OP[L],
       opWL: OP[W[L]],
       opP: OP[P],
@@ -593,7 +593,7 @@ You should prefer put your declaration of dependency on definitions close to whe
       that: Expr[NI, W[V], OP],
     )(
       // TODO: Use a lens here? Maybe some kind of "wrap" operation?
-      using: V => Window[V],
+      buildWindow: V => Window[V],
     ): NI >=< V = {
       val lens = VariantLens.id[W[V]].extractValue
       Expr.WithinWindow(
@@ -601,14 +601,14 @@ You should prefer put your declaration of dependency on definitions close to whe
         that match {
           case Expr.Const(wv, _) =>
             val v = Extract[W].extract(wv)
-            val window = using(v)
+            val window = buildWindow(v)
             val wrappedWindow = wrapConst.wrapConst(window)
             Expr.Const[W[Window[V]], OP](wrappedWindow)
           case _ =>
             Expr.Select[NI, W[V], V, W[Window[V]], OP](
               that,
               lens,
-              (wv, a) => wrapSelected.wrapSelected(wv, lens.path, using(a)),
+              (wv, a) => wrapSelected.wrapSelected(wv, lens.path, buildWindow(a)),
             )
         },
       )
