@@ -9,7 +9,7 @@ import cats.data.NonEmptySet
 import cats.kernel.Semigroup
 import cats.{Eval, Foldable, Reducible}
 import shapeless.ops.hlist
-import shapeless.{Generic, HList}
+import shapeless.{Generic, HList, Typeable}
 
 import scala.annotation.nowarn
 import scala.collection.{Factory, View}
@@ -146,6 +146,15 @@ object VariantLens extends VariantLensLowPriorityImplicits {
         path = lens.path,
         get = lens.get.andThen(tupler.apply),
       )
+  }
+
+  implicit final class AsSumTypeBuilder[A, B](private val lens: VariantLens[A, B]) extends AnyVal {
+
+    /**
+      * Attempt to cast the value of super-type [[B]] as sub-type [[V]] (if possible), otherwise None.
+      */
+    def asCase[V <: B : Typeable]: VariantLens[A, Option[V]] =
+      lens.copy(get = lens.get.andThen(Typeable[V].cast))
   }
 }
 
