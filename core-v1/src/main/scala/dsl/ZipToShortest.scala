@@ -17,7 +17,7 @@ import shapeless.HList
   *
   *     (Any ~:> Seq[String]) :: (I ~:> Seq[Int]) => Any ~:> Seq[String :: Int :: HNil]
   */
-trait ZipToShortest[W[_], WL <: HList, OP[_]] {
+trait ZipToShortest[+W[_], WL <: HList, OP[_]] {
   type UL <: HList
 
   def zipToShortestWith[G[-_, +_] : Arrow, I](
@@ -30,5 +30,5 @@ trait ZipToShortest[W[_], WL <: HList, OP[_]] {
   * Implementations live in the subclasses of [[ExprHListDslImplicits]].
   */
 object ZipToShortest {
-  type Aux[W[_], WL <: HList, OP[_], UL0] = ZipToShortest[W, WL, OP] { type UL = UL0 }
+  type Aux[+W[_], WL <: HList, OP[_], UL0] = ZipToShortest[W, WL, OP] { type UL = UL0 }
 }

@@ -235,6 +235,36 @@ You should prefer put your declaration of dependency on definitions close to whe
     constType: ConstOutputType[W, A],
   ): ConstExprBuilder[constType.Out, OP]
 
+  final def repeatConstForever[I, O](
+    expr: I ~:> O,
+  )(implicit
+    opO: OP[IterableOnce[O]],
+  ): Expr.Repeat[I, O, OP] =
+    Expr.Repeat(expr, recompute = false, limit = None)
+
+  final def repeatConst[I, O](
+    n: Int,
+    expr: I ~:> O,
+  )(implicit
+    opO: OP[IterableOnce[O]],
+  ): Expr.Repeat[I, O, OP] =
+    Expr.Repeat(expr, recompute = false, limit = Some(n))
+
+  final def repeatForever[I, O](
+    expr: I ~:> O,
+  )(implicit
+    opO: OP[IterableOnce[O]],
+  ): Expr.Repeat[I, O, OP] =
+    Expr.Repeat(expr, recompute = true, limit = None)
+
+  final def repeat[I, O](
+    n: Int,
+    expr: I ~:> O,
+  )(implicit
+    opO: OP[IterableOnce[O]],
+  ): Expr.Repeat[I, O, OP] =
+    Expr.Repeat(expr, recompute = true, limit = Some(n))
+
   // TODO: Is this redundant syntax worth keeping around?
   implicit def inSet[I, A](inputExpr: I ~:> W[A]): InSetExprBuilder[I, A]
 

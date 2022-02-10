@@ -265,6 +265,12 @@ object StandardEngine {
       ExprResult.Or(expr, finalState, results)
     }
 
+    override def visitRepeat[I, O](
+      expr: Expr.Repeat[I, O, OP],
+    )(implicit
+      opO: OP[IterableOnce[O]],
+    ): PO <:< I => ExprResult[PO, I, IterableOnce[O], OP] = ???
+
     override def visitSelect[I, A, B, O : OP](
       expr: Expr.Select[I, A, B, O, OP],
     ): PO <:< I => ExprResult[PO, I, O, OP] = { implicit evPOisI =>

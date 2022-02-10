@@ -109,11 +109,24 @@ sealed trait JustifiedExprHListDslImplicits
   with JustifiedLowPriorityExprHListDslImplicits
   with DefinedJustifiedDslImplicitDefinitions {
 
+  override implicit def hlastAlignIterableOnceMapN[H](
+    implicit
+    isCons: IsExprHCons.Aux[IterableOnce[Justified[H]] :: HNil, IterableOnce[Justified[H]], HNil],
+  ): ZipToShortest.Aux[Lambda[a => Seq[Justified[a]]], IterableOnce[Justified[H]] :: HNil, OP, H :: HNil] =
+    defn.hlastAlignIterableOnceMapN
+
   override implicit def hlastAlignMapN[C[_] : Functor, H](
     implicit
     isCons: IsExprHCons.Aux[C[Justified[H]] :: HNil, C[Justified[H]], HNil],
   ): ZipToShortest.Aux[Lambda[a => C[Justified[a]]], C[Justified[H]] :: HNil, OP, H :: HNil] =
     defn.hlastAlignMapN
+
+  override implicit def hconsAlignIterableOnceMapN[H, WT <: HList](
+    implicit
+    isCons: IsExprHCons.Aux[IterableOnce[Justified[H]] :: WT, IterableOnce[Justified[H]], WT],
+    mt: ZipToShortest[Lambda[a => Seq[Justified[a]]], WT, OP],
+  ): ZipToShortest.Aux[Lambda[a => Seq[Justified[a]]], IterableOnce[Justified[H]] :: WT, OP, H :: mt.UL] =
+    defn.hconsAlignIterableOnceMapN(mt)
 
   override implicit def hconsAlignMapN[C[_] : Align : FunctorFilter, H, WT <: HList](
     implicit

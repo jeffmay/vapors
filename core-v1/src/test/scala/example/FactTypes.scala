@@ -15,6 +15,7 @@ object FactTypes extends OrderTimeImplicits {
   final val DateOfBirth = FactType[LocalDate]("date_of_birth")
   final val CombinedTags = FactType[CombinedTags]("combined_tags")
   final val GeoLocation = FactType[GeoLocation]("geolocation")
+  final val Scores = FactType[Seq[Double]]("scores")
   final val WeightLbs = FactType[Double]("weight_lbs")
   final val WeightKg = FactType[Double]("weight_kg")
 }

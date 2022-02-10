@@ -8,6 +8,12 @@ trait DefaultUnwrappedExprHListImplicits
   with DefaultUnwrappedLowPriorityExprHListDslImplicits
   with DefaultUnwrappedDslImplicitDefinitions {
 
+  override implicit final def hlastAlignIterableOnceMapN[H](
+    implicit
+    isCons: IsExprHCons.Aux[IterableOnce[H] :: HNil, IterableOnce[H], HNil],
+  ): ZipToShortest.Aux[Seq, IterableOnce[H] :: HNil, OP, H :: HNil] =
+    defn.hlastAlignIterableOnceMapN
+
   override implicit final def hlastAlignMapN[C[_] : Functor, H](
     implicit
     isCons: IsExprHCons.Aux[C[H] :: HNil, C[H], HNil],
@@ -17,6 +23,13 @@ trait DefaultUnwrappedExprHListImplicits
       defn.hlastAlignMapN[C, H](Functor[C], isCons)
     zts
   }
+
+  override implicit final def hconsAlignIterableOnceMapN[H, WT <: HList](
+    implicit
+    mt: ZipToShortest[Seq, WT, OP],
+    isCons: IsExprHCons.Aux[IterableOnce[H] :: WT, IterableOnce[H], WT],
+  ): ZipToShortest.Aux[Seq, IterableOnce[H] :: WT, OP, H :: mt.UL] =
+    defn.hconsAlignIterableOnceMapN(mt)
 
   override implicit final def hconsAlignMapN[C[_] : Align : FunctorFilter, H, WT <: HList](
     implicit

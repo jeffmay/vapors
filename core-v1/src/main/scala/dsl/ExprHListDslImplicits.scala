@@ -5,6 +5,8 @@ package dsl
 import cats.{Align, Functor, FunctorFilter}
 import shapeless.{::, HList, HNil}
 
+import scala.collection.Factory
+
 /**
   * A marker trait for determining which set of implicits to inherit.
   *
@@ -27,10 +29,21 @@ sealed trait ExprHListDslImplicits
 trait WrappedExprHListDslImplicits extends ExprHListDslImplicits {
   self: DslTypes with WrappedLowPriorityExprHListDslImplicits =>
 
+  implicit def hlastAlignIterableOnceMapN[H](
+    implicit
+    isCons: IsExprHCons.Aux[IterableOnce[W[H]] :: HNil, IterableOnce[W[H]], HNil],
+  ): ZipToShortest.Aux[Lambda[a => Seq[W[a]]], IterableOnce[W[H]] :: HNil, OP, H :: HNil]
+
   implicit def hlastAlignMapN[C[_] : Functor, H](
     implicit
     isCons: IsExprHCons.Aux[C[W[H]] :: HNil, C[W[H]], HNil],
   ): ZipToShortest.Aux[Lambda[a => C[W[a]]], C[W[H]] :: HNil, OP, H :: HNil]
+
+  implicit def hconsAlignIterableOnceMapN[H, WT <: HList](
+    implicit
+    isCons: IsExprHCons.Aux[IterableOnce[W[H]] :: WT, IterableOnce[W[H]], WT],
+    mt: ZipToShortest[Lambda[a => Seq[W[a]]], WT, OP],
+  ): ZipToShortest.Aux[Lambda[a => Seq[W[a]]], IterableOnce[W[H]] :: WT, OP, H :: mt.UL]
 
   implicit def hconsAlignMapN[C[_] : Align : FunctorFilter, H, WT <: HList](
     implicit
@@ -58,10 +71,21 @@ trait WrappedLowPriorityExprHListDslImplicits {
 trait UnwrappedExprHListDslImplicits extends ExprHListDslImplicits {
   self: DslTypes with UnwrappedLowPriorityExprHListDslImplicits =>
 
+  implicit def hlastAlignIterableOnceMapN[H](
+    implicit
+    isCons: IsExprHCons.Aux[IterableOnce[H] :: HNil, IterableOnce[H], HNil],
+  ): ZipToShortest.Aux[Seq, IterableOnce[H] :: HNil, OP, H :: HNil]
+
   implicit def hlastAlignMapN[C[_] : Functor, H](
     implicit
     isCons: IsExprHCons.Aux[C[H] :: HNil, C[H], HNil],
   ): ZipToShortest.Aux[C, C[H] :: HNil, OP, H :: HNil]
+
+  implicit def hconsAlignIterableOnceMapN[H, WT <: HList](
+    implicit
+    mt: ZipToShortest[Seq, WT, OP],
+    isCons: IsExprHCons.Aux[IterableOnce[H] :: WT, IterableOnce[H], WT],
+  ): ZipToShortest.Aux[Seq, IterableOnce[H] :: WT, OP, H :: mt.UL]
 
   implicit def hconsAlignMapN[C[_] : Align : FunctorFilter, H, WT <: HList](
     implicit
