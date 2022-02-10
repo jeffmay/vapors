@@ -256,6 +256,12 @@ object DebugArgs {
       override type Out = C[B]
     }
 
+  implicit def debugRepeat[I, O, OP[_]]: Aux[Expr.Repeat[I, O, OP], OP, I, IterableOnce[O]] =
+    new DebugArgs[Expr.Repeat[I, O, OP], OP] {
+      override type In = I
+      override type Out = IterableOnce[O]
+    }
+
   implicit def debugSelect[I, A, B, O, OP[_]]: Aux[Expr.Select[I, A, B, O, OP], OP, (I, A, VariantLens[A, B], B), O] =
     new DebugArgs[Expr.Select[I, A, B, O, OP], OP] {
       override type In = (I, A, VariantLens[A, B], B)

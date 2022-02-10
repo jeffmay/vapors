@@ -338,6 +338,8 @@ object Expr {
       opO: OP[W[B]],
     ): I ~:> W[B]
 
+    def visitRepeat[I, O](expr: Repeat[I, O, OP])(implicit opO: OP[IterableOnce[O]]): I ~:> IterableOnce[O]
+
     def visitSelect[I, A, B, O : OP](expr: Select[I, A, B, O, OP]): I ~:> O
 
     def visitSequence[C[+_] : Applicative : SemigroupK : Traverse, I, O](
@@ -515,6 +517,9 @@ object Expr {
       logic: Disjunction[W, B, OP],
       opO: OP[W[B]],
     ): H[I, W[B]] = proxy(underlying.visitOr(expr))
+
+    override def visitRepeat[I, O](expr: Repeat[I, O, OP])(implicit opO: OP[IterableOnce[O]]): H[I, IterableOnce[O]] =
+      proxy(underlying.visitRepeat(expr))
 
     override def visitSelect[I, A, B, O : OP](expr: Select[I, A, B, O, OP]): H[I, O] =
       proxy(underlying.visitSelect(expr))
@@ -1036,6 +1041,17 @@ object Expr {
   ) extends Expr[I, O, OP]("foldLeft") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitFoldLeft(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): FoldLeft[I, C, A, O, OP] =
+      copy(debugging = debugging)
+  }
+
+  final case class Repeat[-I, +O, OP[_]](
+    inputExpr: Expr[I, O, OP],
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    opO: OP[IterableOnce[O]],
+  ) extends Expr[I, IterableOnce[O], OP]("repeat") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, IterableOnce[O]] = v.visitRepeat(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Repeat[I, O, OP] =
       copy(debugging = debugging)
   }
 

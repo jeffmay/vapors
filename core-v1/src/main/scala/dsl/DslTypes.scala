@@ -105,7 +105,7 @@ trait DslTypes extends Any {
   /**
     * An [[ExprHList]] with a fixed [[OP]] type.
     */
-  final type XHL[-I, L <: HList] = ExprHList[I, L, OP]
+  final type XHL[-I, +L <: HList] = ExprHList[I, L, OP]
 
   /**
     * An [[ExprHNil]] with a fixed [[OP]] type.

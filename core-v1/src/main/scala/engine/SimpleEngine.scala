@@ -228,6 +228,16 @@ object SimpleEngine {
       debugging(expr).invokeAndReturn(state((i, results), finalResult))
     }
 
+    override def visitRepeat[I, O](
+      expr: Expr.Repeat[I, O, OP],
+    )(implicit
+      opO: OP[IterableOnce[O]],
+    ): I => IterableOnce[O] = { i =>
+      val const = expr.inputExpr.visit(this)(i)
+      val forever = Iterator.continually(const)
+      debugging(expr).invokeAndReturn(state(i, forever))
+    }
+
     override def visitSelect[I, A, B, O : OP](expr: Expr.Select[I, A, B, O, OP]): I => O = { i =>
       val a = expr.inputExpr.visit(this)(i)
       val b = expr.lens.get(a)

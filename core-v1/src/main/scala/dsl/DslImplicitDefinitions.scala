@@ -8,7 +8,7 @@ import com.rallyhealth.vapors.v1.algebra.Expr
 import com.rallyhealth.vapors.v1.lens.DataPath
 import shapeless.{::, HList, HNil}
 
-import scala.collection.Factory
+import scala.collection.{Factory, IterableOnce}
 
 final class DslImplicitDefinitions[W[+_] : Functor : Semigroupal, OP[_]](
   implicit
@@ -107,6 +107,31 @@ final class DslImplicitDefinitions[W[+_] : Functor : Semigroupal, OP[_]](
       ): W[O] = wrapElementW.wrapSelected(wrapped, path, value)
     }
 
+  def hlastAlignIterableOnceMapN[C[a] <: IterableOnce[a], H](
+    implicit
+    isCons: IsExprHCons.Aux[IterableOnce[W[H]] :: HNil, IterableOnce[W[H]], HNil],
+    factory: Factory[W[H :: HNil], C[W[H :: HNil]]],
+  ): ZipToShortest.Aux[Lambda[a => C[W[a]]], IterableOnce[W[H]] :: HNil, OP, H :: HNil] =
+    new ZipToShortest[Lambda[a => C[W[a]]], IterableOnce[W[H]] :: HNil, OP] {
+      override type UL = H :: HNil
+      override def zipToShortestWith[G[-_, +_] : Arrow, I](
+        xhl: ExprHList[I, IterableOnce[W[H]] :: HNil, OP],
+        v: Expr.Visitor[G, OP],
+      ): G[I, C[W[H :: HNil]]] = {
+        val G = Arrow[G]
+        val gcwh = xhl.head.visit(v)
+        gcwh >>> G.lift { cwh =>
+          factory.fromSpecific {
+            cwh.iterator.map { wh =>
+              wh.map { h =>
+                h :: HNil
+              }
+            }
+          }
+        }
+      }
+    }
+
   def hlastAlignMapN[C[_] : Functor, H](
     implicit
     isCons: IsExprHCons.Aux[C[W[H]] :: HNil, C[W[H]], HNil],
@@ -125,6 +150,40 @@ final class DslImplicitDefinitions[W[+_] : Functor : Semigroupal, OP[_]](
               h :: HNil
             }
           }
+        }
+      }
+    }
+
+  def hconsAlignIterableOnceMapN[C[a] <: IterableOnce[a], H, WT <: HList](
+    mt: ZipToShortest[Lambda[a => C[W[a]]], WT, OP],
+  )(implicit
+    isCons: IsExprHCons.Aux[IterableOnce[W[H]] :: WT, IterableOnce[W[H]], WT],
+    factory: Factory[W[H :: mt.UL], C[W[H :: mt.UL]]],
+  ): ZipToShortest.Aux[Lambda[a => C[W[a]]], IterableOnce[W[H]] :: WT, OP, H :: mt.UL] =
+    new ZipToShortest[Lambda[a => C[W[a]]], IterableOnce[W[H]] :: WT, OP] {
+      override type UL = H :: mt.UL
+      override def zipToShortestWith[G[-_, +_] : Arrow, I](
+        xhl: ExprHList[I, IterableOnce[W[H]] :: WT, OP],
+        v: Expr.Visitor[G, OP],
+      ): G[I, C[W[H :: mt.UL]]] = {
+        val G = Arrow[G]
+        val gcwh = xhl.head.visit(v)
+        val gcwt: G[I, C[W[mt.UL]]] = mt.zipToShortestWith(xhl.tail, v)
+        (gcwh &&& gcwt) >>> G.lift {
+          case (cwh, cwt) =>
+            val lefts = cwh.iterator.map(Some(_))
+            val rights = cwt.iterator.map(Some(_))
+            factory.fromSpecific {
+              lefts
+                .zip(rights)
+                .map {
+                  case (Some(wh), Some(wt)) => Some((wh, wt).mapN { case (h, t) => h :: t })
+                  case _ => None
+                }
+                .collect {
+                  case Some(hl) => hl
+                }
+            }
         }
       }
     }
