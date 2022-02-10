@@ -1044,8 +1044,17 @@ object Expr {
       copy(debugging = debugging)
   }
 
+  /**
+    * Creates an [[IterableOnce]] that emits the result of the input expression forever, or up to a given limit.
+    *
+    * @param inputExpr the input expression to repeat
+    * @param recompute whether to recompute the expression on every iteration or just use the first result
+    * @param limit whether to limit the total number of elements produced by the iterable
+    */
   final case class Repeat[-I, +O, OP[_]](
     inputExpr: Expr[I, O, OP],
+    recompute: Boolean,
+    limit: Option[Int],
     override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
   )(implicit
     opO: OP[IterableOnce[O]],

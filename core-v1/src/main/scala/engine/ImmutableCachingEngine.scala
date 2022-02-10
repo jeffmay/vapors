@@ -410,9 +410,14 @@ object ImmutableCachingEngine {
     )(implicit
       opO: OP[IterableOnce[O]],
     ): I => CachedResult[IterableOnce[O]] = { i =>
-      val input = expr.inputExpr.visit(this)(i)
-      val forever = Iterator.continually(input.value)
-      debugging(expr).invokeAndReturn(state(i, cached(forever)))
+      val forever = if (expr.recompute) Iterator.continually {
+        expr.inputExpr.visit(this)(i)
+      } else {
+        val const = expr.inputExpr.visit(this)(i)
+        Iterator.continually(const)
+      }
+      val iterable = expr.limit.fold(forever)(forever.take)
+      debugging(expr).invokeAndReturn(state(i, cached(iterable)))
     }
 
     override def visitSelect[I, A, B, O : OP](expr: Expr.Select[I, A, B, O, OP]): I => CachedResult[O] =
