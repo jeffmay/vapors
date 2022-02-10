@@ -21,7 +21,7 @@ class SimpleRepeatSpec extends FunSuite {
     val expr = wrap(ageFacts.headOption, scoreFacts.headOption).zipToShortest.map { hl =>
       val age = hl.get(_.at(Nat._0))
       val scores = hl.get(_.at(Nat._1))
-      wrap(repeat(age), scores).zipToShortest
+      wrap(repeatConstForever(age), scores).zipToShortest
     }
     val facts = FactTable(
       FactTypes.Age(30),

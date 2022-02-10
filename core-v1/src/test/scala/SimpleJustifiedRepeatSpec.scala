@@ -23,7 +23,7 @@ class SimpleJustifiedRepeatSpec extends FunSuite {
     val expr = wrap(ageFacts, scoreFacts).zipToShortest.flatMap { hl =>
       val age = hl.get(_.at(Nat._0))
       val scores = hl.get(_.at(Nat._1))
-      wrap(repeat(age), scores).zipToShortest
+      wrap(repeatConstForever(age), scores).zipToShortest
     }
     val ageFact = FactTypes.Age(30)
     val scoresFact = FactTypes.Scores(Seq(1.0, 2.0))
