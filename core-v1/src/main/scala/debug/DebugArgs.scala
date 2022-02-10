@@ -6,6 +6,7 @@ import algebra.{Expr, SizeComparison}
 import data._
 import lens.VariantLens
 
+import cats.Eval
 import cats.data.{NonEmptySeq, NonEmptyVector}
 import izumi.reflect.Tag
 import shapeless.HList
@@ -256,9 +257,9 @@ object DebugArgs {
       override type Out = C[B]
     }
 
-  implicit def debugRepeat[I, O, OP[_]]: Aux[Expr.Repeat[I, O, OP], OP, I, IterableOnce[O]] =
+  implicit def debugRepeat[I, O, OP[_]]: Aux[Expr.Repeat[I, O, OP], OP, (I, Eval[O], Option[Int]), IterableOnce[O]] =
     new DebugArgs[Expr.Repeat[I, O, OP], OP] {
-      override type In = I
+      override type In = (I, Eval[O], Option[Int])
       override type Out = IterableOnce[O]
     }
 
