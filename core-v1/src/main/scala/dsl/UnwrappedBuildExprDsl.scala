@@ -3,14 +3,15 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import algebra._
-import data.{Extract, FactType, FactTypeSet, SliceRange, TypedFact}
+import data._
 import lens.{CollectInto, IterableInto, VariantLens}
 import logic.Logic
 import math.{Add, Power}
 
 import cats.data.NonEmptySeq
 import cats.{FlatMap, Foldable, Functor, Id, Order, Reducible, Traverse}
-import shapeless.{Generic, HList, Nat}
+import izumi.reflect.Tag
+import shapeless.{Generic, HList, Nat, Typeable}
 
 trait UnwrappedBuildExprDsl
   extends BuildExprDsl
@@ -162,6 +163,34 @@ trait UnwrappedBuildExprDsl
   ): ConstExprBuilder[constType.Out, OP] =
     new ConstExprBuilder(constType.wrapConst(value))
 
+  override type Case[T, +O] = Expr.MatchCase[Any, T, Boolean, O, OP]
+  override def Case[T : Typeable : Tag]: UnwrappedCasePartiallyApplied[T] = new UnwrappedCasePartiallyApplied[T]
+
+  final class UnwrappedCasePartiallyApplied[T : Typeable : Tag] extends CasePartiallyApplied[T] {
+
+    override def ==>[O](
+      thenExpr: T ~:> O,
+    )(implicit
+      opT: OP[T],
+    ): Case[T, O] =
+      Expr.MatchCase.Unguarded(Typeable[T].cast, thenExpr)
+
+    override def when[O](whenExprBuilder: T =~:> Boolean): UnwrappedCaseWithGuardPartiallyApplied[T] =
+      new UnwrappedCaseWithGuardPartiallyApplied(whenExprBuilder)
+  }
+
+  final class UnwrappedCaseWithGuardPartiallyApplied[T : Typeable : Tag](whenExprBuilder: T =~:> Boolean)
+    extends CaseWithGuardPartiallyApplied(whenExprBuilder) {
+
+    override def ==>[O](
+      thenExpr: T ~:> O,
+    )(implicit
+      opT: OP[T],
+      opWT: OP[T],
+    ): Case[T, O] =
+      Expr.MatchCase.Guarded(Typeable[T].cast, whenExprBuilder(ident(opWT)), thenExpr)
+  }
+
   // TODO: Is this redundant syntax worth keeping around?
   override implicit final def inSet[I, A](inputExpr: I ~:> A): UnwrappedInSetExprBuilder[I, A] =
     new UnwrappedInSetExprBuilder(inputExpr)
@@ -193,6 +222,15 @@ trait UnwrappedBuildExprDsl
     }
 
     override def getAs[C[_]]: GetAsUnwrapped[I, A, C, OP] = new GetAsUnwrapped(inputExpr)
+
+    override def matching[O](
+      cases: Case[_ <: A, O]*,
+    )(implicit
+      opO: OP[Option[O]],
+    ): AndThen[I, A, Option[O]] =
+      inputExpr.andThen {
+        Expr.Match(cases.toIndexedSeq)
+      }
   }
 
   override implicit final def xhlOps[I, WL <: HList](xhl: ExprHList[I, WL, OP]): UnwrappedExprHListOpsBuilder[I, WL] =

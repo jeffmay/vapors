@@ -30,7 +30,6 @@ trait WrapSelected[W[+_], OP[_]] {
     path: DataPath,
     element: O,
   )(implicit
-    opA: OP[I],
     opB: OP[O],
   ): W[O]
 }
@@ -43,7 +42,6 @@ object WrapSelected {
       path: DataPath,
       element: B,
     )(implicit
-      opA: Any,
       opB: Any,
     ): B = element
   }

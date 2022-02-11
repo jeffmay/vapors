@@ -11,7 +11,7 @@ import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
 import cats.{Applicative, Eval, FlatMap, Foldable, Functor, SemigroupK, Traverse}
-import shapeless.HList
+import shapeless.{HList, TypeCase, Typeable}
 
 /**
   * A vapors [[Expr]] interpreter that just builds a simple function without providing any post-processing.
@@ -201,6 +201,31 @@ object SimpleEngine {
       val mapFn = expr.mapExpr.visit(this)
       val cb = ca.map(mapFn)
       debugging(expr).invokeAndReturn(state(ca, cb))
+    }
+
+    override def visitMatch[I, S, B : ExtractValue.AsBoolean, O](
+      expr: Expr.Match[I, S, B, O, OP],
+    )(implicit
+      ev: S <:< I,
+      opO: OP[Option[O]],
+    ): I => Option[O] = { i =>
+      val maybeMatch = expr.branches.zipWithIndex.foldLeft(None: Option[(O, Int)]) {
+        case (matched @ Some(_), _) => matched
+        case (_, (branch: Expr.MatchCase[I, s, B, O, OP], idx)) =>
+          branch.cast(i).flatMap { s =>
+            val passesGuard = branch.maybeGuardExpr.forall { g =>
+              ExtractValue.asBoolean(g.visit(this)(s))
+            }
+            Option.when(passesGuard) {
+              (branch.thenExpr.visit(this)(s), idx)
+            }
+          }
+      }
+      val (o, maybeIdx) = maybeMatch match {
+        case Some((o, idx)) => (Some(o), Some(idx))
+        case _ => (None, None)
+      }
+      debugging(expr).invokeAndReturn(state((i, maybeIdx), o))
     }
 
     override def visitNot[I, B, W[+_]](

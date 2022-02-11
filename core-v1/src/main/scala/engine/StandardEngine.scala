@@ -3,17 +3,16 @@ package com.rallyhealth.vapors.v1
 package engine
 
 import algebra._
-import data.{ExprState, Extract, ExtractValue, TypedFact, Window}
+import data._
 import debug.DebugArgs
 import dsl.{ConvertToHList, Sortable, ZipToShortest}
 import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
-import cats.{Applicative, FlatMap, Foldable, Functor, FunctorFilter, SemigroupK, Traverse}
+import cats.{Applicative, FlatMap, Foldable, Functor, SemigroupK, Traverse}
 import shapeless.HList
 
 import scala.annotation.nowarn
-import scala.collection.mutable
 
 // TODO: Rename all DSLs and this engine from "standard" to "lossless", "mirror", or something more descriptive
 //       rather than prescriptive. Many users will not find a full copy of the entire expression tree to be
@@ -233,6 +232,13 @@ object StandardEngine {
       debugging(expr).invokeDebugger(stateFromInput(evPOisI, finalState.output))
       ExprResult.MapEvery(expr, finalState, results)
     }
+
+    override def visitMatch[I, S, B : ExtractValue.AsBoolean, O](
+      expr: Expr.Match[I, S, B, O, OP],
+    )(implicit
+      ev: S <:< I,
+      opO: OP[Option[O]],
+    ): PO <:< I => ExprResult[PO, I, Option[O], OP] = ???
 
     override def visitNot[I, B, W[+_]](
       expr: Expr.Not[I, B, W, OP],

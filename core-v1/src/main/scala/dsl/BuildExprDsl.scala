@@ -2,6 +2,7 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
+import algebra.Expr.MatchCase
 import algebra._
 import data._
 import lens.{CollectInto, IterableInto, VariantLens}
@@ -10,7 +11,8 @@ import math.{Add, Power}
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
 import cats.{Applicative, FlatMap, Foldable, Functor, Id, Order, Reducible, SemigroupK, Traverse}
-import shapeless.{Generic, HList}
+import izumi.reflect.Tag
+import shapeless.{Generic, HList, Typeable}
 
 trait BuildExprDsl
   extends DebugExprDsl
@@ -265,6 +267,30 @@ You should prefer put your declaration of dependency on definitions close to whe
   ): Expr.Repeat[I, O, OP] =
     Expr.Repeat(expr, recompute = true, limit = Some(n))
 
+  type Case[T, +O] = MatchCase[W[Any], W[T], W[Boolean], W[O], OP]
+  def Case[T : Typeable : Tag]: CasePartiallyApplied[T]
+
+  abstract class CasePartiallyApplied[T : Typeable : Tag] {
+
+    def ==>[O](
+      thenExpr: W[T] ~:> W[O],
+    )(implicit
+      opT: OP[T],
+    ): Case[T, O]
+
+    def when[O](whenExprBuilder: W[T] =~:> W[Boolean]): CaseWithGuardPartiallyApplied[T]
+  }
+
+  abstract class CaseWithGuardPartiallyApplied[T : Typeable : Tag](proof: W[T] =~:> W[Boolean]) {
+
+    def ==>[O](
+      thenExpr: W[T] ~:> W[O],
+    )(implicit
+      opT: OP[T],
+      opWT: OP[W[T]],
+    ): Case[T, O]
+  }
+
   // TODO: Is this redundant syntax worth keeping around?
   implicit def inSet[I, A](inputExpr: I ~:> W[A]): InSetExprBuilder[I, A]
 
@@ -290,6 +316,12 @@ You should prefer put your declaration of dependency on definitions close to whe
     ): Expr.Select[I, W[A], B, O, OP]
 
     def getAs[C[_]]: GetAsWrapper[I, W, A, C, OP]
+
+    def matching[O](
+      cases: Case[_ <: A, O]*,
+    )(implicit
+      opO: OP[Option[W[O]]],
+    ): AndThen[I, W[A], Option[W[O]]]
   }
 
   implicit def xhlOps[I, WL <: HList](exprHList: ExprHList[I, WL, OP]): ExprHListOpsBuilder[I, WL]
