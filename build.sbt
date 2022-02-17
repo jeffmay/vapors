@@ -55,12 +55,6 @@ lazy val bench = commonProject("bench", "vapors")
     Test / parallelExecution := false,
   )
 
-lazy val core = commonProject("core")
-  .dependsOn(`core-v1`)
-  .settings(
-    libraryDependencies ++= CoreProject.all(scalaVersion.value),
-  )
-
 lazy val `core-v1` = commonProject("core-v1", "vapors.v1")
   .settings(
     libraryDependencies ++= CoreV1Project.all,

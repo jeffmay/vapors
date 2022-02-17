@@ -16,7 +16,6 @@ object Dependencies {
   private final val shapelessVersion = "2.3.7"
   private final val sourcecodeVersion = "0.2.7"
 
-  private val alleyCatsCore = "org.typelevel" %% "alleycats-core" % catsVersion
   private val catsCore = "org.typelevel" %% "cats-core" % catsVersion
   private val circeCore = "io.circe" %% "circe-core" % circeVersion
   private val circeLiteral = "io.circe" %% "circe-literal" % circeVersion
@@ -30,7 +29,6 @@ object Dependencies {
   private val scalactic = "org.scalactic" %% "scalactic" % scalacticVersion
   private val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion
   private val scalaTestPlusScalaCheck = "org.scalatestplus" %% "scalacheck-1-15" % scalaTestPlusScalaCheckVersion
-  private def scalaReflect(scalacVersion: String): ModuleID = "org.scala-lang" % "scala-reflect" % scalacVersion
   private val shapeless = "com.chuusai" %% "shapeless" % shapelessVersion
   private val sourcecode = "com.lihaoyi" %% "sourcecode" % sourcecodeVersion
 
@@ -39,26 +37,6 @@ object Dependencies {
     val all: Seq[ModuleID] = Seq(
       scalaCheckOps,
     ).map(_ % Test)
-  }
-
-  final object CoreProject {
-
-    def all(scalaVersion: String): Seq[ModuleID] =
-      Seq(
-        alleyCatsCore,
-        catsCore,
-        scalactic,
-        scalaReflect(scalaVersion),
-        shapeless,
-      ) ++ Seq(
-        // Test-only dependencies
-        munit,
-        munitScalaCheck,
-        scalaCheck,
-        scalaCheckOps,
-        scalaTest,
-        scalaTestPlusScalaCheck,
-      ).map(_ % Test)
   }
 
   final object CoreV1Project {
