@@ -1,6 +1,9 @@
-# Scala CircleCI 2.0 configuration file
+# Scala CircleCI 2.x configuration file
 # See: https://circleci.com/docs/2.0/sample-config/
-version: 2
+version: '2.1'
+
+orbs:
+  codecov: codecov/codecov@3.2.2
 
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
@@ -36,12 +39,14 @@ jobs:
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
 
-      - run: cat /dev/null | sbt 'Test / compile'
+      # Compile, run tests, and produce coverage reports!
+      - run: cat /dev/null | sbt clean coverage test coverageReport coverageAggregate shutdown
 
+      # Save cached artifacts
       - save_cache:
           paths:
             - ~/.m2
           key: v1-dependencies--{{ checksum "build.sbt" }}
 
-      # run tests!
-      - run: cat /dev/null | sbt test
+      # Upload the coverage reports codecov using the secure Orb
+      - codecov/upload
