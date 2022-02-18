@@ -40,7 +40,7 @@ jobs:
             - v1-dependencies-
 
       # Compile, run tests, and produce coverage reports!
-      - run: cat /dev/null | sbt clean coverage test coverageReport coverageAggregate shutdown
+      - run: sbt clean coverage test coverageReport coverageAggregate shutdown << /dev/null
 
       # Save cached artifacts
       - save_cache:
