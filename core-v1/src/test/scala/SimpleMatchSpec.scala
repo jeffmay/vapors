@@ -43,15 +43,24 @@ class SimpleMatchSpec extends FunSuite {
   test("Expr.Match only evaluates the expression when the guard expression returns true") {
     val expr = valuesOfType(FactTypes.RoleClass).filter {
       _.matching(
-        Case[Author].when(_.get(_.select(_.articles)) < 5.const) ==> false.const,
-        Case[Author].when(_.get(_.select(_.articles)) > 4.const) ==> true.const,
+        Case[Author].when(_.get(_.select(_.articles)) >= 5.const) ==> true.const,
       ).getOrElse(false.const)
     }
     val matched = expr.run(FactTable(all))
     assertEquals(matched, Seq(admin, editor))
   }
 
-  test("Expr.Match only evaluates guard expressions in sequence") {
+  test("Expr.Match does not evaluate the expression when the guard expression returns false") {
+    val expr = valuesOfType(FactTypes.RoleClass).filter {
+      _.matching(
+        Case[Author].when(_.get(_.select(_.articles)) < 5.const) ==> true.const,
+      ).getOrElse(false.const)
+    }
+    val matched = expr.run(FactTable(all))
+    assertEquals(matched, Seq(author))
+  }
+
+  test("Expr.Match only evaluates overlapping guard expressions in sequence") {
     val expr = valuesOfType(FactTypes.RoleClass).filter {
       _.matching(
         Case[Author].when(_.get(_.select(_.articles)) > 5.const) ==> false.const,

@@ -44,8 +44,7 @@ class SimpleJustifiedMatchSpec extends FunSuite {
   test("Expr.Match only evaluates the expression when the guard expression returns true") {
     val expr = valuesOfType(FactTypes.RoleClass).filter {
       _.matching(
-        Case[Author].when(_.get(_.select(_.articles)) < 5.const) ==> false.const,
-        Case[Author].when(_.get(_.select(_.articles)) > 4.const) ==> true.const,
+        Case[Author].when(_.get(_.select(_.articles)) >= 5.const) ==> true.const,
       ).getOrElse(false.const)
     }
     val matched = expr.run(FactTable(all))
@@ -53,7 +52,18 @@ class SimpleJustifiedMatchSpec extends FunSuite {
     assertEquals(matched, expected)
   }
 
-  test("Expr.Match only evaluates the expression when the guard expression returns true") {
+  test("Expr.Match does not evaluate the expression when the guard expression returns false") {
+    val expr = valuesOfType(FactTypes.RoleClass).filter {
+      _.matching(
+        Case[Author].when(_.get(_.select(_.articles)) < 5.const) ==> true.const,
+      ).getOrElse(false.const)
+    }
+    val matched = expr.run(FactTable(all))
+    val expected = Seq(author).map(v => Justified.byFact(FactTypes.RoleClass(v)))
+    assertEquals(matched, expected)
+  }
+
+  test("Expr.Match only evaluates overlapping guard expressions in sequence") {
     val expr = valuesOfType(FactTypes.RoleClass).filter {
       _.matching(
         Case[Author].when(_.get(_.select(_.articles)) > 5.const) ==> false.const,
