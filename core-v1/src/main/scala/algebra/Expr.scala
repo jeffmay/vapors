@@ -1245,7 +1245,7 @@ object Expr {
     * A case in an [[Expr.Match]] expression that defines the expected type, any additional guard condition,
     * and then what to do with the value of the expected type.
     *
-    * @tparam I the input type of the expression that must be casted
+    * @tparam I the input type of the expression that must be cast
     * @tparam S the expected type of the input. Must be a subtype of the expected input type.
     * @tparam B the result type of the optional [[maybeGuardExpr]]
     * @tparam O the output type of the [[thenExpr]]
@@ -1270,7 +1270,7 @@ object Expr {
       * @note the [[cast]] method typically defers to [[Typeable.cast]], which requires that the expression produces
       *       a type that shapeless can generate a [[Typeable]] for. You can define your own for more complex types.
       *
-      * @tparam I the input type of the expression that must be casted
+      * @tparam I the input type of the expression that must be cast
       * @tparam S the expected type of value for the [[thenExpr]]
       * @tparam O the output type of the [[thenExpr]]
       */
@@ -1287,7 +1287,7 @@ object Expr {
       * @note the [[cast]] method defers to [[Typeable.cast]], which requires that the expression produces a type that
       *       shapeless can generate a [[Typeable]] for. You can define your own for more complex types.
       *
-      * @tparam I the input type of the expression that must be casted
+      * @tparam I the input type of the expression that must be cast
       * @tparam S the expected type of value for the [[thenExpr]]
       * @tparam B the Boolean-like type that is a result of the [[guardExpr]]
       * @tparam O the output type of the [[thenExpr]]
