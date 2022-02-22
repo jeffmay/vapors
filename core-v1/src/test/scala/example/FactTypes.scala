@@ -16,6 +16,7 @@ object FactTypes extends OrderTimeImplicits {
   final val CombinedTags = FactType[CombinedTags]("combined_tags")
   final val GeoLocation = FactType[GeoLocation]("geolocation")
   final val Scores = FactType[Seq[Double]]("scores")
+  final val RoleClass = FactType[RoleClass]("role_class")
   final val WeightLbs = FactType[Double]("weight_lbs")
   final val WeightKg = FactType[Double]("weight_kg")
 }
@@ -61,3 +62,38 @@ object GeoLocation {
   // Order by latitude then longitude
   implicit val order: Order[GeoLocation] = Order.whenEqual(Order.by(_.lat), Order.by(_.lng))
 }
+
+sealed trait RoleClass
+
+object RoleClass {
+  implicit val order: Order[RoleClass] = Order.by {
+    case _: Admin => 1
+    case _: Editor => 2
+    case _: Author => 3
+    case _: Member => 4
+    case _: Subscriber => 5
+    case _: User => 6
+  }
+}
+
+sealed class User(val id: String) extends RoleClass
+sealed class Subscriber(id: String) extends User(id)
+sealed class Member(
+  id: String,
+  val name: String,
+) extends Subscriber(id)
+sealed class Author(
+  id: String,
+  name: String,
+  val articles: Int,
+) extends Member(id, name)
+sealed class Editor(
+  id: String,
+  name: String,
+  articles: Int,
+) extends Author(id, name, articles)
+sealed class Admin(
+  id: String,
+  name: String,
+  articles: Int,
+) extends Editor(id, name, articles)

@@ -4,6 +4,8 @@ package lens
 
 import cats.Show
 import cats.data.{Chain, NonEmptySet}
+import izumi.reflect.Tag
+import izumi.reflect.macrortti.LightTypeTag
 
 import scala.annotation.tailrec
 import scala.collection.{immutable, BitSet, SortedSet}
@@ -36,6 +38,8 @@ final case class DataPath(nodes: Chain[DataPath.Node]) extends AnyVal {
 
   def between(idxRange: Range): DataPath = DataPath(nodes :+ IdxRange(idxRange))
 
+  def as[T : Tag]: DataPath = DataPath(nodes :+ CastTo(Tag[T].tag))
+
   def atIndex(idx: Int): DataPath = DataPath(nodes :+ Idx(idx))
 
   def atHead: DataPath = DataPath(nodes :+ Head)
@@ -64,6 +68,8 @@ object DataPath {
   sealed trait Node
 
   // TODO: Make subclasses private for binary compatibility
+  final case class CastTo(tag: LightTypeTag) extends Node
+
   final case class Field(name: String) extends Node
 
   final case class MapKey(key: String) extends Node
@@ -108,6 +114,8 @@ object DataPath {
     case Some((head, tail)) =>
       var remaining: Chain[DataPath.Node] = tail
       head match {
+        case CastTo(tag) =>
+          buffer.append(".as[").append(tag.toString()).append(']')
         case MapKey(key) =>
           buffer.append("['").append(key).append("']")
         case FilterKeys(keys) =>

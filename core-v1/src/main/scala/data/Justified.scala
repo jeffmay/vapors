@@ -300,7 +300,6 @@ object Justified extends LowPriorityJustifiedImplicits {
       path: DataPath,
       element: O,
     )(implicit
-      opA: Any,
       opB: Any,
     ): Justified[O] = {
       container.withView((_: Any) => VariantLens(path, (_: Any) => element))

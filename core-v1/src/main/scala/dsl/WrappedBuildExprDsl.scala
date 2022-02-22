@@ -4,12 +4,13 @@ package dsl
 
 import algebra._
 import data._
-import lens.{CollectInto, IterableInto, VariantLens}
+import lens.{CollectInto, DataPath, IterableInto, VariantLens}
 import math.Power
 
 import cats.data.NonEmptySeq
 import cats.{FlatMap, Foldable, Functor, Id, Order, Reducible, Traverse}
-import shapeless.{Generic, HList, Nat}
+import izumi.reflect.Tag
+import shapeless.{Generic, HList, Nat, Typeable}
 
 trait WrappedBuildExprDsl extends BuildExprDsl {
   self: DslTypes with WrappedExprHListDslImplicits with OutputTypeImplicits =>
@@ -124,6 +125,52 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
   ): Expr.ValuesOfType[T, W[T], OP] =
     Expr.ValuesOfType(factTypeSet, wrapFact.wrapFact(_))
 
+  override def Case[T : Typeable : Tag]: WrappedCasePartiallyApplied[T] = new WrappedCasePartiallyApplied[T]
+
+  class WrappedCasePartiallyApplied[T : Typeable : Tag] extends CasePartiallyApplied[T] {
+
+    override def ==>[O](
+      thenExpr: W[T] ~:> W[O],
+    )(implicit
+      opT: OP[T],
+    ): Case[T, O] = {
+      val T = Typeable[T]
+      Expr.MatchCase.Unguarded[W[Any], W[T], W[O], OP](
+        { wt =>
+          T.cast(extract.extract(wt)).map {
+            wrapSelected.wrapSelected(wt, DataPath.empty.as[T], _)
+          }
+        },
+        thenExpr,
+      )
+    }
+
+    override def when[O](whenExprBuilder: W[T] =~:> W[Boolean]): WrappedCaseWithGuardPartiallyApplied[T] =
+      new WrappedCaseWithGuardPartiallyApplied(whenExprBuilder)
+  }
+
+  class WrappedCaseWithGuardPartiallyApplied[T : Typeable : Tag](whenExprBuilder: W[T] =~:> W[Boolean])
+    extends CaseWithGuardPartiallyApplied(whenExprBuilder) {
+
+    override def ==>[O](
+      thenExpr: W[T] ~:> W[O],
+    )(implicit
+      opT: OP[T],
+      opWT: OP[W[T]],
+    ): Case[T, O] = {
+      val T = Typeable[T]
+      Expr.MatchCase.Guarded(
+        { wt =>
+          T.cast(extract.extract(wt)).map {
+            wrapSelected.wrapSelected(wt, DataPath.empty.as[T], _)
+          }
+        },
+        whenExprBuilder(ident[T]),
+        thenExpr,
+      )
+    }
+  }
+
   override implicit def inSet[I, A](inputExpr: I ~:> W[A]): WrappedInSetExprBuilder[I, A] =
     new WrappedInSetExprBuilder(inputExpr)
 
@@ -164,6 +211,15 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
     }
 
     override def getAs[C[_]]: GetAsWrapper[I, W, A, C, OP] = new GetAsWrapper(inputExpr)
+
+    override def matching[O](
+      cases: Case[_ <: A, O]*,
+    )(implicit
+      opO: OP[Option[W[O]]],
+    ): AndThen[I, W[A], Option[W[O]]] =
+      inputExpr.andThen {
+        Expr.Match(cases.toIndexedSeq)
+      }
   }
 
   override implicit def xhlOps[I, WL <: HList](exprHList: ExprHList[I, WL, OP]): WrappedExprHListOpsBuilder[I, WL] =

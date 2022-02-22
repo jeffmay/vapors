@@ -14,7 +14,7 @@ import logic.{Conjunction, Disjunction, Negation}
 import cats.arrow.Arrow
 import cats.data.NonEmptyVector
 import cats.{Applicative, Eval, FlatMap, Foldable, Functor, Monad, SemigroupK, Traverse}
-import shapeless.{HList, HMap}
+import shapeless.{HList, HMap, TypeCase, Typeable}
 
 import scala.annotation.tailrec
 
@@ -377,6 +377,41 @@ object ImmutableCachingEngine {
       // to deduplicate facts.
       val cb = ca.map(mapFn)
       debugging(expr).invokeAndReturn(state(ca, cached(cb)))
+    }
+
+    override def visitMatch[I, S, B : AsBoolean, O](
+      expr: Expr.Match[I, S, B, O, OP],
+    )(implicit
+      ev: S <:< I,
+      opO: OP[Option[O]],
+    ): I => CachedResult[Option[O]] = memoize(expr, _) { i =>
+      val CachedResult(maybeMatch, cacheState) =
+        expr.branches.zipWithIndex.foldLeft(cached(None: Option[(O, Int)])) {
+          case (o @ CachedResult(Some(_), _), _) => o
+          case (o @ CachedResult(None, cacheState), (branch: Expr.MatchCase[I, s, B, O, OP], idx)) =>
+            branch.cast(i) match {
+              case Some(s) =>
+                val passesGuard = branch.maybeGuardExpr
+                  .map { g =>
+                    visitWithUpdatedCache(s, g, cacheState).map(ExtractValue.asBoolean(_))
+                  }
+                  .getOrElse {
+                    CachedResult(true, cacheState)
+                  }
+                if (passesGuard.value) {
+                  val branchResult = branch.thenExpr.visit(this)(s)
+                  CachedResult(Some((branchResult.value, idx)), branchResult.cacheState)
+                } else {
+                  CachedResult(None, passesGuard.cacheState)
+                }
+              case _ => o
+            }
+        }
+      val (o, maybeIdx) = maybeMatch match {
+        case Some((o, idx)) => (CachedResult(Some(o), cacheState), Some(idx))
+        case _ => (CachedResult(None, cacheState), None)
+      }
+      debugging(expr).invokeAndReturn(state((i, maybeIdx), o))
     }
 
     override def visitNot[I, B, F[+_]](

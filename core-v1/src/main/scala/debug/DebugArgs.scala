@@ -8,8 +8,9 @@ import lens.VariantLens
 
 import cats.Eval
 import cats.data.{NonEmptySeq, NonEmptyVector}
+import com.rallyhealth.vapors.v1.algebra.Expr.MatchCase
 import izumi.reflect.Tag
-import shapeless.HList
+import shapeless.{unexpected, HList}
 
 import scala.reflect.ClassTag
 
@@ -303,6 +304,12 @@ object DebugArgs {
     new DebugArgs[Expr.ValuesOfType[T, O, OP], OP] {
       override type In = Any
       override type Out = Seq[O]
+    }
+
+  implicit def debugMatch[I, S, B, O, OP[_]]: Aux[Expr.Match[I, S, B, O, OP], OP, (I, Option[Int]), Option[O]] =
+    new DebugArgs[Expr.Match[I, S, B, O, OP], OP] {
+      override type In = (I, Option[Int])
+      override type Out = Option[O]
     }
 
   implicit def debugWhen[I, B, O, OP[_]]: Aux[Expr.When[I, B, O, OP], OP, (I, Int), O] =

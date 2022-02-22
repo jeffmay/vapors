@@ -4,16 +4,17 @@ package algebra
 
 import data._
 import debug.{DebugArgs, Debugging, NoDebugging}
-import dsl.{ConvertToHList, ExprHList, ExprHNil, Sortable, ZipToShortest}
+import dsl._
 import lens.{CollectInto, VariantLens}
 import logic.{Conjunction, Disjunction, Negation}
 import math._
 
 import cats.data.{NonEmptySeq, NonEmptyVector}
 import cats.{Applicative, FlatMap, Foldable, Functor, SemigroupK, Traverse}
-import shapeless.{::, HList, HNil}
+import shapeless.{::, HList, HNil, Typeable}
 
 import scala.annotation.nowarn
+import scala.reflect.ClassTag
 
 /**
   * The root trait of all expression nodes.
@@ -324,6 +325,13 @@ object Expr {
 
     def visitMapEvery[C[_] : Functor, A, B](expr: MapEvery[C, A, B, OP])(implicit opO: OP[C[B]]): C[A] ~:> C[B]
 
+    def visitMatch[I, S, B : ExtractValue.AsBoolean, O](
+      expr: Match[I, S, B, O, OP],
+    )(implicit
+      ev: S <:< I,
+      opO: OP[Option[O]],
+    ): I ~:> Option[O]
+
     def visitNot[I, B, W[+_]](
       expr: Not[I, B, W, OP],
     )(implicit
@@ -503,6 +511,14 @@ object Expr {
     )(implicit
       opO: OP[C[B]],
     ): H[C[A], C[B]] = proxy(underlying.visitMapEvery(expr))
+
+    override def visitMatch[I, S, B : ExtractValue.AsBoolean, O](
+      expr: Match[I, S, B, O, OP],
+    )(implicit
+      ev: S <:< I,
+      opO: OP[Option[O]],
+    ): H[I, Option[O]] =
+      proxy(underlying.visitMatch(expr))
 
     override def visitNot[I, B, F[+_]](
       expr: Not[I, B, F, OP],
@@ -1226,6 +1242,92 @@ object Expr {
   }
 
   /**
+    * A case in an [[Expr.Match]] expression that defines the expected type, any additional guard condition,
+    * and then what to do with the value of the expected type.
+    *
+    * @tparam I the input type of the expression that must be cast
+    * @tparam S the expected type of the input. Must be a subtype of the expected input type.
+    * @tparam B the result type of the optional [[maybeGuardExpr]]
+    * @tparam O the output type of the [[thenExpr]]
+    */
+  sealed abstract class MatchCase[-I, S, +B, +O, OP[_]] {
+
+    /** Cast the input the expected type. */
+    def cast: I => Option[S]
+
+    /** The expression to perform if the type is correct. Must return a truthy value before evaluating the [[thenExpr]] */
+    def maybeGuardExpr: Option[Expr[S, B, OP]]
+
+    /** The expression to perform if the type is correct and the value passes the guard expression (if any). */
+    def thenExpr: Expr[S, O, OP]
+  }
+
+  object MatchCase {
+
+    /**
+      * A case that matches a type, but does not check any condition.
+      *
+      * @note the [[cast]] method typically defers to [[Typeable.cast]], which requires that the expression produces
+      *       a type that shapeless can generate a [[Typeable]] for. You can define your own for more complex types.
+      *
+      * @tparam I the input type of the expression that must be cast
+      * @tparam S the expected type of value for the [[thenExpr]]
+      * @tparam O the output type of the [[thenExpr]]
+      */
+    final case class Unguarded[-I, S, +O, OP[_]](
+      cast: I => Option[S],
+      thenExpr: Expr[S, O, OP],
+    ) extends MatchCase[I, S, Nothing, O, OP] {
+      override def maybeGuardExpr: Option[Nothing] = None
+    }
+
+    /**
+      * A case that matches a type and checks that the value meets a given condition.
+      *
+      * @note the [[cast]] method defers to [[Typeable.cast]], which requires that the expression produces a type that
+      *       shapeless can generate a [[Typeable]] for. You can define your own for more complex types.
+      *
+      * @tparam I the input type of the expression that must be cast
+      * @tparam S the expected type of value for the [[thenExpr]]
+      * @tparam B the Boolean-like type that is a result of the [[guardExpr]]
+      * @tparam O the output type of the [[thenExpr]]
+      */
+    final case class Guarded[-I, S, +B : ExtractValue.AsBoolean, +O, OP[_]](
+      cast: I => Option[S],
+      guardExpr: Expr[S, B, OP],
+      thenExpr: Expr[S, O, OP],
+    ) extends MatchCase[I, S, B, O, OP] {
+      override def maybeGuardExpr: Option[Expr[S, B, OP]] = Some(guardExpr)
+    }
+  }
+
+  /**
+    * Matches on a series of [[MatchCase]]s by type & an optional guard expression, and if the case matches,
+    * evaluates the expression in the given case. If none of the cases match, then the whole result is None.
+    *
+    * This is effectively a more powerful [[When]] expression that can additionally match on subtypes.
+    *
+    * @note this will explore the branches in the order they are given.
+    *
+    * @param branches the cases to attempt to match, in order
+    *
+    * @tparam S a subtype of the input type used as input into the [[MatchCase]]
+    * @tparam B a Boolean-like type that is used to determine if a branch guard expression returns true and should match
+    * @tparam O the common output type for all the [[MatchCase]] branches
+    */
+  final case class Match[-I, +S, +B : ExtractValue.AsBoolean, +O, OP[_]](
+    branches: IndexedSeq[MatchCase[I, _ <: S, B, O, OP]],
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  )(implicit
+    ev: S <:< I,
+    opO: OP[Option[O]],
+  ) extends Expr[I, Option[O], OP]("matching") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Option[O]] = v.visitMatch(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Match[I, S, B, O, OP] =
+      copy(debugging = debugging)
+  }
+
+  /**
     * A container for a condition and an expression to compute if the condition is met.
     *
     * @see [[Expr.When]] for usage.
@@ -1240,6 +1342,8 @@ object Expr {
 
   /**
     * A branching if [ / elif ...] / else conditional operation.
+    *
+    * This is effectively a [[Match]] expression, but simplified to boolean cases without subtype matching.
     *
     * @param conditionBranches all of the branches that are guarded by condition expressions
     * @param defaultExpr the expression to run if none of the branch conditions matches
