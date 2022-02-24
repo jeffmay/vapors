@@ -13,6 +13,8 @@ import cats.{FlatMap, Foldable, Functor, Id, Order, Reducible, Traverse}
 import izumi.reflect.Tag
 import shapeless.{Generic, HList, Nat, Typeable}
 
+import scala.util.matching.Regex
+
 trait UnwrappedBuildExprDsl
   extends BuildExprDsl
   with UnwrappedUsingDefinitionArityMethods
@@ -30,6 +32,8 @@ trait UnwrappedBuildExprDsl
   override protected implicit final def wrapConst: WrapConst[W, OP] = WrapConst.unwrapped
 
   override protected implicit final def wrapContained: WrapContained[W, OP] = WrapContained.unwrapped
+
+  override protected implicit final def wrapRegexMatches: WrapRegexMatches[W, OP] = WrapRegexMatches.unwrapped
 
   override protected implicit final def wrapSelected: WrapSelected[W, OP] = WrapSelected.unwrapped
 
@@ -126,6 +130,35 @@ trait UnwrappedBuildExprDsl
     pow: Power[L, R],
   ): CombineHolder[I, L, L, R, R, pow.Out, OP] =
     (leftExpr ^ rightExpr)(opR, pow)
+
+  override implicit final def str[I](expr: I ~:> String): UnwrappedStringExprOps[I] = new UnwrappedStringExprOps(expr)
+
+  final class UnwrappedStringExprOps[-I](inputExpr: I ~:> String) extends StringExprOps(inputExpr) {
+
+    override def matchesRegex(
+      re: Regex,
+    )(implicit
+      opS: OP[String],
+      opB: OP[Boolean],
+    ): Expr.RegexMatches[I, String, Boolean, OP] =
+      super.matchesRegex(re)
+
+    override def findFirstMatch(
+      re: Regex,
+    )(implicit
+      opS: OP[String],
+      opM: OP[RegexMatch],
+      opO: OP[Option[RegexMatch]],
+    ): Expr.RegexMatches[I, String, Option[RegexMatch], OP] = super.findFirstMatch(re)
+
+    override def findAllMatches(
+      re: Regex,
+    )(implicit
+      opS: OP[String],
+      opM: OP[RegexMatch],
+      opO: OP[Seq[RegexMatch]],
+    ): Expr.RegexMatches[I, String, Seq[RegexMatch], OP] = super.findAllMatches(re)
+  }
 
   override final def when[I](condExpr: I ~:> Boolean): UnwrappedWhenBuilder[I] = new UnwrappedWhenBuilder(condExpr)
 

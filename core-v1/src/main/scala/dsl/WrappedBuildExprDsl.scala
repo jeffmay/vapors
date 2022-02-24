@@ -12,6 +12,8 @@ import cats.{FlatMap, Foldable, Functor, Id, Order, Reducible, Traverse}
 import izumi.reflect.Tag
 import shapeless.{Generic, HList, Nat, Typeable}
 
+import scala.util.matching.Regex
+
 trait WrappedBuildExprDsl extends BuildExprDsl {
   self: DslTypes with WrappedExprHListDslImplicits with OutputTypeImplicits =>
 
@@ -22,6 +24,8 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
   protected implicit def wrapQuantifier: WrapQuantifier[W, OP]
 
   protected implicit def wrapFact: WrapFact[W, OP]
+
+  protected implicit def wrapRegexMatches: WrapRegexMatches[W, OP]
 
   protected implicit def wrapSelected: WrapSelected[W, OP]
 
@@ -35,6 +39,10 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
     pow: Power[W[L], W[R]],
   ): CombineHolder[I, W[L], W[L], W[R], W[R], pow.Out, OP] =
     (leftExpr ^ rightExpr)(opR, pow)
+
+  override implicit def str[I](expr: I ~:> W[String]): WrappedStringExprOps[I] = new WrappedStringExprOps(expr)
+
+  class WrappedStringExprOps[-I](inputExpr: I ~:> W[String]) extends StringExprOps(inputExpr)
 
   override def when[I](condExpr: I ~:> W[Boolean]): WrappedWhenBuilder[I] = new WrappedWhenBuilder(condExpr)
 

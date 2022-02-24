@@ -14,7 +14,7 @@ import cats.{Applicative, FlatMap, Foldable, Functor, SemigroupK, Traverse}
 import shapeless.{::, HList, HNil, Typeable}
 
 import scala.annotation.nowarn
-import scala.reflect.ClassTag
+import scala.util.matching.Regex
 
 /**
   * The root trait of all expression nodes.
@@ -346,6 +346,8 @@ object Expr {
       opO: OP[W[B]],
     ): I ~:> W[B]
 
+    def visitRegexMatches[I, S, O : OP](expr: RegexMatches[I, S, O, OP]): I ~:> O
+
     def visitRepeat[I, O](expr: Repeat[I, O, OP])(implicit opO: OP[IterableOnce[O]]): I ~:> IterableOnce[O]
 
     def visitSelect[I, A, B, O : OP](expr: Select[I, A, B, O, OP]): I ~:> O
@@ -533,6 +535,9 @@ object Expr {
       logic: Disjunction[W, B, OP],
       opO: OP[W[B]],
     ): H[I, W[B]] = proxy(underlying.visitOr(expr))
+
+    override def visitRegexMatches[I, S, O : OP](expr: RegexMatches[I, S, O, OP]): H[I, O] =
+      proxy(underlying.visitRegexMatches(expr))
 
     override def visitRepeat[I, O](expr: Repeat[I, O, OP])(implicit opO: OP[IterableOnce[O]]): H[I, IterableOnce[O]] =
       proxy(underlying.visitRepeat(expr))
@@ -1321,9 +1326,32 @@ object Expr {
   )(implicit
     ev: S <:< I,
     opO: OP[Option[O]],
-  ) extends Expr[I, Option[O], OP]("matching") {
+  ) extends Expr[I, Option[O], OP]("match") {
     override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, Option[O]] = v.visitMatch(this)
     override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): Match[I, S, B, O, OP] =
+      copy(debugging = debugging)
+  }
+
+  /**
+    * Attempts to match the input [[asString]] result against a [[Regex]] and applies the [[asOutput]] function.
+    *
+    * @note the matches are received lazily, so if you only need the first match, you can efficiently grab the first
+    *       match and discard the rest.
+    *
+    * @param inputExpr an expression producing a stringify-able value
+    * @param asString a function to convert the input to a string
+    * @param regex a pre-compiled regular expression
+    * @param asOutput a function to convert the matched groups to an expected output type (as determined by the DSL
+    */
+  final case class RegexMatches[-I, S : OP, +O : OP, OP[_]](
+    inputExpr: Expr[I, S, OP],
+    asString: S => String,
+    regex: Regex,
+    asOutput: (S, LazyList[RegexMatch]) => O,
+    override private[v1] val debugging: Debugging[Nothing, Nothing] = NoDebugging,
+  ) extends Expr[I, O, OP]("matchesRegex") {
+    override def visit[G[-_, +_]](v: Visitor[G, OP]): G[I, O] = v.visitRegexMatches(this)
+    override private[v1] def withDebugging(debugging: Debugging[Nothing, Nothing]): RegexMatches[I, S, O, OP] =
       copy(debugging = debugging)
   }
 

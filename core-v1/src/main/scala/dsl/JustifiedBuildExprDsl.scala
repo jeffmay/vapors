@@ -36,6 +36,8 @@ trait JustifiedBuildExprDsl
 
   override protected implicit final def wrapFact: WrapFact[Justified, OP] = Justified.wrapFact
 
+  override protected implicit final def wrapRegexMatches: WrapRegexMatches[Justified, OP] = Justified.wrapRegexMatches
+
   override protected implicit final def wrapSelected: WrapSelected[Justified, OP] = Justified.wrapSelected
 
   override protected implicit final def wrapQuantifier: WrapQuantifier[Justified, OP] = Justified.wrapQuantifier

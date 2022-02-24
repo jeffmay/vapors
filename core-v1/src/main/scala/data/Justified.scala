@@ -3,7 +3,7 @@ package com.rallyhealth.vapors.v1
 package data
 
 import algebra.{EqualComparable, SizeComparable, SizeComparison}
-import dsl.{WrapConst, WrapContained, WrapFact, WrapQuantifier, WrapSelected}
+import dsl.{WrapConst, WrapContained, WrapFact, WrapQuantifier, WrapRegexMatches, WrapSelected}
 import lens.{DataPath, VariantLens}
 import logic.Logic
 import math._
@@ -15,6 +15,7 @@ import cats.{Applicative, Eq, Eval, Foldable, Functor, Order, Semigroupal, Trave
 
 import scala.annotation.nowarn
 import scala.collection.Factory
+import scala.util.matching.Regex
 
 /**
   * Represents a result that contains a tree of justified inputs and operations, as well as the value
@@ -304,6 +305,27 @@ object Justified extends LowPriorityJustifiedImplicits {
     ): Justified[O] = {
       container.withView((_: Any) => VariantLens(path, (_: Any) => element))
     }
+  }
+
+  implicit def wrapRegexMatches[OP[_]]: WrapRegexMatches[Justified, OP] =
+    WrapRegexMatchesJustified.asInstanceOf[WrapRegexMatches[Justified, OP]]
+
+  private final object WrapRegexMatchesJustified extends WrapRegexMatches[Justified, Any] {
+
+    override def wrapMatched[O](
+      in: Justified[String],
+      out: O,
+      pattern: Regex,
+      matches: LazyList[RegexMatch],
+    ): Justified[O] =
+      Justified.byInference(
+        "regex_matches",
+        out,
+        NonEmptySeq.of(
+          in,
+          Justified.byConst(pattern),
+        ),
+      )
   }
 
   implicit def wrapSelected[OP[_]]: WrapSelected[Justified, OP] =
