@@ -5,7 +5,7 @@ package dsl
 import algebra.Expr.MatchCase
 import algebra._
 import data._
-import lens.{CollectInto, IterableInto, VariantLens}
+import lens.{CollectInto, DataPath, IterableInto, VariantLens}
 import logic.{Conjunction, Disjunction, Logic, Negation}
 import math.{Add, Power}
 
@@ -13,6 +13,8 @@ import cats.data.{NonEmptySeq, NonEmptyVector}
 import cats.{Applicative, FlatMap, Foldable, Functor, Id, Order, Reducible, SemigroupK, Traverse}
 import izumi.reflect.Tag
 import shapeless.{Generic, HList, Typeable}
+
+import scala.util.matching.Regex
 
 trait BuildExprDsl
   extends DebugExprDsl
@@ -36,6 +38,8 @@ trait BuildExprDsl
   protected implicit def wrapConst: WrapConst[W, OP]
 
   protected implicit def wrapContained: WrapContained[W, OP]
+
+  protected implicit def wrapRegexMatches: WrapRegexMatches[W, OP]
 
   protected implicit def wrapSelected: WrapSelected[W, OP]
 
@@ -174,6 +178,63 @@ You should prefer put your declaration of dependency on definitions close to whe
     opCO: OP[C[O]],
   ): Expr.Sequence[C, I, O, OP] =
     Expr.Sequence(expressions)
+
+  implicit def str[I](expr: I ~:> W[String]): StringExprOps[I]
+
+  abstract class StringExprOps[-I](inputExpr: I ~:> W[String]) {
+
+    def matchesRegex(
+      re: Regex,
+    )(implicit
+      opS: OP[W[String]],
+      opB: OP[W[Boolean]],
+    ): Expr.RegexMatches[I, W[String], W[Boolean], OP] =
+      Expr.RegexMatches(
+        inputExpr,
+        extract.extract(_),
+        re,
+        (in, ms) => wrapRegexMatches.wrapMatched(in, ms.nonEmpty, re, ms),
+      )
+
+    def findFirstMatch(
+      re: Regex,
+    )(implicit
+      opS: OP[W[String]],
+      opM: OP[RegexMatch],
+      opO: OP[Option[W[RegexMatch]]],
+    ): Expr.RegexMatches[I, W[String], Option[W[RegexMatch]], OP] =
+      Expr.RegexMatches[I, W[String], Option[W[RegexMatch]], OP](
+        inputExpr,
+        extract.extract(_),
+        re,
+        (in, ms) => {
+          val wrappedMatches = wrapRegexMatches.wrapMatched(in, ms, re, ms)
+          ms.headOption.map { m =>
+            wrapSelected.wrapSelected(wrappedMatches, DataPath.empty.atIndex(0), m)
+          }
+        },
+      )
+
+    def findAllMatches(
+      re: Regex,
+    )(implicit
+      opS: OP[W[String]],
+      opM: OP[RegexMatch],
+      opO: OP[Seq[W[RegexMatch]]],
+    ): Expr.RegexMatches[I, W[String], Seq[W[RegexMatch]], OP] =
+      Expr.RegexMatches[I, W[String], Seq[W[RegexMatch]], OP](
+        inputExpr,
+        extract.extract(_),
+        re,
+        (in, ms) => {
+          val wrappedMatches = wrapRegexMatches.wrapMatched(in, ms, re, ms)
+          ms.zipWithIndex.map {
+            case (m, idx) =>
+              wrapSelected.wrapSelected(wrappedMatches, DataPath.empty.atIndex(idx), m)
+          }
+        },
+      )
+  }
 
   def when[I](condExpr: I ~:> W[Boolean]): WhenBuilder[I, W[Boolean]]
 

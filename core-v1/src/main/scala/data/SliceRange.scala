@@ -32,7 +32,7 @@ object SliceRange {
         relativeStart => if (relativeStart < 0) size + relativeStart else relativeStart,
         relativeEnd => if (relativeEnd < 0) size + relativeEnd else relativeEnd,
       )
-      Absolute(this, relative.left.getOrElse(0), relative.right.getOrElse(size) - 1)
+      Absolute(relative.left.getOrElse(0), relative.right.getOrElse(size) - 1, this)
     }
   }
 
@@ -54,14 +54,27 @@ object SliceRange {
     * This could contain the total size as well, but I didn't see a need for it yet.
     */
   final case class Absolute private[SliceRange] (
-    relative: Relative,
     start: Int,
     end: Int,
+    relative: Relative,
   ) {
+
+    def this(
+      start: Int,
+      end: Int,
+    ) = this(start, end, Relative(Ior.Both(start, end)))
 
     val toRange: Range = Range.inclusive(start, end)
 
     def contains(index: Int): Boolean = toRange.contains(index)
+  }
+
+  object Absolute {
+
+    def apply(
+      start: Int,
+      end: Int,
+    ): Absolute = new Absolute(start, end)
   }
 
   final class Syntax(private val num: Int) extends AnyVal {

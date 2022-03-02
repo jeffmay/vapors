@@ -271,6 +271,10 @@ object StandardEngine {
       ExprResult.Or(expr, finalState, results)
     }
 
+    override def visitRegexMatches[I, S, O : OP](
+      expr: Expr.RegexMatches[I, S, O, OP],
+    ): PO <:< I => ExprResult[PO, I, O, OP] = ???
+
     override def visitRepeat[I, O](
       expr: Expr.Repeat[I, O, OP],
     )(implicit

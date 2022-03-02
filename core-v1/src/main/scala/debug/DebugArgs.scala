@@ -8,11 +8,11 @@ import lens.VariantLens
 
 import cats.Eval
 import cats.data.{NonEmptySeq, NonEmptyVector}
-import com.rallyhealth.vapors.v1.algebra.Expr.MatchCase
 import izumi.reflect.Tag
-import shapeless.{unexpected, HList}
+import shapeless.HList
 
 import scala.reflect.ClassTag
+import scala.util.matching.Regex
 
 /**
   * A type-level programming trick that enlists the compiler to prove that the [[Debugging]] hook function
@@ -310,6 +310,17 @@ object DebugArgs {
     new DebugArgs[Expr.Match[I, S, B, O, OP], OP] {
       override type In = (I, Option[Int])
       override type Out = Option[O]
+    }
+
+  implicit def debugRegexMatches[
+    I,
+    S,
+    O,
+    OP[_],
+  ]: Aux[Expr.RegexMatches[I, S, O, OP], OP, (I, S, Regex, LazyList[RegexMatch]), O] =
+    new DebugArgs[Expr.RegexMatches[I, S, O, OP], OP] {
+      override type In = (I, S, Regex, LazyList[RegexMatch])
+      override type Out = O
     }
 
   implicit def debugWhen[I, B, O, OP[_]]: Aux[Expr.When[I, B, O, OP], OP, (I, Int), O] =

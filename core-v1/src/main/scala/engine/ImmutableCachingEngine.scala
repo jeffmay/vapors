@@ -440,6 +440,8 @@ object ImmutableCachingEngine {
       debugging(expr).invokeAndReturn(state((i, inputs), result))
     }
 
+    override def visitRegexMatches[I, S, O : OP](expr: Expr.RegexMatches[I, S, O, OP]): I => CachedResult[O] = ???
+
     override def visitRepeat[I, O](
       expr: Expr.Repeat[I, O, OP],
     )(implicit

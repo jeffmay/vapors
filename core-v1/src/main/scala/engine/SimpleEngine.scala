@@ -13,6 +13,9 @@ import logic.{Conjunction, Disjunction, Negation}
 import cats.{Applicative, Eval, FlatMap, Foldable, Functor, SemigroupK, Traverse}
 import shapeless.{HList, TypeCase, Typeable}
 
+import scala.collection.MapView
+import scala.collection.immutable.IntMap
+
 /**
   * A vapors [[Expr]] interpreter that just builds a simple function without providing any post-processing.
   *
@@ -251,6 +254,17 @@ object SimpleEngine {
         logic.or(acc, r)
       }
       debugging(expr).invokeAndReturn(state((i, results), finalResult))
+    }
+
+    override def visitRegexMatches[I, S, O : OP](expr: Expr.RegexMatches[I, S, O, OP]): I => O = { i =>
+      val s = expr.inputExpr.visit(this)(i)
+      val str = expr.asString(s)
+      val allMatches = expr.regex
+        .findAllMatchIn(str)
+        .map(RegexMatch.from)
+        .to(LazyList)
+      val o = expr.asOutput(s, allMatches)
+      debugging(expr).invokeAndReturn(state((i, s, expr.regex, allMatches), o))
     }
 
     override def visitRepeat[I, O](
