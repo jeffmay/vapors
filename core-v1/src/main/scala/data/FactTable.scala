@@ -14,7 +14,7 @@ import scala.collection.immutable.SortedMap
   *
   * @note some expressions can update the fact table for sub-expressions.
   */
-final case class FactTable(factsByName: SortedMap[String, FactSet]) extends AnyVal {
+final case class FactTable(factsByName: SortedMap[String, FactSet], label: String = "{no debug label}") {
 
   def add(fact: Fact): FactTable = addAll(FactSet(fact))
 
