@@ -14,14 +14,19 @@ import scala.collection.immutable.SortedMap
   *
   * @note some expressions can update the fact table for sub-expressions.
   */
-final case class FactTable(factsByName: SortedMap[String, FactSet]) extends AnyVal {
+trait FactTable extends Any {
+  protected type Self <: FactTable
+
+  protected def build(factsByName: SortedMap[String, FactSet]): Self
+
+  protected def factsByName: SortedMap[String, FactSet]
 
   def add(fact: Fact): FactTable = addAll(FactSet(fact))
 
-  def addAll(facts: Iterable[Fact]): FactTable = {
+  def addAll(facts: Iterable[Fact]): Self = {
     import cats.syntax.semigroup._
     val newFactTable = FactTable.fromSet(facts.toSet)
-    new FactTable(this.factsByName |+| newFactTable.factsByName)
+    build(this.factsByName |+| newFactTable.factsByName)
   }
 
   def getSortedSeq[T](factTypeSet: FactTypeSet[T]): IndexedSeq[TypedFact[T]] = {
@@ -51,7 +56,7 @@ final case class FactTable(factsByName: SortedMap[String, FactSet]) extends AnyV
 
 object FactTable {
 
-  final val empty = new FactTable(SortedMap.empty)
+  final val empty = SimpleFactTable(SortedMap.empty)
 
   def apply(facts: FactOrFactSet*): FactTable = {
     val factSet = FactOrFactSet.flatten(facts)
@@ -60,7 +65,7 @@ object FactTable {
 
   def fromSet(factSet: FactSet): FactTable = {
     if (factSet.isEmpty) empty
-    else new FactTable(SortedMap.from(factSet.groupBy(_.typeInfo.nameAndFullType)))
+    else SimpleFactTable(SortedMap.from(factSet.groupBy(_.typeInfo.nameAndFullType)))
   }
 
   implicit object MonoidInstance extends Monoid[FactTable] {
@@ -70,7 +75,7 @@ object FactTable {
       y: FactTable,
     ): FactTable = {
       import cats.syntax.semigroup._
-      new FactTable(x.factsByName |+| y.factsByName)
+      SimpleFactTable(x.factsByName |+| y.factsByName)
     }
   }
 
@@ -89,4 +94,12 @@ object FactTable {
       override def get(container: FactTable)(key: FactTypeSet[T]): TypedFactSet[T] = container.getSet(key)
     }
   }
+}
+
+/**
+  * A simple value class wrapper around a Map of Strings to [[FactSet]]s.
+  */
+final case class SimpleFactTable(factsByName: SortedMap[String, FactSet]) extends AnyVal with FactTable {
+  override protected type Self = SimpleFactTable
+  override protected def build(factsByName: SortedMap[String, FactSet]): SimpleFactTable = SimpleFactTable(factsByName)
 }
