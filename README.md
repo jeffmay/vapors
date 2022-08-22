@@ -119,7 +119,7 @@ _(The slides are a little bit out of date, but the basic ideas are the same)_
     }
     ```
 
-5. **Run your expression with a set of facts.** 
+5. **Run your expression with a set of facts.**
 
     Assuming you have these facts:
 
@@ -341,7 +341,7 @@ assert(isOver18.run(FactTable(LocalDate.of(1990, 1, 1))))
   <td>
     Chain the output the first expression to the input of a second expression to produce the output of the second
     expression. This is the foundation for most of the DSL. Many operations only operate on a certain shape of input
-    and rely on the `andThen` operation to chain the output of a previous expression into the input. 
+    and rely on the `andThen` operation to chain the output of a previous expression into the input.
   </td>
 </tr>
 <tr>
@@ -391,7 +391,7 @@ assert(isOver18.run(FactTable(LocalDate.of(1990, 1, 1))))
   </td>
   <td>
     Adds the given definitions to the <code>FactTable</code> and makes them available to the expression provided in the
-    following block. 
+    following block.
   </td>
 </tr>
 <tr>
@@ -502,7 +502,7 @@ assert(isOver18.run(FactTable(LocalDate.of(1990, 1, 1))))
   <td><code>ident[NonEmptySeq[Int]].filter(_ > 1.const)</code></td>
   <td><code>(_: NonEmptySeq[Int]).filter(_ > 1)</code></td>
   <td>
-    Keeps elements of the given collection for which the filter expression returns true and discards the others. 
+    Keeps elements of the given collection for which the filter expression returns true and discards the others.
   </td>
 </tr>
 <tr>
@@ -600,7 +600,7 @@ assert(isOver18.run(FactTable(LocalDate.of(1990, 1, 1))))
   <td><code>(1 :: "two" :: HNil).const.as[(Int, String)]</code></td>
   <td><code>Generic[(Int, String)].from(1 :: "two" :: HNil)</code></td>
   <td>
-    Converts an <code>HList</code> to any type that can be isomorphically converted using <code>shapeless.Generic</code> 
+    Converts an <code>HList</code> to any type that can be isomorphically converted using <code>shapeless.Generic</code>
   </td>
 </tr>
 <tr>
@@ -899,7 +899,7 @@ In order to convert from an `Expr` into something useful, we must interpret the 
 The main interpreter is the engine provided by your imported DSL. If you are using an unwrapped DSL, then this is
 probably the `SimpleEngine.Visitor` which converts an `Expr[I, O, OP]` into a function `(I, FactTable) => O`.
 
-There is also a `Justified` DSL that uses the same `SimpleEngine`, but it returns a `Justified[O]` instead of just the 
+There is also a `Justified` DSL that uses the same `SimpleEngine`, but it returns a `Justified[O]` instead of just the
 `O`. This allows you to follow the chain of justification for any produced output.
 
 Lastly, there is a `StandardEngine`<sup>†</sup> which interprets the `Expr` as a function that produces an `ExprResult`,
@@ -926,14 +926,14 @@ object VisitExprAsJson {
 }
 
 class VisitExprAsJson[OP[a] <: HasEncoder[a]] extends Expr.Visitor[VisitExprAsJson.G, OP] {
-  
+
   implicit def encodeOutput[O](implicit op: OP[O]): Encoder[O] = op.encoder
-  
+
   override def visitConst[O : OP](expr: Expr.Const[O, OP]): Json = Json.obj(
     "$type" -> expr.name.asJson,
     "value" -> expr.value.asJson,
   )
-  
+
   // ... implement all other visitX methods to produce Json
 }
 ```

@@ -5,7 +5,7 @@ package math
 import scala.annotation.implicitNotFound
 
 @implicitNotFound("""${B} ^ ${E} is not supported (aka pow(${B}, ${E})).
-                     
+
 If these are non-numeric types, you can try swapping the order of arguments to ${E} ^ ${B}.
 
 If you think this operation should be allowed, you can define an implicit Power[${B}, ${E}].""")

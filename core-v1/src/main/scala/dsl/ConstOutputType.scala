@@ -17,7 +17,7 @@ import scala.annotation.implicitNotFound
   */
 @implicitNotFound(
   """Cannot find the appropriate ConstOutputType when attempting to wrap a value of type ${O}.
-     
+
 DSL wrapper type: ${W}
 
 Typically, this means that you are calling .const on an empty collection (with an element type of Nothing).

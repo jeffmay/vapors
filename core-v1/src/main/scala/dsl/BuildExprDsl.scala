@@ -116,7 +116,7 @@ trait BuildExprDsl
 
   @deprecated(
     """You should use the using().thenReturn(...) DSL method instead.
-    
+
 You should prefer put your declaration of dependency on definitions close to where you actually use them.""",
   )
   final def usingDefinitions[I, O](
