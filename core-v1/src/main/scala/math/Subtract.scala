@@ -6,7 +6,7 @@ import java.time.{Duration, Instant, LocalDate, Period}
 import scala.annotation.implicitNotFound
 
 @implicitNotFound("""${L} - ${R} is not supported.
-                     
+
 If these are non-numeric types, try swapping the order of arguments to ${R} - ${L}.
 
 If you think this operation should be allowed, you can define an implicit Subtract[${L}, ${R}].""")

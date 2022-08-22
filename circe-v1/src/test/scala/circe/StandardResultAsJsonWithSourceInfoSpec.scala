@@ -48,7 +48,7 @@ class StandardResultAsJsonWithSourceInfoSpec extends FunSuite {
           "source": ${thisFileAt(lineOfSecondConst)},
           "expr": "const",
           "output": 2
-        }  
+        }
       }""".spaces2,
     )
   }
@@ -82,7 +82,7 @@ class StandardResultAsJsonWithSourceInfoSpec extends FunSuite {
           "source": ${thisFileAt(lineOfSecondConst)},
           "expr": "const",
           "output": 2
-        }  
+        }
       }""".spaces2,
       )
     }

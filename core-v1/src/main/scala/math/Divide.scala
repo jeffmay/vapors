@@ -5,7 +5,7 @@ package math
 import scala.annotation.implicitNotFound
 
 @implicitNotFound("""${N} / ${D} is not supported.
-                     
+
 If these are non-numeric types, you can try swapping the order of arguments to ${D} / ${N}.
 
 If you think this operation should be allowed, you can define an implicit Divide[${N}, ${D}].""")

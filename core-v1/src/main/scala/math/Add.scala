@@ -7,9 +7,9 @@ import scala.annotation.implicitNotFound
 import scala.concurrent.duration.FiniteDuration
 
 @implicitNotFound("""${L} + ${R} is not supported.
-                     
+
 If these are non-numeric types, try swapping the order of arguments to ${R} + ${L}.
-                     
+
 If you think this operation should be allowed, you can define an implicit Add[${L}, ${R}].""")
 trait Add[L, R] {
   type Out

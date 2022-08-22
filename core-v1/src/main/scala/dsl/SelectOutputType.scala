@@ -20,7 +20,7 @@ import scala.annotation.implicitNotFound
   */
 @implicitNotFound(
   """Cannot find the appropriate SelectOutputType when selecting a value of type ${A} from ${I}.
-     
+
 DSL wrapper type: ${W}
 
 Typically, this means that you are calling .select() and creating a lens to an empty collection (with an element type of Nothing) or a non-Traverse higher-kinded type.
