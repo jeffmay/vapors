@@ -10,10 +10,13 @@ import scala.collection.immutable.{SortedMap, SortedSet}
   * A set of [[FactType]]s that all share a common Scala type.
   *
   * This can be used to safely cast facts into a required type (lower-bounded by the type parameter of this object).
-  *
-  * @param typeMap a map of type names to [[FactType]]s, used for constant-time look-up
   */
-final case class FactTypeSet[A] private (typeMap: NonEmptyMap[String, FactType[A]]) extends AnyVal {
+trait FactTypeSet[A] extends Any {
+
+  /**
+    * A map of type names to [[FactType]]s, used for constant-time look-up
+    */
+  def typeMap: NonEmptyMap[String, FactType[A]]
 
   def typeList: NonEmptyList[FactType[A]] = NonEmptyList.fromListUnsafe(typeMap.toSortedMap.values.toList)
 
@@ -29,15 +32,13 @@ final case class FactTypeSet[A] private (typeMap: NonEmptyMap[String, FactType[A
   def cast(fact: Fact): Option[TypedFact[A]] = collector.lift(fact)
 
   /**
-    *
-    * @return a partial function for collecting facts of a specific type
+    * A partial function for collecting facts of a specific type
     */
   def collector: PartialFunction[Fact, TypedFact[A]] = {
     // Justification: This checks equality of the FactType at runtime, so it should be safe to cast
-    case fact @ TypedFact(factType, _) if typeMap(factType.nameAndFullType).contains(factType) =>
+    case fact@TypedFact(factType, _) if typeMap(factType.nameAndFullType).contains(factType) =>
       fact.asInstanceOf[TypedFact[A]]
   }
-
 }
 
 object FactTypeSet {
@@ -50,7 +51,7 @@ object FactTypeSet {
     one: FactType[A],
     others: FactType[A]*,
   ): FactTypeSet[A] =
-    new FactTypeSet(NonEmptyMap.of(one.nameAndFullType -> one, others.map(a => (a.nameAndFullType, a)): _*))
+    SimpleFactTypeSet(NonEmptyMap.of(one.nameAndFullType -> one, others.map(a => (a.nameAndFullType, a)): _*))
 
   def fromFactsNel[A](facts: NonEmptyList[TypedFact[A]]): FactTypeSet[A] = fromNel(facts.map(_.typeInfo))
 
@@ -69,7 +70,7 @@ object FactTypeSet {
     if (duplicates.isEmpty) {
       NonEmptyMap
         .fromMap(SortedMap.from(uniqueTypes))
-        .map(new FactTypeSet(_))
+        .map(SimpleFactTypeSet(_))
         .toRight("types list cannot be empty.")
     } else {
       Left(
@@ -82,3 +83,5 @@ object FactTypeSet {
     validateList(types).fold(message => throw new IllegalArgumentException(message), identity)
   }
 }
+
+final case class SimpleFactTypeSet[A] private (typeMap: NonEmptyMap[String, FactType[A]]) extends AnyVal with FactTypeSet[A]
