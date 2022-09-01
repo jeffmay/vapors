@@ -15,6 +15,7 @@ object Dependencies {
   private final val scalaTestPlusScalaCheckVersion = "3.2.10.0"
   private final val shapelessVersion = "2.3.7"
   private final val sourcecodeVersion = "0.2.7"
+  private final val zioSchemaVersion = "0.1.8"
 
   private val catsCore = "org.typelevel" %% "cats-core" % catsVersion
   private val circeCore = "io.circe" %% "circe-core" % circeVersion
@@ -31,6 +32,7 @@ object Dependencies {
   private val scalaTestPlusScalaCheck = "org.scalatestplus" %% "scalacheck-1-15" % scalaTestPlusScalaCheckVersion
   private val shapeless = "com.chuusai" %% "shapeless" % shapelessVersion
   private val sourcecode = "com.lihaoyi" %% "sourcecode" % sourcecodeVersion
+  private val zioSchema = "dev.zio" %% "zio-schema" % zioSchemaVersion
 
   final object BenchProject {
 
@@ -48,6 +50,7 @@ object Dependencies {
         scalactic,
         shapeless,
         sourcecode,
+        zioSchema,
       ) ++ Seq(
         // Test-only dependencies
         munit,
