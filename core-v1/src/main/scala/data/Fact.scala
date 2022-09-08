@@ -2,8 +2,6 @@ package com.rallyhealth.vapors.v1
 
 package data
 
-import lens.DataPath
-
 import cats.Order
 import cats.syntax.all._
 
