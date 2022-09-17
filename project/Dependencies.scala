@@ -4,17 +4,17 @@ object Dependencies {
 
   final val Scala_2_13 = "2.13.8"
 
-  private final val catsVersion = "2.7.0"
-  private final val circeVersion = "0.14.1"
-  private final val izumiReflectVersion = "2.0.8"
+  private final val catsVersion = "2.8.0"
+  private final val circeVersion = "0.14.2"
+  private final val izumiReflectVersion = "2.2.0"
   private final val munitVersion = "1.0.0-M1" // it's okay to use milestone version for test code
-  private final val scalacticVersion = "3.2.10"
-  private final val scalaCheckVersion = "1.15.4"
-  private final val scalaCheckOpsVersion = "2.8.1"
-  private final val scalaTestVersion = "3.2.10"
-  private final val scalaTestPlusScalaCheckVersion = "3.2.10.0"
-  private final val shapelessVersion = "2.3.7"
-  private final val sourcecodeVersion = "0.2.7"
+  private final val scalacticVersion = "3.2.12"
+  private final val scalaCheckVersion = "1.16.0"
+  private final val scalaCheckOpsVersion = "2.9.0"
+  private final val scalaTestVersion = "3.2.12"
+  private final val scalaTestPlusScalaCheckVersion = "3.2.11.0"
+  private final val shapelessVersion = "2.3.9"
+  private final val sourcecodeVersion = "0.3.0"
 
   private val catsCore = "org.typelevel" %% "cats-core" % catsVersion
   private val circeCore = "io.circe" %% "circe-core" % circeVersion
