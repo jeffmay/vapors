@@ -35,6 +35,11 @@ ThisBuild / packageDoc / publishArtifact := false
 // Disable publishing of the root project
 publish / skip := true
 
+// SBT CI Release Plugin
+ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
+ThisBuild / githubWorkflowPublishTargetBranches := Seq(RefPredicate.StartsWith(Ref.Tag("v")))
+ThisBuild / githubWorkflowPublish := Seq(WorkflowStep.Sbt(List("ci-release")))
+
 def commonProject(
   dir: String,
   projectPrefix: String = "",
