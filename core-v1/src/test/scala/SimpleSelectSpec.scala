@@ -115,7 +115,7 @@ class SimpleSelectSpec extends FunSuite {
     val message = compileErrors {
       "fixture.const.get(_.select(_.map)).headOption"
     }
-    assert(message contains "Could not find an instance of Foldable for [+V]Map[String,V]")
+    assert(message contains "cats.Foldable[Map[java.lang.String, ?]]")
   }
 
   test("Select a head from a NonEmptySeq") {
@@ -130,7 +130,7 @@ class SimpleSelectSpec extends FunSuite {
     val message = compileErrors {
       "fixture.const.head"
     }
-    assert(message contains "Could not find an instance of Reducible for Seq")
+    assert(message contains "cats.Reducible[Seq]")
   }
 
   test("Select an element by index from a Seq") {

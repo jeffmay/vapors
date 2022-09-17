@@ -176,7 +176,7 @@ class SimpleJustifiedSelectSpec extends FunSuite {
     val message = compileErrors {
       "fixture.const.head"
     }
-    assert(message contains "Could not find an instance of Reducible for Seq")
+    assert(message contains "cats.Reducible[Seq]")
   }
 
   test("Select an element by index from a Seq") {

@@ -52,7 +52,7 @@ class SimpleConstSpec extends FunSuite {
   test("Set.const does not allow calling map") {
     val fixture = Set(1, 2, 3)
     val message = compileErrors("fixture.const.map(_ + 1.const)")
-    assert(message contains "Could not find an instance of Functor for scala.collection.immutable.Set")
+    assert(message contains "cats.Functor[scala.collection.immutable.Set]")
   }
 
   test("Map.const allows calling map") {
