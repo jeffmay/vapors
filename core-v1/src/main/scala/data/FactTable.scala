@@ -14,7 +14,7 @@ import scala.collection.immutable.SortedMap
   *
   * @note some expressions can update the fact table for sub-expressions.
   */
-trait FactTable extends Any {
+trait FactTable extends Any with IterableOnce[Fact] {
   protected type Self <: FactTable
 
   protected def build(factsByName: SortedMap[String, FactSet]): Self
@@ -43,6 +43,8 @@ trait FactTable extends Any {
     }
     matchingFacts.reduceOption(_ | _).map(TypedFactSet.from).getOrElse(Set.empty)
   }
+
+  final override def iterator: Iterator[Fact] = factsByName.valuesIterator.flatMap(_.iterator)
 
   // TODO: Better support for formatting here
   override def toString: String = if (factsByName.isEmpty) "FactTable.empty" else {
