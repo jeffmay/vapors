@@ -74,7 +74,7 @@ trait AnyFactType {
   def cast(fact: Fact): Option[TypedFact[Data]] = {
     fact match {
       // Justification: This checks validity of the FactType and safely casts the fact value using a class tag
-      case f@TypedFact(ft, _: Data) if ft.tt.tag <:< this.tt.tag =>
+      case f @ TypedFact(ft, _: Data) if ft.tt.tag <:< this.tt.tag =>
         Some(f.asInstanceOf[TypedFact[Data]])
       case f: Fact if f.typeInfo.tt.tag <:< this.tt.tag =>
         f.value match {
@@ -105,7 +105,13 @@ trait AnyFactType {
   * Same as [[AnyFactType]], but implements [[Function1]] with the defined type.
   */
 trait FactType[T] extends AnyFactType with (T => TypedFact[T]) {
-  final override type Data = T
+  override final type Data = T
+
+  override def order: Order[T]
+
+  override def apply(value: T): TypedFact[T] = super.apply(value)
+
+  override def parameterized: FactType[T]
 }
 
 object FactType {

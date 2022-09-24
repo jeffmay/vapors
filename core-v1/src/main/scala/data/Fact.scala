@@ -15,7 +15,7 @@ import scala.annotation.switch
   *
   * The [[FactType]] and `value` inside share the same type member [[Value]].
   */
-sealed abstract class Fact {
+trait Fact {
   type Value
 
   val typeInfo: FactType[Value]
@@ -63,6 +63,8 @@ object Fact {
     if (orderFactNames == cats.instances.string.catsKernelStdOrderForString) defaultOrder
     else Order.whenEqual(orderByFactName(orderFactNames), orderByFactValue)
   }
+
+  implicit def ordering(implicit orderFactNames: Order[String]): Ordering[Fact] = order.toOrdering
 }
 
 /**
@@ -70,8 +72,10 @@ object Fact {
   *
   * @see [[Fact]]
   */
-sealed trait TypedFact[A] extends Fact {
+trait TypedFact[A] extends Fact {
   override final type Value = A
+  override val typeInfo: FactType[A]
+  override val value: A
 }
 
 object TypedFact {
