@@ -18,7 +18,7 @@ trait AnyFactType {
   /**
     * The data type associated with facts of this type.
     */
-  type Data
+  type Value
 
   /**
     * The unique name for this fact type.
@@ -28,7 +28,7 @@ trait AnyFactType {
   /**
     * Definition for how to order fact values.
     */
-  def order: Order[Data]
+  def order: Order[Value]
 
   final def simpleTypeName: String = tt.tag.shortName
 
@@ -48,13 +48,13 @@ trait AnyFactType {
     */
   final lazy val nameAndFullType: String = s"'$name' as $fullTypeName"
 
-  protected[vapors] implicit val ct: ClassTag[Data]
-  protected[vapors] implicit val tt: Tag[Data]
+  protected[vapors] implicit val ct: ClassTag[Value]
+  protected[vapors] implicit val tt: Tag[Value]
 
   /**
     * Convert from [[AnyFactType]] to a parameterized [[FactType]]. Typically, implemented as just `this`.
     */
-  def parameterized: FactType[Data]
+  def parameterized: FactType[Value]
 
   /**
     * Validates the value is the correct type, but packages it as an [[Fact]] to avoid
@@ -64,21 +64,21 @@ trait AnyFactType {
     * If you need the specific type of fact for some reason, you can use the standard [[TypedFact]]
     * factory method and supply this fact type as the first parameter.
     */
-  def apply(value: Data): TypedFact[Data] = TypedFact(this.parameterized, value)
+  def apply(value: Value): TypedFact[Value] = TypedFact(this.parameterized, value)
 
-  def unapply(value: Fact): Option[TypedFact[Data]] = cast(value)
+  def unapply(value: Fact): Option[TypedFact[Value]] = cast(value)
 
   /**
     * Safely cast the given fact to this type.
     */
-  def cast(fact: Fact): Option[TypedFact[Data]] = {
+  def cast(fact: Fact): Option[TypedFact[Value]] = {
     fact match {
       // Justification: This checks validity of the FactType and safely casts the fact value using a class tag
-      case f @ TypedFact(ft, _: Data) if ft.tt.tag <:< this.tt.tag =>
-        Some(f.asInstanceOf[TypedFact[Data]])
+      case f @ TypedFact(ft, _: Value) if ft.tt.tag <:< this.tt.tag =>
+        Some(f.asInstanceOf[TypedFact[Value]])
       case f: Fact if f.typeInfo.tt.tag <:< this.tt.tag =>
         f.value match {
-          case v: Data => Some(TypedFact[Data](f.typeInfo.asInstanceOf[FactType[Data]], v))
+          case v: Value => Some(TypedFact[Value](f.typeInfo.asInstanceOf[FactType[Value]], v))
           case _ => None
         }
       case _ => None
@@ -105,7 +105,7 @@ trait AnyFactType {
   * Same as [[AnyFactType]], but implements [[Function1]] with the defined type.
   */
 trait FactType[T] extends AnyFactType with (T => TypedFact[T]) {
-  override final type Data = T
+  override final type Value = T
 
   override def order: Order[T]
 
