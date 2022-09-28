@@ -1,8 +1,14 @@
 name: Release
 on:
   push:
-    branches: [main, v1]
-    tags: ["*"]
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+**'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Version to publish & tag to push to github (prefixed with 'v'), otherwise snapshot
+        required: false
+        type: string
 jobs:
   publish:
     runs-on: ubuntu-20.04
@@ -11,9 +17,20 @@ jobs:
         with:
           fetch-depth: 0
       - uses: olafurpg/setup-scala@v13
-      - run: sbt ci-release
-        env:
-          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-          PGP_SECRET: ${{ secrets.PGP_SECRET }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      - name: Tag Release
+        if: github.event.inputs.tag != ''
+        run: |
+          version="v${{ github.event.inputs.tag }}"
+          if [[ "$version" ~= ^[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            echo "$version is a valid release version."
+          else
+            echo "$version is a NOT valid release version."
+          fi
+          git tag -am "$version" $version
+          git push origin $version
+#      - run: sbt ci-release
+#        env:
+#          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+#          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+#          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+#          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
