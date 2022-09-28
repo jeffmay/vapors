@@ -1,15 +1,47 @@
 name: Release
 on:
-  push:
-    branches: [main, v1]
-    tags: ["*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Version to release (auto-generate snapshot if empty)
+        required: false
+        type: string
 jobs:
   publish:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.0.2
+      - name: Validate Custom Version
+        id: validate
+        if: github.event.inputs.tag != ''
+        run: |
+          version="${{ github.event.inputs.tag }}"
+          if [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            echo "::set-output name=version::$version"
+            echo "::debug::Version to release: '$version' releasing to GitHub and Sonatype."
+          else
+            echo "::error line=3::Version to release: '$version' is a NOT valid release version. It must match start with a 'v' and be separated by 3 dots (i.e. v*.*.*)."
+            exit 1
+          fi
+          gh api /users/${{ github.actor }} | jq -M '{ email: .email, name: .name }' >> .creds
+          echo "::set-output name=actor_name::$(jq -r .name < .creds)"
+          echo "::set-output name=actor_email::$(jq -r .email < .creds)"
+          rm .creds
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - uses: oleksiyrudenko/gha-git-credentials@v2-latest
+        if: github.event.inputs.tag != ''
+        with:
+          global: true
+          name: ${{ steps.validate.outputs.actor_name }}
+          email: ${{ steps.validate.outputs.actor_email }}
+          actor: ${{ github.actor }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag Release
+        if: github.event.inputs.tag != ''
+        run: |
+          git tag -am "${{ steps.validate.outputs.version }}" ${{ steps.validate.outputs.version }}
+          git push origin ${{ steps.validate.outputs.version }}
       - uses: olafurpg/setup-scala@v13
       - run: sbt ci-release
         env:
