@@ -28,10 +28,6 @@ ThisBuild / developers := List(
   Developer(id = "jeffmay", name = "Jeff May", email = "jeff.n.may@gmail.com", url = url("https://github.com/jeffmay")),
 )
 
-// ScalaDoc generation is generally broken. It's really mostly useful from within the IDE anyway
-// so just disable generation to allow publishing without ScalaDoc errors.
-ThisBuild / packageDoc / publishArtifact := false
-
 // Disable publishing of the root project
 publish / skip := true
 
@@ -49,6 +45,8 @@ def commonProject(
     .settings(
       name := s"vapors-$dir",
       idePackagePrefix.withRank(KeyRanks.Invisible) := Some(packagePrefix),
+      Compile / doc / scalacOptions += "--no-link-warnings",
+      Test / doc / scalacOptions += "--no-link-warnings",
       addCompilerPlugin(("org.typelevel" % "kind-projector" % "0.13.2").cross(CrossVersion.full)),
     )
 }
@@ -56,6 +54,7 @@ def commonProject(
 lazy val bench = commonProject("bench", "vapors")
   .dependsOn(`core-v1` % "test->test") // TODO: Include other projects for comparison
   .settings(
+    publish / skip := true,
     libraryDependencies ++= BenchProject.all,
     Test / parallelExecution := false,
   )
