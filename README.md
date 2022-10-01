@@ -45,10 +45,9 @@ _(The slides are a little bit out of date, but the basic ideas are the same)_
 
 ## Setup
 
-1. **Add it to your `build.sbt`**
-
+1. **Add it to your `build.sbt` using version=**[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/jeffmay/vapors)](https://img.shields.io/github/v/tag/jeffmay/vapors)
     ```sbt
-    libraryDependencies += "com.rallyhealth" %% "vapors-v1" % "1.0.0-M2"
+    libraryDependencies += "com.rallyhealth" %% "vapors-v1" % "version"
     ```
 
 2. **Define your fact types.**
