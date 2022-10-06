@@ -16,5 +16,11 @@ package dsl
   * match various DSL capabilities by importing from [[dsl.standard.justified]].
   */
 trait FullDsl {
-  self: DslTypes with BuildExprDsl with RunExprDsl =>
+  self: DslTypes &
+    BuildExprDsl &
+    ExprHListDslImplicits &
+    OutputTypeImplicits &
+    MidPriorityOutputTypeImplicits &
+    LowPriorityOutputTypeImplicits &
+    RunExprDsl =>
 }

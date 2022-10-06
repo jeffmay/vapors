@@ -32,7 +32,7 @@ object Indexed extends LowPriorityIndexed {
 
   implicit def indexedTuple[T <: NonEmptyTuple, N <: Int]: Indexed[T, N, Tuple.Elem[T, N]] = {
     new Indexed[T, N, Tuple.Elem[T, N]] {
-      override def get(container: T)(key: N): Tuple.Elem[T, key.type] = container.apply(key)
+      override def get(container: T)(key: N): Tuple.Elem[T, N] = ??? // container.apply(key)
     }
   }
 

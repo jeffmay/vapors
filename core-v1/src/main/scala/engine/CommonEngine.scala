@@ -7,7 +7,7 @@ import data.ExtractValue
 
 import cats.data.NonEmptySeq
 import cats.{Foldable, Monad}
-import shapeless.Id
+import shapeless3.deriving.Id
 
 /**
   * Shared implementation for expression interpreters.

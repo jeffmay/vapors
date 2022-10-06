@@ -3,9 +3,10 @@ package com.rallyhealth.vapors.v1
 package dsl
 
 import cats.Order
-import cats.data._
+import cats.data.*
 
 import scala.collection.Factory
+import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 
 /**
@@ -34,16 +35,16 @@ object Sortable {
   }
 
   implicit def seq[C[a] <: Seq[a], A : ClassTag : Order](implicit factory: Factory[A, C[A]]): Sortable[C, A] =
-    new ViaArray(factory.fromSpecific(_), _.toArray)
+    new ViaArray(arr => factory.fromSpecific(ArraySeq.unsafeWrapArray(arr)), _.toArray)
 
   implicit def nonEmptyChain[A : ClassTag : Order]: Sortable[NonEmptyChain, A] =
-    new ViaArray[NonEmptyChain, A](ca => NonEmptyChain.fromChainUnsafe(Chain.fromSeq(ca)), _.toChain.iterator.toArray)
+    new ViaArray[NonEmptyChain, A](ca => NonEmptyChain.fromChainUnsafe(Chain.fromSeq(ArraySeq.unsafeWrapArray(ca))), _.toChain.iterator.toArray)
 
   implicit def nonEmptyList[A : ClassTag : Order]: Sortable[NonEmptyList, A] =
     new ViaArray(ca => NonEmptyList.fromListUnsafe(ca.toList), _.toList.toArray)
 
   implicit def nonEmptySeq[A : ClassTag : Order]: Sortable[NonEmptySeq, A] =
-    new ViaArray(ca => NonEmptySeq.fromSeqUnsafe(ca), _.toSeq.toArray)
+    new ViaArray(ca => NonEmptySeq.fromSeqUnsafe(ArraySeq.unsafeWrapArray(ca)), _.toSeq.toArray)
 
   implicit def nonEmptyVector[A : ClassTag : Order]: Sortable[NonEmptyVector, A] =
     new ViaArray(ca => NonEmptyVector.fromVectorUnsafe(ca.toVector), _.toVector.toArray)

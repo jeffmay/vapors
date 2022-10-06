@@ -250,20 +250,20 @@ object Justified extends LowPriorityJustifiedImplicits {
     sizeComparable: SizeComparable[C[Justified[A]], N, B],
   ): SizeComparable[C[Justified[A]], Justified[N], Justified[B]] = wrapSizeCompared(_.size)
 
-  private case object WrapConstJustified extends WrapConst[Justified, Any] {
+  private case object WrapConstJustified extends WrapConst[Justified, [_] =>> Any] {
     override def wrapConst[A](value: A)(implicit opA: Any): Justified[A] = Justified.byConst(value)
   }
 
   implicit def wrapConst[OP[_]]: WrapConst[Justified, OP] = WrapConstJustified.asInstanceOf[WrapConst[Justified, OP]]
 
-  private case object WrapFactJustified extends WrapFact[Justified, Any] {
+  private case object WrapFactJustified extends WrapFact[Justified, [_] =>> Any] {
     override def wrapFact[O](fact: TypedFact[O])(implicit opO: Any): Justified[O] = Justified.byFact(fact)
   }
 
   implicit def wrapContained[OP[_]]: WrapContained[Justified, OP] =
     WrapContainedJustified.asInstanceOf[WrapContained[Justified, OP]]
 
-  private case object WrapContainedJustified extends WrapContained[Justified, Any] {
+  private case object WrapContainedJustified extends WrapContained[Justified, [_] =>> Any] {
 
     override def wrapContained[C[_] : Foldable, V](
       original: C[Justified[V]],
@@ -296,7 +296,7 @@ object Justified extends LowPriorityJustifiedImplicits {
 
   implicit def wrapFact[OP[_]]: WrapFact[Justified, OP] = WrapFactJustified.asInstanceOf[WrapFact[Justified, OP]]
 
-  private case object WrapSelectedJustified extends WrapSelected[Justified, Any] {
+  private case object WrapSelectedJustified extends WrapSelected[Justified, [_] =>> Any] {
     override def wrapSelected[I, O](
       container: Justified[I],
       path: DataPath,
@@ -312,7 +312,7 @@ object Justified extends LowPriorityJustifiedImplicits {
   implicit def wrapSelected[OP[_]]: WrapSelected[Justified, OP] =
     WrapSelectedJustified.asInstanceOf[WrapSelected[Justified, OP]]
 
-  private object WrapQuantifierJustified extends WrapQuantifier[Justified, Any] {
+  private object WrapQuantifierJustified extends WrapQuantifier[Justified, [_] =>> Any] {
 
     // TODO: Pull this from config somehow?
     override def shortCircuit: Boolean = false

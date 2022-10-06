@@ -6,16 +6,24 @@ import algebra._
 import data._
 import lens.{CollectInto, IterableInto, VariantLens}
 import math.Power
+import shapeless3.deriving.K0
 
 import cats.data.NonEmptySeq
 import cats.{FlatMap, Foldable, Functor, Id, Order, Reducible, Traverse}
 
 trait WrappedBuildExprDsl extends BuildExprDsl {
-  self: DslTypes with WrappedExprHListDslImplicits with OutputTypeImplicits =>
+  self: DslTypes &
+    WrappedExprHListDslImplicits &
+    WrappedLowPriorityExprHListDslImplicits &
+    OutputTypeImplicits &
+    MidPriorityOutputTypeImplicits &
+    LowPriorityOutputTypeImplicits =>
 
   protected implicit def extract: Extract[W]
 
   protected implicit def extractBool[B : ExtractValue.AsBoolean]: ExtractValue.AsBoolean[W[B]]
+
+//  protected implicit def extractInt[B : ExtractValue.As[Int]]: ExtractValue.As[Int][W[B]]
 
   protected implicit def wrapQuantifier: WrapQuantifier[W, OP]
 
@@ -180,7 +188,7 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
 
     override def zipToShortest[C[+_], UL <: Tuple](
       implicit
-      zip: [a] =>> ZipToShortest.Aux[C[W[a]], WL, OP, UL],
+      zip: ZipToShortest.Aux[[a] =>> C[W[a]], WL, OP, UL],
       opO: OP[C[W[UL]]],
     ): I ~:> C[W[UL]] =
       Expr.ZipToShortestHList[I, [a] =>> C[W[a]], WL, UL, OP](inputExprHList)(zip, opO)
@@ -194,7 +202,7 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
 
     override def as[P](
       implicit
-      gen: Generic.Aux[P, L],
+      gen: K0.Generic[P],
       opL: OP[L],
       opWL: OP[W[L]],
       opP: OP[P],
@@ -214,10 +222,10 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
       opI: OP[Int],
       opWI: OP[W[Int]],
       opWB: OP[W[Boolean]],
-    ): AndThen[I, C, W[Boolean]] =
-      inputExpr.andThen {
-        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.===, Expr.Const(wrapConst.wrapConst(0)))
-      }
+    ): AndThen[I, C, W[Boolean]] = ???
+//      inputExpr.andThen {
+//        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.===, Expr.Const(wrapConst.wrapConst(0)))
+//      }
 
     override def sizeIs: SizeIsBuilder[I, C] = new WrappedSizeIsBuilder(inputExpr)
   }
@@ -324,10 +332,12 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
     ): Expr.FoldLeft[CI, C, W[A], W[B], OP] = {
       val initLensExpr = Expr.Identity[(W[B], W[A]), OP]()
       val initLens = VariantLens.id[(W[B], W[A])]
-      val b = Expr.Select(initLensExpr, initLens.at(0), (_: (W[B], W[A]), wb: W[B]) => wb)
-      val a = Expr.Select(initLensExpr, initLens.at(1), (_: (W[B], W[A]), wa: W[A]) => wa)
-      val foldExpr = foldExprBuilder(b, a)
-      Expr.FoldLeft(inputExpr, initExpr, foldExpr)
+//      import sourcecode.Text.generate
+//      val b = Expr.Select[CI, (W[B], W[A]), (W[B], W[A]), W[B], OP](initLensExpr, initLens.at(0), (_, wb) => wb)
+//      val a = Expr.Select[CI, (W[B], W[A]), (W[B], W[A]), W[A], OP](initLensExpr, initLens.at(1), (_, wa) => wa)
+//      val foldExpr = foldExprBuilder.apply(b, a)
+//      Expr.FoldLeft(inputExpr, initExpr, foldExpr)
+      ???
     }
 
     override def map[B](
@@ -384,10 +394,10 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
       opI: OP[Int],
       opWI: OP[W[Int]],
       opWB: OP[W[Boolean]],
-    ): AndThen[I, C[W[A]], W[Boolean]] =
-      inputExpr.andThen {
-        Expr.SizeIs[C[W[A]], W[Int], W[Boolean], OP](SizeComparison.===, Expr.Const(wrapConst.wrapConst(0)))
-      }
+    ): AndThen[I, C[W[A]], W[Boolean]] = ???
+//      inputExpr.andThen {
+//        Expr.SizeIs[C[W[A]], W[Int], W[Boolean], OP](SizeComparison.===, Expr.Const(wrapConst.wrapConst(0)))
+//      }
 
     override def sizeIs: SizeIsBuilder[I, C[W[A]]] = new WrappedSizeIsBuilder(inputExpr)
 
@@ -425,49 +435,49 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
     )(implicit
       sizeComparable: SizeComparable[C, W[Int], W[Boolean]],
       opO: OP[W[Boolean]],
-    ): AndThen[I, C, W[Boolean]] =
-      inputExpr.andThen {
-        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.===, sizeExpr)
-      }
+    ): AndThen[I, C, W[Boolean]] = ???
+//      inputExpr.andThen {
+//        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.===, sizeExpr)
+//      }
 
     override def >(
       sizeExpr: C ~:> W[Int],
     )(implicit
       sizeComparable: SizeComparable[C, W[Int], W[Boolean]],
       opO: OP[W[Boolean]],
-    ): AndThen[I, C, W[Boolean]] =
-      inputExpr.andThen {
-        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.>, sizeExpr)
-      }
+    ): AndThen[I, C, W[Boolean]] = ???
+//      inputExpr.andThen {
+//        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.>, sizeExpr)
+//      }
 
     override def >=(
       sizeExpr: C ~:> W[Int],
     )(implicit
       sizeComparable: SizeComparable[C, W[Int], W[Boolean]],
       opO: OP[W[Boolean]],
-    ): AndThen[I, C, W[Boolean]] =
-      inputExpr.andThen {
-        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.>=, sizeExpr)
-      }
+    ): AndThen[I, C, W[Boolean]] = ???
+//      inputExpr.andThen {
+//        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.>=, sizeExpr)
+//      }
 
     override def <(
       sizeExpr: C ~:> W[Int],
     )(implicit
       sizeComparable: SizeComparable[C, W[Int], W[Boolean]],
       opO: OP[W[Boolean]],
-    ): AndThen[I, C, W[Boolean]] =
-      inputExpr.andThen {
-        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.<, sizeExpr)
-      }
+    ): AndThen[I, C, W[Boolean]] = ???
+//      inputExpr.andThen {
+//        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.<, sizeExpr)
+//      }
 
     override def <=(
       sizeExpr: C ~:> W[Int],
     )(implicit
       sizeComparable: SizeComparable[C, W[Int], W[Boolean]],
       opO: OP[W[Boolean]],
-    ): AndThen[I, C, W[Boolean]] =
-      inputExpr.andThen {
-        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.<=, sizeExpr)
-      }
+    ): AndThen[I, C, W[Boolean]] = ???
+//      inputExpr.andThen {
+//        Expr.SizeIs[C, W[Int], W[Boolean], OP](SizeComparison.<=, sizeExpr)
+//      }
   }
 }

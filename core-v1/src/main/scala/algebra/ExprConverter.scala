@@ -7,6 +7,7 @@ import dsl.WrapSelected
 import lens.DataPath
 
 import shapeless3.deriving.{Id, K0}
+import shapeless3.deriving.K0.*
 
 import scala.deriving.Mirror
 
@@ -49,7 +50,7 @@ object ExprConverter {
   ): ExprConverter[W[I], W[O]] =
     new Impl(
       "asProductWrapped",
-      wi => wrapSelected.wrapSelected(wi, DataPath.empty, gen.fromRepr(Extract[W].extract(wi))),
+      wi => wrapSelected.wrapSelected(wi, DataPath.empty, ???), // TODO: How to use K0.Generic
     )
 
 }

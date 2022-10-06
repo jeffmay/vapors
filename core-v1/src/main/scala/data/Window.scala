@@ -44,11 +44,12 @@ object Window {
     override def bounds: Option[Ior[Above[Nothing], Below[Nothing]]] = None
   }
 
+  // TODO: Use extension methods
   implicit final class IWindowOps[A](private val window: Window[A]) extends AnyVal {
 
     def contains(value: A): Boolean = window match {
       case Empty => false
-      case knownWindow: KnownWindow[Any] => knownWindow.contains(value)
+      case knownWindow @ KnownWindow(_) => knownWindow.contains(value)
     }
   }
 

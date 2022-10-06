@@ -3,8 +3,6 @@ package com.rallyhealth.vapors.v1
 package dsl
 import time.CountTime
 
-import shapeless.{::, HNil}
-
 import java.time.{Clock, Instant, LocalDate}
 
 trait UnwrappedTimeFunctions extends TimeFunctions with UnwrappedDslTypes {
@@ -15,9 +13,9 @@ trait UnwrappedTimeFunctions extends TimeFunctions with UnwrappedDslTypes {
     roundToUnitExpr: I ~:> U,
   )(implicit
     countTime: CountTime[T, U, Long],
-    opL: OP[T :: T :: U :: HNil],
+    opL: OP[T *: T *: U *: EmptyTuple],
     opO: OP[Long],
-  ): AndThen[I, T :: T :: U :: HNil, Long] =
+  ): AndThen[I, T *: T *: U *: EmptyTuple, Long] =
     super.dateDiff(lhsExpr, rhsExpr, roundToUnitExpr)(countTime, opL, opO)
 
   override final def today(

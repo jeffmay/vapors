@@ -1,7 +1,8 @@
 package com.rallyhealth.vapors.v1.dsl
 
 import cats.Traverse
-import shapeless.<:!<
+// TODO: Replace the need for this
+//import shapeless.<:!<
 
 import scala.collection.Factory
 
@@ -43,7 +44,7 @@ trait DefaultUnwrappedMidPriorityOutputTypeImplicits
   override implicit final def selectTraverse[C[_] : Traverse, I : OP, A : OP](
     implicit
     sot: SelectOutputType[W, I, A],
-    nt: C[A] <:!< Product,
+//    nt: C[A] <:!< Product,
   ): SelectOutputType.Aux[W, I, C[A], C[sot.Out]] = defn.selectTraverse[C, I, A, sot.Out](sot)
 
 }

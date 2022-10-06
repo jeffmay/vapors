@@ -5,7 +5,6 @@ import example.NestedSelectable
 import lens.VariantLens
 
 import cats.data.NonEmptySeq
-import com.rallyhealth.vapors.v1.engine.ImmutableCachingEngine.{CachedResult, ResultCache}
 import munit._
 import shapeless.HNil
 

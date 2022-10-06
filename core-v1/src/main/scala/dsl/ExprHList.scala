@@ -24,6 +24,16 @@ sealed trait ExprHList[-I, +L <: Tuple, OP[_]] {
     * @tparam CI a more specific input type to obey the laws of contravariance
     * @tparam H the output type of the given head expression
     */
+  def *:[CI <: I, H](headExpr: Expr[CI, H, OP]): ExprHList[CI, H *: L, OP] = ExprHCons(headExpr, this)
+
+  /**
+    * Prefix an expression node to this [[ExprHList]].
+    *
+    * @param headExpr the expression to prepend to this [[ExprHList]]
+    *
+    * @tparam CI a more specific input type to obey the laws of contravariance
+    * @tparam H the output type of the given head expression
+    */
   def ::[CI <: I, H](headExpr: Expr[CI, H, OP]): ExprHList[CI, H *: L, OP] = ExprHCons(headExpr, this)
 }
 

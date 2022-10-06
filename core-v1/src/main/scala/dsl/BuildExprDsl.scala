@@ -18,7 +18,11 @@ trait BuildExprDsl
   with TimeFunctions
   with WrapArityMethods
   with UsingDefinitionArityMethods {
-  self: DslTypes with ExprHListDslImplicits with OutputTypeImplicits =>
+  self: DslTypes &
+    ExprHListDslImplicits &
+    OutputTypeImplicits &
+    MidPriorityOutputTypeImplicits &
+    LowPriorityOutputTypeImplicits =>
 
   /**
     * Use this to implement all implicit `def`s defined by [[ExprHListDslImplicits]]

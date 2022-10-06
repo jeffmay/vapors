@@ -234,8 +234,8 @@ trait UnwrappedBuildExprDsl
       opWL: OP[L],
       opP: OP[P],
       opWP: OP[P],
-    ): AndThen[I, L, P] =
-      inputExpr.andThen(Expr.Convert(ExprConverter.asProductType)(opWP))(opWP)
+    ): AndThen[I, L, P] = ???
+//      inputExpr.andThen(Expr.Convert(ExprConverter.asProductType)(opWP))(opWP)
   }
 
   override implicit def optionOps[I, O](optExpr: I ~:> Option[O]): UnwrappedOptionExprBuilder[I, O] =
@@ -356,10 +356,11 @@ trait UnwrappedBuildExprDsl
       opB: OP[B],
     ): Expr.FoldLeft[CI, C, A, B, OP] = {
       val initLensExpr = ident[(B, A)]
-      val b = initLensExpr.get(_.at(0))
-      val a = initLensExpr.get(_.at(1))
-      val foldExpr = foldExprBuilder(b, a)
-      Expr.FoldLeft(inputExpr, initExpr, foldExpr)
+//      val b = initLensExpr.get(_.at(0))
+//      val a = initLensExpr.get(_.at(1))
+//      val foldExpr = foldExprBuilder(b, a)
+//      Expr.FoldLeft(inputExpr, initExpr, foldExpr)
+      ???
     }
 
     override def map[B](

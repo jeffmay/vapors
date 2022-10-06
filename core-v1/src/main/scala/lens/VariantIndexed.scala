@@ -32,7 +32,7 @@ object VariantIndexed extends LowPriorityVariantIndexed {
 
   implicit def indexedTuple[T <: NonEmptyTuple, N <: Int]: VariantIndexed[T, N, Tuple.Elem[T, N]] = {
     new VariantIndexed[T, N, Tuple.Elem[T, N]] {
-      override def get(container: T)(key: N): Tuple.Elem[T, key.type] = container(key)
+      override def get(container: T)(key: N): Tuple.Elem[T, N] = ??? // container.apply(key)
     }
   }
 

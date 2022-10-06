@@ -85,7 +85,7 @@ sealed trait JustifiedMidPriorityOutputTypeImplicits
   override implicit final def selectTraverse[C[_] : Traverse, I : OP, O : OP](
     implicit
     sot: SelectOutputType[Justified, I, O],
-    nt: C[O] <:!< Product,
+//    nt: C[O] <:!< Product,
   ): SelectOutputType.Aux[Justified, I, C[O], C[sot.Out]] = defn.selectTraverse(sot)
 }
 

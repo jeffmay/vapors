@@ -8,7 +8,6 @@ import cats.arrow.Compose
 import cats.data.NonEmptySet
 import cats.kernel.Semigroup
 import cats.{Eval, Foldable, Reducible}
-import shapeless3.deriving.Gen
 import shapeless3.deriving.K0.{Generic, ProductGeneric}
 import shapeless3.deriving.K0
 
@@ -234,6 +233,9 @@ final case class VariantLens[-A, +B](
     )
   }
 
+//  def atIdx[K <: Singleton]: AtIdxPartiallyApplied[A, B, K] =
+//    new AtIdxPartiallyApplied[A, B, K](this)
+
   def head[C[_] : Reducible, V](implicit ev: B <:< C[V]): VariantLens[A, V] =
     copy(
       path = path.atHead,
@@ -302,9 +304,19 @@ final case class VariantLens[-A, +B](
     *
     * @see [[Mirror.Product]]s
     */
-  def asHList(
-    implicit
-    gen: K0.ProductGeneric[B],
-  ): VariantLens[A, gen.MirroredElemTypes] =
-    copy(get = this.get.andThen(b => gen.toRepr(b)))
+//  def asHList(
+//    implicit
+//    gen: K0.ProductGeneric[B],
+//  ): VariantLens[A, gen.MirroredElemTypes] =
+//    copy(get = this.get.andThen(b => gen.toRepr(b)))
 }
+
+//final class AtIdxPartiallyApplied[A, B, K <: Singleton](lens: VariantLens[A, B]) extends AnyVal {
+//  def apply[V](key: K)(implicit CI: VariantIndexed[B, K, V]): VariantLens[A, V] = {
+////    lens.copy(
+////      path = lens.path.atKey[K](???),
+////      get = lens.get.andThen(b => CI.get(b)(key)),
+////    )
+//    ???
+//  }
+//}

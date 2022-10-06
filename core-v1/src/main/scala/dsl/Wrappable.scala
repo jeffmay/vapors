@@ -2,13 +2,13 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import shapeless.unexpected
-
 import scala.annotation.implicitAmbiguous
 
 trait Wrappable[A]
 
 object Wrappable extends Wrappable[Any] {
+
+  def unexpected: Nothing = throw new Exception(s"This method was never intended to be invoked.")
 
   implicit def id[A]: Wrappable[A] = Wrappable.asInstanceOf[Wrappable[A]]
 

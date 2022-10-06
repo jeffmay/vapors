@@ -4,9 +4,10 @@ package dsl
 
 import algebra.Expr
 import data.Extract
-import com.rallyhealth.vapors.v1.lens.VariantLens.FromTo
 import lens.VariantLens
-import shapeless.Id
+import lens.VariantLens.FromTo
+
+import shapeless3.deriving.Id
 
 import scala.collection.Factory
 

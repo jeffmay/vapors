@@ -1,12 +1,11 @@
 package com.rallyhealth.vapors.v1.dsl
 
 import cats.Traverse
-import shapeless.<:!<
 
 import scala.collection.Factory
 
 trait OutputTypeImplicits {
-  self: DslTypes with MidPriorityOutputTypeImplicits =>
+  self: DslTypes & MidPriorityOutputTypeImplicits & LowPriorityOutputTypeImplicits =>
 
   implicit def constOption[A](
     implicit
@@ -28,7 +27,7 @@ trait OutputTypeImplicits {
 }
 
 trait MidPriorityOutputTypeImplicits {
-  self: DslTypes with LowPriorityOutputTypeImplicits =>
+  self: DslTypes & LowPriorityOutputTypeImplicits =>
 
   implicit def constTraverse[C[_] : Traverse, O](
     implicit
@@ -48,7 +47,7 @@ trait MidPriorityOutputTypeImplicits {
   implicit def selectTraverse[C[_] : Traverse, I : OP, O : OP](
     implicit
     sot: SelectOutputType[W, I, O],
-    nt: C[O] <:!< Product,
+//    nt: C[O] <:!< Product,
   ): SelectOutputType.Aux[W, I, C[O], C[sot.Out]]
 }
 

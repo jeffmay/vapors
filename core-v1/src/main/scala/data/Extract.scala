@@ -12,7 +12,7 @@ import cats.Id
   * be implemented very often by end users. Also it may need to evolve in a manner that doesn't
   * align with the cats typeclass.
   */
-trait Extract[W[_]] {
+trait Extract[-W[_]] {
 
   def extract[A](fa: W[A]): A
 }

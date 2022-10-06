@@ -24,18 +24,18 @@ sealed trait ExprHListDslImplicits
   * abstract implicit def by invoking the `defn` method of the same name.
   */
 trait WrappedExprHListDslImplicits extends ExprHListDslImplicits {
-  self: DslTypes with WrappedLowPriorityExprHListDslImplicits =>
+  self: DslTypes & WrappedLowPriorityExprHListDslImplicits =>
 
   implicit def hlastAlignMapN[C[_] : Functor, H](
     implicit
-    isCons: IsExprHCons.Aux[C[W[H]] *: EmptyTuple, C[W[H]], EmptyTuple],
-  ): ZipToShortest.Aux[Lambda[a => C[W[a]]], C[W[H]] *: EmptyTuple, OP, H *: EmptyTuple]
+    isCons: IsExprHCons[C[W[H]] *: EmptyTuple],
+  ): ZipToShortest.Aux[[a] =>> C[W[a]], C[W[H]] *: EmptyTuple, OP, H *: EmptyTuple]
 
   implicit def hconsAlignMapN[C[_] : Align : FunctorFilter, H, WT <: Tuple](
     implicit
-    isCons: IsExprHCons.Aux[C[W[H]] *: WT, C[W[H]], WT],
-    mt: ZipToShortest[Lambda[a => C[W[a]]], WT, OP],
-  ): ZipToShortest.Aux[Lambda[a => C[W[a]]], C[W[H]] *: WT, OP, H *: mt.UL]
+    isCons: IsExprHCons[C[W[H]] *: WT],
+    mt: ZipToShortest[[a] =>> C[W[a]], WT, OP],
+  ): ZipToShortest.Aux[[a] =>> C[W[a]], C[W[H]] *: WT, OP, H *: mt.UL]
 
 }
 
@@ -55,7 +55,7 @@ trait WrappedLowPriorityExprHListDslImplicits {
 }
 
 trait UnwrappedExprHListDslImplicits extends ExprHListDslImplicits {
-  self: DslTypes with UnwrappedLowPriorityExprHListDslImplicits =>
+  self: DslTypes & UnwrappedLowPriorityExprHListDslImplicits =>
 
   implicit def hlastAlignMapN[C[_] : Functor, H](
     implicit
@@ -74,12 +74,12 @@ trait UnwrappedLowPriorityExprHListDslImplicits {
 
   implicit def hlastMapN[H](
     implicit
-    isCons: IsExprHCons[H *: EmptyTuple, H, EmptyTuple],
+    isCons: IsExprHCons[H *: EmptyTuple],
   ): ZipToShortest.Aux[W, H *: EmptyTuple, OP, H *: EmptyTuple]
 
   implicit def hconsMapN[H, WT <: Tuple](
     implicit
-    isCons: IsExprHCons.Aux[H *: WT, H, WT],
+    isCons: IsExprHCons[H *: WT],
     mt: ZipToShortest[W, WT, OP],
   ): ZipToShortest.Aux[W, H *: WT, OP, H *: mt.UL]
 }

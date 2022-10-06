@@ -9,7 +9,7 @@ trait DefaultUnwrappedExprHListImplicits
 
   override implicit final def hlastAlignMapN[C[_] : Functor, H](
     implicit
-    isCons: IsExprHCons[C[H] *: EmptyTuple, C[H], EmptyTuple],
+    isCons: IsExprHCons[C[H] *: EmptyTuple],
   ): ZipToShortest.Aux[C, C[H] *: EmptyTuple, OP, H *: EmptyTuple] = {
     // Help IntelliJ prove that the W[_] wrapper can be removed in phases
     val zts: ZipToShortest.Aux[[a] =>> C[a], C[W[H]] *: EmptyTuple, OP, H *: EmptyTuple] =

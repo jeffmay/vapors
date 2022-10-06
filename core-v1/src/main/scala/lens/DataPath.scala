@@ -6,7 +6,8 @@ import cats.Show
 import cats.data.{Chain, NonEmptySet}
 
 import scala.annotation.tailrec
-import scala.collection.{immutable, BitSet, SortedSet}
+import scala.collection.immutable.{BitSet, SortedSet}
+import scala.collection.mutable
 
 /**
   * Describes a chain of selection operations that describes a getter lens.
@@ -27,7 +28,7 @@ final case class DataPath(nodes: Chain[DataPath.Node]) extends AnyVal {
 
   def isEmpty: Boolean = nodes.isEmpty
 
-  def indexes(at: NonEmptySet[Int]): DataPath = DataPath(nodes :+ IdxSet(BitSet.fromSpecific(at.toSortedSet)))
+  def indexes(at: NonEmptySet[Int]): DataPath = DataPath(nodes :+ IdxSet(at))
 
   def slice(
     startIdx: Int,
@@ -83,28 +84,47 @@ object DataPath {
 
   final case class IdxRange(range: Range) extends Node
 
-  final case class IdxSet private (bitSet: BitSet) extends Node {
+  final class IdxSet private (bitSet: BitSet) extends Node with Product1[NonEmptySet[Int]] {
+
+    override def productPrefix: String = "IdxSet"
+
+    override def _1: NonEmptySet[Int] = nonEmptySet
+
+    override def productElementName(n: Int): String = n match
+      case 0 => "nonEmptySet"
+      case _ => super.productElementName(n)
+
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[IdxSet]
 
     /**
       * The [[IdxSet]] is designed to never be empty, so this is safe,
       * however, using [[BitSet]] is more performant.
       */
-    def nonEmptySet: NonEmptySet[Int] = NonEmptySet.fromSetUnsafe(immutable.SortedSet.from(bitSet))
+    lazy val nonEmptySet: NonEmptySet[Int] = NonEmptySet.fromSetUnsafe(SortedSet.from(bitSet))
   }
 
   object IdxSet {
-    def apply(set: NonEmptySet[Int]): IdxSet = IdxSet(BitSet.fromSpecific(set.toSortedSet))
+
+    def apply(set: NonEmptySet[Int]): IdxSet =
+      new IdxSet(BitSet.fromSpecific(set.toSortedSet))
+
+    def unapply(idxSet: IdxSet): Some[NonEmptySet[Int]] = Some(idxSet._1)
 
     def of(
       one: Int,
       others: Int*,
-    ): IdxSet = IdxSet(BitSet(one) ++ others)
+    ): IdxSet = new IdxSet(BitSet(one) ++ others)
+
+    def fromIterable(indexes: Iterable[Int]): Option[IdxSet] =
+      Option.when(indexes.isEmpty) {
+        new IdxSet(BitSet.fromSpecific(indexes))
+      }
   }
 
   @tailrec private def writeToBuilder(
-    buffer: StringBuilder,
+    buffer: mutable.StringBuilder,
     path: Chain[DataPath.Node],
-  ): StringBuilder = path.uncons match {
+  ): mutable.StringBuilder = path.uncons match {
     case Some((head, tail)) =>
       var remaining: Chain[DataPath.Node] = tail
       head match {
@@ -125,12 +145,14 @@ object DataPath {
         case IdxSlice(startIdx, endIdx) =>
           buffer.append('[').append(startIdx).append(':').append(endIdx).append(']')
         case IdxRange(range) if range.step == 1 =>
-          remaining = remaining.+:(IdxSlice(range.start, range.end))
+          remaining = remaining :+ IdxSlice(range.start, range.end)
         case IdxRange(range) =>
-          remaining = remaining.:+(IdxSet(BitSet.fromSpecific(range.iterator)))
+          IdxSet.fromIterable(range).foreach { idxSet =>
+            remaining = remaining :+ idxSet
+          }
         case IdxSet(idxSet) =>
           buffer.append('[')
-          joinKeys(buffer, idxSet, ",")
+          joinKeys(buffer, idxSet.toSortedSet, ",")
           buffer.append(']')
       }
       writeToBuilder(buffer, remaining)
@@ -138,7 +160,7 @@ object DataPath {
   }
 
   private def joinKeys[T](
-    buffer: StringBuilder,
+    buffer: mutable.StringBuilder,
     items: IterableOnce[T],
     sep: String,
   ): Unit = {
@@ -153,6 +175,6 @@ object DataPath {
   }
 
   implicit val show: Show[DataPath] = Show.show { path =>
-    DataPath.writeToBuilder(new StringBuilder(), path.nodes).result()
+    DataPath.writeToBuilder(new mutable.StringBuilder(), path.nodes).result()
   }
 }

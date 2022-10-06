@@ -2,8 +2,8 @@ package com.rallyhealth.vapors.v1
 
 package dsl
 
-import com.rallyhealth.vapors.v1.lens.DataPath
-import shapeless.Id
+import lens.DataPath
+import shapeless3.deriving.Id
 
 /**
   * Wraps an element that was selected from the same wrapper type.
@@ -37,7 +37,7 @@ trait WrapSelected[W[+_], OP[_]] {
 
 object WrapSelected {
 
-  private final object Unwrapped extends WrapSelected[Id, Any] {
+  private object Unwrapped extends WrapSelected[Id, [_] =>> Any] {
     override def wrapSelected[A, B](
       container: A,
       path: DataPath,
