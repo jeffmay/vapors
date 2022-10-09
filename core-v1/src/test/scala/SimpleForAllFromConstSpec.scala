@@ -4,7 +4,7 @@ import munit.FunSuite
 
 class SimpleForAllFromConstSpec extends FunSuite {
 
-  import dsl.caching.immutable._
+  import dsl.uncached._
 
   test(".forall returns true when empty") {
     val expr = List.empty[Int].const.forall {

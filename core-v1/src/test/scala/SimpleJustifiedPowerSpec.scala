@@ -8,7 +8,7 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
 
 class SimpleJustifiedPowerSpec extends FunSuite {
 
-  import dsl.caching.immutable.justified._
+  import dsl.uncached.justified._
 
   test("Int ^ Int (behavior)") {
     forAll { (l: Int, r: Int) =>

@@ -5,7 +5,7 @@ import munit.FunSuite
 
 class SimpleSortedSpec extends FunSuite {
 
-  import dsl.caching.immutable._
+  import dsl.uncached._
 
   test("Seq[Int].sorted") {
     val value = Seq(4, 2, 3, 1)

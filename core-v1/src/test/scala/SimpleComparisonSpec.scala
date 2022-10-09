@@ -4,7 +4,7 @@ import munit.FunSuite
 
 class SimpleComparisonSpec extends FunSuite {
 
-  import dsl.caching.immutable._
+  import dsl.uncached._
 
   test("2 < 1 = false") {
     val result = (2.const < 1.const).run()

@@ -7,7 +7,7 @@ import munit.FunSuite
 
 class SimpleUsingDefinitionsSpec extends FunSuite {
 
-  import dsl.caching.immutable._
+  import dsl.uncached._
 
   test("Derive Kg from Lbs") {
     val weightLbs = FactTypes.WeightLbs(150)

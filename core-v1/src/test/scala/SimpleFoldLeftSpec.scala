@@ -4,7 +4,7 @@ import munit.FunSuite
 
 class SimpleFoldLeftSpec extends FunSuite {
 
-  import dsl.caching.immutable._
+  import dsl.uncached._
 
   test(".foldLeft returns initial value when empty") {
     val expr = Seq.empty[Int].const.foldLeft(1.const)(_ + _)

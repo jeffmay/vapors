@@ -6,7 +6,7 @@ import cats.data.NonEmptySeq
 
 class SimpleJustifiedMultiplicationSpec extends munit.FunSuite {
 
-  import dsl.caching.immutable.justified._
+  import dsl.uncached.justified._
 
   test("Justified[Int] * Justified[Int]") {
     val expr = 2.const * 2.const

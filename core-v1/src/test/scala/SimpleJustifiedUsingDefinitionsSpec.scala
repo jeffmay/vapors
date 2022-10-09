@@ -10,7 +10,7 @@ import org.scalatest.Inside.inside
 
 class SimpleJustifiedUsingDefinitionsSpec extends FunSuite {
 
-  import dsl.caching.immutable.justified._
+  import dsl.uncached.justified._
 
   test("Derive Kg from Lbs") {
     val weightLbs = FactTypes.WeightLbs(150)

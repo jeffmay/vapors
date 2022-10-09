@@ -4,7 +4,7 @@ import munit.FunSuite
 
 class SimpleJustifiedForAllFromConstSpec extends FunSuite {
 
-  import dsl.caching.immutable.justified._
+  import dsl.uncached.justified._
 
   test(".forall returns true when empty") {
     val expr = List.empty[Int].const.forall {

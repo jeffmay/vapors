@@ -8,7 +8,7 @@ import munit.FunSuite
 
 class SimpleJustifiedArithmeticCombinatorSpec extends FunSuite {
 
-  import dsl.caching.immutable.justified._
+  import dsl.uncached.justified._
 
   test("min(2, 3, 1) == 1") {
     val expr = min(2.const, 3.const, 1.const)

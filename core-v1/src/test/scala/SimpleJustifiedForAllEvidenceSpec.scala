@@ -9,7 +9,7 @@ import scala.collection.immutable.SortedSet
 
 class SimpleJustifiedForAllEvidenceSpec extends FunSuite {
 
-  import dsl.caching.immutable.justified._
+  import dsl.uncached.justified._
 
   test("Justified[Seq[_]].forall returns all evidence when empty".fail) {
     val emptyTagsFact = FactTypes.CombinedTags(CombinedTags.now(SortedSet()))

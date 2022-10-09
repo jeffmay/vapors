@@ -4,7 +4,7 @@ import munit.FunSuite
 
 class SimpleSizeIsSpec extends FunSuite {
 
-  import dsl.caching.immutable._
+  import dsl.uncached._
 
   test("Some(1).const.isEmpty == false") {
     val expr = Some(1).const.isEmpty

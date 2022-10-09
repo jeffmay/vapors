@@ -4,7 +4,7 @@ import munit.FunSuite
 
 class SimpleDivisionSpec extends FunSuite {
 
-  import dsl.caching.immutable._
+  import dsl.uncached._
 
   // TODO: Should this return an Option[Int]? Maybe another method for this?
   test("Divide by zero") {

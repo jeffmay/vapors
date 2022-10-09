@@ -8,7 +8,7 @@ import java.time.{Duration, Instant, LocalDate, Period}
 
 class SimpleJustifiedSubtractionSpec extends FunSuite {
 
-  import dsl.caching.immutable.justified._
+  import dsl.uncached.justified._
 
   // TODO: Should this return an Option[Int]? Maybe another method for this?
   test("Divide by zero") {

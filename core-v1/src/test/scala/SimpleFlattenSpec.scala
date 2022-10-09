@@ -4,7 +4,7 @@ import munit.FunSuite
 
 class SimpleFlattenSpec extends FunSuite {
 
-  import dsl.caching.immutable._
+  import dsl.uncached._
 
   def alphaAt[C[_]](n: Int): Char = ('A' + n).toChar
 

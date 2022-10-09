@@ -9,7 +9,7 @@ class SimpleJustifiedAdditionSpec extends munit.FunSuite {
 
   import java.time.{Duration, Instant}
 
-  import dsl.caching.immutable.justified._
+  import dsl.uncached.justified._
 
   test("Justified[Int] + Justified[Int]") {
     val expr = 1.const + 2.const

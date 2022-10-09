@@ -2,7 +2,7 @@ package com.rallyhealth.vapors.v1
 
 class SimpleJustifiedExistsFromConstSpec extends munit.FunSuite {
 
-  import dsl.caching.immutable.justified._
+  import dsl.uncached.justified._
 
   test(".exists returns false when empty") {
     val expr = List.empty[Int].const.exists {

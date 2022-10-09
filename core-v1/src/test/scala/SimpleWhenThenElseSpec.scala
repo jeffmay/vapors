@@ -4,7 +4,7 @@ import munit.FunSuite
 
 class SimpleWhenThenElseSpec extends FunSuite {
 
-  import dsl.caching.immutable._
+  import dsl.uncached._
 
   test("if (true) / else result") {
     val ifResult = 1

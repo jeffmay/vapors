@@ -9,7 +9,7 @@ import munit.FunSuite
 
 class SimpleSelectSpec extends FunSuite {
 
-  import dsl.caching.immutable._
+  import dsl.uncached._
 
   test("Select a value of a const") {
     val fixture = NestedSelectable.empty

@@ -5,7 +5,7 @@ import munit.FunSuite
 
 class SimpleToHListSpec extends FunSuite {
 
-  import dsl.caching.immutable._
+  import dsl.uncached._
 
   test("(String :: Int).toHList.as[Person]") {
     val expected = Person("Alice", 40)

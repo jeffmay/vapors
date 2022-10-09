@@ -6,7 +6,7 @@ import munit.FunSuite
 
 class SimpleJustifiedSliceSpec extends FunSuite {
 
-  import dsl.caching.immutable.justified._
+  import dsl.uncached.justified._
 
   test("Seq[Justified[Int]](1..5).slice(1 <-> 3)") {
     val input = Seq(1, 2, 3, 4, 5)

@@ -7,7 +7,7 @@ import munit.FunSuite
 
 class SimpleJustifiedGetOrElseSpec extends FunSuite {
 
-  import dsl.caching.immutable.justified._
+  import dsl.uncached.justified._
 
   test("Some().const.getOrElse returns the wrapped value") {
     val input = 1

@@ -7,7 +7,7 @@ import munit.FunSuite
 
 class SimpleJustifiedFlattenSpec extends FunSuite {
 
-  import dsl.caching.immutable.justified._
+  import dsl.uncached.justified._
 
   def alphaAt[C[_]](n: Int): Char = ('A' + n).toChar
 
