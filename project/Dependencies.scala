@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
 
-  final val Scala_3 = "3.1.0"
+  final val Scala_3 = "3.2.0"
 
   private final val catsVersion = "2.7.0"
   private final val izumiReflectVersion = "2.0.8"
