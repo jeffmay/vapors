@@ -44,7 +44,24 @@ def commonProject(
     )
 }
 
-lazy val `core-v1` = commonProject("core-v1", "vapors.v1")
+val deps = new {
+  val zio = "dev.zio" %% "zio" % "2.0.2"
+  val zioPrelude = "dev.zio" %% "zio-prelude" % "1.0.0-RC16"
+  val zioTest = "dev.zio" %% "zio-test" % zio.revision
+}
+
+lazy val `core-v2` = commonProject("core-v2", "vapors.v2")
   .settings(
-    libraryDependencies ++= CoreV1Project.all,
+    libraryDependencies ++= Seq(
+      deps.zio,
+      deps.zioPrelude,
+    ) ++ Seq(
+      // Test-only dependencies
+      deps.zioTest,
+    ).map(_ % Test)
   )
+
+//lazy val `core-v1` = commonProject("core-v1", "vapors.v1")
+//  .settings(
+//    libraryDependencies ++= CoreV1Project.all,
+//  )
