@@ -45,6 +45,7 @@ def commonProject(
 }
 
 val deps = new {
+  val shapeless = "org.typelevel" %% "shapeless3-deriving" % "3.2.0"
   val zio = "dev.zio" %% "zio" % "2.0.2"
   val zioPrelude = "dev.zio" %% "zio-prelude" % "1.0.0-RC16"
   val zioTest = "dev.zio" %% "zio-test" % zio.revision
@@ -53,6 +54,7 @@ val deps = new {
 lazy val `core-v2` = commonProject("core-v2", "vapors.v2")
   .settings(
     libraryDependencies ++= Seq(
+      deps.shapeless,
       deps.zio,
       deps.zioPrelude,
     ) ++ Seq(
