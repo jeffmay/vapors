@@ -3,7 +3,9 @@ import Dependencies._
 name := "vapors-root"
 ThisBuild / organization := "com.rallyhealth"
 ThisBuild / organizationName := "Rally Health"
-
+ThisBuild / scmInfo := Some(
+  ScmInfo(url("https://github.com/jeffmay/vapors"), "scm:git:git@github.com:jeffmay/vapors.git")
+)
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / scalaVersion := Dependencies.Scala_2_13
 ThisBuild / licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT"))
