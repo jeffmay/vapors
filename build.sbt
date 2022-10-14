@@ -3,6 +3,7 @@ import Dependencies._
 name := "vapors-root"
 ThisBuild / organization := "com.rallyhealth"
 ThisBuild / organizationName := "Rally Health"
+ThisBuild / homepage := Some(url("https://github.com/jeffmay/vapors"))
 ThisBuild / scmInfo := Some(
   ScmInfo(url("https://github.com/jeffmay/vapors"), "scm:git:git@github.com:jeffmay/vapors.git")
 )
