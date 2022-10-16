@@ -4,15 +4,18 @@ package algebra
 
 import cats.data.{NonEmptyList, NonEmptySeq, NonEmptyVector}
 
+import scala.annotation.targetName
+
 /**
-  * Defines how to compare collection of type [[C]] to a numeric integral value of type [[N]] using the
-  * [[SizeComparison]] operator.
-  *
-  * @tparam C the concrete type of collection
-  * @tparam N the concrete numeric integral type (or any type that is viewable as an integer)
-  * @tparam B the boolean-like type (or any type viewable as a boolean) that is returned
-  */
-trait SizeComparable[-C, -N, +B] { outer =>
+ * Defines how to compare collection of type [[C]] to a numeric integral value of type [[N]] using the
+ * [[SizeComparison]] operator.
+ *
+ * @tparam C the concrete type of collection
+ * @tparam N the concrete numeric integral type (or any type that is viewable as an integer)
+ * @tparam B the boolean-like type (or any type viewable as a boolean) that is returned
+ */
+trait SizeComparable[-C, -N, +B] {
+  outer =>
 
   def sizeCompare(
     collection: C,
@@ -58,7 +61,7 @@ object SizeComparable {
     new FromIterableToBoolean(identity)
 
   implicit val optionSizeCompare: SizeComparable[Option[Any], Int, Boolean] =
-    new FromIterableToBoolean(_.toIterable)
+    new FromIterableToBoolean(_.toList)
 
   implicit val nonEmptySeqSizeCompare: SizeComparable[NonEmptySeq[Any], Int, Boolean] =
     new FromIterableToBoolean(_.toSeq)
@@ -73,9 +76,18 @@ object SizeComparable {
 sealed abstract class SizeComparison(val symbol: String)
 
 object SizeComparison {
+  @targetName("equalTo")
   case object === extends SizeComparison("===")
+
+  @targetName("lessThan")
   case object < extends SizeComparison("<")
+
+  @targetName("lessThanOrEqualTo")
   case object <= extends SizeComparison("<=")
+
+  @targetName("greaterThan")
   case object > extends SizeComparison(">")
+
+  @targetName("greaterThanOrEqualTo")
   case object >= extends SizeComparison(">=")
 }

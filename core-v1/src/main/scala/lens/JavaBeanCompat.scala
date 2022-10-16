@@ -8,15 +8,19 @@ object JavaBeanCompat {
   private final val GETTER_PREFIXES = Set("get")
 
   def unbeanify(name: String): String = {
-    for (prefix <- GETTER_PREFIXES) {
-      if (name.startsWith(prefix) && name.length > prefix.length) {
-        val firstChar = name.charAt(prefix.length)
-        if (firstChar.isUpper) {
-          val restOfName = name.substring(prefix.length + 1)
-          return s"${firstChar.toLower}$restOfName"
+    // TODO: Replace this with a more functional control flow
+    import scala.util.control.NonLocalReturns._
+    returning {
+      for (prefix <- GETTER_PREFIXES) {
+        if (name.startsWith(prefix) && name.length > prefix.length) {
+          val firstChar = name.charAt(prefix.length)
+          if (firstChar.isUpper) {
+            val restOfName = name.substring(prefix.length + 1)
+            throwReturn(s"${firstChar.toLower}$restOfName")
+          }
         }
       }
+      name
     }
-    name
   }
 }
