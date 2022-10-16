@@ -31,7 +31,7 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
 
   protected implicit def wrapSelected: WrapSelected[W, OP]
 
-  override def ident[I](implicit opI: OP[W[I]]): Expr.Identity[W[I], OP] = Expr.Identity()
+  override inline def ident[I](using OP[W[I]]): Expr.Identity[W[I], OP] = Expr.Identity[W[I], OP]()
 
   override def pow[I, L, R](
     leftExpr: I ~:> W[L],
@@ -148,13 +148,6 @@ trait WrappedBuildExprDsl extends BuildExprDsl {
         wrapContained.wrapContained(_, _, _),
       )
   }
-
-  override implicit def const[A](
-    value: A,
-  )(implicit
-    constType: ConstOutputType[W, A],
-  ): ConstExprBuilder[constType.Out, OP] =
-    new ConstExprBuilder(constType.wrapConst(value))
 
   override implicit def in[I, T](expr: I ~:> W[T]): WrappedSelectExprBuilder[I, T] = new WrappedSelectExprBuilder(expr)
 

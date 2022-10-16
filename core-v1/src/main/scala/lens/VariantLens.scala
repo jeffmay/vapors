@@ -224,7 +224,7 @@ final case class VariantLens[-A, +B](
     */
   def at[K : ValidDataPathKey, V](
     key: K,
-  )(implicit
+  )(using
     CI: VariantIndexed[B, K, V],
   ): VariantLens[A, V] = {
     copy(
@@ -236,12 +236,12 @@ final case class VariantLens[-A, +B](
 //  def atIdx[K <: Singleton]: AtIdxPartiallyApplied[A, B, K] =
 //    new AtIdxPartiallyApplied[A, B, K](this)
 
-  def head[C[_] : Reducible, V](implicit ev: B <:< C[V]): VariantLens[A, V] =
+  def head[C[_] : Reducible, V](using ev: B <:< C[V]): VariantLens[A, V] =
     copy(
       path = path.atHead,
       get = get.andThen { b =>
         import cats.implicits._
-        val cv: C[V] = b
+        val cv: C[V] = ev(b)
         val head = cv.reduceRight { (head, _) =>
           Eval.now(head)
         }
@@ -258,7 +258,7 @@ final case class VariantLens[-A, +B](
     */
   def filterKeys[K : ValidDataPathKey, V : Semigroup](
     keys: NonEmptySet[K],
-  )(implicit
+  )(using
     CI: VariantIndexed[B, K, V],
   ): VariantLens[A, V] = {
     import VariantIndexedSyntax._
@@ -275,13 +275,13 @@ final case class VariantLens[-A, +B](
     *       it is useful in scenarios when you have a type-constructor and want to use type-level evidence
     *       of a specific collection / element type to infer the result of an element type.
     */
-  def as[V](implicit ev: B <:< V): VariantLens[A, V] =
+  def as[V](using ev: B <:< V): VariantLens[A, V] =
     this.copy(get = this.get.andThen(ev))
 
   /**
     * Convert the [[Foldable]] higher-kinded type into a [[LazyList]].
     */
-  def asIterable[C[_] : Foldable, E](implicit ev: B <:< C[E]): VariantLens[A, Iterable[E]] =
+  def asIterable[C[_] : Foldable, E](using ev: B <:< C[E]): VariantLens[A, Iterable[E]] =
     this.copy(get = this.get.andThen(b => Foldable[C].toIterable(ev(b))))
 
   /**
@@ -294,8 +294,8 @@ final case class VariantLens[-A, +B](
     * @tparam V the wrapped value type
     * @return a lens that extracts the value from the wrapped return value of this lens
     */
-  def extractValue[W[_] : Extract, V](implicit ev: B <:< W[V]): VariantLens[A, V] =
-    this.copy(get = this.get.andThen(wv => Extract[W].extract(wv)))
+  def extractValue[W[+_] : Extract, V](using ev: B <:< W[V]): VariantLens[A, V] =
+    this.copy(get = this.get.andThen(b => Extract[W].extract(ev(b))))
 
   /**
     * Converts the result into an [[Tuple]] if [[B]] is a [[Product]] type.

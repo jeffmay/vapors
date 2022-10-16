@@ -35,7 +35,7 @@ trait UnwrappedBuildExprDsl
   // TODO: Should this be visible outside this trait?
   protected final def shortCircuit: Boolean = true
 
-  override final def ident[I](implicit opI: OP[I]): Expr.Identity[I, OP] = Expr.Identity()
+  override final inline def ident[I](implicit opI: OP[I]): Expr.Identity[I, OP] = Expr.Identity()
 
   override final def seq[I, O](expressions: I ~:> O*)(implicit opO: OP[Seq[O]]): I ~:> Seq[O] =
     super.seq[I, O](expressions: _*)
@@ -154,13 +154,6 @@ trait UnwrappedBuildExprDsl
     ): Expr.When[EI, Boolean, EO, OP] =
       Expr.When(branches, elseExpr)
   }
-
-  override implicit final def const[A](
-    value: A,
-  )(implicit
-    constType: ConstOutputType[W, A],
-  ): ConstExprBuilder[constType.Out, OP] =
-    new ConstExprBuilder(constType.wrapConst(value))
 
   // TODO: Is this redundant syntax worth keeping around?
   override implicit final def inSet[I, A](inputExpr: I ~:> A): UnwrappedInSetExprBuilder[I, A] =

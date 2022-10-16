@@ -5,7 +5,7 @@ package dsl
 import cats.Foldable
 import cats.Id
 
-trait WrapContained[W[+_], OP[_]] {
+trait WrapContained[W[+_], -OP[_]] {
 
   def wrapContained[C[_] : Foldable, V](
     original: C[W[V]],

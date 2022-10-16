@@ -33,12 +33,12 @@ object ExtractValue {
   final def of[V]: Of[V] = new Of[V]
   final class Of[V] private[ExtractValue] (private val dummy: Boolean = true) extends AnyVal {
 
-    def apply[T](input: T)(implicit extractor: ExtractValue[T, V]): V = extractor.extractValue(input)
+    def apply[T](input: T)(using extractor: ExtractValue[T, V]): V = extractor.extractValue(input)
 
-    def from[T](implicit extractor: ExtractValue[T, V]): ExtractValue[T, V] = extractor
+    def from[T](using extractor: ExtractValue[T, V]): ExtractValue[T, V] = extractor
   }
 
-  implicit def conforms[A, B](implicit ev: A => B): ExtractValue[A, B] = ev.apply(_)
+  given conforms[A, B](using ev: A => B): ExtractValue[A, B] = ev(_)
 
-  implicit def extracted[W[_] : Extract, V]: ExtractValue[W[V], V] = Extract[W].extract(_)
+  given extracted[W[+_] : Extract, V]: ExtractValue[W[V], V] = Extract[W].extract(_)
 }

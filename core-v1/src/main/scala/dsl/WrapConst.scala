@@ -14,16 +14,16 @@ import shapeless3.deriving.{Const, Id}
   *
   * @tparam W the wrapper type to place the constant values into
   */
-trait WrapConst[W[_], OP[_]] {
+trait WrapConst[+W[+_], -OP[_]] {
 
   def wrapConst[A](value: A)(implicit opA: OP[A]): W[A]
 }
 
 object WrapConst {
 
-  private object Unwrapped extends WrapConst[Id, Const[Any]] {
+  private object Unwrapped extends WrapConst[[a] =>> a, [_] =>> Any] {
     override def wrapConst[A](value: A)(implicit opA: Any): A = value
   }
 
-  implicit final def unwrapped[OP[_]]: WrapConst[Id, OP] = Unwrapped.asInstanceOf[WrapConst[Id, OP]]
+  implicit final def unwrapped[OP[_]]: WrapConst[[a] =>> a, OP] = Unwrapped
 }

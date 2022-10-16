@@ -254,14 +254,13 @@ object Justified extends LowPriorityJustifiedImplicits {
     override def wrapConst[A](value: A)(implicit opA: Any): Justified[A] = Justified.byConst(value)
   }
 
-  implicit def wrapConst[OP[_]]: WrapConst[Justified, OP] = WrapConstJustified.asInstanceOf[WrapConst[Justified, OP]]
+  implicit def wrapConst[OP[_]]: WrapConst[Justified, OP] = WrapConstJustified
 
   private case object WrapFactJustified extends WrapFact[Justified, [_] =>> Any] {
     override def wrapFact[O](fact: TypedFact[O])(implicit opO: Any): Justified[O] = Justified.byFact(fact)
   }
 
-  implicit def wrapContained[OP[_]]: WrapContained[Justified, OP] =
-    WrapContainedJustified.asInstanceOf[WrapContained[Justified, OP]]
+  implicit def wrapContained[OP[_]]: WrapContained[Justified, OP] = WrapContainedJustified
 
   private case object WrapContainedJustified extends WrapContained[Justified, [_] =>> Any] {
 

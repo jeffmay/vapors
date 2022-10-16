@@ -1,8 +1,5 @@
 package com.rallyhealth.vapors.v1
-
 package data
-
-import cats.Id
 
 /**
   * Extract the value from a context [[W]].
@@ -12,16 +9,17 @@ import cats.Id
   * be implemented very often by end users. Also it may need to evolve in a manner that doesn't
   * align with the cats typeclass.
   */
-trait Extract[-W[_]] {
+trait Extract[-W[+_]] {
 
   def extract[A](fa: W[A]): A
 }
 
 object Extract {
 
-  @inline final def apply[W[_] : Extract]: Extract[W] = implicitly
+  inline final def apply[W[+_] : Extract]: Extract[W] = summon
 
-  implicit val identity: Extract[Id] = new Extract[Id] {
+  given identity: Extract[[a] =>> a] with {
     override def extract[A](fa: A): A = fa
+    override def toString: String = "Extract.identity"
   }
 }

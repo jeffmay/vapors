@@ -41,7 +41,7 @@ trait BuildExprDsl
 
   protected implicit def wrapSelected: WrapSelected[W, OP]
 
-  def ident[I](implicit opI: OP[W[I]]): Expr.Identity[W[I], OP]
+  inline def ident[I](using OP[W[I]]): Expr.Identity[W[I], OP]
 
   final def concat[C[_] : Foldable, I, A](
     expressions: I ~:> C[A]*,
@@ -105,10 +105,7 @@ trait BuildExprDsl
 
     final def fromConst[C[_] : Foldable](
       values: C[T],
-    )(implicit
-      opT: OP[Seq[T]],
-      opF: OP[Seq[TypedFact[T]]],
-    ): Expr.Define[Any, Seq, T, OP] =
+    )(using OP[Seq[T]], OP[Seq[TypedFact[T]]]): Expr.Define[Any, Seq, T, OP] =
       Expr.Define(factType, Expr.Const(Foldable[C].toList(values): Seq[T]))
   }
 
@@ -233,11 +230,8 @@ You should prefer put your declaration of dependency on definitions close to whe
   ): Expr.Not[I, B, W, OP] =
     Expr.Not(expr)
 
-  implicit def const[A](
-    value: A,
-  )(implicit
-    constType: ConstOutputType[W, A],
-  ): ConstExprBuilder[constType.Out, OP]
+  extension [O](value: O)(using constType: ConstOutputType[W, O])
+    inline def const(using OP[constType.Out]): Expr.Const[constType.Out, OP] = Expr.Const(constType.wrapConst(value))
 
   // TODO: Is this redundant syntax worth keeping around?
   implicit def inSet[I, A](inputExpr: I ~:> W[A]): InSetExprBuilder[I, A]
@@ -653,9 +647,4 @@ You should prefer put your declaration of dependency on definitions close to whe
     def =!=[NI <: I](rightExpr: NI ~:> W[V]): Expr.Not[NI, Boolean, W, OP] =
       Expr.Not(Expr.IsEqual(leftExpr, rightExpr))
   }
-}
-
-final class ConstExprBuilder[A, OP[_]](private val value: A) extends AnyVal {
-
-  def const(implicit op: OP[A]): Expr.Const[A, OP] = Expr.Const(value)
 }

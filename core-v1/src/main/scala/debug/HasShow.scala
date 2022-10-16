@@ -9,28 +9,28 @@ import cats.Show
   *
   * @see [[Show]] for more details.
   *
-  * @tparam V the expression output type parameter.
+  * @tparam A the expression output type parameter.
   */
-trait HasShow[V] {
+trait HasShow[A] {
 
-  def show: Show[V]
+  def show: Show[A]
 }
 
 object HasShow extends LowPriorityHasShow {
 
-  @inline final def apply[V : HasShow]: HasShow[V] = implicitly
+  inline final def apply[A : HasShow]: HasShow[A] = implicitly
 
-  final def unapply[V](has: HasShow[V]): Some[Show[V]] = Some(has.show)
+  inline final def unapply[A](has: HasShow[A]): Some[Show[A]] = Some(has.show)
 
-  @inline final def none[V]: HasShow[V] = NoShow.asInstanceOf[HasShow[V]]
+  inline final def none[A]: HasShow[A] = NoShow.asInstanceOf[HasShow[A]]
 
   private object NoShow extends HasShow[Any] {
     override val show: Show[Any] = _.toString
   }
 
-  private final case class Impl[V](show: Show[V]) extends HasShow[V]
+  private final case class Impl[A](show: Show[A]) extends HasShow[A]
 
-  implicit def show[V](implicit s: Show[V]): HasShow[V] = Impl(s)
+  given [A : Show]: HasShow[A] = Impl(Show[A])
 }
 
 private[debug] sealed abstract class LowPriorityHasShow {
@@ -41,5 +41,5 @@ private[debug] sealed abstract class LowPriorityHasShow {
     * Similar to [[dsl.NoOP.~]], this method name is short because it will show up in a lot of places and
     * it means that you can effectively ignore this parameter.
     */
-  implicit def ~[V]: HasShow[V] = HasShow.none
+  given ~[A]: HasShow[A] = HasShow.none
 }

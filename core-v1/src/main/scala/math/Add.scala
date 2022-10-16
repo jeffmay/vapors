@@ -6,11 +6,10 @@ import java.time.{Duration, Instant, LocalDate, LocalDateTime, Period, ZonedDate
 import scala.annotation.implicitNotFound
 import scala.concurrent.duration.FiniteDuration
 
-@implicitNotFound("""${L} + ${R} is not supported.
-                     
-If these are non-numeric types, try swapping the order of arguments to ${R} + ${L}.
-                     
-If you think this operation should be allowed, you can define an implicit Add[${L}, ${R}].""")
+@implicitNotFound("""(${L} + ${R}) is not supported.
+
+If these are non-numeric types, try swapping the arguments.
+To explicitly allow this operation, define a given Add[L, R] for these types.""")
 trait Add[L, R] {
   type Out
 

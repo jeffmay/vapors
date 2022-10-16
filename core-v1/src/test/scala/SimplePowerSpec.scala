@@ -12,7 +12,7 @@ class SimplePowerSpec extends FunSuite {
   test("Int ^ Int (behavior)") {
     forAll { (l: Int, r: Int) =>
       val expr = l.const ^ r.const
-      val expected = Math.pow(l, r)
+      val expected = Math.pow(l.toDouble, r.toDouble)
       val observed = expr.run()
       assertEqualsOrNaN(observed, expected)
     }
@@ -27,7 +27,7 @@ class SimplePowerSpec extends FunSuite {
   test("Long ^ Int (behavior)") {
     forAll { (l: Long, r: Int) =>
       val expr = l.const ^ r.const
-      val expected = Math.pow(l, r)
+      val expected = Math.pow(l.toDouble, r.toDouble)
       val observed = expr.run()
       assertEqualsOrNaN(observed, expected)
     }
@@ -42,7 +42,7 @@ class SimplePowerSpec extends FunSuite {
   test("Int ^ Long (behavior)") {
     forAll { (l: Int, r: Long) =>
       val expr = l.const ^ r.const
-      val expected = Math.pow(l, r)
+      val expected = Math.pow(l.toDouble, r.toDouble)
       val observed = expr.run()
       assertEqualsOrNaN(observed, expected)
     }
@@ -57,7 +57,7 @@ class SimplePowerSpec extends FunSuite {
   test("Double ^ Int (behavior)") {
     forAll { (l: Double, r: Int) =>
       val expr = l.const ^ r.const
-      val expected = Math.pow(l, r)
+      val expected = Math.pow(l, r.toDouble)
       val observed = expr.run()
       assertEqualsOrNaN(observed, expected)
     }
@@ -72,7 +72,7 @@ class SimplePowerSpec extends FunSuite {
   test("Int ^ Double (behavior)") {
     forAll { (l: Int, r: Double) =>
       val expr = l.const ^ r.const
-      val expected = Math.pow(l, r)
+      val expected = Math.pow(l.toDouble, r)
       val observed = expr.run()
       assertEqualsOrNaN(observed, expected)
     }
@@ -117,7 +117,7 @@ class SimplePowerSpec extends FunSuite {
   test("Long ^ Float (behavior)") {
     forAll { (l: Long, r: Float) =>
       val expr = l.const ^ r.const
-      val expected = Math.pow(l, r)
+      val expected = Math.pow(l.toDouble, r)
       val observed = expr.run()
       assertEqualsOrNaN(observed, expected)
     }
@@ -131,7 +131,7 @@ class SimplePowerSpec extends FunSuite {
   test("Float ^ Long (behavior)") {
     forAll { (l: Float, r: Long) =>
       val expr = l.const ^ r.const
-      val expected = Math.pow(l, r)
+      val expected = Math.pow(l, r.toDouble)
       val observed = expr.run()
       assertEqualsOrNaN(observed, expected)
     }
