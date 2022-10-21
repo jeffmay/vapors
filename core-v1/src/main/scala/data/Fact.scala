@@ -91,10 +91,7 @@ object TypedFact {
     evidence: Evidence,
   ): TypedFact[A] with DerivedFact = DerivedFactOfType(typeInfo, value, evidence)
 
-  def unapply[A](fact: TypedFact[A]): Some[(FactType[A], A)] = fact match {
-    case SourceFactOfType(typeInfo, value) => Some((typeInfo, value))
-    case DerivedFactOfType(typeInfo, value, _) => Some((typeInfo, value))
-  }
+  def unapply[A](fact: TypedFact[A]): Some[(FactType[A], A)] = Some((fact.typeInfo, fact.value))
 
   def orderTypedFactByValue[T]: Order[TypedFact[T]] = { (x, y) =>
     x.typeInfo.order.compare(x.value, y.value)
@@ -113,7 +110,7 @@ object TypedFact {
   *
   * The [[Evidence]] is tracked from the original set of [[Fact]]s based on the expression.
   */
-sealed trait DerivedFact extends Fact {
+trait DerivedFact extends Fact {
   def evidence: Evidence
 }
 
@@ -126,11 +123,8 @@ object DerivedFact {
   ): DerivedFact =
     DerivedFactOfType(typeInfo, value, evidence)
 
-  def unapply(fact: Fact): Option[(FactType[fact.Value], fact.Value, Evidence)] = fact match {
-    case DerivedFactOfType(_, _, evidence) =>
-      Some((fact.typeInfo, fact.value, evidence))
-    case _ => None
-  }
+  def unapply(fact: DerivedFact): Some[(FactType[fact.Value], fact.Value, Evidence)] =
+    Some((fact.typeInfo, fact.value, fact.evidence))
 }
 
 /**
