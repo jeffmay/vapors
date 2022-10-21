@@ -42,10 +42,3 @@ jobs:
         run: |
           git tag -am "${{ steps.validate.outputs.version }}" ${{ steps.validate.outputs.version }}
           git push origin ${{ steps.validate.outputs.version }}
-      - uses: olafurpg/setup-scala@v13
-      - run: sbt ci-release
-        env:
-          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-          PGP_SECRET: ${{ secrets.PGP_SECRET }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
