@@ -11,10 +11,7 @@ import lens.CollectInto
 import logic.{Conjunction, Disjunction, Negation}
 
 import cats.{Applicative, Eval, FlatMap, Foldable, Functor, SemigroupK, Traverse}
-import shapeless.{HList, TypeCase, Typeable}
-
-import scala.collection.MapView
-import scala.collection.immutable.IntMap
+import shapeless.HList
 
 /**
   * A vapors [[Expr]] interpreter that just builds a simple function without providing any post-processing.

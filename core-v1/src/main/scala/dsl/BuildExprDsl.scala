@@ -118,6 +118,7 @@ trait BuildExprDsl
     """You should use the using().thenReturn(...) DSL method instead.
 
 You should prefer put your declaration of dependency on definitions close to where you actually use them.""",
+    "1.0.0-M1",
   )
   final def usingDefinitions[I, O](
     definitions: Expr.Definition[I, OP]*,

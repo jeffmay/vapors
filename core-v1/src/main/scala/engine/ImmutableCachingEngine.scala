@@ -14,7 +14,7 @@ import logic.{Conjunction, Disjunction, Negation}
 import cats.arrow.Arrow
 import cats.data.NonEmptyVector
 import cats.{Applicative, Eval, FlatMap, Foldable, Functor, Monad, SemigroupK, Traverse}
-import shapeless.{HList, HMap, TypeCase, Typeable}
+import shapeless.{HList, HMap}
 
 import scala.annotation.tailrec
 

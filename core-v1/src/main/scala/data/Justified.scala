@@ -2,8 +2,8 @@ package com.rallyhealth.vapors.v1
 
 package data
 
-import algebra.{EqualComparable, SizeComparable, SizeComparison}
-import dsl.{WrapConst, WrapContained, WrapFact, WrapQuantifier, WrapRegexMatches, WrapSelected}
+import algebra.{EqualComparable, SizeComparable}
+import dsl._
 import lens.{DataPath, VariantLens}
 import logic.Logic
 import math._
@@ -11,7 +11,7 @@ import time.CountTime
 
 import cats.data.{NonEmptySeq, NonEmptySet}
 import cats.implicits._
-import cats.{Applicative, Eq, Eval, Foldable, Functor, Order, Semigroupal, Traverse, TraverseFilter}
+import cats.{Applicative, Eq, Eval, Foldable, Order, Semigroupal, Traverse}
 
 import scala.annotation.nowarn
 import scala.collection.Factory
