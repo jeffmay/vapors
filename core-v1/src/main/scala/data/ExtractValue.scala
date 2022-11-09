@@ -36,7 +36,7 @@ object ExtractValue {
     def from[T](implicit extractor: ExtractValue[T, V]): ExtractValue[T, V] = extractor
   }
 
-  implicit def conforms[A, B](implicit ev: A <:< B): ExtractValue[A, B] = ev.apply
+  implicit def conforms[A, B](implicit ev: A <:< B): ExtractValue[A, B] = ev(_)
 
   implicit def extracted[W[_] : Extract, V]: ExtractValue[W[V], V] = Extract[W].extract(_)
 }

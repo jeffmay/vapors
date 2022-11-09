@@ -12,8 +12,6 @@ import cats.{FlatMap, Foldable, Functor, Id, Order, Reducible, Traverse}
 import izumi.reflect.Tag
 import shapeless.{Generic, HList, Nat, Typeable}
 
-import scala.util.matching.Regex
-
 trait WrappedBuildExprDsl extends BuildExprDsl {
   self: DslTypes with WrappedExprHListDslImplicits with OutputTypeImplicits =>
 

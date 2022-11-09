@@ -5,8 +5,6 @@ package dsl
 import cats.{Align, Functor, FunctorFilter}
 import shapeless.{::, HList, HNil}
 
-import scala.collection.Factory
-
 /**
   * A marker trait for determining which set of implicits to inherit.
   *

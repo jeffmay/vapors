@@ -8,15 +8,17 @@ object JavaBeanCompat {
   private final val GETTER_PREFIXES = Set("get")
 
   def unbeanify(name: String): String = {
-    for (prefix <- GETTER_PREFIXES) {
-      if (name.startsWith(prefix) && name.length > prefix.length) {
-        val firstChar = name.charAt(prefix.length)
-        if (firstChar.isUpper) {
-          val restOfName = name.substring(prefix.length + 1)
-          return s"${firstChar.toLower}$restOfName"
+    val unbeanified = GETTER_PREFIXES.collectFirst(Function.unlift { prefix =>
+      Option
+        .when(name.startsWith(prefix) && name.length > prefix.length) {
+          val firstChar = name.charAt(prefix.length)
+          Option.when(firstChar.isUpper) {
+            val restOfName = name.substring(prefix.length + 1)
+            s"${firstChar.toLower}$restOfName"
+          }
         }
-      }
-    }
-    name
+        .flatten
+    })
+    unbeanified.getOrElse(name)
   }
 }

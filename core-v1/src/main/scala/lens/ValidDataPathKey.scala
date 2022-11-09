@@ -33,7 +33,7 @@ object ValidDataPathKey {
     ToInt[N].apply().toString
   }
 
-  implicit val string: ValidDataPathKey[String] = identity[String]
+  implicit val string: ValidDataPathKey[String] = identity(_)
 
   implicit val int: ValidDataPathKey[Int] = _.toString
 

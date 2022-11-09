@@ -5,7 +5,7 @@ ThisBuild / organization := "com.rallyhealth"
 ThisBuild / organizationName := "Rally Health"
 ThisBuild / homepage := Some(url("https://github.com/jeffmay/vapors"))
 ThisBuild / scmInfo := Some(
-  ScmInfo(url("https://github.com/jeffmay/vapors"), "scm:git:git@github.com:jeffmay/vapors.git")
+  ScmInfo(url("https://github.com/jeffmay/vapors"), "scm:git:git@github.com:jeffmay/vapors.git"),
 )
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / scalaVersion := Dependencies.Scala_2_13
@@ -18,9 +18,31 @@ ThisBuild / scalacOptions ++= Seq(
   "-language:higherKinds",
   "-language:implicitConversions",
   "-language:experimental.macros",
-  "-Xfatal-warnings",
+  "-opt-warnings:at-inline-failed-summary",
+  "-unchecked",
+  "-Xlint:doc-detached",
+  "-Xlint:eta-sam",
+  "-Xlint:eta-zero",
+  "-Xlint:deprecation",
+  "-Xlint:nonlocal-return",
+  "-Xlint:nullary-unit",
+  "-Xlint:package-object-classes",
+  "-Xlint:private-shadow",
+  "-Xlint:implicit-not-found",
+  "-Xlint:type-parameter-shadow",
+  "-Xlint:valpattern",
   "-Xlog-implicits",
+  "-Werror",
+  "-Wself-implicit",
+  "-Wunused:privates",
+  "-Wunused:locals",
+  "-Wvalue-discard",
   "-Ymacro-annotations",
+)
+ThisBuild / Compile / scalacOptions --= Seq(
+  "-Wunused:privates",
+  "-Wunused:locals",
+  "-Wvalue-discard",
 )
 
 // reload sbt when the build files change
