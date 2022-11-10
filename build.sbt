@@ -10,6 +10,7 @@ ThisBuild / licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT"))
 
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation:false",
+  "-explain",
   "-feature",
   "-language:higherKinds",
   "-language:implicitConversions",

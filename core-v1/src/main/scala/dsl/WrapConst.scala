@@ -16,7 +16,7 @@ import shapeless3.deriving.{Const, Id}
   */
 trait WrapConst[+W[+_], -OP[_]] {
 
-  def wrapConst[A](value: A)(implicit opA: OP[A]): W[A]
+  def wrapConst[A : OP](value: A): W[A]
 }
 
 object WrapConst {

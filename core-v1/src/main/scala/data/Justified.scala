@@ -3,19 +3,18 @@ package com.rallyhealth.vapors.v1
 package data
 
 import algebra.{EqualComparable, SizeComparable, SizeComparison}
-import dsl.{WrapConst, WrapContained, WrapFact, WrapQuantifier, WrapSelected}
+import dsl.{WrapConst, WrapContained, WrapFact, WrapParam, WrapQuantifier, WrapSelected}
 import lens.{DataPath, VariantLens}
 import logic.Logic
-import math._
+import math.*
 import time.CountTime
 
 import cats.data.{NonEmptySeq, NonEmptySet}
-import cats.implicits._
-import cats.{Applicative, Eq, Eval, Foldable, Functor, Order, Semigroupal, Traverse, TraverseFilter}
+import cats.implicits.*
+import cats.{Applicative, Eq, Eval, Foldable, Functor, Order, Semigroupal, Show, Traverse, TraverseFilter}
 
 import scala.annotation.nowarn
 import scala.collection.Factory
-
 import shapeless3.deriving.Const
 
 /**
@@ -254,7 +253,7 @@ object Justified extends LowPriorityJustifiedImplicits {
     override def wrapConst[A](value: A)(implicit opA: Any): Justified[A] = Justified.byConst(value)
   }
 
-  implicit def wrapConst[OP[_]]: WrapConst[Justified, OP] = WrapConstJustified
+  given wrapConst: WrapConst[Justified, [_] =>> Any] = WrapConstJustified
 
   private case object WrapFactJustified extends WrapFact[Justified, [_] =>> Any] {
     override def wrapFact[O](fact: TypedFact[O])(implicit opO: Any): Justified[O] = Justified.byFact(fact)
