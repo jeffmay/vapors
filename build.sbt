@@ -82,3 +82,19 @@ lazy val `circe-v1` = commonProject("circe-v1", "vapors.v1")
   .settings(
     libraryDependencies ++= CirceV1Project.all,
   )
+
+val isoDate = SettingKey[String]("isoDate", "Today as YYYY-MM-DD")
+
+lazy val generatedDocs = project
+  .in(file("generatedDocs"))
+  .settings(
+    isoDate := java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE),
+    mdocVariables := Map(
+        "VERSION" -> version.value,
+        "ISODATE" -> isoDate.value,
+    ),
+    mdocIn := new File("docs/mdocs/"),
+    mdocOut := new File("docs/generated"),
+  )
+  .dependsOn(`core-v1`)
+  .enablePlugins(MdocPlugin)
