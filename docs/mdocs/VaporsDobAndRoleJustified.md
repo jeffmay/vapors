@@ -1,6 +1,6 @@
 # Kerna Facts
 ## Vapors Role and DateOfBirth Facts, Justified!
-* Paul A. Kennedy; paul.kennedy@{rally,optum}.com
+* Paul A. Kennedy; paul.kennedy@{rallyhealth,optum}.com
 * @ISODATE@
 
 ## Worked example of Vapors `Role` and `DateOfBirth` FactType
